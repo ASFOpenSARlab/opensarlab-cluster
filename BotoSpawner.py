@@ -4,10 +4,10 @@ from jupyterhub.spawner import Spawner
 from tornado import gen
 
 
-class boto_spawner(Spawner):
+class BotoSpawner(Spawner):
 
     def __init__(self):
-        super(boto_spawner, self).__init__()
+        super(BotoSpawner, self).__init__()
         self.node_id = None
         self.aws_ec2 = boto3.resource('ec2')
         self.exit_value = 0
@@ -43,10 +43,24 @@ class boto_spawner(Spawner):
 
     @gen.coroutine
     def poll(self):
-        return self.running
+        return self.exit_value
 
+    def get_state(self):
+        state = super(BotoSpawner, self).get_state()
+        if self.node_id:
+            state['node_id'] = self.node_id
+        return state
+
+    def load_state(self, state):
+        super(BotoSpawner, self).load_state(state)
+        if 'node_id' in state:
+            self.node_id = state['node_id']
+
+    def clear_state(self):
+        super(BotoSpawner, self).clear_state()
+        self.node_id = None
 
 
 if __name__ == '__main__':
-    spawner = boto_spawner()
+    spawner = BotoSpawner()
     spawner.start()
