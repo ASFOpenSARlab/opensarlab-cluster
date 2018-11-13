@@ -776,6 +776,7 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 #  Admin access should be treated the same way root access is.
 #
 #  Defaults to an empty set, in which case no user has admin access.
+# TODO change to the actual whitelist once testing is done
 c.Authenticator.admin_users = {'asf'}
 
 ## Automatically begin the login process
@@ -837,7 +838,8 @@ c.Authenticator.admin_users = {'asf'}
 #  restrictions the authenticator has in place.
 #
 #  If empty, does not perform any additional restriction.
-c.Authenticator.whitelist = {'asf'}
+# TODO change to the actual whitelist once testing is done
+c.Authenticator.whitelist = {'asf', 'ubuntu'}
 
 #------------------------------------------------------------------------------
 # LocalAuthenticator(Authenticator) configuration
