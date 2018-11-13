@@ -372,12 +372,14 @@ c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
 ## Path to SSL certificate file for the public facing interface of the proxy
 #
 #  When setting this, you should also set ssl_key
-c.JupyterHub.ssl_cert = 'jupyterhub.crt'
+# TODO reenable once set up to generate certificates on a per/deployment basis
+# c.JupyterHub.ssl_cert = 'jupyterhub.crt'
 
 ## Path to SSL key file for the public facing interface of the proxy
 #
 #  When setting this, you should also set ssl_cert
-c.JupyterHub.ssl_key = 'jupyterhub.key'
+# TODO reenable once set up to generate certificates on a per/deployment basis
+# c.JupyterHub.ssl_key = 'jupyterhub.key'
 
 ## Host to send statsd metrics to. An empty string (the default) disables sending
 #  metrics.
