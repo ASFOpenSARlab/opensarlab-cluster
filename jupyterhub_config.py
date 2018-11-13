@@ -363,7 +363,7 @@ c.JupyterHub.hub_ip = ''
 #
 #  Should be a subclass of Spawner.
 from BotoSpawner import BotoSpawner
-BotoSpawner.image = 'insert AMI image name here'
+BotoSpawner.image = 'ami-03b11c79dc4050fbf'
 c.JupyterHub.spawner_class = 'dockerspawner.DockerSpawner'
 # DockerSpawner.image = 'jupyter/singleuser:9284a15ff9b6'
 
