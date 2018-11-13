@@ -22,7 +22,8 @@ class BotoSpawner(Spawner):
         # TODO create and specify security group(probly ssh, http, https)
         # TODO specify subnet? potentially useful to limit IAM permissions for the hub
         # TODO create and specify launch template?
-        node = self.aws_ec2.create_instances(ImageId='image_id', MinCount=1, MaxCount=1)
+        image_id = self.user_options.get('image')
+        node = self.aws_ec2.create_instances(ImageId=image_id, MinCount=1, MaxCount=1)
         self.node_id = node.instance_id
         self.wait_on_running.wait(InstanceIds=[self.node_id])
         print(self.node_id)
