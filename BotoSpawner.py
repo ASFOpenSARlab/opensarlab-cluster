@@ -19,9 +19,98 @@ class BotoSpawner(Spawner):
         self.node_id = None
         self.aws_ec2 = boto3.resource('ec2')
         self.exit_value = 0
+
+        # TODO remove testing code
+        print('unset config value:\t' + self.image)
+        try:
+            print(self.invalid)
+        except AttributeError as e:
+            print(type(e))
+            self.invalid = "valid"
+            print(self.invalid)
+
+        # TODO defaults here are overriding config file settings
         # default to the smallest machine running ubuntu server 18.04
-        self.image = 'ami-0ac019f4fcb7cb7e6'
-        self.instance_type = 't2.nano'
+        if not hasattr(self, 'image'):
+            self.image = 'ami-0ac019f4fcb7cb7e6'
+        if not hasattr(self, 'instance_type'):
+            self.instance_type = 't2.nano'
+        # TODO remove testing code
+        print('security group defore default setup:\t' + self.security_group_id)
+        # TODO move sec group setup to it's own method
+        if not hasattr(self, 'security_group_id'):
+            self.security_group_id = self.get_default_sec_group()
+
+    def get_default_sec_group(self):
+        # make sure there isn't already a default security group created
+        created_groups = boto3.client('ec2').describe_security_groups(
+            Filters=[
+                {'Name': 'group-name', 'Values': ['default-jupyterhub-group']}
+            ]
+        )['SecurityGroups']
+        # create default security group for the nodes if one does not exist
+        if len(created_groups) < 1:
+            default_group_id = self.create_default_sec_group()
+        else:
+            assert len(created_groups) == 1
+            default_group_id = created_groups[0]['GroupId']
+        return default_group_id
+
+    def create_default_sec_group(self):
+        default_group = self.aws_ec2.create_security_group(
+            Description='Default Jupyterhub Node Group',
+            GroupName='default-jupyterhub-group'
+        )
+        default_group.authorize_egress(
+            IpPermissions=[
+                {
+                    'IpProtocol': -1,
+                    'IpRanges': [
+                        {'CidrIp': '0.0.0.0/0', 'Description': 'allow all outgoing'}
+                    ],
+                    'Ipv6Ranges': [
+                        {'CidrIpv6': '::/0', 'Description': 'allow all outgoing'}
+                    ]
+                }
+            ]
+        )
+        default_group.authorize_ingress(
+            CidrIp='0.0.0.0/0',
+            IpPermissions=[
+                {
+                    'FromPort': 22,
+                    'IpProtocol': 'tcp',
+                    'IpRanges': [
+                        {'CidrIp': '0.0.0.0/0', 'Description': 'allow ssh from all sources'}
+                    ],
+                    'Ipv6Ranges': [
+                        {'CidrIpv6': '::/0', 'Description': 'allow ssh from all sources'}
+                    ]
+                },
+                {
+                    'FromPort': 80,
+                    'IpProtocol': 'tcp',
+                    'IpRanges': [
+                        {'CidrIp': '0.0.0.0/0', 'Description': 'allow http from all sources'}
+                    ],
+                    'Ipv6Ranges': [
+                        {'CidrIpv6': '::/0', 'Description': 'allow http from all sources'}
+                    ]
+                },
+                {
+                    'FromPort': 443,
+                    'IpProtocol': 'tcp',
+                    'IpRanges': [
+                        {'CidrIp': '0.0.0.0/0', 'Description': 'allow https from all sources'}
+                    ],
+                    'Ipv6Ranges': [
+                        {'CidrIpv6': '::/0', 'Description': 'allow https from all sources'}
+                    ]
+                }
+
+            ]
+        )
+        return default_group.id
 
     @gen.coroutine
     def start(self):
@@ -38,7 +127,8 @@ class BotoSpawner(Spawner):
                                                      'AssociatePublicIpAddress': True,
                                                      'DeleteOnTermination': True,
                                                      'Description': 'Address for access by the hub',
-                                                     'DeviceIndex': 0
+                                                     'DeviceIndex': 0,
+                                                     'Groups': [self.security_group_id]
                                                  }
                                              ],
                                              # so you can tell what this is from the AWS console

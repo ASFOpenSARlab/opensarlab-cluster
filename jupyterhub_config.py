@@ -218,7 +218,10 @@ c.JupyterHub.bind_url = 'http://:8000'
 #
 #  .. versionadded:: 0.8
 import socket
+# TODO this value is very wrong, kept from old docker setup
 c.JupyterHub.hub_connect_ip = socket.gethostname()
+# TODO remove testing code
+print('IP seen by nodes:\t' + c.JupyterHub.hub_connect_ip)
 
 ## DEPRECATED
 #
@@ -363,10 +366,13 @@ c.JupyterHub.hub_ip = ''
 #
 #  Should be a subclass of Spawner.
 from BotoSpawner import BotoSpawner
+# TODO uncomment image declaration
 # sets the AWS AMI to use when creating the node
 BotoSpawner.image = 'ami-03b11c79dc4050fbf'
+# defaults to allow all outgoing and allow all incoming ssh, http and https
+BotoSpawner.security_group_id = 'sg-0b17fce7b6092ee59'
 # sets the type of ec2 instance to create. As of writing a list can be found at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
-BotoSpawner.instance_type = 't2.nano'
+BotoSpawner.instance_type = 't2.micro'
 c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 # DockerSpawner.image = 'jupyter/singleuser:9284a15ff9b6'
 
