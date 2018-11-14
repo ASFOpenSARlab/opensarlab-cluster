@@ -8,6 +8,10 @@ class SpawnedTooManyEC2(Exception):
     pass
 
 
+class WrongNumberNetworkInterfaces(Exception):
+    pass
+
+
 class BotoSpawner(Spawner):
 
     def __init__(self, *args, **kwargs):
@@ -57,14 +61,32 @@ class BotoSpawner(Spawner):
             # TODO remove testing code
             print(f'node id:\t{node.instance_id}')
             self.node_id = node.instance_id
-            wait_on_running = boto3.client('ec2').get_waiter('instance_running')
+            # wait for the instance to be up
+            ec2_client = boto3.client('ec2')
+            wait_on_running = ec2_client.get_waiter('instance_running')
             wait_on_running.wait(InstanceIds=[self.node_id])
-            ip = node.public_ip_address
+
+            # TODO remove this once we're sure it's irrelevant
+            # # wait for the network interface to be ready
+            # interface_id = node.network_interfaces_attribute
+            # # TODO remove testing code
+            # print(interface_id)
+            # if len(interface_id) != 1:
+            #     raise WrongNumberNetworkInterfaces
+            # else:
+            #     interface_id = interface_id[0]
+            #     wait_on_address = aws_ec2.get_waiter('network_interface_available')
+            #     # wait_on_address.config.delay
+            #     print(f'delay:\t{wait_on_address.config.delay}\nmax attempts:\t{wait_on_address.config.max_attempts}')
+            #     wait_on_address.wait(NetworkInterfaceIds=[interface_id['NetworkInterfaceId']])
+
+            # TODO for some reason this is None
+            ip = self.aws_ec2.Instance(self.node_id).public_dns_name
             # TODO remove testing code
             print(f'IP Address:\t{ip}')
             # standard https port
             port = 443
-            return (ip, port)
+            return ip, port
 
     @gen.coroutine
     def stop(self, now=False):
