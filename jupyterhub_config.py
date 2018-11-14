@@ -363,7 +363,10 @@ c.JupyterHub.hub_ip = ''
 #
 #  Should be a subclass of Spawner.
 from BotoSpawner import BotoSpawner
+# sets the AWS AMI to use when creating the node
 BotoSpawner.image = 'ami-03b11c79dc4050fbf'
+# sets the type of ec2 instance to create. As of writing a list can be found at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
+BotoSpawner.instance_type = 't2.nano'
 c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 # DockerSpawner.image = 'jupyter/singleuser:9284a15ff9b6'
 
@@ -372,14 +375,14 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 ## Path to SSL certificate file for the public facing interface of the proxy
 #
 #  When setting this, you should also set ssl_key
-# TODO reenable once set up to generate certificates on a per/deployment basis
-# c.JupyterHub.ssl_cert = 'jupyterhub.crt'
+# TODO reenable once set up to generate certificates on a per deployment basis
+c.JupyterHub.ssl_cert = '/home/asf/jupyter/jupyterhub.crt'
 
 ## Path to SSL key file for the public facing interface of the proxy
 #
 #  When setting this, you should also set ssl_cert
-# TODO reenable once set up to generate certificates on a per/deployment basis
-# c.JupyterHub.ssl_key = 'jupyterhub.key'
+# TODO reenable once set up to generate certificates on a per deployment basis
+c.JupyterHub.ssl_key = '/home/asf/jupyter/jupyterhub.key'
 
 ## Host to send statsd metrics to. An empty string (the default) disables sending
 #  metrics.
@@ -696,7 +699,7 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 #  respond. Callers of spawner.start will assume that startup has failed if it
 #  takes longer than this. start should return when the server process is started
 #  and its location is known.
-#c.Spawner.start_timeout = 60
+c.Spawner.start_timeout = 60 * 10
 
 #------------------------------------------------------------------------------
 # LocalProcessSpawner(Spawner) configuration
