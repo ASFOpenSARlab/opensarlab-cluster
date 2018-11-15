@@ -218,8 +218,7 @@ c.JupyterHub.bind_url = 'http://:8000'
 #
 #  .. versionadded:: 0.8
 import socket
-# TODO this value is very wrong, kept from old docker setup
-c.JupyterHub.hub_connect_ip = socket.gethostname()
+c.JupyterHub.hub_connect_ip = '137.229.87.43'
 # TODO remove testing code
 print('IP seen by nodes:\t' + c.JupyterHub.hub_connect_ip)
 
@@ -676,7 +675,8 @@ c.Spawner.http_timeout = 60 * 10
 #  makes sense if each server is on a different address, e.g. in containers.
 #
 #  New in version 0.7.
-#c.Spawner.port = 0
+# TODO make sure this isn't the communication problem
+c.Spawner.port = 443
 
 ## An optional hook function that you can implement to do work after the spawner
 #  stops.
