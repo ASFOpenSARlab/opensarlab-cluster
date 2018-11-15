@@ -20,23 +20,16 @@ class BotoSpawner(Spawner):
         self.aws_ec2 = boto3.resource('ec2')
         self.exit_value = 0
 
-        # TODO remove testing code
-        print('unset config value:\t' + self.image)
-        try:
-            print(self.invalid)
-        except AttributeError as e:
-            print(type(e))
-            self.invalid = "valid"
-            print(self.invalid)
-
-        # TODO defaults here are overriding config file settings
+        # TODO add default to create a default key if there would be a way to access that anyways
+        if not hasattr(self, 'ssh_key'):
+            self.ssh_key = None
         # default to the smallest machine running ubuntu server 18.04
         if not hasattr(self, 'image'):
             self.image = 'ami-0ac019f4fcb7cb7e6'
         if not hasattr(self, 'instance_type'):
             self.instance_type = 't2.nano'
         # TODO remove testing code
-        print('security group defore default setup:\t' + self.security_group_id)
+        print('security group before default setup:\t' + self.security_group_id)
         # TODO move sec group setup to it's own method
         if not hasattr(self, 'security_group_id'):
             self.security_group_id = self.get_default_sec_group()
@@ -142,7 +135,8 @@ class BotoSpawner(Spawner):
                                                   ]
                                                   }
 
-                                             ]
+                                             ],
+                                             KeyName=self.ssh_key
                                              )
         if len(node) != 1:
             raise SpawnedTooManyEC2
