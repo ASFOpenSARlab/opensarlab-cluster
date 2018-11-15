@@ -368,7 +368,7 @@ from BotoSpawner import BotoSpawner
 # sets key for accessing nodes via ssh use key name as shown in AWS console
 BotoSpawner.ssh_key = 'mnamneus1'
 # sets the AWS AMI to use when creating the node
-BotoSpawner.image = 'ami-03b11c79dc4050fbf'
+BotoSpawner.image = 'ami-0e4dd9d19eb15316f'
 # defaults to allow all outgoing and allow all incoming ssh, http and https
 BotoSpawner.security_group_id = 'sg-0b17fce7b6092ee59'
 # sets the type of ec2 instance to create. As of writing a list can be found at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
@@ -577,7 +577,7 @@ c.JupyterHub.ssl_key = '/home/asf/jupyter/jupyterhub.key'
 #
 #  Once a server has successfully been spawned, this is the amount of time we
 #  wait before assuming that the server is unable to accept connections.
-c.Spawner.http_timeout = 60 * 10
+c.Spawner.http_timeout = 60 * 2
 
 ## The IP address (or hostname) the single-user server should listen on.
 #
