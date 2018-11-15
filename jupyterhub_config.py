@@ -371,7 +371,7 @@ BotoSpawner.region_name = 'us-east-1'
 # sets key for accessing nodes via ssh use key name as shown in AWS console
 BotoSpawner.ssh_key = 'mnamneus1'
 # sets the AWS AMI to use when creating the node
-BotoSpawner.image = 'ami-0e4dd9d19eb15316f'
+BotoSpawner.image_id = 'ami-052a8625391dfaa51'
 # defaults to allow all outgoing and allow all incoming ssh, http and https
 BotoSpawner.security_group_id = 'sg-0b17fce7b6092ee59'
 # sets the type of ec2 instance to create. As of writing a list can be found at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html

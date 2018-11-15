@@ -1,4 +1,5 @@
 import boto3
+from time import sleep
 
 from jupyterhub.spawner import Spawner
 from tornado import gen
@@ -26,8 +27,8 @@ class BotoSpawner(Spawner):
         if not hasattr(self, 'ssh_key'):
             self.ssh_key = None
         # default to the smallest machine running ubuntu server 18.04
-        if not hasattr(self, 'image'):
-            self.image = 'ami-0ac019f4fcb7cb7e6'
+        if not hasattr(self, 'image_id'):
+            self.image_id = 'ami-0ac019f4fcb7cb7e6'
         if not hasattr(self, 'instance_type'):
             self.instance_type = 't2.nano'
         # TODO remove testing code
@@ -114,8 +115,7 @@ class BotoSpawner(Spawner):
         # TODO create and specify launch template?
         # TODO is there a way to test this thoroughly without actually creating the instance?
         # TODO add security group. Preferably dynamically create a group allowing HTTP, HTTPS and ssh from only the hub
-        image_id = self.image
-        node = self.aws_ec2.create_instances(ImageId='ami-03b11c79dc4050fbf', MinCount=1, MaxCount=1,
+        node = self.aws_ec2.create_instances(ImageId=self.image_id, MinCount=1, MaxCount=1,
                                              InstanceType=self.instance_type,
                                              NetworkInterfaces=[
                                                  {
@@ -149,8 +149,31 @@ class BotoSpawner(Spawner):
             self.node_id = node.instance_id
             # wait for the instance to be up
             ec2_client = boto3.client('ec2')
-            wait_on_running = ec2_client.get_waiter('instance_running')
-            wait_on_running.wait(InstanceIds=[self.node_id])
+
+            # the waiter seems to count pending as running and terminating as terminated
+            # wait_on_running = ec2_client.get_waiter('instance_running')
+            # wait_on_running.wait(InstanceIds=[self.node_id])
+
+            # wait until the ec2 is up
+            instance_state = 'not-started'
+            while instance_state != 'running':
+                sleep(15)
+                matching_instances = [resp for resp in ec2_client.describe_instances(InstanceIds=[self.node_id])['Instances'] if resp['ImageId'] == self.node_id]
+                assert len(matching_instances) == 1
+                instance_state = matching_instances[0]['State']['Name']
+
+            ssm = boto3.client('ssm')
+            notebook_state = 'not-sent'
+            while True:
+                response = ssm.send_command(InstanceIds=[self.node_id],
+                                            DocumentName='run-singleuser',
+                                            # TODO create bash script for starting singleuser process
+                                            Comment='starts the jupyterhub-singleuser process on the node'
+                                            )
+                notebook_state = response['Command']['Status']
+                if notebook_state == 'Success':
+                    break
+                sleep(1)
 
             # TODO remove this once we're sure it's irrelevant
             # # wait for the network interface to be ready
