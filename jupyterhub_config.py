@@ -365,6 +365,9 @@ c.JupyterHub.hub_ip = '0.0.0.0'
 #
 #  Should be a subclass of Spawner.
 from BotoSpawner import BotoSpawner
+# sets the region to create nodes in. As of the time of this writing a list or regions can be found here: https://docs.aws.amazon.com/general/latest/gr/rande.html
+# currently not enabled to create nodes in different regions
+BotoSpawner.region_name = 'us-east-1'
 # sets key for accessing nodes via ssh use key name as shown in AWS console
 BotoSpawner.ssh_key = 'mnamneus1'
 # sets the AWS AMI to use when creating the node

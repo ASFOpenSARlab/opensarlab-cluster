@@ -17,7 +17,9 @@ class BotoSpawner(Spawner):
     def __init__(self, *args, **kwargs):
         super(BotoSpawner, self).__init__(*args, **kwargs)
         self.node_id = None
-        self.aws_ec2 = boto3.resource('ec2')
+        if not hasattr(self, 'region_name'):
+            self.region_name = 'us-east-1'
+        self.aws_ec2 = boto3.resource('ec2', region_name=self.region_name)
         self.exit_value = 0
 
         # TODO add default to create a default key if there would be a way to access that anyways
