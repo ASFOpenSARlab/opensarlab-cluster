@@ -26,6 +26,8 @@ class BotoSpawner(Spawner):
         # TODO add default to create a default key if there would be a way to access that anyways
         if not hasattr(self, 'ssh_key'):
             self.ssh_key = None
+        if not hasattr(self, 'startup_script'):
+            self.startup_script = '#!/bin/bash\njupyterhub-singleuser'
         # default to the smallest machine running ubuntu server 18.04
         if not hasattr(self, 'image_id'):
             self.image_id = 'ami-0ac019f4fcb7cb7e6'
@@ -138,7 +140,8 @@ class BotoSpawner(Spawner):
                                                   }
 
                                              ],
-                                             KeyName=self.ssh_key
+                                             KeyName=self.ssh_key,
+                                             UserData=self.startup_script
                                              )
         if len(node) != 1:
             raise SpawnedTooManyEC2
@@ -158,22 +161,34 @@ class BotoSpawner(Spawner):
             instance_state = 'not-started'
             while instance_state != 'running':
                 sleep(15)
-                matching_instances = [resp for resp in ec2_client.describe_instances(InstanceIds=[self.node_id])['Instances'] if resp['ImageId'] == self.node_id]
+                # TODO split this into it's own function
+                matching_instances = []
+                for r in ec2_client.describe_instances(InstanceIds=[self.node_id])['Reservations']:
+                    for i in r['Instances']:
+                        if i['InstanceId'] == self.node_id:
+                            matching_instances.append(i)
                 assert len(matching_instances) == 1
                 instance_state = matching_instances[0]['State']['Name']
 
-            ssm = boto3.client('ssm')
-            notebook_state = 'not-sent'
-            while True:
-                response = ssm.send_command(InstanceIds=[self.node_id],
-                                            DocumentName='run-singleuser',
-                                            # TODO create bash script for starting singleuser process
-                                            Comment='starts the jupyterhub-singleuser process on the node'
-                                            )
-                notebook_state = response['Command']['Status']
-                if notebook_state == 'Success':
-                    break
-                sleep(1)
+            # TODO make sure this is irrelevant
+            # ssm = boto3.client('ssm')
+            # notebook_state = 'not-sent'
+            # print('node_id as of starting notebook:\t' + self.node_id)
+            # while True:
+            #     response = ssm.send_command(InstanceIds=[self.node_id],
+            #                                 DocumentName='AWS-RunShellScript',
+            #                                 # time to wait for command to start execution
+            #                                 TimeoutSeconds=60,
+            #                                 Parameters={
+            #                                     'commands': ['jupyterhub-singleuser']
+            #                                 },
+            #                                 # TODO create bash script for starting singleuser process
+            #                                 Comment='starts the jupyterhub-singleuser process on the node'
+            #                                 )
+            #     notebook_state = response['Command']['Status']
+            #     if notebook_state == 'Success':
+            #         break
+            #     sleep(1)
 
             # TODO remove this once we're sure it's irrelevant
             # # wait for the network interface to be ready
@@ -189,8 +204,10 @@ class BotoSpawner(Spawner):
             #     print(f'delay:\t{wait_on_address.config.delay}\nmax attempts:\t{wait_on_address.config.max_attempts}')
             #     wait_on_address.wait(NetworkInterfaceIds=[interface_id['NetworkInterfaceId']])
 
-            # TODO for some reason this is None
-            ip = self.aws_ec2.Instance(self.node_id).public_dns_name
+            # TODO if this breaks change back to old version
+            node.load()
+            ip = node.public_dns_name
+            # ip = self.aws_ec2.Instance(self.node_id).public_dns_name
             # TODO remove testing code
             print(f'IP Address:\t{ip}')
             # standard https port
