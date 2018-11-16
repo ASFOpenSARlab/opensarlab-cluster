@@ -371,7 +371,7 @@ BotoSpawner.region_name = 'us-east-1'
 # sets key for accessing nodes via ssh use key name as shown in AWS console
 BotoSpawner.ssh_key = 'mnamneus1'
 # sets shell script that runs on initial startup
-BotoSpawner.startup_script = '#!/bin/bash\njupyterhub-singleuser'
+# BotoSpawner.startup_script = '#!/bin/bash\nsudo --user ubuntu bash\npip3 install -I jupyterhub\npip3 install -I notebook==5.7.0\njupyterhub-singleuser\nexit'
 # sets the AWS AMI to use when creating the node
 BotoSpawner.image_id = 'ami-052a8625391dfaa51'
 # defaults to allow all outgoing and allow all incoming ssh, http and https
@@ -487,7 +487,7 @@ c.JupyterHub.ssl_key = '/home/asf/jupyter/jupyterhub.key'
 #  Some spawners allow shell-style expansion here, allowing you to use
 #  environment variables. Most, including the default, do not. Consult the
 #  documentation for your spawner to verify!
-#c.Spawner.cmd = ['jupyterhub-singleuser']
+c.Spawner.cmd = ['usr/local/bin/jupyterhub-singleuser']
 
 ## Maximum number of consecutive failures to allow before shutting down
 #  JupyterHub.

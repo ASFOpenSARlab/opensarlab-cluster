@@ -26,8 +26,8 @@ class BotoSpawner(Spawner):
         # TODO add default to create a default key if there would be a way to access that anyways
         if not hasattr(self, 'ssh_key'):
             self.ssh_key = None
-        if not hasattr(self, 'startup_script'):
-            self.startup_script = '#!/bin/bash\njupyterhub-singleuser'
+        # compile shell commands to start up notebook server also, include any commands the user wants to run
+        self.startup_script = self.create_startup_script()
         # default to the smallest machine running ubuntu server 18.04
         if not hasattr(self, 'image_id'):
             self.image_id = 'ami-0ac019f4fcb7cb7e6'
@@ -38,6 +38,20 @@ class BotoSpawner(Spawner):
         # TODO move sec group setup to it's own method
         if not hasattr(self, 'security_group_id'):
             self.security_group_id = self.get_default_sec_group()
+
+    def create_startup_script(self):
+        # TODO make this less system specific
+        # shouldn't really be hardcoding the username of the user we want to run the notebook as
+        # UserData commands are run as root by default
+        # can workaround by finding a way to get the username automatically or by changing to sshing in to start the server after creating the ec2
+        startup_script = f'#!/bin/bash\nsudo --user ubuntu bash'
+        env = self.get_env()
+        for i in env.keys():
+            startup_script = startup_script + f'\nexport {i}={env[i]}'
+        startup_script = startup_script + self.startup_script
+        startup_script = startup_script + '\n{self.cmd}'
+        startup_script = startup_script + '\nexit'
+        return startup_script
 
     def get_default_sec_group(self):
         # make sure there isn't already a default security group created
