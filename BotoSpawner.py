@@ -22,20 +22,24 @@ class BotoSpawner(Spawner):
             self.region_name = 'us-east-1'
         self.aws_ec2 = boto3.resource('ec2', region_name=self.region_name)
         self.exit_value = 0
-
+        # TODO hook warning logs into jupyterhub's logging system
+        # TODO finish writing warning logs
         # TODO add default to create a default key if there would be a way to access that anyways
         if not hasattr(self, 'ssh_key'):
             self.ssh_key = None
-        # compile shell commands to start up notebook server also, include any commands the user wants to run
-        self.startup_script = self.create_startup_script()
+            print('WARNING: no shh_key set you will not be able to ssh into nodes')
+        if not hasattr(self, 'node_user'):
+            self.node_user = 'ubuntu'
+            print(f'WARNING: no node_user set, notebook server will attempt to set up as {self.node_user}')
+        if not hasattr(self, 'startup_script'):
+            self.startup_script = ''
         # default to the smallest machine running ubuntu server 18.04
         if not hasattr(self, 'image_id'):
             self.image_id = 'ami-0ac019f4fcb7cb7e6'
+            print(f'WARNING: no image_id set, using default bare ubuntu image, server creation will fail due to lacking jupyterhub-singleuser')
         if not hasattr(self, 'instance_type'):
             self.instance_type = 't2.nano'
-        # TODO remove testing code
         print('security group before default setup:\t' + self.security_group_id)
-        # TODO move sec group setup to it's own method
         if not hasattr(self, 'security_group_id'):
             self.security_group_id = self.get_default_sec_group()
 
@@ -44,13 +48,18 @@ class BotoSpawner(Spawner):
         # shouldn't really be hardcoding the username of the user we want to run the notebook as
         # UserData commands are run as root by default
         # can workaround by finding a way to get the username automatically or by changing to sshing in to start the server after creating the ec2
-        startup_script = f'#!/bin/bash\nsudo --user ubuntu bash'
+        # TODO remove testing code
+        startup_script = f'#!/bin/bash'
+        startup_script = startup_script + '\nset -e -x'
         env = self.get_env()
-        for i in env.keys():
-            startup_script = startup_script + f'\nexport {i}={env[i]}'
-        startup_script = startup_script + self.startup_script
-        startup_script = startup_script + '\n{self.cmd}'
-        startup_script = startup_script + '\nexit'
+        print('ENVIRONMENT VARIABLES:')
+        for e in env.keys():
+            startup_script = startup_script + f'\nexport {e}={env[e]}'
+            print(f'\t{e}="{env[e]}"')
+        # print(f'API TOKEN:\t"{self.api_token}"')
+        # startup_script = startup_script + f'\nsudo --user ubuntu export JUPYTERHUB_API_TOKEN={self.api_token}'
+        startup_script = startup_script + f'\n {self.startup_script}'
+        startup_script = startup_script + f'\n {self.cmd[0]}'
         return startup_script
 
     def get_default_sec_group(self):
@@ -60,7 +69,7 @@ class BotoSpawner(Spawner):
                 {'Name': 'group-name', 'Values': ['default-jupyterhub-group']}
             ]
         )['SecurityGroups']
-        # create default security group for the nodes if one does not exist
+        # create default security group for the nodes if one does not exist already
         if len(created_groups) < 1:
             default_group_id = self.create_default_sec_group()
         else:
@@ -127,6 +136,8 @@ class BotoSpawner(Spawner):
     @gen.coroutine
     def start(self):
         self.exit_value = None
+        # compile shell commands to start up notebook server, also include any commands the user wants to run
+        startup_script = self.create_startup_script()
         # TODO specify subnet? potentially useful to limit IAM permissions for the hub
         # TODO create and specify launch template?
         # TODO is there a way to test this thoroughly without actually creating the instance?
@@ -155,7 +166,7 @@ class BotoSpawner(Spawner):
 
                                              ],
                                              KeyName=self.ssh_key,
-                                             UserData=self.startup_script
+                                             UserData=startup_script
                                              )
         if len(node) != 1:
             raise SpawnedTooManyEC2

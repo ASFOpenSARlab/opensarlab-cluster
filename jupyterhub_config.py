@@ -254,7 +254,7 @@ print('IP seen by nodes:\t' + c.JupyterHub.hub_connect_ip)
 #
 #  See `hub_connect_ip` for cases where the bind and connect address should
 #  differ, or `hub_bind_url` for setting the full bind URL.
-c.JupyterHub.hub_ip = '0.0.0.0'
+c.JupyterHub.hub_ip = ''
 
 ## The internal port for the Hub process.
 #
@@ -370,10 +370,12 @@ from BotoSpawner import BotoSpawner
 BotoSpawner.region_name = 'us-east-1'
 # sets key for accessing nodes via ssh use key name as shown in AWS console
 BotoSpawner.ssh_key = 'mnamneus1'
+# sets username of user to run startup script and start notebook server as
+BotoSpawner.node_user = 'ubuntu'
 # sets shell script that runs on initial startup before starting notebook server
 BotoSpawner.startup_script = ''
 # sets the AWS AMI to use when creating the node
-BotoSpawner.image_id = 'ami-052a8625391dfaa51'
+BotoSpawner.image_id = 'ami-0f344f2a44e2ffcbb'
 # defaults to allow all outgoing and allow all incoming ssh, http and https
 BotoSpawner.security_group_id = 'sg-0b17fce7b6092ee59'
 # sets the type of ec2 instance to create. As of writing a list can be found at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
@@ -487,7 +489,7 @@ c.JupyterHub.ssl_key = '/home/asf/jupyter/jupyterhub.key'
 #  Some spawners allow shell-style expansion here, allowing you to use
 #  environment variables. Most, including the default, do not. Consult the
 #  documentation for your spawner to verify!
-c.Spawner.cmd = ['usr/local/bin/jupyterhub-singleuser']
+c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser'
 
 ## Maximum number of consecutive failures to allow before shutting down
 #  JupyterHub.
