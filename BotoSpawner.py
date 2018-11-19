@@ -21,6 +21,7 @@ class BotoSpawner(Spawner):
         if not hasattr(self, 'region_name'):
             self.region_name = 'us-east-1'
         self.aws_ec2 = boto3.resource('ec2', region_name=self.region_name)
+        self.ec2c = boto3.client('ec2', region_name=self.region_name)
         self.exit_value = 0
         # TODO hook warning logs into jupyterhub's logging system
         # TODO finish writing warning logs
@@ -64,7 +65,7 @@ class BotoSpawner(Spawner):
 
     def get_default_sec_group(self):
         # make sure there isn't already a default security group created
-        created_groups = boto3.client('ec2').describe_security_groups(
+        created_groups = self.ec2c.describe_security_groups(
             Filters=[
                 {'Name': 'group-name', 'Values': ['default-jupyterhub-group']}
             ]
@@ -176,11 +177,6 @@ class BotoSpawner(Spawner):
             print(f'node id:\t{node.instance_id}')
             self.node_id = node.instance_id
             # wait for the instance to be up
-            ec2_client = boto3.client('ec2')
-
-            # the waiter seems to count pending as running and terminating as terminated
-            # wait_on_running = ec2_client.get_waiter('instance_running')
-            # wait_on_running.wait(InstanceIds=[self.node_id])
 
             # wait until the ec2 is up
             instance_state = 'not-started'
@@ -188,7 +184,7 @@ class BotoSpawner(Spawner):
                 sleep(15)
                 # TODO split this into it's own function
                 matching_instances = []
-                for r in ec2_client.describe_instances(InstanceIds=[self.node_id])['Reservations']:
+                for r in self.ec2c.describe_instances(InstanceIds=[self.node_id])['Reservations']:
                     for i in r['Instances']:
                         if i['InstanceId'] == self.node_id:
                             matching_instances.append(i)
@@ -242,7 +238,7 @@ class BotoSpawner(Spawner):
     @gen.coroutine
     def stop(self, now=False):
         self.aws_ec2.instances.filter(InstanceIds=[self.node_id]).terminate()
-        wait_on_terminate = boto3.client('ec2').get_waiter('instance_terminated')
+        wait_on_terminate = self.ec2c.get_waiter('instance_terminated')
         self.exit_value = wait_on_terminate.wait(InstanceIds=[self.node_id])
         # instances = self.aws_ec2.instances.filter(InstanceIds=[self.node_id], Filters=[
         #     {'Name': 'instance-state-name', 'Values': ['pending', 'running', 'shutting-down', 'stopping', 'stopped']}
