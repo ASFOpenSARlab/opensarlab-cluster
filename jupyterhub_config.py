@@ -493,7 +493,8 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 #  Some spawners allow shell-style expansion here, allowing you to use
 #  environment variables. Most, including the default, do not. Consult the
 #  documentation for your spawner to verify!
-c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser'
+# TODO enable running as user other than root
+c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --allow-root'
 
 ## Maximum number of consecutive failures to allow before shutting down
 #  JupyterHub.
