@@ -389,13 +389,13 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 #
 #  When setting this, you should also set ssl_key
 # TODO reenable once set up to generate certificates on a per deployment basis
-c.JupyterHub.ssl_cert = '/home/asf/jupyter/jupyterhub.crt'
+# c.JupyterHub.ssl_cert = '/home/asf/jupyter/jupyterhub.crt'
 
 ## Path to SSL key file for the public facing interface of the proxy
 #
 #  When setting this, you should also set ssl_cert
 # TODO reenable once set up to generate certificates on a per deployment basis
-c.JupyterHub.ssl_key = '/home/asf/jupyter/jupyterhub.key'
+# c.JupyterHub.ssl_key = '/home/asf/jupyter/jupyterhub.key'
 
 ## Host to send statsd metrics to. An empty string (the default) disables sending
 #  metrics.
