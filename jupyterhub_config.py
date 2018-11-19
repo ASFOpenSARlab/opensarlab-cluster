@@ -202,7 +202,7 @@ c.JupyterHub.bind_url = 'http://:8000'
 #      "unix+http://%2Fsrv%2Fjupyterhub%2Fjupyterhub.sock"
 #
 #  .. versionadded:: 0.9
-#c.JupyterHub.hub_bind_url = ''
+c.JupyterHub.hub_bind_url = ''
 
 ## The ip or hostname for proxies and spawners to use for connecting to the Hub.
 #
@@ -264,7 +264,7 @@ c.JupyterHub.hub_ip = ''
 #  conflict.
 #
 #  See also `hub_ip` for the ip and `hub_bind_url` for setting the full bind URL.
-#c.JupyterHub.hub_port = 8081
+c.JupyterHub.hub_port = 8081
 
 ## The public facing ip of the whole JupyterHub application (specifically
 #  referred to as the proxy).
