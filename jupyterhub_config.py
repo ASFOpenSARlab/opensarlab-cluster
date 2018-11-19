@@ -313,6 +313,9 @@ c.JupyterHub.hub_port = 8081
 ## DEPRECATED since version 0.8 : Use ConfigurableHTTPProxy.api_url
 #c.JupyterHub.proxy_api_port = 0
 
+# set url for the api to listen on
+c.ConfigurableHTTPProxy.api_url = "http://ec2-34-202-161-47.compute-1.amazonaws.com:8081"
+
 ## DEPRECATED since version 0.8: Use ConfigurableHTTPProxy.auth_token
 #c.JupyterHub.proxy_auth_token = ''
 
