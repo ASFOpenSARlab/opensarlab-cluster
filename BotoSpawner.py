@@ -231,8 +231,10 @@ class BotoSpawner(Spawner):
             # ip = self.aws_ec2.Instance(self.node_id).public_dns_name
             # TODO remove testing code
             print(f'IP Address:\t{ip}')
+            # TODO remove irrelevant port setting
+            port = 8888
             # standard https port
-            port = 443
+            # port = 443
             return ip, port
 
     @gen.coroutine
