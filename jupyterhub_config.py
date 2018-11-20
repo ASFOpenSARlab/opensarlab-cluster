@@ -264,7 +264,7 @@ c.JupyterHub.hub_ip = '0.0.0.0'
 #  conflict.
 #
 #  See also `hub_ip` for the ip and `hub_bind_url` for setting the full bind URL.
-c.JupyterHub.hub_port = 8081
+c.JupyterHub.hub_port = 8080
 
 ## The public facing ip of the whole JupyterHub application (specifically
 #  referred to as the proxy).
@@ -312,10 +312,6 @@ c.JupyterHub.hub_port = 8081
 
 ## DEPRECATED since version 0.8 : Use ConfigurableHTTPProxy.api_url
 #c.JupyterHub.proxy_api_port = 0
-
-# TODO remove this if it's not necessary
-# set url for the api to listen on
-# c.ConfigurableHTTPProxy.api_url = "http://ec2-34-202-161-47.compute-1.amazonaws.com:8081"
 
 ## DEPRECATED since version 0.8: Use ConfigurableHTTPProxy.auth_token
 #c.JupyterHub.proxy_auth_token = ''
