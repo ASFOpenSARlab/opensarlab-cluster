@@ -254,7 +254,7 @@ print('IP seen by nodes:\t' + c.JupyterHub.hub_connect_ip)
 #
 #  See `hub_connect_ip` for cases where the bind and connect address should
 #  differ, or `hub_bind_url` for setting the full bind URL.
-c.JupyterHub.hub_ip = ''
+c.JupyterHub.hub_ip = '0.0.0.0'
 
 ## The internal port for the Hub process.
 #
@@ -494,7 +494,8 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 #  environment variables. Most, including the default, do not. Consult the
 #  documentation for your spawner to verify!
 # TODO enable running as user other than root
-c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --allow-root'
+# TODO move to programmatic setting of port and ip
+c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --allow-root --ip 0.0.0.0 --port 8888'
 
 ## Maximum number of consecutive failures to allow before shutting down
 #  JupyterHub.
