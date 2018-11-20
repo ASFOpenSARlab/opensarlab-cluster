@@ -264,7 +264,7 @@ c.JupyterHub.hub_ip = '0.0.0.0'
 #  conflict.
 #
 #  See also `hub_ip` for the ip and `hub_bind_url` for setting the full bind URL.
-# TODO I think this should be set to 8080 since it's not the front end port
+# I think this should be set to 8080 since it's not the front end port
 c.JupyterHub.hub_port = 8080
 
 ## The public facing ip of the whole JupyterHub application (specifically
@@ -386,17 +386,24 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 
 #c.JupyterHub.spawner_class = 'jupyterhub.spawner.LocalProcessSpawner'
 
+# ssl key/cert generation
+# openssl is preinstalled on the baseline ubuntu image in AWS
+# if this is deployed somewhere else it will be a requirement though
+from os import path
+if not path.exists('jupyterhub.key') or not path.exists('jupyterhub.crt'):
+    import subprocess
+    # TODO set finalized expiration date
+    subprocess.check_call(['openssl', 'req', '-batch', '-x509', '-newkey', 'rsa:4096', '-keyout', 'jupyterhub.key', '-out', 'jupyterhub.crt', '-nodes', '-days', '150'])
+
 ## Path to SSL certificate file for the public facing interface of the proxy
 #
 #  When setting this, you should also set ssl_key
-# TODO reenable once set up to generate certificates on a per deployment basis
-# c.JupyterHub.ssl_cert = '/home/asf/jupyter/jupyterhub.crt'
+c.JupyterHub.ssl_cert = 'jupyterhub.crt'
 
 ## Path to SSL key file for the public facing interface of the proxy
 #
 #  When setting this, you should also set ssl_cert
-# TODO reenable once set up to generate certificates on a per deployment basis
-# c.JupyterHub.ssl_key = '/home/asf/jupyter/jupyterhub.key'
+c.JupyterHub.ssl_key = 'jupyterhub.key'
 
 ## Host to send statsd metrics to. An empty string (the default) disables sending
 #  metrics.
@@ -492,7 +499,7 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 #  documentation for your spawner to verify!
 # TODO enable running as user other than root
 # TODO move to programmatic setting of port and ip
-# TODO the port here should match hub_port i think
+# the port here should match hub_port i think
 c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --allow-root --ip 0.0.0.0 --port 8080'
 
 ## Maximum number of consecutive failures to allow before shutting down
@@ -686,7 +693,6 @@ c.Spawner.http_timeout = 60 * 2
 #  makes sense if each server is on a different address, e.g. in containers.
 #
 #  New in version 0.7.
-# TODO make sure this isn't the communication problem
 c.Spawner.port = 443
 
 ## An optional hook function that you can implement to do work after the spawner

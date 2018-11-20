@@ -46,7 +46,6 @@ class BotoSpawner(Spawner):
 
     def create_startup_script(self):
         # TODO make this less system specific
-        # shouldn't really be hardcoding the username of the user we want to run the notebook as
         # UserData commands are run as root by default
         # can workaround by finding a way to get the username automatically or by changing to sshing in to start the server after creating the ec2
         # TODO remove testing code
@@ -231,7 +230,7 @@ class BotoSpawner(Spawner):
             # ip = self.aws_ec2.Instance(self.node_id).public_dns_name
             # TODO remove testing code
             print(f'IP Address:\t{ip}')
-            # TODO this should match the port specified in cmd from jupyterhub_config.py it think
+            # this should match the port specified in cmd from jupyterhub_config.py I think
             port = 8080
             return ip, port
 
