@@ -495,7 +495,7 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 #  documentation for your spawner to verify!
 # TODO enable running as user other than root
 # TODO move to programmatic setting of port and ip
-c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --allow-root --ip 0.0.0.0 --port 8888'
+c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --allow-root --ip 0.0.0.0 --port 8080'
 
 ## Maximum number of consecutive failures to allow before shutting down
 #  JupyterHub.
