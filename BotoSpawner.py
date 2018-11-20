@@ -231,7 +231,7 @@ class BotoSpawner(Spawner):
             # ip = self.aws_ec2.Instance(self.node_id).public_dns_name
             # TODO remove testing code
             print(f'IP Address:\t{ip}')
-            port = 8080
+            port = 8000
             return ip, port
 
     @gen.coroutine
