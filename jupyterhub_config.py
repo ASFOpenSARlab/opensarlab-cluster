@@ -264,7 +264,8 @@ c.JupyterHub.hub_ip = '0.0.0.0'
 #  conflict.
 #
 #  See also `hub_ip` for the ip and `hub_bind_url` for setting the full bind URL.
-c.JupyterHub.hub_port = 8000
+# TODO I think this should be set to 8080 since it's not the front end port
+c.JupyterHub.hub_port = 8080
 
 ## The public facing ip of the whole JupyterHub application (specifically
 #  referred to as the proxy).
@@ -491,7 +492,8 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 #  documentation for your spawner to verify!
 # TODO enable running as user other than root
 # TODO move to programmatic setting of port and ip
-c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --allow-root --ip 0.0.0.0 --port 8000'
+# TODO the port here should match hub_port i think
+c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --allow-root --ip 0.0.0.0 --port 8080'
 
 ## Maximum number of consecutive failures to allow before shutting down
 #  JupyterHub.

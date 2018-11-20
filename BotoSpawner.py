@@ -231,7 +231,8 @@ class BotoSpawner(Spawner):
             # ip = self.aws_ec2.Instance(self.node_id).public_dns_name
             # TODO remove testing code
             print(f'IP Address:\t{ip}')
-            port = 8000
+            # TODO this should match the port specified in cmd from jupyterhub_config.py it think
+            port = 8080
             return ip, port
 
     @gen.coroutine
