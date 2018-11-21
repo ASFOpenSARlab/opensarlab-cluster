@@ -1,4 +1,5 @@
 import boto3
+import botocore
 from time import sleep
 
 from jupyterhub.spawner import Spawner
@@ -25,13 +26,13 @@ class BotoSpawner(Spawner):
         self.exit_value = 0
         # TODO hook warning logs into jupyterhub's logging system
         # TODO finish writing warning logs
-        # TODO add default to create a default key if there would be a way to access that anyways
+        # it may be better to hide this from the user entirely
+        # the only benefit is potentially directly sshing into a node
         if not hasattr(self, 'ssh_key'):
-            self.ssh_key = None
-            print('WARNING: no shh_key set you will not be able to ssh into nodes')
-        if not hasattr(self, 'node_user'):
-            self.node_user = 'ubuntu'
-            print(f'WARNING: no node_user set, notebook server will attempt to set up as {self.node_user}')
+            self.ssh_key = self.generate_ssh_pair()
+        if not hasattr(self, 'node_role'):
+            self.node_role = None
+            print('WARNING: IAM role for nodes not set')
         if not hasattr(self, 'startup_script'):
             self.startup_script = ''
         # default to the smallest machine running ubuntu server 18.04
@@ -44,20 +45,29 @@ class BotoSpawner(Spawner):
         if not hasattr(self, 'security_group_id'):
             self.security_group_id = self.get_default_sec_group()
 
+    def generate_ssh_pair(self):
+        key_name = 'Jupyterhub-Node-key'
+        keys = self.ec2c.describe_key_pairs(Filters=[{'Name': 'key-name', 'Values': [f'{key_name}']}])
+        if len(keys) > 0:
+            self.ec2c.delete_key_pair(KeyName=f'{key_name}')
+        key = self.ec2c.create_key_pair(KeyName=f'{key_name}')['KeyMaterial']
+        with open(f'/etc/ssh/{key_name}.pem', 'w+') as key_file:
+            key_file.write(key)
+        return key_name
+
     def create_startup_script(self):
         # TODO make this less system specific
         # UserData commands are run as root by default
         # can workaround by finding a way to get the username automatically or by changing to sshing in to start the server after creating the ec2
-        # TODO remove testing code
         startup_script = f'#!/bin/bash'
-        startup_script = startup_script + '\nset -e -x'
+        startup_script = startup_script + '\n set -e -x'
+        # export relevant environment variables to the singleuser instance
         env = self.get_env()
         print('ENVIRONMENT VARIABLES:')
         for e in env.keys():
-            startup_script = startup_script + f'\nexport {e}={env[e]}'
-            print(f'\t{e}="{env[e]}"')
-        # print(f'API TOKEN:\t"{self.api_token}"')
-        # startup_script = startup_script + f'\nsudo --user ubuntu export JUPYTERHUB_API_TOKEN={self.api_token}'
+            startup_script = startup_script + f'\n export {e}={env[e]}'
+        # TODO make sure we are putting the user data directory in the right place
+        startup_script = startup_script + f'\n mkdir /{self.user.name}'
         startup_script = startup_script + f'\n {self.startup_script}'
         startup_script = startup_script + f'\n {self.cmd[0]}'
         return startup_script
@@ -166,7 +176,11 @@ class BotoSpawner(Spawner):
 
                                              ],
                                              KeyName=self.ssh_key,
-                                             UserData=startup_script
+                                             UserData=startup_script,
+                                             IamInstanceProfile={
+                                                 'Arn': f'{self.node_role}',
+                                                 'Name': f'jupyterhub-node'
+                                             }
                                              )
         if len(node) != 1:
             raise SpawnedTooManyEC2

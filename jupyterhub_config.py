@@ -370,13 +370,13 @@ from BotoSpawner import BotoSpawner
 # currently not enabled to create nodes in different regions
 BotoSpawner.region_name = 'us-east-1'
 # sets key for accessing nodes via ssh use key name as shown in AWS console
+# the hub requires the key file to be present in /etc/ssh named <AWS key name>.pem
 BotoSpawner.ssh_key = 'mnamneus1'
-# sets username of user to run startup script and start notebook server as
-BotoSpawner.node_user = 'ubuntu'
 # sets shell script that runs on initial startup before starting notebook server
 BotoSpawner.startup_script = ''
 # sets the AWS AMI to use when creating the node
 BotoSpawner.image_id = 'ami-0f344f2a44e2ffcbb'
+# TODO update the security group and default security group
 # defaults to allow all outgoing and allow all incoming ssh, http and https
 BotoSpawner.security_group_id = 'sg-0b17fce7b6092ee59'
 # sets the type of ec2 instance to create. As of writing a list can be found at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
