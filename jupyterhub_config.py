@@ -369,9 +369,12 @@ from BotoSpawner import BotoSpawner
 # sets the region to create nodes in. As of the time of this writing a list or regions can be found here: https://docs.aws.amazon.com/general/latest/gr/rande.html
 # currently not enabled to create nodes in different regions
 BotoSpawner.region_name = 'us-east-1'
-# sets key for accessing nodes via ssh use key name as shown in AWS console
-# the hub requires the key file to be present in /etc/ssh named <AWS key name>.pem
-BotoSpawner.ssh_key = 'mnamneus1'
+
+# sets key for accessing nodes via ssh, use key name as shown in AWS console
+# if specified, it is required to be present on the hub at /etc/ssh/<AWS key name>.pem
+# if unspecified, a default key associated with the nodes will be generated and stored on the hub
+# BotoSpawner.ssh_key = 'mnamneus1'
+
 # sets shell script that runs on initial startup before starting notebook server
 BotoSpawner.startup_script = ''
 # sets the AWS AMI to use when creating the node

@@ -1,5 +1,6 @@
 import boto3
 import botocore
+from os import environ as env
 from time import sleep
 
 from jupyterhub.spawner import Spawner
@@ -26,10 +27,15 @@ class BotoSpawner(Spawner):
         self.exit_value = 0
         # TODO hook warning logs into jupyterhub's logging system
         # TODO finish writing warning logs
-        # it may be better to hide this from the user entirely
-        # the only benefit is potentially directly sshing into a node
-        if not hasattr(self, 'ssh_key'):
-            self.ssh_key = self.generate_ssh_pair()
+        # set ssh key name to environment if not set
+        # this avoids problems with overwriting keys when spawning multiple nodes
+        if 'JUPYTERHUB_SSH_KEY' not in env:
+            if hasattr(self, 'ssh_key'):
+                env['JUPYTERHUB_SSH_KEY'] = self.ssh_key
+            else:
+                env['JUPYTERHUB_SSH_KEY'] = self.generate_ssh_key()
+        else:
+            self.ssh_key = env['JUPYTERHUB_SSH_KEY']
         if not hasattr(self, 'node_role'):
             self.node_role = None
             print('WARNING: IAM role for nodes not set')
@@ -45,12 +51,13 @@ class BotoSpawner(Spawner):
         if not hasattr(self, 'security_group_id'):
             self.security_group_id = self.get_default_sec_group()
 
-    def generate_ssh_pair(self):
-        key_name = 'Jupyterhub-Node-key'
+    def generate_ssh_key(self):
+        key_name = 'Jupyterhub-Node-key.pem'
         keys = self.ec2c.describe_key_pairs(Filters=[{'Name': 'key-name', 'Values': [f'{key_name}']}])
         if len(keys) > 0:
             self.ec2c.delete_key_pair(KeyName=f'{key_name}')
         key = self.ec2c.create_key_pair(KeyName=f'{key_name}')['KeyMaterial']
+        # TODO if hub is running as non-root make sure it will have access to the key and the directory to save it
         with open(f'/etc/ssh/{key_name}.pem', 'w+') as key_file:
             key_file.write(key)
         return key_name
