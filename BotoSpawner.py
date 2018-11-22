@@ -22,13 +22,15 @@ class BotoSpawner(Spawner):
         self.node_id = None
         if not hasattr(self, 'region_name'):
             self.region_name = 'us-east-1'
-        self.aws_ec2 = boto3.resource('ec2', region_name=self.region_name)
+        self.ec2r = boto3.resource('ec2', region_name=self.region_name)
         self.ec2c = boto3.client('ec2', region_name=self.region_name)
         self.exit_value = 0
         # TODO hook warning logs into jupyterhub's logging system
         # TODO finish writing warning logs
         # set ssh key name to environment if not set
         # this avoids problems with overwriting keys when spawning multiple nodes
+        if not hasattr(self, 'bucket'):
+            print('WARNING: for user data not set, data will not persist after server shutdown')
         if 'JUPYTERHUB_SSH_KEY' not in env:
             if hasattr(self, 'ssh_key'):
                 env['JUPYTERHUB_SSH_KEY'] = self.ssh_key
@@ -62,6 +64,19 @@ class BotoSpawner(Spawner):
             key_file.write(key)
         return key_name
 
+    def create_data_download_script(self):
+        s3r = boto3.resource('s3')
+        bucket = s3r.Bucket(self.user_data_bucket)
+        files = bucket.objects.all()
+        data_download_script = ''
+        for file in files:
+            if file.key == f'{self.user.name}.zip':
+                # TODO finalize where user data should go on the nodes
+                data_download_script = data_download_script + f'\n aws cp s3://{self.user_data_bucket}/{file.key} /$HOME'
+        # TODO make sure that unzip will be installed on the node machines
+        data_download_script = data_download_script + f'\n unzip /$HOME/{self.user.name}.zip -d /$HOME'
+        return data_download_script
+
     def create_startup_script(self):
         # TODO make this less system specific
         # UserData commands are run as root by default
@@ -73,10 +88,9 @@ class BotoSpawner(Spawner):
         print('ENVIRONMENT VARIABLES:')
         for e in env.keys():
             startup_script = startup_script + f'\n export {e}={env[e]}'
-        # TODO make sure we are putting the user data directory in the right place
-        startup_script = startup_script + f'\n mkdir /{self.user.name}'
-        startup_script = startup_script + f'\n {self.startup_script}'
-        startup_script = startup_script + f'\n {self.cmd[0]}'
+        if hasattr(self, 'user_startup_script'):
+            startup_script = startup_script + f'\n {self.user_startup_script}'
+        startup_script = startup_script + f'\n {self.cmd}'
         return startup_script
 
     def get_default_sec_group(self):
@@ -95,7 +109,7 @@ class BotoSpawner(Spawner):
         return default_group_id
 
     def create_default_sec_group(self):
-        default_group = self.aws_ec2.create_security_group(
+        default_group = self.ec2r.create_security_group(
             Description='Default Jupyterhub Node Group',
             GroupName='default-jupyterhub-group'
         )
@@ -159,9 +173,9 @@ class BotoSpawner(Spawner):
         # TODO create and specify launch template?
         # TODO is there a way to test this thoroughly without actually creating the instance?
         # TODO add security group. Preferably dynamically create a group allowing HTTP, HTTPS and ssh from only the hub
-        node = self.aws_ec2.create_instances(ImageId=self.image_id, MinCount=1, MaxCount=1,
-                                             InstanceType=self.instance_type,
-                                             NetworkInterfaces=[
+        node = self.ec2r.create_instances(ImageId=self.image_id, MinCount=1, MaxCount=1,
+                                          InstanceType=self.instance_type,
+                                          NetworkInterfaces=[
                                                  {
                                                      'AssociatePublicIpAddress': True,
                                                      'DeleteOnTermination': True,
@@ -170,8 +184,8 @@ class BotoSpawner(Spawner):
                                                      'Groups': [self.security_group_id]
                                                  }
                                              ],
-                                             # so you can tell what this is from the AWS console
-                                             TagSpecifications=[
+                                          # so you can tell what this is from the AWS console
+                                          TagSpecifications=[
                                                  {'ResourceType': 'instance',
                                                   'Tags': [
                                                       {
@@ -182,13 +196,13 @@ class BotoSpawner(Spawner):
                                                   }
 
                                              ],
-                                             KeyName=self.ssh_key,
-                                             UserData=startup_script,
-                                             IamInstanceProfile={
+                                          KeyName=self.ssh_key,
+                                          UserData=startup_script,
+                                          IamInstanceProfile={
                                                  'Arn': f'{self.node_role}',
                                                  'Name': f'jupyterhub-node'
                                              }
-                                             )
+                                          )
         if len(node) != 1:
             raise SpawnedTooManyEC2
         else:
@@ -200,6 +214,7 @@ class BotoSpawner(Spawner):
 
             # wait until the ec2 is up
             instance_state = 'not-started'
+            # TODO make sure this only stops once the instance is acutually accessible otherwise problems with sshing
             while instance_state != 'running':
                 sleep(15)
                 # TODO split this into it's own function
@@ -210,42 +225,13 @@ class BotoSpawner(Spawner):
                             matching_instances.append(i)
                 assert len(matching_instances) == 1
                 instance_state = matching_instances[0]['State']['Name']
+            # TODO move to it's own method
+            if hasattr(self, 'user_data_bucket'):
+                data_setup_script = self.create_data_download_script()
+            else:
+                data_setup_script = f'mkdir /{self.user.name}'
+            # TODO add ssh code
 
-            # TODO make sure this is irrelevant
-            # ssm = boto3.client('ssm')
-            # notebook_state = 'not-sent'
-            # print('node_id as of starting notebook:\t' + self.node_id)
-            # while True:
-            #     response = ssm.send_command(InstanceIds=[self.node_id],
-            #                                 DocumentName='AWS-RunShellScript',
-            #                                 # time to wait for command to start execution
-            #                                 TimeoutSeconds=60,
-            #                                 Parameters={
-            #                                     'commands': ['jupyterhub-singleuser']
-            #                                 },
-            #                                 # TODO create bash script for starting singleuser process
-            #                                 Comment='starts the jupyterhub-singleuser process on the node'
-            #                                 )
-            #     notebook_state = response['Command']['Status']
-            #     if notebook_state == 'Success':
-            #         break
-            #     sleep(1)
-
-            # TODO remove this once we're sure it's irrelevant
-            # # wait for the network interface to be ready
-            # interface_id = node.network_interfaces_attribute
-            # # TODO remove testing code
-            # print(interface_id)
-            # if len(interface_id) != 1:
-            #     raise WrongNumberNetworkInterfaces
-            # else:
-            #     interface_id = interface_id[0]
-            #     wait_on_address = aws_ec2.get_waiter('network_interface_available')
-            #     # wait_on_address.config.delay
-            #     print(f'delay:\t{wait_on_address.config.delay}\nmax attempts:\t{wait_on_address.config.max_attempts}')
-            #     wait_on_address.wait(NetworkInterfaceIds=[interface_id['NetworkInterfaceId']])
-
-            # TODO if this breaks change back to old version
             node.load()
             ip = node.public_dns_name
             # ip = self.aws_ec2.Instance(self.node_id).public_dns_name
@@ -255,16 +241,21 @@ class BotoSpawner(Spawner):
             port = 8080
             return ip, port
 
+    def create_data_upload_script(self):
+        data_upload_script = f'\n zip /$HOME/{self.user.name}.zip /$HOME/{self.user.name}'
+        data_upload_script = data_upload_script + f'\n aws s3 cp /#HOME/{self.user.name} s3://{self.user_data_bucket}/{self.user.name},zip'
+        return data_upload_script
+
     @gen.coroutine
     def stop(self, now=False):
-        self.aws_ec2.instances.filter(InstanceIds=[self.node_id]).terminate()
+        # TODO move to it's own method
+        if hasattr(self, 'user_data_bucket'):
+            data_upload_script = self.create_data_upload_script()
+            # TODO add ssh code
+
+        self.ec2r.instances.filter(InstanceIds=[self.node_id]).terminate()
         wait_on_terminate = self.ec2c.get_waiter('instance_terminated')
         self.exit_value = wait_on_terminate.wait(InstanceIds=[self.node_id])
-        # instances = self.aws_ec2.instances.filter(InstanceIds=[self.node_id], Filters=[
-        #     {'Name': 'instance-state-name', 'Values': ['pending', 'running', 'shutting-down', 'stopping', 'stopped']}
-        # ])
-        # if len(instances) == 0:
-        #     self.running =
 
     @gen.coroutine
     def poll(self):

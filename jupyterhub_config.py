@@ -376,7 +376,7 @@ BotoSpawner.region_name = 'us-east-1'
 # BotoSpawner.ssh_key = 'mnamneus1'
 
 # sets shell script that runs on initial startup before starting notebook server
-BotoSpawner.startup_script = ''
+BotoSpawner.user_startup_script = ''
 # sets the AWS AMI to use when creating the node
 BotoSpawner.image_id = 'ami-0f344f2a44e2ffcbb'
 # TODO update the security group and default security group
@@ -384,6 +384,8 @@ BotoSpawner.image_id = 'ami-0f344f2a44e2ffcbb'
 BotoSpawner.security_group_id = 'sg-0b17fce7b6092ee59'
 # sets the type of ec2 instance to create. As of writing a list can be found at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
 BotoSpawner.instance_type = 't2.nano'
+# sets the s3 bucket to store user's data in while their server is shut down
+BotoSpawner.user_data_bucket = 'bucket_name'
 c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 # DockerSpawner.image = 'jupyter/singleuser:9284a15ff9b6'
 
