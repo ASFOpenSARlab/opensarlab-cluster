@@ -2,6 +2,8 @@ import boto3
 import botocore
 from os import environ as env
 from time import sleep
+from zipfile import ZipFile
+import paramiko
 
 from jupyterhub.spawner import Spawner
 from tornado import gen
@@ -36,8 +38,8 @@ class BotoSpawner(Spawner):
                 env['JUPYTERHUB_SSH_KEY'] = self.ssh_key
             else:
                 env['JUPYTERHUB_SSH_KEY'] = self.generate_ssh_key()
-        else:
-            self.ssh_key = env['JUPYTERHUB_SSH_KEY']
+        self.ssh_key = env['JUPYTERHUB_SSH_KEY']
+
         if not hasattr(self, 'node_role'):
             self.node_role = None
             print('WARNING: IAM role for nodes not set')
@@ -52,8 +54,10 @@ class BotoSpawner(Spawner):
         print('security group before default setup:\t' + self.security_group_id)
         if not hasattr(self, 'security_group_id'):
             self.security_group_id = self.get_default_sec_group()
+        self.node = None
 
     def generate_ssh_key(self):
+        # TODO this may want to go somewhere specific
         key_name = 'Jupyterhub-Node-key.pem'
         keys = self.ec2c.describe_key_pairs(Filters=[{'Name': 'key-name', 'Values': [f'{key_name}']}])
         if len(keys) > 0:
@@ -64,6 +68,15 @@ class BotoSpawner(Spawner):
             key_file.write(key)
         return key_name
 
+    # TODO implement
+    def node_connect(self):
+        ssh = paramiko.SSHClient()
+        # TODO preferably make the ssh connection work with any username
+        ssh.connect(hostname=self.node.public_dns_name, port=22, key_filename=self.key_name)
+        return connection
+
+
+# TODO one of these will not be necessary
     def create_data_download_script(self):
         s3r = boto3.resource('s3')
         bucket = s3r.Bucket(self.user_data_bucket)
@@ -76,6 +89,31 @@ class BotoSpawner(Spawner):
         # TODO make sure that unzip will be installed on the node machines
         data_download_script = data_download_script + f'\n unzip /$HOME/{self.user.name}.zip -d /$HOME'
         return data_download_script
+
+    def user_data_in(self):
+        s3r = boto3.resource('s3')
+        bucket = s3r.Bucket(self.user_data_bucket)
+        files = bucket.objects.all()
+        matches = []
+        for file in files:
+            if file.key == f'{self.user.name}.zip':
+                matches.append(file.key)
+        for match in matches:
+            bucket.download_file(f'{self.user.name}.zip', f'/tmp/{self.user.name}.zip')
+            with ZipFile(f'/tmp/{self.user.name}.zip', 'w') as zipfile:
+                directory = zipfile.extractall(path=f'/tmp/{self.user.name}')
+            conn = self.node_connect()
+
+
+# TODO one of these will not be necessary
+    def create_data_upload_script(self):
+        data_upload_script = f'\n zip /$HOME/{self.user.name}.zip /$HOME/{self.user.name}'
+        data_upload_script = data_upload_script + f'\n aws s3 cp /#HOME/{self.user.name} s3://{self.user_data_bucket}/{self.user.name},zip'
+        return data_upload_script
+
+    def user_data_out(self):
+        pass
+
 
     def create_startup_script(self):
         # TODO make this less system specific
@@ -173,7 +211,7 @@ class BotoSpawner(Spawner):
         # TODO create and specify launch template?
         # TODO is there a way to test this thoroughly without actually creating the instance?
         # TODO add security group. Preferably dynamically create a group allowing HTTP, HTTPS and ssh from only the hub
-        node = self.ec2r.create_instances(ImageId=self.image_id, MinCount=1, MaxCount=1,
+        nodes = self.ec2r.create_instances(ImageId=self.image_id, MinCount=1, MaxCount=1,
                                           InstanceType=self.instance_type,
                                           NetworkInterfaces=[
                                                  {
@@ -203,13 +241,13 @@ class BotoSpawner(Spawner):
                                                  'Name': f'jupyterhub-node'
                                              }
                                           )
-        if len(node) != 1:
+        if len(nodes) != 1:
             raise SpawnedTooManyEC2
         else:
-            node = node[0]
+            self.node = nodes[0]
             # TODO remove testing code
-            print(f'node id:\t{node.instance_id}')
-            self.node_id = node.instance_id
+            print(f'node id:\t{self.node.instance_id}')
+            node_id = self.node.instance_id
             # wait for the instance to be up
 
             # wait until the ec2 is up
@@ -219,43 +257,38 @@ class BotoSpawner(Spawner):
                 sleep(15)
                 # TODO split this into it's own function
                 matching_instances = []
-                for r in self.ec2c.describe_instances(InstanceIds=[self.node_id])['Reservations']:
+                for r in self.ec2c.describe_instances(InstanceIds=[node_id])['Reservations']:
                     for i in r['Instances']:
-                        if i['InstanceId'] == self.node_id:
+                        if i['InstanceId'] == node_id:
                             matching_instances.append(i)
                 assert len(matching_instances) == 1
                 instance_state = matching_instances[0]['State']['Name']
-            # TODO move to it's own method
+            # TODO possibly move to it's own method
             if hasattr(self, 'user_data_bucket'):
                 data_setup_script = self.create_data_download_script()
             else:
                 data_setup_script = f'mkdir /{self.user.name}'
             # TODO add ssh code
 
-            node.load()
-            ip = node.public_dns_name
-            # ip = self.aws_ec2.Instance(self.node_id).public_dns_name
+            self.node.load()
+            ip = self.node.public_dns_name
             # TODO remove testing code
             print(f'IP Address:\t{ip}')
             # this should match the port specified in cmd from jupyterhub_config.py I think
             port = 8080
             return ip, port
 
-    def create_data_upload_script(self):
-        data_upload_script = f'\n zip /$HOME/{self.user.name}.zip /$HOME/{self.user.name}'
-        data_upload_script = data_upload_script + f'\n aws s3 cp /#HOME/{self.user.name} s3://{self.user_data_bucket}/{self.user.name},zip'
-        return data_upload_script
-
     @gen.coroutine
     def stop(self, now=False):
+        node_id = self.node.instance_id
         # TODO move to it's own method
         if hasattr(self, 'user_data_bucket'):
             data_upload_script = self.create_data_upload_script()
             # TODO add ssh code
 
-        self.ec2r.instances.filter(InstanceIds=[self.node_id]).terminate()
+        self.ec2r.instances.filter(InstanceIds=[node_id]).terminate()
         wait_on_terminate = self.ec2c.get_waiter('instance_terminated')
-        self.exit_value = wait_on_terminate.wait(InstanceIds=[self.node_id])
+        self.exit_value = wait_on_terminate.wait(InstanceIds=[node_id])
 
     @gen.coroutine
     def poll(self):
@@ -263,18 +296,18 @@ class BotoSpawner(Spawner):
 
     def get_state(self):
         state = super(BotoSpawner, self).get_state()
-        if self.node_id:
-            state['node_id'] = self.node_id
+        if self.node:
+            state['node'] = self.node
         return state
 
     def load_state(self, state):
         super(BotoSpawner, self).load_state(state)
-        if 'node_id' in state:
-            self.node_id = state['node_id']
+        if 'node' in state:
+            self.node = state['node']
 
     def clear_state(self):
         super(BotoSpawner, self).clear_state()
-        self.node_id = None
+        self.node = None
 
 
 if __name__ == '__main__':
