@@ -94,18 +94,25 @@ class BotoSpawner(Spawner):
         ssh = paramiko.SSHClient()
         # TODO update for compatibility with individualized users
         with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=self.key_name) as connection:
-            with ssh.open_sftp() as sftp:
-                filename = f'{self.user.name}.zip'
-                temp_location = f'/tmp/{filename}'
-                print('transferring user files to node')
-                for match in matches:
-                    bucket.download_file(filename, temp_location)
-                    # TODO update for compatibility with individualized users
-                    sftp.put(temp_location, f'/home/ubuntu/{filename}')
-                    # TODO make sure that unzip will be installed on the node machines
-                    ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'unzip /home/ubuntu/{filename} -d /home/ubuntu')
-                    print(ssh_stdout.read())
-                    print(ssh_stderr.read())
+            if matches:
+                with ssh.open_sftp() as sftp:
+                    filename = f'{self.user.name}.zip'
+                    temp_location = f'/tmp/{filename}'
+                    print('transferring user files to node')
+                    for match in matches:
+                        bucket.download_file(Key=filename, Filename=temp_location)
+                        # TODO update for compatibility with individualized users
+                        sftp.put(temp_location, f'/home/ubuntu/{filename}')
+                        print('extracting files')
+                        # TODO make sure that unzip will be installed on the node machines
+                        ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'unzip /home/ubuntu/{filename} -d /home/ubuntu')
+                        print(ssh_stdout.read())
+                        print(ssh_stderr.read())
+            else:
+                print('creating user directory')
+                ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
+                print(ssh_stdout.read())
+                print(ssh_stderr.read())
 
 
 # TODO one of these will not be necessary
@@ -115,7 +122,20 @@ class BotoSpawner(Spawner):
         return data_upload_script
 
     def export_user_data(self):
-        pass
+        s3r = boto3.resource('s3')
+        bucket = s3r.bucket(self.user_data_bucket)
+        filename = f'{self.user.name}.zip'
+        temp_location = f'/tmp/{filename}'
+        ssh = paramiko.SSHClient()
+        with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=self.key_name) as connection:
+            print('compressing files')
+            ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'zip /home/ubuntu/{filename} /home/ubuntu/{self.user.name}')
+            print(ssh_stdout)
+            print(ssh_stderr)
+            print('transferring files to s3')
+            with ssh.open_sftp() as sftp:
+                sftp.get(f'/home/ubuntu/{filename}', temp_location)
+        bucket.upload_file(Filename=temp_location, Key=filename)
 
 
     def create_startup_script(self):
