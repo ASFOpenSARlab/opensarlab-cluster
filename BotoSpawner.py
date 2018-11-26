@@ -68,13 +68,6 @@ class BotoSpawner(Spawner):
             key_file.write(key)
         return key_name
 
-    # TODO implement
-    def node_connect(self):
-        ssh = paramiko.SSHClient()
-        # TODO preferably make the ssh connection work with any username
-        ssh.connect(hostname=self.node.public_dns_name, port=22, key_filename=self.key_name)
-        return connection
-
 
 # TODO one of these will not be necessary
     def create_data_download_script(self):
@@ -86,11 +79,11 @@ class BotoSpawner(Spawner):
             if file.key == f'{self.user.name}.zip':
                 # TODO finalize where user data should go on the nodes
                 data_download_script = data_download_script + f'\n aws cp s3://{self.user_data_bucket}/{file.key} /$HOME'
-        # TODO make sure that unzip will be installed on the node machines
-        data_download_script = data_download_script + f'\n unzip /$HOME/{self.user.name}.zip -d /$HOME'
+                # TODO make sure that unzip will be installed on the node machines
+                data_download_script = data_download_script + f'\n unzip /$HOME/{self.user.name}.zip -d /$HOME'
         return data_download_script
 
-    def user_data_in(self):
+    def import_user_data(self):
         s3r = boto3.resource('s3')
         bucket = s3r.Bucket(self.user_data_bucket)
         files = bucket.objects.all()
@@ -98,11 +91,21 @@ class BotoSpawner(Spawner):
         for file in files:
             if file.key == f'{self.user.name}.zip':
                 matches.append(file.key)
-        for match in matches:
-            bucket.download_file(f'{self.user.name}.zip', f'/tmp/{self.user.name}.zip')
-            with ZipFile(f'/tmp/{self.user.name}.zip', 'w') as zipfile:
-                directory = zipfile.extractall(path=f'/tmp/{self.user.name}')
-            conn = self.node_connect()
+        ssh = paramiko.SSHClient()
+        # TODO update for compatibility with individualized users
+        with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=self.key_name) as connection:
+            with ssh.open_sftp() as sftp:
+                filename = f'{self.user.name}.zip'
+                temp_location = f'/tmp/{filename}'
+                print('transferring user files to node')
+                for match in matches:
+                    bucket.download_file(filename, temp_location)
+                    # TODO update for compatibility with individualized users
+                    sftp.put(temp_location, f'/home/ubuntu/{filename}')
+                    # TODO make sure that unzip will be installed on the node machines
+                    ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'unzip /home/ubuntu/{filename} -d /home/ubuntu')
+                    print(ssh_stdout.read())
+                    print(ssh_stderr.read())
 
 
 # TODO one of these will not be necessary
@@ -111,7 +114,7 @@ class BotoSpawner(Spawner):
         data_upload_script = data_upload_script + f'\n aws s3 cp /#HOME/{self.user.name} s3://{self.user_data_bucket}/{self.user.name},zip'
         return data_upload_script
 
-    def user_data_out(self):
+    def export_user_data(self):
         pass
 
 
