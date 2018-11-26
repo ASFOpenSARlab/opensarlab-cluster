@@ -385,7 +385,7 @@ BotoSpawner.security_group_id = 'sg-0b17fce7b6092ee59'
 # sets the type of ec2 instance to create. As of writing a list can be found at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
 BotoSpawner.instance_type = 't2.nano'
 # sets the s3 bucket to store user's data in while their server is shut down
-BotoSpawner.user_data_bucket = 'bucket_name'
+BotoSpawner.user_data_bucket = 'mnamneus-test-user-data'
 c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 # DockerSpawner.image = 'jupyter/singleuser:9284a15ff9b6'
 
