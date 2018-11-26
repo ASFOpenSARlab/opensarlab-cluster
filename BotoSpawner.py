@@ -286,14 +286,12 @@ class BotoSpawner(Spawner):
                             matching_instances.append(i)
                 assert len(matching_instances) == 1
                 instance_state = matching_instances[0]['State']['Name']
-            # TODO possibly move to it's own method
-            if hasattr(self, 'user_data_bucket'):
-                data_setup_script = self.create_data_download_script()
-            else:
-                data_setup_script = f'mkdir /{self.user.name}'
-            # TODO add ssh code
 
             self.node.load()
+
+            if hasattr(self, 'user_data_bucket'):
+                self.import_user_data()
+
             ip = self.node.public_dns_name
             # TODO remove testing code
             print(f'IP Address:\t{ip}')
@@ -304,10 +302,9 @@ class BotoSpawner(Spawner):
     @gen.coroutine
     def stop(self, now=False):
         node_id = self.node.instance_id
-        # TODO move to it's own method
+
         if hasattr(self, 'user_data_bucket'):
-            data_upload_script = self.create_data_upload_script()
-            # TODO add ssh code
+            self.export_user_data()
 
         self.ec2r.instances.filter(InstanceIds=[node_id]).terminate()
         wait_on_terminate = self.ec2c.get_waiter('instance_terminated')
