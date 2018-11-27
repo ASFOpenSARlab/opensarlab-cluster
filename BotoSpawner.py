@@ -286,7 +286,7 @@ class BotoSpawner(Spawner):
             print(f'DNS NAME:\t{self.node.public_dns_name}')
             import subprocess
             print('NMAP PORT 22 AFTER WAITER:')
-            print(subprocess.check_output(f'nmap {self.node.public_dns_name} -p 22'))
+            print(subprocess.check_output('nmap', self.node.public_dns_name, '-p', '22'))
 
             if hasattr(self, 'user_data_bucket'):
                 self.import_user_data()
