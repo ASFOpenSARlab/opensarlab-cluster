@@ -90,7 +90,7 @@ class BotoSpawner(Spawner):
                 matches.append(file.key)
         ssh = paramiko.SSHClient()
         # TODO update for compatibility with individualized users
-        with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=self.key_name) as connection:
+        with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=self.ssh_key) as connection:
             if matches:
                 with ssh.open_sftp() as sftp:
                     filename = f'{self.user.name}.zip'
@@ -124,7 +124,7 @@ class BotoSpawner(Spawner):
         filename = f'{self.user.name}.zip'
         temp_location = f'/tmp/{filename}'
         ssh = paramiko.SSHClient()
-        with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=self.key_name) as connection:
+        with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=self.ssh_key) as connection:
             print('compressing files')
             ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'zip /home/ubuntu/{filename} /home/ubuntu/{self.user.name}')
             print(ssh_stdout)
