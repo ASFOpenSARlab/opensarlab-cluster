@@ -40,9 +40,6 @@ class BotoSpawner(Spawner):
                 env['JUPYTERHUB_SSH_KEY'] = self.generate_ssh_key()
         self.ssh_key = env['JUPYTERHUB_SSH_KEY']
 
-        if not hasattr(self, 'node_role'):
-            self.node_role = None
-            print('WARNING: IAM role for nodes not set')
         if not hasattr(self, 'startup_script'):
             self.startup_script = ''
         # default to the smallest machine running ubuntu server 18.04
@@ -258,11 +255,7 @@ class BotoSpawner(Spawner):
 
                                              ],
                                           KeyName=self.ssh_key,
-                                          UserData=startup_script,
-                                          IamInstanceProfile={
-                                                 'Arn': f'{self.node_role}',
-                                                 'Name': f'jupyterhub-node'
-                                             }
+                                          UserData=startup_script
                                           )
         if len(nodes) != 1:
             raise SpawnedTooManyEC2
