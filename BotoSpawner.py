@@ -87,14 +87,14 @@ class BotoSpawner(Spawner):
         for file in files:
             if file.key == f'{self.user.name}.zip':
                 matches.append(file.key)
-        pKey_path = f'/etc/ssh/{self.ssh_key}'
+        pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}')
         ssh = paramiko.SSHClient()
         # TODO keep nodes in known hosts while they are up
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         # TODO remove testing code
         print(f'PRIVATE KEY FILE:\t{self.ssh_key}')
         # TODO update for compatibility with individualized users
-        with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=pKey_path) as connection:
+        with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', pkey=pkey) as connection:
             if matches:
                 with ssh.open_sftp() as sftp:
                     filename = f'{self.user.name}.zip'
@@ -127,11 +127,11 @@ class BotoSpawner(Spawner):
         bucket = s3r.Bucket(self.user_data_bucket)
         filename = f'{self.user.name}.zip'
         temp_location = f'/tmp/{filename}'
-        pKey_path = f'/etc/ssh/{self.ssh_key}'
+        pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}')
         ssh = paramiko.SSHClient()
         # TODO keep nodes in known hosts while they are up
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=pKey_path) as connection:
+        with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', pkey=pkey) as connection:
             print('compressing files')
             ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'zip /home/ubuntu/{filename} /home/ubuntu/{self.user.name}')
             print(ssh_stdout)
