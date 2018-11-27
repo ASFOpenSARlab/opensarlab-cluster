@@ -31,8 +31,8 @@ class BotoSpawner(Spawner):
         # TODO finish writing warning logs
         # set ssh key name to environment if not set
         # this avoids problems with overwriting keys when spawning multiple nodes
-        if not hasattr(self, 'bucket'):
-            print('WARNING: for user data not set, data will not persist after server shutdown')
+        if not hasattr(self, 'user_data_bucket'):
+            print('WARNING: bucket for user data not set, data will not persist after server shutdown')
         if 'JUPYTERHUB_SSH_KEY' not in env:
             if hasattr(self, 'ssh_key'):
                 env['JUPYTERHUB_SSH_KEY'] = self.ssh_key
