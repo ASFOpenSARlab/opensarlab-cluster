@@ -271,23 +271,15 @@ class BotoSpawner(Spawner):
             # TODO remove testing code
             print(f'node id:\t{self.node.instance_id}')
             node_id = self.node.instance_id
-            # wait for the instance to be up
 
             # wait until the ec2 is up
-            instance_state = 'not-started'
-            # TODO make sure this only stops once the instance is acutually accessible otherwise problems with sshing
-            while instance_state != 'running':
-                sleep(15)
-                # TODO split this into it's own function
-                matching_instances = []
-                for r in self.ec2c.describe_instances(InstanceIds=[node_id])['Reservations']:
-                    for i in r['Instances']:
-                        if i['InstanceId'] == node_id:
-                            matching_instances.append(i)
-                assert len(matching_instances) == 1
-                instance_state = matching_instances[0]['State']['Name']
+            # TODO make sure this only stops once the instance is actually accessible otherwise problems with sshing
+
+            self.node.wait_untill_running()
 
             self.node.load()
+            # TODO remove debugging code
+            print(f'INSTANCE STATE:\t{self.node.state["Name"]}')
 
             if hasattr(self, 'user_data_bucket'):
                 self.import_user_data()
