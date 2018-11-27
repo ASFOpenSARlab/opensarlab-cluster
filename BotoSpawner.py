@@ -91,6 +91,8 @@ class BotoSpawner(Spawner):
         ssh = paramiko.SSHClient()
         # TODO keep nodes in known hosts while they are up
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        # TODO remove testing code
+        print(f'PRIVATE KEY FILE:\t{self.ssh_key}')
         # TODO update for compatibility with individualized users
         with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=self.ssh_key) as connection:
             if matches:
