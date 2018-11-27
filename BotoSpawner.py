@@ -59,7 +59,9 @@ class BotoSpawner(Spawner):
         # print(f'API TOKEN:\t"{self.api_token}"')
         # startup_script = startup_script + f'\nsudo --user ubuntu export JUPYTERHUB_API_TOKEN={self.api_token}'
         startup_script = startup_script + f'\n {self.startup_script}'
-        startup_script = startup_script + f'\n {self.cmd[0]}'
+        startup_script = startup_script + '\n'
+        for arg in self.cmd:
+            startup_script = startup_script + f'{self.cmd[arg] }'
         return startup_script
 
     def get_default_sec_group(self):
