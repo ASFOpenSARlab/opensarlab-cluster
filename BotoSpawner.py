@@ -156,7 +156,9 @@ class BotoSpawner(Spawner):
             startup_script = startup_script + f'\n export {e}={env[e]}'
         if hasattr(self, 'user_startup_script'):
             startup_script = startup_script + f'\n {self.user_startup_script}'
-        startup_script = startup_script + f'\n {self.cmd}'
+        startup_script = startup_script + '\n'
+        for arg in self.cmd:
+            startup_script = startup_script + f'{self.cmd[arg]} '
         print(f'CMD:\t{self.cmd}')
         print(f'SCRIPT:\t{startup_script}')
         return startup_script
