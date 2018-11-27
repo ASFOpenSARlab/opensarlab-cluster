@@ -305,13 +305,14 @@ class BotoSpawner(Spawner):
     def get_state(self):
         state = super(BotoSpawner, self).get_state()
         if self.node:
-            state['node'] = self.node
+            state['node_id'] = self.node.id
         return state
 
     def load_state(self, state):
         super(BotoSpawner, self).load_state(state)
-        if 'node' in state:
-            self.node = state['node']
+        if 'node_id' in state:
+            node_id = state['node_id']
+            self.node = self.ec2r.Instance(node_id)
 
     def clear_state(self):
         super(BotoSpawner, self).clear_state()
