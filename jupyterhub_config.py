@@ -371,7 +371,7 @@ from BotoSpawner import BotoSpawner
 BotoSpawner.region_name = 'us-east-1'
 
 # sets key for accessing nodes via ssh, use key name as shown in AWS console
-# if specified, it is required to be present on the hub at /etc/ssh/<AWS key name>.pem
+# if specified, it is required to be present on the hub at /etc/ssh/<AWS key name>.pem, the extension should not be specified
 # if unspecified, a default key associated with the nodes will be generated and stored on the hub
 # BotoSpawner.ssh_key = 'mnamneus1'
 

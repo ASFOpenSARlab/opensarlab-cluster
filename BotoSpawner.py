@@ -62,7 +62,7 @@ class BotoSpawner(Spawner):
         # TODO if hub is running as non-root make sure it will have access to the key and the directory to save it
         with open(f'/etc/ssh/{key_name}.pem', 'w+') as key_file:
             key_file.write(key)
-        return f'{key_name}.pem'
+        return f'{key_name}'
 
 
 # TODO one of these will not be necessary
@@ -87,7 +87,7 @@ class BotoSpawner(Spawner):
         for file in files:
             if file.key == f'{self.user.name}.zip':
                 matches.append(file.key)
-        pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}')
+        pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}.pem')
         ssh = paramiko.SSHClient()
         # TODO keep nodes in known hosts while they are up instead of this
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -126,7 +126,7 @@ class BotoSpawner(Spawner):
         bucket = s3r.Bucket(self.user_data_bucket)
         filename = f'{self.user.name}.zip'
         temp_location = f'/tmp/{filename}'
-        pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}')
+        pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}.pem')
         ssh = paramiko.SSHClient()
         # TODO keep nodes in known hosts while they are up
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
