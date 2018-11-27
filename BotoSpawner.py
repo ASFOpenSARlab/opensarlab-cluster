@@ -93,6 +93,9 @@ class BotoSpawner(Spawner):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         # TODO remove testing code
         print(f'PRIVATE KEY FILE:\t{self.ssh_key}')
+        import subprocess
+        print('NMAP PORT 22 BEFORE SSH CONNECTION')
+        print(subprocess.check_output(f'nmap {self.node.public_dns_name} -p 22'))
         # TODO update for compatibility with individualized users
         with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', pkey=pkey) as connection:
             if matches:
@@ -276,6 +279,11 @@ class BotoSpawner(Spawner):
             # TODO make sure this only stops once the instance is actually accessible otherwise problems with sshing
 
             self.node.wait_until_running()
+
+            # TODO remove testing code
+            import subprocess
+            print('NMAP PORT 22 AFTER WAITER:')
+            print(subprocess.check_output(f'nmap {self.node.public_dns_name} -p 22'))
 
             self.node.load()
             # TODO remove debugging code
