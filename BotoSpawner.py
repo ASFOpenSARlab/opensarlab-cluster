@@ -89,6 +89,8 @@ class BotoSpawner(Spawner):
             if file.key == f'{self.user.name}.zip':
                 matches.append(file.key)
         ssh = paramiko.SSHClient()
+        # TODO keep nodes in known hosts while they are up
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         # TODO update for compatibility with individualized users
         with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=self.ssh_key) as connection:
             if matches:
@@ -124,6 +126,8 @@ class BotoSpawner(Spawner):
         filename = f'{self.user.name}.zip'
         temp_location = f'/tmp/{filename}'
         ssh = paramiko.SSHClient()
+        # TODO keep nodes in known hosts while they are up
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', key_filename=self.ssh_key) as connection:
             print('compressing files')
             ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'zip /home/ubuntu/{filename} /home/ubuntu/{self.user.name}')
