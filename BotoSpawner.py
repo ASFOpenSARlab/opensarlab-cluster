@@ -55,7 +55,7 @@ class BotoSpawner(Spawner):
 
     def generate_ssh_key(self):
         # TODO this may want to go somewhere specific
-        key_name = 'Jupyterhub-Node-key.pem'
+        key_name = 'Jupyterhub-Node-key'
         keys = self.ec2c.describe_key_pairs(Filters=[{'Name': 'key-name', 'Values': [f'{key_name}']}])
         if len(keys) > 0:
             self.ec2c.delete_key_pair(KeyName=f'{key_name}')
@@ -63,7 +63,7 @@ class BotoSpawner(Spawner):
         # TODO if hub is running as non-root make sure it will have access to the key and the directory to save it
         with open(f'/etc/ssh/{key_name}.pem', 'w+') as key_file:
             key_file.write(key)
-        return key_name
+        return f'{key_name}.pem'
 
 
 # TODO one of these will not be necessary
