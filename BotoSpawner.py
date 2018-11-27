@@ -61,7 +61,7 @@ class BotoSpawner(Spawner):
         startup_script = startup_script + f'\n {self.startup_script}'
         startup_script = startup_script + '\n'
         for arg in self.cmd:
-            startup_script = startup_script + f'{self.cmd[arg] }'
+            startup_script = startup_script + f'{arg} '
         return startup_script
 
     def get_default_sec_group(self):
