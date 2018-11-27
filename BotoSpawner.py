@@ -89,13 +89,9 @@ class BotoSpawner(Spawner):
                 matches.append(file.key)
         pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}')
         ssh = paramiko.SSHClient()
-        # TODO keep nodes in known hosts while they are up
+        # TODO keep nodes in known hosts while they are up instead of this
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # TODO remove testing code
-        print(f'PRIVATE KEY FILE:\t{self.ssh_key}')
-        import subprocess
-        print('NMAP PORT 22 BEFORE SSH CONNECTION')
-        print(subprocess.check_output(['nmap', self.node.public_dns_name, '-p', '22']))
+
         # TODO update for compatibility with individualized users
         with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', pkey=pkey) as connection:
             if matches:
@@ -271,32 +267,20 @@ class BotoSpawner(Spawner):
             raise SpawnedTooManyEC2
         else:
             self.node = nodes[0]
-            # TODO remove testing code
-            print(f'node id:\t{self.node.instance_id}')
             node_id = self.node.instance_id
 
-            # wait until the ec2 is up
-            # TODO make sure this only stops once the instance is actually accessible otherwise problems with sshing
-
+            # TODO this is probably waiting for longer than it needs to, it might be worth trying to wait on the network interface instead
+            # wait until the ec2 is accessible
             waiter = self.ec2c.get_waiter('instance_status_ok')
             waiter.wait(InstanceIds=[self.node.instance_id])
 
-            # self.node.wait_until_running()
-
             self.node.load()
             # TODO remove debugging code
-            print(f'INSTANCE STATE:\t{self.node.state["Name"]}')
-            print(f'DNS NAME:\t{self.node.public_dns_name}')
-            import subprocess
-            print('NMAP PORT 22 AFTER WAITER:')
-            print(subprocess.check_output(['nmap', self.node.public_dns_name, '-p', '22']))
 
             if hasattr(self, 'user_data_bucket'):
                 self.import_user_data()
 
             ip = self.node.public_dns_name
-            # TODO remove testing code
-            print(f'IP Address:\t{ip}')
             # this should match the port specified in cmd from jupyterhub_config.py I think
             port = 8080
             return ip, port
