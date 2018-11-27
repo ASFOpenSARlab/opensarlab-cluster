@@ -120,7 +120,7 @@ class BotoSpawner(Spawner):
 
     def export_user_data(self):
         s3r = boto3.resource('s3')
-        bucket = s3r.bucket(self.user_data_bucket)
+        bucket = s3r.Bucket(self.user_data_bucket)
         filename = f'{self.user.name}.zip'
         temp_location = f'/tmp/{filename}'
         ssh = paramiko.SSHClient()
