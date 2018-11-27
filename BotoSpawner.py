@@ -278,7 +278,10 @@ class BotoSpawner(Spawner):
             # wait until the ec2 is up
             # TODO make sure this only stops once the instance is actually accessible otherwise problems with sshing
 
-            self.node.wait_until_running()
+            waiter = self.ec2c.get_waiter('instance_status_ok')
+            waiter.wait(InstanceIds=[self.node.instance_id])
+
+            # self.node.wait_until_running()
 
             self.node.load()
             # TODO remove debugging code
