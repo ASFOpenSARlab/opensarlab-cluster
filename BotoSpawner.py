@@ -95,7 +95,7 @@ class BotoSpawner(Spawner):
         print(f'PRIVATE KEY FILE:\t{self.ssh_key}')
         import subprocess
         print('NMAP PORT 22 BEFORE SSH CONNECTION')
-        print(subprocess.check_output(f'nmap {self.node.public_dns_name} -p 22'))
+        print(subprocess.check_output('nmap', self.node.public_dns_name, '-p', '22'))
         # TODO update for compatibility with individualized users
         with ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', pkey=pkey) as connection:
             if matches:
@@ -280,14 +280,13 @@ class BotoSpawner(Spawner):
 
             self.node.wait_until_running()
 
-            # TODO remove testing code
-            import subprocess
-            print('NMAP PORT 22 AFTER WAITER:')
-            print(subprocess.check_output(f'nmap {self.node.public_dns_name} -p 22'))
-
             self.node.load()
             # TODO remove debugging code
             print(f'INSTANCE STATE:\t{self.node.state["Name"]}')
+            print(f'DNS NAME:\t{self.node.public_dns_name}')
+            import subprocess
+            print('NMAP PORT 22 AFTER WAITER:')
+            print(subprocess.check_output(f'nmap {self.node.public_dns_name} -p 22'))
 
             if hasattr(self, 'user_data_bucket'):
                 self.import_user_data()
