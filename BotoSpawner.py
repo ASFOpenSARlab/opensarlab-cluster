@@ -157,6 +157,8 @@ class BotoSpawner(Spawner):
         if hasattr(self, 'user_startup_script'):
             startup_script = startup_script + f'\n {self.user_startup_script}'
         startup_script = startup_script + f'\n {self.cmd}'
+        print(f'CMD:\t{self.cmd}')
+        print(f'SCRIPT:\t{startup_script}')
         return startup_script
 
     def get_default_sec_group(self):
