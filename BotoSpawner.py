@@ -176,6 +176,22 @@ class BotoSpawner(Spawner):
         print(f'SCRIPT:\t{startup_script}')
         return startup_script
 
+    def compile_startup_commands(self):
+        env = self.get_env()
+        commands = []
+        commands.append('set -e -x')
+        for e in env:
+            commands.append(f'export {e}={env[e]}')
+        if hasattr(self, 'user_startup_script'):
+            commands.append(self.user_startup_script)
+        cmd = ''
+        for arg in self.cmd:
+            cmd = cmd + f'{arg} '
+        commands.append(cmd)
+        print(f'CMD:\t{self.cmd}')
+        print(f'ALL COMMANDS:\t{commands}')
+        return commands
+
     def get_default_sec_group(self):
         # make sure there isn't already a default security group created
         created_groups = self.ec2c.describe_security_groups(
@@ -296,7 +312,10 @@ class BotoSpawner(Spawner):
             connection = self.ssh_to_node()
 
             if hasattr(self, 'user_data_bucket'):
-                self.import_user_data()
+                self.import_user_data(connection)
+            commands = self.compile_startup_commands()
+            for c in commands:
+                connection.exec_command(c)
 
             ip = self.node.public_dns_name
             # this should match the port specified in cmd from jupyterhub_config.py I think
@@ -305,14 +324,13 @@ class BotoSpawner(Spawner):
 
     @gen.coroutine
     def stop(self, now=False):
-        node_id = self.node.instance_id
 
         if hasattr(self, 'user_data_bucket'):
-            self.export_user_data()
+            self.export_user_data(self.ssh_to_node())
 
-        self.ec2r.instances.filter(InstanceIds=[node_id]).terminate()
+        self.ec2r.instances.filter(InstanceIds=[self.node.instance_id]).terminate()
         wait_on_terminate = self.ec2c.get_waiter('instance_terminated')
-        self.exit_value = wait_on_terminate.wait(InstanceIds=[node_id])
+        self.exit_value = wait_on_terminate.wait(InstanceIds=[self.node.instance_id])
 
     @gen.coroutine
     def poll(self):
