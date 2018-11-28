@@ -1,8 +1,6 @@
 import boto3
-import botocore
+from botocore import exceptions as boto_execp
 from os import environ as env
-from time import sleep
-from zipfile import ZipFile
 import paramiko
 
 from jupyterhub.spawner import Spawner
@@ -27,6 +25,7 @@ class BotoSpawner(Spawner):
         self.ec2r = boto3.resource('ec2', region_name=self.region_name)
         self.ec2c = boto3.client('ec2', region_name=self.region_name)
         self.exit_value = 0
+        self.node_ssh = None
         # TODO hook warning logs into jupyterhub's logging system
         # TODO finish writing warning logs
         # set ssh key name to environment if not set
@@ -65,6 +64,26 @@ class BotoSpawner(Spawner):
         return f'{key_name}'
 
 
+    def ssh_to_node(self):
+        try:
+            pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}.pem')
+        except Exception as e:
+            print('Exception in loading private key')
+            print(e)
+            return -1
+        ssh = paramiko.SSHClient()
+        # TODO keep nodes in known hosts while they are up instead of this
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        # TODO update for compatibility with individualized users
+        try:
+            ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', pkey=pkey)
+        except Exception as e:
+            print('Exception in connecting to node')
+            print(e)
+            return -2
+        return ssh
+
 # TODO one of these will not be necessary
     def create_data_download_script(self):
         s3r = boto3.resource('s3')
@@ -79,41 +98,33 @@ class BotoSpawner(Spawner):
                 data_download_script = data_download_script + f'\n unzip /$HOME/{self.user.name}.zip -d /$HOME'
         return data_download_script
 
-    def import_user_data(self):
+    def import_user_data(self, connection):
         s3r = boto3.resource('s3')
         bucket = s3r.Bucket(self.user_data_bucket)
-        files = bucket.objects.all()
-        matches = []
-        for file in files:
-            if file.key == f'{self.user.name}.zip':
-                matches.append(file.key)
-        pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}.pem')
-        ssh = paramiko.SSHClient()
-        # TODO keep nodes in known hosts while they are up instead of this
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        # TODO update for compatibility with individualized users
-        ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', pkey=pkey)
-        if matches:
-            with ssh.open_sftp() as sftp:
-                filename = f'{self.user.name}.zip'
-                temp_location = f'/tmp/{filename}'
-                print('transferring user files to node')
-                for match in matches:
-                    bucket.download_file(Key=filename, Filename=temp_location)
-                    # TODO update for compatibility with individualized users
-                    sftp.put(temp_location, f'/home/ubuntu/{filename}')
-                    print('extracting files')
-                    # TODO make sure that unzip will be installed on the node machines
-                    ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'unzip /home/ubuntu/{filename} -d /home/ubuntu')
-                    print(ssh_stdout.read())
-                    print(ssh_stderr.read())
-        else:
-            print('creating user directory')
-            ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
+        filename = f'{self.user.name}.zip'
+        temp_location = f'/tmp/{filename}'
+        try:
+            bucket.download_file(filename, temp_location)
+        except boto_execp.ClientError as e:
+            if e.response['Error']['Code'] == "404":
+                print("The requested file was not found, creating a user directory")
+                ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
+                print(ssh_stdout.read())
+                print(ssh_stderr.read())
+            else:
+                raise
+        with connection.open_sftp() as sftp:
+
+            print('transferring user file to node')
+            # TODO update for compatibility with individualized users
+            sftp.put(temp_location, f'/home/ubuntu/{filename}')
+            print('extracting files')
+            # TODO make sure that unzip will be installed on the node machines
+            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'unzip /home/ubuntu/{filename} -d /home/ubuntu')
             print(ssh_stdout.read())
             print(ssh_stderr.read())
-        ssh.close()
+            return 0
 
 
 # TODO one of these will not be necessary
@@ -122,32 +133,28 @@ class BotoSpawner(Spawner):
         data_upload_script = data_upload_script + f'\n aws s3 cp /#HOME/{self.user.name} s3://{self.user_data_bucket}/{self.user.name},zip'
         return data_upload_script
 
-    def export_user_data(self):
+    def export_user_data(self, connection):
         s3r = boto3.resource('s3')
         bucket = s3r.Bucket(self.user_data_bucket)
         filename = f'{self.user.name}.zip'
         temp_location = f'/tmp/{filename}'
-        pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}.pem')
-        ssh = paramiko.SSHClient()
-        # TODO keep nodes in known hosts while they are up
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', pkey=pkey)
 
         # make sure the folder is there
-        check_in, check_out, check_err = ssh.exec_command('ls /home/ubuntu')
+        check_in, check_out, check_err = connection.exec_command('ls /home/ubuntu')
         if self.user.name in check_out.split('\n'):
             print('compressing files')
-            ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'zip /home/ubuntu/{filename} /home/ubuntu/{self.user.name}')
+            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'zip /home/ubuntu/{filename} /home/ubuntu/{self.user.name}')
             print(ssh_stdout)
             print(ssh_stderr)
             print('transferring files to s3')
 
-            with ssh.open_sftp() as sftp:
+            with connection.open_sftp() as sftp:
                 sftp.get(f'/home/ubuntu/{filename}', temp_location)
-            ssh.close()
             bucket.upload_file(Filename=temp_location, Key=filename)
+            return 0
         else:
             print(f'no "{filename}" folder found')
+            return -1
 
     def create_startup_script(self):
         # TODO make this less system specific
@@ -273,7 +280,6 @@ class BotoSpawner(Spawner):
 
                                              ],
                                           KeyName=self.ssh_key,
-                                          UserData=startup_script
                                           )
         if len(nodes) != 1:
             raise SpawnedTooManyEC2
@@ -285,9 +291,9 @@ class BotoSpawner(Spawner):
             # wait until the ec2 is accessible
             waiter = self.ec2c.get_waiter('instance_status_ok')
             waiter.wait(InstanceIds=[self.node.instance_id])
-
             self.node.load()
-            # TODO remove debugging code
+
+            connection = self.ssh_to_node()
 
             if hasattr(self, 'user_data_bucket'):
                 self.import_user_data()
