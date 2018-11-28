@@ -140,19 +140,22 @@ class BotoSpawner(Spawner):
     def compile_startup_commands(self):
         node_env = self.get_env()
         commands = []
-        commands.append('set -e -x')
+        commands.append('touch user_script.txt')
+        user_command = f''
+        for e in node_env.keys():
+            user_command = user_command + f'{e}={node_env[e]}'
+        user_command = user_command + self.user_startup_script
+        commands.append(user_command)
+        commands.append('touch singleuser_output.txt')
         for e in node_env.keys():
             commands.append(f'export {e}={node_env[e]}')
-        if hasattr(self, 'user_startup_script'):
-            commands.append(self.user_startup_script)
-        commands.append('touch singleuser_output.txt')
-        cmd = ''
+        singleuser_command = f''
         for arg in self.cmd:
-            cmd = cmd + f'{arg} '
+            singleuser_command = singleuser_command + f'{arg} '
 
         # TODO remove debugging code
-        cmd = cmd + ' &> /home/ubuntu/singleuser_output.txt'
-        commands.append(cmd)
+        singleuser_command = singleuser_command + ' &> /home/ubuntu/singleuser_output.txt'
+        commands.append(singleuser_command)
         print(f'CMD:\t{self.cmd}')
         print(f'ALL COMMANDS:\t{commands}')
         return commands
@@ -275,6 +278,7 @@ class BotoSpawner(Spawner):
             connection = self.ssh_to_node()
 
             self.import_user_data(connection)
+            # could also switch to sftping a bash script and running it
             commands = self.compile_startup_commands()
             for c in commands:
                 connection.exec_command(c)
