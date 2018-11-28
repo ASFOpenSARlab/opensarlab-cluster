@@ -149,6 +149,7 @@ class BotoSpawner(Spawner):
         for arg in self.cmd:
             cmd = cmd + f'{arg} '
         cmd = cmd + 'touch singleuser_output.txt'
+        # TODO remove debugging code
         cmd = cmd + ' &> /home/ubuntu/singleuser_output.txt'
         commands.append(cmd)
         print(f'CMD:\t{self.cmd}')
