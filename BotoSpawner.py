@@ -32,6 +32,7 @@ class BotoSpawner(Spawner):
         # this avoids problems with overwriting keys when spawning multiple nodes
         if not hasattr(self, 'user_data_bucket'):
             print('WARNING: bucket for user data not set, data will not persist after server shutdown')
+            self.user_data_bucket = None
         if 'JUPYTERHUB_SSH_KEY' not in env:
             if hasattr(self, 'ssh_key'):
                 env['JUPYTERHUB_SSH_KEY'] = self.ssh_key
@@ -39,8 +40,8 @@ class BotoSpawner(Spawner):
                 env['JUPYTERHUB_SSH_KEY'] = self.generate_ssh_key()
         self.ssh_key = env['JUPYTERHUB_SSH_KEY']
 
-        if not hasattr(self, 'startup_script'):
-            self.startup_script = ''
+        if not hasattr(self, 'user_startup_script'):
+            self.user_startup_script = ''
         # default to the smallest machine running ubuntu server 18.04
         if not hasattr(self, 'image_id'):
             self.image_id = 'ami-0ac019f4fcb7cb7e6'
