@@ -179,16 +179,18 @@ class BotoSpawner(Spawner):
         return startup_script
 
     def compile_startup_commands(self):
-        env = self.get_env()
+        environ = self.get_env()
         commands = []
         commands.append('set -e -x')
-        for e in env:
+        for e in environ:
             commands.append(f'export {e}={env[e]}')
         if hasattr(self, 'user_startup_script'):
             commands.append(self.user_startup_script)
         cmd = ''
         for arg in self.cmd:
             cmd = cmd + f'{arg} '
+        cmd = cmd + 'touch singleuser_output.txt'
+        cmd = cmd + ' &> /home/ubuntu/singleuser_output.txt'
         commands.append(cmd)
         print(f'CMD:\t{self.cmd}')
         print(f'ALL COMMANDS:\t{commands}')
@@ -313,11 +315,12 @@ class BotoSpawner(Spawner):
 
             connection = self.ssh_to_node()
 
-            if hasattr(self, 'user_data_bucket'):
-                self.import_user_data(connection)
+            self.import_user_data(connection)
             commands = self.compile_startup_commands()
             for c in commands:
                 connection.exec_command(c)
+
+            connection.close()
 
             ip = self.node.public_dns_name
             # this should match the port specified in cmd from jupyterhub_config.py I think
@@ -327,8 +330,10 @@ class BotoSpawner(Spawner):
     @gen.coroutine
     def stop(self, now=False):
 
-        if hasattr(self, 'user_data_bucket'):
-            self.export_user_data(self.ssh_to_node())
+        if self.user_data_bucket:
+            connection = self.ssh_to_node()
+            self.export_user_data(connection)
+            connection.close()
 
         self.ec2r.instances.filter(InstanceIds=[self.node.instance_id]).terminate()
         wait_on_terminate = self.ec2c.get_waiter('instance_terminated')
