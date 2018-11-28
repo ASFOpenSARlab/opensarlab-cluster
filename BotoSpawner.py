@@ -132,16 +132,22 @@ class BotoSpawner(Spawner):
         # TODO keep nodes in known hosts while they are up
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh.connect(hostname=self.node.public_dns_name, username='ubuntu', pkey=pkey)
-        print('compressing files')
-        ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'zip /home/ubuntu/{filename} /home/ubuntu/{self.user.name}')
-        print(ssh_stdout)
-        print(ssh_stderr)
-        print('transferring files to s3')
-        with ssh.open_sftp() as sftp:
-            sftp.get(f'/home/ubuntu/{filename}', temp_location)
-        ssh.close()
-        bucket.upload_file(Filename=temp_location, Key=filename)
 
+        # make sure the folder is there
+        check_in, check_out, check_err = ssh.exec_command('ls /home/ubuntu')
+        if filename in check_out.split('\n'):
+            print('compressing files')
+            ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(f'zip /home/ubuntu/{filename} /home/ubuntu/{self.user.name}')
+            print(ssh_stdout)
+            print(ssh_stderr)
+            print('transferring files to s3')
+
+            with ssh.open_sftp() as sftp:
+                sftp.get(f'/home/ubuntu/{filename}', temp_location)
+            ssh.close()
+            bucket.upload_file(Filename=temp_location, Key=filename)
+        else:
+            print(f'no "{filename}" folder found')
 
     def create_startup_script(self):
         # TODO make this less system specific
