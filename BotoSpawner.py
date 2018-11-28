@@ -64,7 +64,6 @@ class BotoSpawner(Spawner):
             key_file.write(key)
         return f'{key_name}'
 
-
     def ssh_to_node(self):
         try:
             pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}.pem')
@@ -84,20 +83,6 @@ class BotoSpawner(Spawner):
             print(e)
             return -2
         return ssh
-
-# TODO one of these will not be necessary
-    def create_data_download_script(self):
-        s3r = boto3.resource('s3')
-        bucket = s3r.Bucket(self.user_data_bucket)
-        files = bucket.objects.all()
-        data_download_script = ''
-        for file in files:
-            if file.key == f'{self.user.name}.zip':
-                # TODO finalize where user data should go on the nodes
-                data_download_script = data_download_script + f'\n aws cp s3://{self.user_data_bucket}/{file.key} /$HOME'
-                # TODO make sure that unzip will be installed on the node machines
-                data_download_script = data_download_script + f'\n unzip /$HOME/{self.user.name}.zip -d /$HOME'
-        return data_download_script
 
     def import_user_data(self, connection):
         s3r = boto3.resource('s3')
@@ -122,18 +107,12 @@ class BotoSpawner(Spawner):
             # TODO update for compatibility with individualized users
             sftp.put(temp_location, f'/home/ubuntu/{filename}')
             print('extracting files')
+            # TODO finalize where user data should go on the nodes
             # TODO make sure that unzip will be installed on the node machines
             ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'unzip /home/ubuntu/{filename} -d /home/ubuntu')
             print(ssh_stdout.read())
             print(ssh_stderr.read())
             return 0
-
-
-# TODO one of these will not be necessary
-    def create_data_upload_script(self):
-        data_upload_script = f'\n zip /$HOME/{self.user.name}.zip /$HOME/{self.user.name}'
-        data_upload_script = data_upload_script + f'\n aws s3 cp /#HOME/{self.user.name} s3://{self.user_data_bucket}/{self.user.name},zip'
-        return data_upload_script
 
     def export_user_data(self, connection):
         s3r = boto3.resource('s3')
@@ -157,26 +136,6 @@ class BotoSpawner(Spawner):
         else:
             print(f'no "{filename}" folder found')
             return -1
-
-    def create_startup_script(self):
-        # TODO make this less system specific
-        # UserData commands are run as root by default
-        # can workaround by finding a way to get the username automatically or by changing to sshing in to start the server after creating the ec2
-        startup_script = f'#!/bin/bash'
-        startup_script = startup_script + '\n set -e -x'
-        # export relevant environment variables to the singleuser instance
-        env = self.get_env()
-        print('ENVIRONMENT VARIABLES:')
-        for e in env.keys():
-            startup_script = startup_script + f'\n export {e}={env[e]}'
-        if hasattr(self, 'user_startup_script'):
-            startup_script = startup_script + f'\n {self.user_startup_script}'
-        startup_script = startup_script + '\n'
-        for arg in self.cmd:
-            startup_script = startup_script + f'{arg} '
-        print(f'CMD:\t{self.cmd}')
-        print(f'SCRIPT:\t{startup_script}')
-        return startup_script
 
     def compile_startup_commands(self):
         environ = self.get_env()
@@ -270,8 +229,6 @@ class BotoSpawner(Spawner):
     @gen.coroutine
     def start(self):
         self.exit_value = None
-        # compile shell commands to start up notebook server, also include any commands the user wants to run
-        startup_script = self.create_startup_script()
         # TODO specify subnet? potentially useful to limit IAM permissions for the hub
         # TODO create and specify launch template?
         # TODO is there a way to test this thoroughly without actually creating the instance?
