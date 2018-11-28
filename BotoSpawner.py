@@ -138,11 +138,11 @@ class BotoSpawner(Spawner):
             return -1
 
     def compile_startup_commands(self):
-        environ = self.get_env()
+        node_env = self.get_env()
         commands = []
         commands.append('set -e -x')
-        for e in environ:
-            commands.append(f'export {e}={env[e]}')
+        for e in node_env.keys():
+            commands.append(f'export {e}={node_env[e]}')
         if hasattr(self, 'user_startup_script'):
             commands.append(self.user_startup_script)
         cmd = ''
