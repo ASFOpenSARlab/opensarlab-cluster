@@ -145,10 +145,11 @@ class BotoSpawner(Spawner):
             commands.append(f'export {e}={node_env[e]}')
         if hasattr(self, 'user_startup_script'):
             commands.append(self.user_startup_script)
+        commands.append('touch singleuser_output.txt')
         cmd = ''
         for arg in self.cmd:
             cmd = cmd + f'{arg} '
-        cmd = cmd + 'touch singleuser_output.txt'
+
         # TODO remove debugging code
         cmd = cmd + ' &> /home/ubuntu/singleuser_output.txt'
         commands.append(cmd)
