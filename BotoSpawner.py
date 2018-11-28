@@ -1,5 +1,5 @@
 import boto3
-from botocore import exceptions as boto_execp
+from botocore import exceptions as boto_excep
 from os import environ as env
 import paramiko
 
@@ -107,12 +107,13 @@ class BotoSpawner(Spawner):
         temp_location = f'/tmp/{filename}'
         try:
             bucket.download_file(filename, temp_location)
-        except boto_execp.ClientError as e:
+        except boto_excep.ClientError as e:
             if e.response['Error']['Code'] == "404":
                 print("The requested file was not found, creating a user directory")
                 ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
                 print(ssh_stdout.read())
                 print(ssh_stderr.read())
+                return 0
             else:
                 raise
         with connection.open_sftp() as sftp:
@@ -142,7 +143,7 @@ class BotoSpawner(Spawner):
 
         # make sure the folder is there
         check_in, check_out, check_err = connection.exec_command('ls /home/ubuntu')
-        if self.user.name in check_out.split('\n'):
+        if self.user.name in check_out.read().split('\n'):
             print('compressing files')
             ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'zip /home/ubuntu/{filename} /home/ubuntu/{self.user.name}')
             print(ssh_stdout)
