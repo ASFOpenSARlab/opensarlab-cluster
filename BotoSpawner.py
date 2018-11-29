@@ -25,7 +25,6 @@ class BotoSpawner(Spawner):
         self.ec2r = boto3.resource('ec2', region_name=self.region_name)
         self.ec2c = boto3.client('ec2', region_name=self.region_name)
         self.exit_value = 0
-        self.node_ssh = None
         # TODO hook warning logs into jupyterhub's logging system
         # TODO finish writing warning logs
         # set ssh key name to environment if not set
@@ -53,6 +52,8 @@ class BotoSpawner(Spawner):
             self.security_group_id = self.get_default_sec_group()
         self.node = None
 
+    # TODO this could cause errors if two hubs are running key_name should really be set on a per-hub basis
+    # TODO put this in the jupyterhub_config.py file
     def generate_ssh_key(self):
         key_name = 'Jupyterhub-Node-key'
         keys = self.ec2c.describe_key_pairs(Filters=[{'Name': 'key-name', 'Values': [f'{key_name}']}])
@@ -317,7 +318,9 @@ class BotoSpawner(Spawner):
 
             with connection.open_sftp() as sftp:
                 sftp.put('/tmp/jupyter_singleuser_script', '/tmp/startup_script', confirm=True)
+            connection.exec_command('sudo chmod 755 /tmp/startup_script')
             connection.exec_command('. /tmp/startup_script')
+
             # commands = self.compile_startup_commands()
             # for c in commands:
             #     connection.exec_command(c)
