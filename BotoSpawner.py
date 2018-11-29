@@ -123,10 +123,15 @@ class BotoSpawner(Spawner):
         # make sure the folder is there
         check_in, check_out, check_err = connection.exec_command('ls /home/ubuntu')
         out = check_out.read()
-        print(type(out))
+        decoded = out.decode('ascii')
         print('OUT:')
-        out_list = out.split('\n')
+        print(type(out))
+        print('DECODED:')
+        print(type(decoded))
+        print(decoded)
         print('OUT_LIST:')
+        out_list = decoded.split('\n')
+
         print(type(out_list))
         if self.user.name in out_list:
             print('compressing files')
