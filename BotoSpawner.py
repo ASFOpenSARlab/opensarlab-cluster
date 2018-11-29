@@ -122,7 +122,13 @@ class BotoSpawner(Spawner):
 
         # make sure the folder is there
         check_in, check_out, check_err = connection.exec_command('ls /home/ubuntu')
-        if self.user.name in check_out.read().split('\n'):
+        out = check_out.read()
+        print(type(out))
+        print('OUT:')
+        out_list = out.split('\n')
+        print('OUT_LIST:')
+        print(type(out_list))
+        if self.user.name in out_list:
             print('compressing files')
             ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'zip /home/ubuntu/{filename} /home/ubuntu/{self.user.name}')
             print(ssh_stdout)
