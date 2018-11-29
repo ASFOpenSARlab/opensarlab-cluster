@@ -140,16 +140,16 @@ class BotoSpawner(Spawner):
     def compile_startup_commands(self):
         node_env = self.get_env()
         commands = []
-        commands.append('touch user_script.txt')
-        user_command = f''
+        user_command = ''
         for e in node_env.keys():
             user_command = user_command + f'{e}={node_env[e]}'
         user_command = user_command + self.user_startup_script
         commands.append(user_command)
-        commands.append('touch singleuser_output.txt')
+        # TODO remove debugging code
+        commands.append('touch /home/ubuntu/singleuser_output.txt')
         for e in node_env.keys():
             commands.append(f'export {e}={node_env[e]}')
-        singleuser_command = f''
+        singleuser_command = ''
         for arg in self.cmd:
             singleuser_command = singleuser_command + f'{arg} '
 
@@ -159,6 +159,24 @@ class BotoSpawner(Spawner):
         print(f'CMD:\t{self.cmd}')
         print(f'ALL COMMANDS:\t{commands}')
         return commands
+
+    def create_startup_script(self):
+        startup_script = f'#!/bin/bash'
+        startup_script = startup_script + '\n set -e -x'
+        # export environment variables relevant to singleuser
+        node_env = self.get_env()
+        for e in node_env.keys():
+            startup_script = startup_script + f'\n export {e}={node_env[e]}'
+        startup_script = startup_script + f'\n {self.user_startup_script}'
+        # TODO remove debugging code
+        startup_script = startup_script + 'touch /home/ubuntu/singleuser_output.txt\n'
+        for arg in self.cmd:
+            startup_script = startup_script + f'{arg} '
+        # TODO remove debugging code
+        startup_script = startup_script + ' &> /home/ubuntu/singleuser_output.txt'
+        print(f'CMD:\t{self.cmd}')
+        print(f'SCRIPT:\t{startup_script}')
+        return startup_script
 
     def get_default_sec_group(self):
         # make sure there isn't already a default security group created
@@ -278,10 +296,18 @@ class BotoSpawner(Spawner):
             connection = self.ssh_to_node()
 
             self.import_user_data(connection)
-            # could also switch to sftping a bash script and running it
-            commands = self.compile_startup_commands()
-            for c in commands:
-                connection.exec_command(c)
+
+            startup_script = self.create_startup_script()
+
+            with open('/tmp/jupyter_singleuser_script', 'w')as script:
+                script.write(startup_script)
+
+            with connection.open_sftp() as sftp:
+                sftp.put('/tmp/jupyter_singleuser_script', '/tmp/startup_script', confirm=True)
+            connection.exec_command('source /tmp/startup_script')
+            # commands = self.compile_startup_commands()
+            # for c in commands:
+            #     connection.exec_command(c)
 
             connection.close()
 
