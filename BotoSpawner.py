@@ -306,7 +306,7 @@ class BotoSpawner(Spawner):
 
             with connection.open_sftp() as sftp:
                 sftp.put('/tmp/jupyter_singleuser_script', '/tmp/startup_script', confirm=True)
-            connection.exec_command('source /tmp/startup_script')
+            connection.exec_command('. /tmp/startup_script')
             # commands = self.compile_startup_commands()
             # for c in commands:
             #     connection.exec_command(c)
