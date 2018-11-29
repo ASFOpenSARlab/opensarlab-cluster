@@ -174,6 +174,8 @@ class BotoSpawner(Spawner):
             startup_script = startup_script + f'{arg} '
         # TODO remove debugging code
         startup_script = startup_script + ' &> /home/ubuntu/singleuser_output.txt'
+
+        startup_script = startup_script + '\nset +e +x'
         print(f'CMD:\t{self.cmd}')
         print(f'SCRIPT:\t{startup_script}')
         return startup_script
