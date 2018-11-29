@@ -172,6 +172,7 @@ class BotoSpawner(Spawner):
         print(f'ALL COMMANDS:\t{commands}')
         return commands
 
+    # this could be optimized much better
     def create_startup_script(self):
         startup_script = f'#!/bin/bash'
         startup_script = startup_script + '\n set -e -x'
@@ -180,12 +181,8 @@ class BotoSpawner(Spawner):
         for e in node_env.keys():
             startup_script = startup_script + f'\n export {e}={node_env[e]}'
         startup_script = startup_script + f'\n {self.user_startup_script}'
-        # TODO remove debugging code
-        startup_script = startup_script + 'touch /home/ubuntu/singleuser_output.txt\n'
         for arg in self.cmd:
             startup_script = startup_script + f'{arg} '
-        # TODO remove debugging code
-        startup_script = startup_script + ' &> /home/ubuntu/singleuser_output.txt'
 
         startup_script = startup_script + '\nset +e +x'
         print(f'CMD:\t{self.cmd}')
@@ -319,7 +316,9 @@ class BotoSpawner(Spawner):
             with connection.open_sftp() as sftp:
                 sftp.put('/tmp/jupyter_singleuser_script', '/tmp/startup_script', confirm=True)
             connection.exec_command('sudo chmod 755 /tmp/startup_script')
-            connection.exec_command('. /tmp/startup_script')
+            # TODO remove debugging code
+            connection.exec_command('touch /home/ubuntu/singleuser_output.txt')
+            connection.exec_command('. /tmp/startup_script &> /home/ubuntu/singleuser_output.txt')
 
             # commands = self.compile_startup_commands()
             # for c in commands:
