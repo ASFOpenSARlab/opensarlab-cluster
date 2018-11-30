@@ -172,22 +172,15 @@ class BotoSpawner(Spawner):
         print(f'ALL COMMANDS:\t{commands}')
         return commands
 
-    # this could be optimized much better
-    def create_startup_script(self):
-        startup_script = f'#!/bin/bash'
-        startup_script = startup_script + '\n set -e -x'
+    def get_startup_commands(self):
+        commands = ['set -e -x', 'touch /var/log/jupyterhub-singleuser.log']
         # export environment variables relevant to singleuser
         node_env = self.get_env()
-        for e in node_env.keys():
-            startup_script = startup_script + f'\n export {e}={node_env[e]}'
-        startup_script = startup_script + f'\n {self.user_startup_script}'
-        for arg in self.cmd:
-            startup_script = startup_script + f'{arg} '
-
-        startup_script = startup_script + '\nset +e +x'
-        print(f'CMD:\t{self.cmd}')
-        print(f'SCRIPT:\t{startup_script}')
-        return startup_script
+        commands += [f'export {e}={node_env[e]}'for e in node_env.keys()]
+        commands.append(self.user_startup_script + '&> /home/ubuntu/jupyterhub-singleuser.log')
+        commands.append(' '.join(self.cmd))
+        commands.append('set +e +x')
+        return '; '.join(commands)
 
     def get_default_sec_group(self):
         # make sure there isn't already a default security group created
@@ -308,21 +301,7 @@ class BotoSpawner(Spawner):
 
             self.import_user_data(connection)
 
-            startup_script = self.create_startup_script()
-
-            with open('/tmp/jupyter_singleuser_script', 'w')as script:
-                script.write(startup_script)
-
-            with connection.open_sftp() as sftp:
-                sftp.put('/tmp/jupyter_singleuser_script', '/tmp/startup_script', confirm=True)
-            connection.exec_command('sudo chmod 755 /tmp/startup_script')
-            # TODO remove debugging code
-            connection.exec_command('touch /home/ubuntu/singleuser_output.txt')
-            connection.exec_command('. /tmp/startup_script &> /home/ubuntu/singleuser_output.txt')
-
-            # commands = self.compile_startup_commands()
-            # for c in commands:
-            #     connection.exec_command(c)
+            connection.exec_command(self.get_startup_commands())
 
             connection.close()
 
