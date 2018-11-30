@@ -110,7 +110,7 @@ class BotoSpawner(Spawner):
             print('extracting files')
             # TODO finalize where user data should go on the nodes
             # TODO make sure that unzip will be installed on the node machines
-            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'unzip /home/ubuntu/{filename} -d /home/ubuntu')
+            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'unzip /home/ubuntu/{filename}')
             print(ssh_stdout.read())
             print(ssh_stderr.read())
             return 0
