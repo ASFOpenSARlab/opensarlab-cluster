@@ -149,16 +149,16 @@ class BotoSpawner(Spawner):
             print(f'no "{filename}" folder found')
             return -1
 
-    def get_startup_commands(self):
-        commands = ['set -e -x', 'touch /var/log/jupyterhub-singleuser.log']
-        # export environment variables relevant to singleuser
+    def create_startup_script(self):
         node_env = self.get_env()
-        commands += [f'export {e}={node_env[e]}'for e in node_env.keys()]
-        commands.append(self.user_startup_script)
-        self.cmd.append('&> /home/ubuntu/jupyterhub-singleuser.log')
-        commands.append(' '.join(self.cmd))
-        commands.append('set +e +x')
-        return '; '.join(commands)
+        startup_commands = [f'#!/bin/bash', 'set -e -x']
+        startup_commands += [f'export {e}={node_env[e]}' for e in node_env.keys()]
+        startup_commands.append(self.user_startup_script)
+        startup_commands.append(' '.join(self.cmd))
+        startup_commands.append('set +e +x')
+        startup_script= '\n'.join(startup_commands)
+        print(f'SCRIPT:\n{startup_script}')
+        return startup_script
 
     def get_default_sec_group(self):
         # make sure there isn't already a default security group created
@@ -279,7 +279,17 @@ class BotoSpawner(Spawner):
 
             self.import_user_data(connection)
 
-            connection.exec_command(self.get_startup_commands())
+            startup_script = self.create_startup_script()
+
+            with open('/tmp/jupyter_singleuser_script', 'w')as script:
+                script.write(startup_script)
+
+            with connection.open_sftp() as sftp:
+                sftp.put('/tmp/jupyter_singleuser_script', '/tmp/startup_script', confirm=True)
+            connection.exec_command('sudo chmod 755 /tmp/startup_script')
+            # TODO remove debugging code
+            connection.exec_command('touch /home/ubuntu/singleuser_output.txt')
+            connection.exec_command('. /tmp/startup_script &> /home/ubuntu/singleuser_output.txt')
 
             connection.close()
 
