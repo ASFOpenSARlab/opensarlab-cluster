@@ -378,7 +378,7 @@ BotoSpawner.region_name = 'us-east-1'
 # sets shell script that runs on initial startup before starting notebook server
 BotoSpawner.user_startup_script = ''
 # sets the AWS AMI to use when creating the node
-BotoSpawner.image_id = 'ami-0f344f2a44e2ffcbb'
+BotoSpawner.image_id = 'ami-0618f03105de1df84'
 # TODO update the security group and default security group
 # defaults to allow all outgoing and allow all incoming ssh, http and https
 BotoSpawner.security_group_id = 'sg-0b17fce7b6092ee59'
