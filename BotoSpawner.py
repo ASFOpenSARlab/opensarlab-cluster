@@ -137,8 +137,8 @@ class BotoSpawner(Spawner):
         if self.user.name in out_list:
             print('compressing files')
             ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'zip /home/ubuntu/{filename} /home/ubuntu/{self.user.name}')
-            print(ssh_stdout)
-            print(ssh_stderr)
+            print(ssh_stdout.decode('ascii'))
+            print(ssh_stderr.decode('ascii'))
             print('transferring files to s3')
 
             with connection.open_sftp() as sftp:
