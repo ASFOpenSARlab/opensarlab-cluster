@@ -154,7 +154,8 @@ class BotoSpawner(Spawner):
         # export environment variables relevant to singleuser
         node_env = self.get_env()
         commands += [f'export {e}={node_env[e]}'for e in node_env.keys()]
-        commands.append(self.user_startup_script + '&> /home/ubuntu/jupyterhub-singleuser.log')
+        commands.append(self.user_startup_script)
+        self.cmd.append('&> /home/ubuntu/jupyterhub-singleuser.log')
         commands.append(' '.join(self.cmd))
         commands.append('set +e +x')
         return '; '.join(commands)
