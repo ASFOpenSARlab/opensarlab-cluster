@@ -149,29 +149,6 @@ class BotoSpawner(Spawner):
             print(f'no "{filename}" folder found')
             return -1
 
-    def compile_startup_commands(self):
-        node_env = self.get_env()
-        commands = []
-        user_command = ''
-        for e in node_env.keys():
-            user_command = user_command + f'{e}={node_env[e]}'
-        user_command = user_command + self.user_startup_script
-        commands.append(user_command)
-        # TODO remove debugging code
-        commands.append('touch /home/ubuntu/singleuser_output.txt')
-        for e in node_env.keys():
-            commands.append(f'export {e}={node_env[e]}')
-        singleuser_command = ''
-        for arg in self.cmd:
-            singleuser_command = singleuser_command + f'{arg} '
-
-        # TODO remove debugging code
-        singleuser_command = singleuser_command + ' &> /home/ubuntu/singleuser_output.txt'
-        commands.append(singleuser_command)
-        print(f'CMD:\t{self.cmd}')
-        print(f'ALL COMMANDS:\t{commands}')
-        return commands
-
     def get_startup_commands(self):
         commands = ['set -e -x', 'touch /var/log/jupyterhub-singleuser.log']
         # export environment variables relevant to singleuser
