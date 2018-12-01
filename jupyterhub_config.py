@@ -391,6 +391,7 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 
 #c.JupyterHub.spawner_class = 'jupyterhub.spawner.LocalProcessSpawner'
 
+# TODO should likely be in a different file but I'm not sure where would be better
 # ssl key/cert generation
 # openssl is preinstalled on the baseline ubuntu image in AWS
 # if this is deployed somewhere else it will be a requirement though
