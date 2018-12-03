@@ -264,7 +264,7 @@ c.JupyterHub.hub_ip = '0.0.0.0'
 #  conflict.
 #
 #  See also `hub_ip` for the ip and `hub_bind_url` for setting the full bind URL.
-# I think this should be set to 8080 since it's not the front end port
+# TODO make sure that this needs to be set
 c.JupyterHub.hub_port = 8080
 
 ## The public facing ip of the whole JupyterHub application (specifically
@@ -362,10 +362,10 @@ c.JupyterHub.hub_port = 8080
 #      ]
 #c.JupyterHub.services = []
 
-## The class to use for spawning single-user servers.
-#
-#  Should be a subclass of Spawner.
+# BotoSpawner specific variables should also be able to be set after c.JupyterHub.spawner_class
+# using c.Spawner.<variable_name>
 from BotoSpawner import BotoSpawner
+
 # sets the region to create nodes in. As of the time of this writing a list or regions can be found here: https://docs.aws.amazon.com/general/latest/gr/rande.html
 # currently not enabled to create nodes in different regions
 BotoSpawner.region_name = 'us-east-1'
@@ -377,15 +377,26 @@ BotoSpawner.region_name = 'us-east-1'
 
 # sets shell script that runs on initial startup before starting notebook server
 BotoSpawner.user_startup_script = ''
+
 # sets the AWS AMI to use when creating the node
 BotoSpawner.image_id = 'ami-0618f03105de1df84'
+
 # TODO update the security group and default security group
 # defaults to allow all outgoing and allow all incoming ssh, http and https
 BotoSpawner.security_group_id = 'sg-0b17fce7b6092ee59'
+
 # sets the type of ec2 instance to create. As of writing a list can be found at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
 BotoSpawner.instance_type = 't2.nano'
+
+# TODO it may be beneficial to add a configuration value here to specify the amount of storage to allocate to each node
+
+# TODO check that this does not cause errors if left unset
 # sets the s3 bucket to store user's data in while their server is shut down
 BotoSpawner.user_data_bucket = 'mnamneus-test-user-data'
+
+## The class to use for spawning single-user servers.
+#
+#  Should be a subclass of Spawner.
 c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 # DockerSpawner.image = 'jupyter/singleuser:9284a15ff9b6'
 
@@ -505,6 +516,7 @@ c.JupyterHub.ssl_key = 'jupyterhub.key'
 #  documentation for your spawner to verify!
 # TODO enable running as user other than root
 # TODO move to programmatic setting of port and ip
+# TODO --allow-root should not be necessary any more, check it that is the case
 # the port here should match hub_port i think
 c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --allow-root --ip 0.0.0.0 --port 8080'
 
