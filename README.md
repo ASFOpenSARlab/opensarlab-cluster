@@ -2,11 +2,11 @@
 
 This documentation is composed of the following sections:
 
-- **Future Tasks**: Items of potential future interest to add to the system broken into two sections.
+- **Future Tasks**: Items of potential future interest to add to the system or improve on, broken into two sections.
     - **Feature Items**: Potential features or improvements to existing features that would be beneficial to include. Organized according to my priority estimates which may need to be revised.
     - **Security Items**: Potentially security relevant issues that should be addressed before leaving a deployment unsupervised.
 - **System Overview**: An overview of the system as it is currently
-- **Configuration**: Information on various the configurable variables in the jupyterhub_config file (both default Jupyterhub configurables and BotoSpawner specific ones) and what the requirements of this type of system are.
+- **Configuration**: Information on various configurable variables in the jupyterhub_config file (both default Jupyterhub configurables and BotoSpawner specific ones) and what the requirements of this type of system are.
 - **AWS Resource Setup**: A guide on setting up the current configurations of the AWS resources used by the system.
 - **System Setup**: A guide on how to set up the current system.
 - **Speculative Advice**: My advice based on what I've learned about the Jupyterhub system so far on specific topics that may or may not be of value.
@@ -25,19 +25,19 @@ This documentation is composed of the following sections:
     - Relatedly, how long of a start time is acceptable?
     
 - *Update Hub IAM Role*
-    - The current IAM Role that the hub is using will need to be updated to at least give it down/upload permissions for whatever bucket ends up being used, currently it is limited to the test bucket
+    - The current IAM Role that the hub is using will need to be updated to at least give it down/upload permissions for whatever bucket is used for storage of user's data, currently it is limited to the test bucket
         - A new Role with more precise permissions should be made anyways though
 
 #### High Priority
 
 - *Add Authentication*
-    - The current system uses the default Jupyterhub authentication method. creating a custom authenticator could make authentication more secure and make new accounts easier to create.
+    - The current system uses the default Jupyterhub authentication method. Creating a custom authenticator could make authentication more secure and make new accounts easier to create.
         - The University PAM authentication and the Earthdata authentication system are both potential systems to tie into.
 - *Reduce Node Start Times*
-    - Currently new Nodes take several minutes to start up. This is due to waiting to try an ssh connection until the AWS status checks are complete
-    - We need to make sure that we will be able to connect with ssh to start the Notebook server on the Node but there may be a way to wait less long
+    - Currently new Nodes take several minutes to start up. This is primarily due to waiting until the AWS status checks are complete to initiate an ssh connection 
+    - We need to make sure that we will be able to connect with ssh to be able to start the Notebook server on the Node but there may be a way to wait less long
         - We may be able to wait on the network interface being attached.
-        - Alternatively we can write our own waiter that tries ssh connections
+        - Alternatively we can write our own waiter
 
 #### Medium Priority
 
@@ -46,20 +46,20 @@ This documentation is composed of the following sections:
 - *Improve User Environment Individualization*
     - Create a user account for the Jupyterhub user their node
         - Run the jupyter-singleuser server as that user (potentially denying sudoer privledges to the user?)
-    - Specify the area of th filesystem that the notebook has access to
+    - Specify a subset of the filesystem that the notebook has access to
         - See c.Spawner.notebook_dir and c.Spawner.default_url in jupyterhub_config.py
             - This is likely set through the configuration of jupyterhub-singleuser
 - *Add Cleanup Service*
-    - Currently a server need to be shut down manually either by the user or an admin.
+    - Currently a server needs to be shut down manually either by the user or an admin.
     - It should be possible to make servers shut down after a certain length of inactivity.
         - See the example [cull_idle_service](https://jupyterhub.readthedocs.io/en/stable/getting-started/services-basics.html?highlight=cull-idle)
 - *Add Additional Automation of Configuration*
     - There are several configuration variables that may be able to be consolidated or set automatically.
-        - Specifically, the c.Jupyterhub.hub_connect_ip
+        - Specifically, c.Jupyterhub.hub_connect_ip
 - *Eliminate Key Pair Conflicts*
     - Under certain circumstances different hubs may interfere with each other's automatic AWS key pair generation. This can be worked around and is fairly specific but may want to be addressed.
 - *Modify the list of known hosts*
-    - When a new Node is being spawner we could add it to the list of known hosts on the Hub.
+    - When a new Node is being spawned we could add it to the list of known hosts on the Hub.
     - This would allow us to not automatically add hosts to the list.
     
 #### Low Priority
@@ -72,12 +72,12 @@ This documentation is composed of the following sections:
 ### Security
 
 - *Create Appropriate Security Group*
-    - The testing security group for the nodes is likely too broad and should be narrowed.
-    - The hub still needs it's own security group.
+    - I think that I have narrowed down the Node and Hub's security groups to only what is required but it would be good to take another look at it.
 - *Create Appropriate IAM Role*
     - A less permissive IAM role than the test role should be used.
     - The hub currently needs to:
         - Create and terminate EC2s
+        - Create Network Interfaces and associate EC2 instances with them
         - Upload and Download files from s3
         - Create and attach network interfaces (I think?)
         - Create and assign security groups
@@ -146,7 +146,7 @@ This documentation is composed of the following sections:
 ### AMI Setup
 
 #### Hub Image:
-- Create a baseline instance using the AWS Ubuntu Server 18.04 image and ssh into it
+- Create a baseline instance using the AWS Ubuntu Server 18.04 image and open an ssh connection to it
 - Update your apt (`sudo apt update`)
 - Install pip3 (`sudo apt install python3-pip`)
 - Install the latest version of jupyterhub, currently 0.9.4 (`pip3 install jupyterhub==<version>`)
@@ -164,7 +164,7 @@ This documentation is composed of the following sections:
 
 #### Node Image:
 - *Jupyter Requirements*:
-    - Create a baseline instance using the AWS Ubuntu Server 18.04 image and ssh into it
+    - Create a baseline instance using the AWS Ubuntu Server 18.04 image and open an ssh connection to it
     - Update your apt (`sudo apt update`)
     - Install pip3 (`sudo apt install python3-pip`)
     - Install the latest version of JupyterHub, currently 0.9.4 (`pip3 install jupyterhub==<version>`)
