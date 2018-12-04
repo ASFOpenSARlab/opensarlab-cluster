@@ -109,7 +109,6 @@ class BotoSpawner(Spawner):
             sftp.put(temp_location, f'/home/ubuntu/{filename}')
             print('extracting files')
             # TODO finalize where user data should go on the nodes
-            # TODO make sure that unzip will be installed on the node machines
             ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'unzip {filename}')
             print(ssh_stdout.read())
             print(ssh_stderr.read())
@@ -234,10 +233,7 @@ class BotoSpawner(Spawner):
     @gen.coroutine
     def start(self):
         self.exit_value = None
-        # TODO specify subnet? potentially useful to limit IAM permissions for the hub
-        # TODO create and specify launch template?
-        # TODO is there a way to test this thoroughly without actually creating the instance?
-        # TODO add security group. Preferably dynamically create a group allowing HTTP, HTTPS and ssh from only the hub
+        # TODO add identifying tag to allow for tag based conditionals in Hub IAM Role
         nodes = self.ec2r.create_instances(ImageId=self.image_id, MinCount=1, MaxCount=1,
                                           InstanceType=self.instance_type,
                                           NetworkInterfaces=[
@@ -269,7 +265,7 @@ class BotoSpawner(Spawner):
             self.node = nodes[0]
             node_id = self.node.instance_id
 
-            # TODO this is probably waiting for longer than it needs to, it might be worth trying to wait on the network interface instead
+            # TODO waiting this way increases startup times significantly, maybe try waiting on the network interface?
             # wait until the ec2 is accessible
             waiter = self.ec2c.get_waiter('instance_status_ok')
             waiter.wait(InstanceIds=[self.node.instance_id])
@@ -287,7 +283,7 @@ class BotoSpawner(Spawner):
             with connection.open_sftp() as sftp:
                 sftp.put('/tmp/jupyter_singleuser_script', '/tmp/startup_script', confirm=True)
             connection.exec_command('sudo chmod 755 /tmp/startup_script')
-            # TODO remove debugging code
+            # saves log file to /home/ubuntu/singleuser_output.txt
             connection.exec_command('touch /home/ubuntu/singleuser_output.txt')
             connection.exec_command('. /tmp/startup_script &> /home/ubuntu/singleuser_output.txt')
 

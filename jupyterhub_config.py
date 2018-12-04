@@ -219,8 +219,6 @@ c.JupyterHub.hub_bind_url = ''
 #  .. versionadded:: 0.8
 import socket
 c.JupyterHub.hub_connect_ip = '137.229.87.43'
-# TODO remove testing code
-print('IP seen by nodes:\t' + c.JupyterHub.hub_connect_ip)
 
 ## DEPRECATED
 #
@@ -514,11 +512,10 @@ c.JupyterHub.ssl_key = 'jupyterhub.key'
 #  Some spawners allow shell-style expansion here, allowing you to use
 #  environment variables. Most, including the default, do not. Consult the
 #  documentation for your spawner to verify!
-# TODO enable running as user other than root
 # TODO move to programmatic setting of port and ip
 # TODO --allow-root should not be necessary any more, check it that is the case
 # the port here should match hub_port i think
-c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --allow-root --ip 0.0.0.0 --port 8080'
+c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --ip 0.0.0.0 --port 8080'
 
 ## Maximum number of consecutive failures to allow before shutting down
 #  JupyterHub.
@@ -821,7 +818,7 @@ c.Spawner.start_timeout = 60 * 10
 #  Admin access should be treated the same way root access is.
 #
 #  Defaults to an empty set, in which case no user has admin access.
-# TODO change to the actual whitelist once testing is done
+# TODO change to the actual whitelist once determined
 c.Authenticator.admin_users = {'asf'}
 
 ## Automatically begin the login process
@@ -883,7 +880,7 @@ c.Authenticator.admin_users = {'asf'}
 #  restrictions the authenticator has in place.
 #
 #  If empty, does not perform any additional restriction.
-# TODO change to the actual whitelist once testing is done
+# TODO change to the actual whitelist once determined
 c.Authenticator.whitelist = {'asf', 'ubuntu'}
 
 #------------------------------------------------------------------------------
