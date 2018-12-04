@@ -205,9 +205,9 @@ This is a step by step guide on how to recreate the system as it currently is an
 This is **not** an example of the ideal setup.
 
 - Create your required AWS resources
-    - Create the [Hub][#Hub-Image] and [Node][#Node-Image] AMIs
-    - Create the Hub and Node's [Security Group][#Security-Group-Setup]
-    - Create the Hub's [IAM Role][#IAM-Setup]
+    - Create the [Hub][Hub_Image] and [Node][Node_Image] AMIs
+    - Create the Hub and Node's [Security Group][Security_Group_Setup]
+    - Create the Hub's [IAM Role][IAM_Setup]
     - Create a new EC2 using the Hub's AMI, Security Group and IAM Role
 - Set up the EC2 to be used as the Hub
     - SSH into the EC2
@@ -285,3 +285,7 @@ I'm not sure how much a large user directory might impact startup times for the 
 
 [1]: https://jupyterhub.readthedocs.io/en/stable/index.html#
 [2]: #AWS-Resource-Setup
+[Node_Image]: #Node-Image
+[Hub_Image]: #Hub-Image
+[Security_Group_Setup]: #Security-Group-Setup
+[IAM_Setup]: #IAM-Setup
