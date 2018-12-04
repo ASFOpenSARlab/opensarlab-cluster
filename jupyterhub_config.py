@@ -262,8 +262,7 @@ c.JupyterHub.hub_ip = '0.0.0.0'
 #  conflict.
 #
 #  See also `hub_ip` for the ip and `hub_bind_url` for setting the full bind URL.
-# TODO make sure that this needs to be set
-c.JupyterHub.hub_port = 8080
+#c.JupyterHub.hub_port = 8080
 
 ## The public facing ip of the whole JupyterHub application (specifically
 #  referred to as the proxy).
@@ -708,7 +707,7 @@ c.Spawner.http_timeout = 60 * 2
 #  makes sense if each server is on a different address, e.g. in containers.
 #
 #  New in version 0.7.
-c.Spawner.port = 443
+#c.Spawner.port = 443
 
 ## An optional hook function that you can implement to do work after the spawner
 #  stops.
