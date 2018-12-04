@@ -10,7 +10,7 @@ This documentation is composed of the following sections:
 - **AWS Resource Setup**: A guide on setting up the current configurations of the AWS resources used by the system.
 - **System Setup**: A guide on how to set up the current system.
 - **Speculative Advice**: My advice based on what I've learned about the Jupyterhub system so far on specific topics that may or may not be of value.
-- **Resources**: Resources that I found useful creating the current system, hopefully they will also be helpful to others.
+- **Resources**: Resources that I think may be useful to anyone working on this or a similar system.
 
 ## Future Tasks
 
@@ -293,6 +293,7 @@ This sort of system would also allow the user to pick an instance type and stora
 - [The AWS Boto3 Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
 - [This](https://russell.ballestrini.net/filtering-aws-resources-with-boto3/) helpful blog that has at least a few bits of  information about boto3 that isn't clearly explained in the docs.
 - [The JupyterHub Documentation][1]
+- The comments in this repository. I've tried to record a lot of thoughts about possible implementations or improvements to the system in my comments, particularly ones flagged as TODO, if you can't find information about something here or in the JupyterHub or AWS documentation it may be worth scanning through the TODO items.
 
 [1]: https://jupyterhub.readthedocs.io/en/stable/index.html#
 [2]: #AWS-Resource-Setup
