@@ -33,7 +33,11 @@ This documentation is composed of the following sections:
 - *Add Authentication*
     - The current system uses the default Jupyterhub authentication method. creating a custom authenticator could make authentication more secure and make new accounts easier to create.
         - The University PAM authentication and the Earthdata authentication system are both potential systems to tie into.
-
+- *Reduce Node Start Times*
+    - Currently new Nodes take several minutes to start up. This is due to waiting to try an ssh connection until the AWS status checks are complete
+    - We need to make sure that we will be able to connect with ssh to start the Notebook server on the Node but there may be a way to wait less long
+        - We may be able to wait on the network interface being attached.
+        - Alternatively we can write our own waiter that tries ssh connections
 #### Medium Priority
 
 - *Determine Precise Networking Settings*
