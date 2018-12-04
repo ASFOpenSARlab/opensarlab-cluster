@@ -25,7 +25,7 @@ This documentation is composed of the following sections:
     - Relatedly, how long of a start time is acceptable?
     
 - *Update Hub IAM Role*
-    - The current IAM Role that the hub is using will need to be updated to at least give it down/upload permissions for the production bucket, currently it is limited to the test bucket
+    - The current IAM Role that the hub is using will need to be updated to at least give it down/upload permissions for whatever bucket ends up being used, currently it is limited to the test bucket
         - A new Role with more precise permissions should be made anyways though
 
 #### High Priority
@@ -53,12 +53,15 @@ This documentation is composed of the following sections:
         - Specifically, the c.Jupyterhub.hub_connect_ip
 - *Eliminate Key Pair Conflicts*
     - Under certain circumstances different hubs may interfere with each other's automatic AWS key pair generation. This can be worked around and is fairly specific but may want to be addressed.
-
+- *Modify the list of known hosts*
+    - When a new Node is being spawner we could add it to the list of known hosts on the Hub.
+    - This would allow us to not automatically add hosts to the list.
+    
 #### Low Priority
 
 - *Add Logging to the Spawner*
     - There may also be a way to hook the spawner's logging into the rest of the jupyterhub logging system.
-- Use an officially singed ssl cert
+- *Use an officially singed ssl cert*
     - Apparently self signed certs can cause issues with some browsers
 
 ### Security
@@ -130,7 +133,7 @@ This documentation is composed of the following sections:
     - `BotoSpawner.user_data_bucket`: The name of the s3 bucket to use when retrieving previously saved data. If unset all data left on the node will be deleted when the Notebook server is shut down.
 - *Singleuser Notebook Configuration*
     - In addition to the JupyterHub configuration, the Notebook must also have some configuration values set. These are currently being set via `c.Spawner.cmd` as options during the call to the Notebook.
-        - Unfortunately, these settings do not seem to be documented well at all on in the JupyterHub documentation.
+        - Unfortunately, the only documentation I have found for these settings is the `jupyterhub-singleuser --help` output. 
     - The current setting that has been working is `'<path/to/jupyterhub-singleuser> --allow-root --ip 0.0.0.0 --port 8080'`.
 
 ## AWS Resource Setup
@@ -276,6 +279,12 @@ I'm not sure how much a large user directory might impact startup times for the 
 - As before the Hub can check to see if the zip file corresponding to the user is in the bucket
 - The current code using boto3 to upload the zipped file should be able to be converted into AWS cli commands
 - instead of transferring the zip file to the Hub, execute the AWS cli command to upload it to the bucket from the Node via ssh
+
+#### Long Term Strategy
+If we want to use a similar JupyterHub setup to serve a large number of users we will probably not want to use any of the above options for user data storage.
+The best solution that I have though of is to allow users to supply their own AMI's somehow and update them. This would allow the user to manage whatever software installation they want and keep their files organized as they see fit.
+I know that there is a method for allowing the user give input to the spawner immediately before it creates the Notebook server. This might be able to be used to supply the spawner with a user's AMI id.
+This sort of system would also allow the user to pick an instance type and storage capacity as well which would also be very valuable in a much larger scale operation with a much more diverse group of users.
 
 ## Resources
 
