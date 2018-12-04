@@ -38,6 +38,7 @@ This documentation is composed of the following sections:
     - We need to make sure that we will be able to connect with ssh to start the Notebook server on the Node but there may be a way to wait less long
         - We may be able to wait on the network interface being attached.
         - Alternatively we can write our own waiter that tries ssh connections
+
 #### Medium Priority
 
 - *Determine Precise Networking Settings*
@@ -138,7 +139,7 @@ This documentation is composed of the following sections:
 - *Singleuser Notebook Configuration*
     - In addition to the JupyterHub configuration, the Notebook must also have some configuration values set. These are currently being set via `c.Spawner.cmd` as options during the call to the Notebook.
         - Unfortunately, the only documentation I have found for these settings is the `jupyterhub-singleuser --help` output. 
-    - The current setting that has been working is `'<path/to/jupyterhub-singleuser> --allow-root --ip 0.0.0.0 --port 8080'`.
+    - The current setting that has been working is `'<path/to/jupyterhub-singleuser> --ip 0.0.0.0 --port 8080'`.
 
 ## AWS Resource Setup
 
@@ -186,16 +187,13 @@ This documentation is composed of the following sections:
 ### Security Group Setup
 
 - **This documentation should be updated once the security groups are given a thorough review.**
-- **All of these settings are based on the current configuration that Has been tested to work. It does not represent minimum requirements**
 - *Node Security Group*
-    - Definitely Required:
-        - TCP on port 22 (required for the hub to use ssh to start jupyterhub-singleuser)
-    - Possibly Required:
-        - TCP on port 8080 (I believe this is the port through which JupyterHub and jupyter-singleuser communicate)
-        - TCP on port 8081 (the port used by the proxy's REST api, I believe this is always 1+the main communication port, I don't know if it is used by normal JupyterHub/jupyter-singleuser operations)
-        - TCP on port 443 (This may be required for JupyterHub and jupyter-singleuser to communicate but I am not sure)
+    - TCP on port 22 (required for the hub to use ssh to start jupyterhub-singleuser)
+    - TCP on port 8080 (I believe this is the port through which JupyterHub and jupyter-singleuser communicate)
 - *Hub Security Group*
-    - The Hub will need all of the permissions of the Nodes so they cn communicate as well as TCP over port 8000 which is set as the proxy's port and serves as the front end.
+    - The Hub will need all the same access as the Nodes
+    - TCP over 8000 (the port it listens on for user access)
+    - TCP over 8081 if the Proxy's REST API is being used (the port the proxy's api listens on)
 
 ### IAM Setup
 - **This documentation should be updated once the hub's IAM Role is given a thorough review.**
