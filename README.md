@@ -23,6 +23,10 @@ This documentation is composed of the following sections:
     - How much storage will each node need?
     - How much network latency is acceptable?
     - Relatedly, how long of a start time is acceptable?
+    
+- *Update Hub IAM Role*
+    - The current IAM Role that the hub is using will need to be updated to at least give it down/upload permissions for the production bucket, currently it is limited to the test bucket
+        - A new Role with more precise permissions should be made anyways though
 
 #### High Priority
 
@@ -32,6 +36,8 @@ This documentation is composed of the following sections:
 
 #### Medium Priority
 
+- *Determine Precise Networking Settings*
+    - The networking settings that I have been using will work, however, now that there is a working system to test against it would be beneficial to determine precisely which settings are required and which are not. 
 - *Improve User Environment Individualization*
     - Create a user account for the Jupyterhub user their node
         - Run the jupyter-singleuser server as that user (potentially denying sudoer privledges to the user?)
@@ -118,55 +124,158 @@ This documentation is composed of the following sections:
     - `BotoSpawner.ssh_key`: Sets the AWS keypair to associate with the nodes. Setting this to a key pair that you have access to will allow you to ssh directly into nodes. However, if it is set you will need to supply the hub with the key pair as well in the `/etc/ssh` directory. If this is not set the hub will automatically generate a new key pair to associate with the nodes during it's initial setup. If automatic key generation is used you will need to ssh into the hub first to access the key for the nodes.
         - Important Note: Automatic key pair generation will likely cause issues if multiple hubs are running at the same time, on the same AWS account, both using automatic generation as the second hub will delete the key pair being used by the first.
     - `BotoSpawner.user_startup_script`: Shell script that runs immediately before the Notebook server is started. Intended as a more accessible way to configure the node's environment. Currently unused.
-    - `BotoSpawner.image_id`: The id of the AWS AMI to use when creating nodes. The AMI must be supplied and meet certain requirements to successfully spawn Notebook servers(see **AWS Resource Setup**).
-    - `BotoSpawner.security_group_id`: The id of the AWS security group that should be used by the nodes. The security group must be supplied and meet certain requirements to successfully spawn Notebook servers(see **AWS Resource Setup**).
+    - `BotoSpawner.image_id`: The id of the AWS AMI to use when creating nodes. The AMI must be supplied and meet certain requirements to successfully spawn Notebook servers(see [**AWS Resource Setup**][2]).
+    - `BotoSpawner.security_group_id`: The id of the AWS security group that should be used by the nodes. The security group must be supplied and meet certain requirements to successfully spawn Notebook servers(see [**AWS Resource Setup**][2]).
     - `BotoSpawner.instance_type`: The type of EC2 instance to use when creating nodes, for example: `'t2.nano'`. If unset, the Spawner will default to a `t2.nano`, the smallest available type.
     - `BotoSpawner.user_data_bucket`: The name of the s3 bucket to use when retrieving previously saved data. If unset all data left on the node will be deleted when the Notebook server is shut down.
 - *Singleuser Notebook Configuration*
     - In addition to the JupyterHub configuration, the Notebook must also have some configuration values set. These are currently being set via `c.Spawner.cmd` as options during the call to the Notebook.
         - Unfortunately, these settings do not seem to be documented well at all on in the JupyterHub documentation.
-    - The current setting that has been working is `'<path/to/jupyterhub-singleuser> --allow-root --ip 0.0.0.0 --port 8080'`
+    - The current setting that has been working is `'<path/to/jupyterhub-singleuser> --allow-root --ip 0.0.0.0 --port 8080'`.
 
 ## AWS Resource Setup
 
-- *AMI Setup*
-    - Hub Image:
-        - Create a baseline instance using the AWS Ubuntu Server 18.04 image and ssh into it
-        - Update your apt (`sudo apt update`)
-        - Install pip3 (`sudo apt install python3-pip`)
-        - Install the latest version of jupyterhub, currently 0.9.4 (`pip3 install jupyterhub==<version>`)
-        - Install nmp (`sudo apt install npm`)
-        - User npm to install the configurable-http-proxy (`sudo npm install -g configurable-http-proxy`)
-        - Make a (shallow) copy of the jupyter-hub-asf repository to get access to BotoSpawner and the customized version of jupyterhub_config.py (`git clone --depth 1 https://github.com/<account_name>/jupyter-hub-asf`)
-        - Install boto3 (`pip3 install boto3`)
-        - Final Requirements:
-            - JupyterHub installation
-            - configurable-http-proxy installation
-            - BotoSpawner and Customized jupyterhub_config.py
-            - boto3 installation
-    - Node Image:
-        - *Jupyter Requirements*:
-            - Create a baseline instance using the AWS Ubuntu Server 18.04 image and ssh into it
-            - Update your apt (`sudo apt update`)
-            - Install pip3 (`sudo apt install python3-pip`)
-            - Install the latest version of JupyterHub, currently 0.9.4 (`pip3 install jupyterhub==<version>`)
-            - Install the latest version of Jupyter Notebook, currently 5.7.0 (`pip3 install notebook==<version>`)
-            - Final Requirements:
-                - JupyterHub
-                - Jupyter Notebook
-        - *GDAL Requirements*
-            - Create a baseline instance using the AWS Ubuntu Server 18.04 image and ssh into it
-            - Update your apt (`sudo apt update`)
-            - Install pip3 (`sudo apt install python3-pip`)
-            - Add the repository to get GDAL from to apt (`sudo apt-add-repository ppa:ubuntugis/ubuntugis-unstable`)
-            - Install GDAL (`sudo apt install libgdal-dev`)
-            - Check the version of GDAL you have (`gdal-config --version`)
-            - Install the python bindings for your GDAL version (`pip3 install pygdal==<latest version compatible with your GDAL>`)
-            - Final Requirements:
-                - GDAL installation
-                - Compatible GDAL python bindings installation
-- *Security Group Setup*
-    - 
+### AMI Setup
+
+#### Hub Image:
+- Create a baseline instance using the AWS Ubuntu Server 18.04 image and ssh into it
+- Update your apt (`sudo apt update`)
+- Install pip3 (`sudo apt install python3-pip`)
+- Install the latest version of jupyterhub, currently 0.9.4 (`pip3 install jupyterhub==<version>`)
+- Install nmp (`sudo apt install npm`)
+- User npm to install the configurable-http-proxy (`sudo npm install -g configurable-http-proxy`)
+- Make a (shallow) copy of the jupyter-hub-asf repository to get access to BotoSpawner and the customized version of jupyterhub_config.py (`git clone --depth 1 https://github.com/<account_name>/jupyter-hub-asf`)
+- Install boto3 (`pip3 install boto3`)
+- Install paramiko (`pip3 install paramiko`)
+- Final Requirements:
+    - JupyterHub installation
+    - configurable-http-proxy installation
+    - BotoSpawner and Customized jupyterhub_config.py
+    - boto3 installation
+    - paramiko installation
+
+#### Node Image:
+- *Jupyter Requirements*:
+    - Create a baseline instance using the AWS Ubuntu Server 18.04 image and ssh into it
+    - Update your apt (`sudo apt update`)
+    - Install pip3 (`sudo apt install python3-pip`)
+    - Install the latest version of JupyterHub, currently 0.9.4 (`pip3 install jupyterhub==<version>`)
+    - Install the latest version of Jupyter Notebook, currently 5.7.0 (`pip3 install notebook==<version>`)
+    - Final Requirements:
+        - JupyterHub
+        - Jupyter Notebook
+- *GDAL Requirements*
+    - Create a baseline instance using the AWS Ubuntu Server 18.04 image and ssh into it
+    - Update your apt (`sudo apt update`)
+    - Install pip3 (`sudo apt install python3-pip`)
+    - Add the repository to get GDAL from to apt (`sudo apt-add-repository ppa:ubuntugis/ubuntugis-unstable`)
+    - Install GDAL (`sudo apt install libgdal-dev`)
+    - Check the version of GDAL you have (`gdal-config --version`)
+    - Install the python bindings for your GDAL version (`pip3 install pygdal==<latest version compatible with your GDAL>`)
+    - Final Requirements:
+        - GDAL installation
+        - Compatible GDAL python bindings installation
+
+### Security Group Setup
+
+- **This documentation should be updated once the security groups are given a thorough review.**
+- **All of these settings are based on the current configuration that Has been tested to work. It does not represent minimum requirements**
+- *Node Security Group*
+    - Definitely Required:
+        - TCP on port 22 (required for the hub to use ssh to start jupyterhub-singleuser)
+    - Possibly Required:
+        - TCP on port 8080 (I believe this is the port through which JupyterHub and jupyter-singleuser communicate)
+        - TCP on port 8081 (the port used by the proxy's REST api, I believe this is always 1+the main communication port, I don't know if it is used by normal JupyterHub/jupyter-singleuser operations)
+        - TCP on port 443 (This may be required for JupyterHub and jupyter-singleuser to communicate but I am not sure)
+- *Hub Security Group*
+    - The Hub will need all of the permissions of the Nodes so they cn communicate as well as TCP over port 8000 which is set as the proxy's port and serves as the front end.
+
+### IAM Setup
+- **This documentation should be updated once the hub's IAM Role is given a thorough review.**
+- **All of these settings are based on the current configuration that Has been tested to work. It does not represent minimum requirements**
+- *Hub IAM Role*
+    - EC2FullAccess
+    - Full access to only the currently set up test bucket
+    - Full list access
+- *Node IAM Role*
+    - The Nodes do not currently require any IAM role as they are not required to make any requests of AWS
+
+## System Setup
+This is a step by step guide on how to recreate the system as it currently is and has been verified to work.
+This is **not** an example of the ideal setup.
+
+- Create your required AWS resources
+    - Create the [Hub][#Hub-Image] and [Node][#Node-Image] AMIs
+    - Create the Hub and Node's [Security Group][#Security-Group-Setup]
+    - Create the Hub's [IAM Role][#IAM-Setup]
+    - Create a new EC2 using the Hub's AMI, Security Group and IAM Role
+- Set up the EC2 to be used as the Hub
+    - SSH into the EC2
+    - Pull the most recent version of the jupyter-hub-asf repository
+    - Make sure that jupyterhub-config.py is set correctly (most of this should already be set correctly)
+        - Set `c.JupyterHub.bind_url` to `'http://:8000'`
+        - Set `c.JupyterHub.hub_bind_url` to `''`
+        - Set `c.JupyterHub.hub_conect_ip` to the public dns of the EC2
+        - Set `c.JupyterHub.hub_ip` to `'0.0.0.0'`
+        - Set `c.JupyterHub.hub_port` to `8080`
+        - Set `BotoSpawner.region_name` to `'us-east-1'`
+        - Set `BotoSpawner.user_startup_script` to `''`
+        - Set `BotoSpawner.image_id` to your node's AMI id
+        - Set `BotoSpawner.security_group_id` to your node's security group id
+        - Set `BotoSpawner.instance_type` to `'t2.nano'`
+        - Set `BotoSpawner.user_data_bucket` to your user data bucket's name
+        - Set `c.JupyterHub.spawner_class` to `'BotoSpawner.BotoSpawner'`
+        - Set `c.JupyterHub.ssl_cert/key` to the location of your ssl cert/key or the location they will be generated at
+        - Set `c.Spawner.cmd` to `'<full path to jupyterhub-singleuser on your Node AMI> --allow-root --ip 0.0.0.0 --port 8080'`
+        - Set `c.Spawner.port` to `443`
+        - Set `c.Spawner.start_timeout` to `60 * 10`
+        - Set `c.Authenticator.whitelist` to `{'<username of a user on the EC2>'}`
+    - Set a password for the user specified in `c.Authenticator.whitelist`
+    - Start the server with `sudo env PYTHONPATH=<path to jupyter-hub-asf repo>:$PYTHONPATH <full path to jupyterhub> -f <path to modified jupyterhub_config.py>`
+- Log in at `https://<EC2 public dns>:8000` (`http` if not using `c.JupyterHub.ssl_cert/key`) using the username and password from the EC2's user.
+- **Reminder**: If trying to ssh into a node and using an automatically generated key pair you will need to ssh into the Hub and then the node using the key pair stored there.
+
+## Speculative Advice
+
+### Other Data Persistence Options
+There were three reasonable options that I thought of for how to get user's data to and from the Nodes:
+1. The Current Solution
+    - Any files that should be saved should go in a specific directory on the Node
+    - Before the Node shuts down that directory is zipped up and transferred from the Node to the Hub
+    - From there the Hub uploads the zipped directory into an S3 bucket
+    - When a new Node is spawned the spawner looks in the S3 bucket for a file corresponding to the user the Node is for
+        - If there is one it is downloaded by the Hub, transferred to the Node and unzipped
+        - If there is no corresponding file a new, empty, file is created to be used in the future
+    - Pros:
+        - Keeps AWS permissions centralized to the Hub, nodes need to make *no* requests to AWS
+        - Requires less infrastructure than other options, other options would still require sshing into the nodes as well as giving AWS permissions to nodes
+        - There are other benefits to letting the Hub ssh into the Nodes (can make individualized changes to Nodes, can run the Notebook server as a non root user, etc.)
+    - Cons:
+        - The zipped data directories have to be transferred twice
+            - Depending on the size this may affect startup times for Nodes
+2. Direct up/download by Nodes
+    - Similar to the current solution only the zipped directory would be uploaded from the Node directly to the S3 bucket
+    - Pros:
+        - Faster
+        - There are other benefits to letting the Hub ssh into the Nodes (can make individualized changes to Nodes, can run the Notebook server as a non root user, etc.
+    - Cons:
+        - Still requires sshing into the Node to actually trigger the upload so the ssh infrastructure is still needed
+        - Nodes would require access to the S3 bucket, which means their own IAM Role
+3. AMI saving
+    - Instead of saving one directory in S3 just save the whole thing as an AMI
+    - Pros:
+        - Probably the simplest to implement, should only require boto3
+        - Users don't risk losing their files if they forget to put them in the saved directory
+    - Cons:
+        - Creates a bunch of excess AMIs
+
+#### Changing to Direct upload/download
+I'm not sure how much a large user directory might impact startup times for the Nodes. It seems plausible that it will be longer than we would like, so this is a basic overview of what it should take to change to the direct up/download option.
+
+- A new IAM Role with access to whatever bucket is being used will need to be created
+- As before the Hub can check to see if the zip file corresponding to the user is in the bucket
+- The current code using boto3 to upload the zipped file should be able to be converted into AWS cli commands
+- instead of transferring the zip file to the Hub, execute the AWS cli command to upload it to the bucket from the Node via ssh
 
 ## Resources
 
@@ -175,3 +284,4 @@ This documentation is composed of the following sections:
 - [The JupyterHub Documentation][1]
 
 [1]: https://jupyterhub.readthedocs.io/en/stable/index.html#
+[2]: #AWS-Resource-Setup
