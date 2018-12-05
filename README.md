@@ -31,20 +31,20 @@ This documentation is composed of the following sections:
 #### High Priority
 
 - *Add Authentication*
-    - The current system uses the default Jupyterhub authentication method. Creating a custom authenticator could make authentication more secure and make new accounts easier to create.
+    - The current system uses the default JupyterHub authentication method. Creating a custom authenticator could make authentication more secure and make new accounts simpler to manage.
         - The University PAM authentication and the Earthdata authentication system are both potential systems to tie into.
 - *Reduce Node Start Times*
-    - Currently new Nodes take several minutes to start up. This is primarily due to waiting until the AWS status checks are complete to initiate an ssh connection 
-    - We need to make sure that we will be able to connect with ssh to be able to start the Notebook server on the Node but there may be a way to wait less long
+    - Currently new Nodes take several minutes to start up. This is primarily due to waiting until the AWS status checks are complete to initiate an ssh connection.
+    - We need to make sure that we will be able to connect with ssh to be able to start the Notebook server on the Node but there may be a way to wait less long.
         - We may be able to wait on the network interface being attached.
-        - Alternatively we can write our own waiter
+        - Alternatively we can write our own waiter.
 
 #### Medium Priority
 
 - *Determine Precise Networking Settings*
-    - The networking settings that I have been using will work, however, now that there is a working system to test against it would be beneficial to determine precisely which settings are required and which are not. 
+    - The networking settings that I have been using will work, however, now that there is a working system to test against may be beneficial to go through them more thoroughly and eliminate any excess ones.
 - *Improve User Environment Individualization*
-    - Create a user account for the Jupyterhub user their node
+    - Create a user account for the Jupyterhub user on their node.
         - Run the jupyter-singleuser server as that user (potentially denying sudoer privledges to the user?)
     - Specify a subset of the filesystem that the notebook has access to
         - See c.Spawner.notebook_dir and c.Spawner.default_url in jupyterhub_config.py
@@ -65,9 +65,9 @@ This documentation is composed of the following sections:
 #### Low Priority
 
 - *Add Logging to the Spawner*
-    - There may also be a way to hook the spawner's logging into the rest of the jupyterhub logging system.
+    - There may also be a way to hook the spawner's logging into the rest of the JupyterHub logging system.
 - *Use an officially singed ssl cert*
-    - Apparently self signed certs can cause issues with some browsers
+    - Apparently self signed certs can cause issues with some browsers.
 
 ### Security
 
@@ -79,7 +79,7 @@ This documentation is composed of the following sections:
         - Create and terminate EC2s
         - Create Network Interfaces and associate EC2 instances with them
         - Upload and Download files from s3
-        - Create and attach network interfaces (I think?)
+        - Create and attach network interfaces
         - Create and assign security groups
     - Some of the hub's permissions requirements may be able to be eliminated by prior set up and configuration of the resources at the cost of the manual set up.
     - Using tag based conditionals may be appropriate to limit the hub's permissions as much as possible.
@@ -93,10 +93,10 @@ This documentation is composed of the following sections:
         - The access point for the entire system is the proxy which directs requests to either the hub or the appropriate Notebook server.
         - The hub handles:
             - Authentication
-                - Done via the configured Authenticator
+                - Done via the Authenticator as configured 
             - Creation and Termination of Notebook servers
-                - Done via the configured Spawner
-        - The hub also provides management tools and can run customized services that can interact with the services
+                - Done via the Spawner as configured
+        - The hub also provides management tools and can run customized services
 - *The ASF Jupyterhub System*
     - The system currently consists of the BotoSpawner Spawner class and a specialized jupyterhub_config file
     - The jupyterhub_config.py serves the normal role of setting the configuration of the system
@@ -104,7 +104,7 @@ This documentation is composed of the following sections:
             - A number of new variables have been added to support configuration of AWS resources used by BotoSpawner.
             - Some configuration variables are programatically set.
             - Some hub setup operations take place in the jupyterhub_config file
-    - The BotoSpawner implementation of the Jupyterhub Spawner uses Amazon's Boto3 Python api to spawn new Notebook servers in newly created EC2 instancesa and store user's data in s3
+    - The BotoSpawner implementation of the Jupyterhub Spawner uses Amazon's Boto3 Python api to spawn new Notebook servers in newly created EC2 instances and store user's data in s3
         - The BotoSpawner uses the boto3 api to create a new EC2 instance using preconfigured AWS resources
             - Resources:
                 - An AMI to create the EC2 from
