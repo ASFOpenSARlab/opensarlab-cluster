@@ -291,10 +291,24 @@ Additionally, if we want to run a jupyterhub system accessible to anyone with an
 
 ## Resources
 
+### Documentation/Learning Resources
+
 - [The AWS Boto3 Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
 - [This](https://russell.ballestrini.net/filtering-aws-resources-with-boto3/) helpful blog that has at least a few bits of  information about boto3 that isn't clearly explained in the docs.
 - [The JupyterHub Documentation][1]
 - The comments in this repository. I've tried to record a lot of thoughts about possible implementations or improvements to the system in my comments, particularly ones flagged as TODO, if you can't find information about something here or in the JupyterHub or AWS documentation it may be worth scanning through the TODO items.
+
+### Currently Created Resources
+
+- AWS Security Groups
+    - **default-jupyterhub-group**: Default automatically created security group. Should be updated if it will be used.
+    - **jupyterhub-node-group**: Current security group assigned to Nodes. This should be fairly precise but there may be improvements to be made.
+    - **jupyterhub-hub-group**: Current security group intended to be used for the Hub. Like the node's group this should be fairly precise but may have room for improvements.
+- AWS AMIs
+    - **asf-jupyterhub-node-persistent**: Latest node image. Set up to allow data persistence.
+    - **asf-jupyterhub-hub-image**: Latest hub image. has paramiko installation to allow ssh access to nodes to facilitate data persistence.
+- AWS IAM Roles
+    - **temp-jupyterhub-hub-role**: Temporary role allowing sufficient access for the hub to run correctly. Should be pruned of unnecessary permissions.
 
 [1]: https://jupyterhub.readthedocs.io/en/stable/index.html#
 [2]: #AWS-Resource-Setup
