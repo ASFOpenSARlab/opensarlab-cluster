@@ -287,6 +287,7 @@ If we want to use a similar JupyterHub setup to serve a large number of users we
 The best solution that I have though of is to allow users to supply their own AMI's somehow and update them. This would allow the user to manage whatever software installation they want and keep their files organized as they see fit.
 I know that there is a method for allowing the user give input to the spawner immediately before it creates the Notebook server. This might be able to be used to supply the spawner with a user's AMI id.
 This sort of system would also allow the user to pick an instance type and storage capacity as well which would also be very valuable in a much larger scale operation with a much more diverse group of users.
+Additionally, if we want to run a jupyterhub system accessible to anyone with an Earthdata account there should be a thorough top-to-bottom look at security. The JupyterHub documentation outlines some best practices [here](https://jupyterhub.readthedocs.io/en/stable/reference/websecurity.html)
 
 ## Resources
 
