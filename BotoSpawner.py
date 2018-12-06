@@ -112,7 +112,14 @@ class BotoSpawner(Spawner):
             if e.response['Error']['Code'] == "404":
                 if self.default_userdata_archive:
                     print("The requested file was not found, creating default directory")
-                    bucket.download_file(self.default_userdata_archive, temp_location)
+                    try:
+                        bucket.download_file(self.default_userdata_archive, temp_location)
+                    except boto_excep.ClientError as e:
+                        if e.response['Error']['Code'] == '404':
+                            print("The default file was not found, creating a new user directory")
+                            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
+                            print(ssh_stdout.read())
+                            print(ssh_stderr.read())
                 else:
                     print("The requested file was not found and there is no default set, creating a new user directory")
                     ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
