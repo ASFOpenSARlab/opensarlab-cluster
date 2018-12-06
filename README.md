@@ -138,6 +138,7 @@ This documentation is composed of the following sections:
     - `BotoSpawner.security_group_id`: The id of the AWS security group that should be used by the nodes. The security group must be supplied and meet certain requirements to successfully spawn Notebook servers(see [**AWS Resource Setup**][2]).
     - `BotoSpawner.instance_type`: The type of EC2 instance to use when creating nodes, for example: `'t2.nano'`. If unset, the Spawner will default to a `t2.nano`, the smallest available type.
     - `BotoSpawner.user_data_bucket`: The name of the s3 bucket to use when retrieving previously saved data. If unset all data left on the node will be deleted when the Notebook server is shut down.
+    - `BotoSpawner.default_user_data_archive`: the full filename of a zip file in your userdata bucket that should be used as an initial state for userdata directories.
 - *Singleuser Notebook Configuration*
     - In addition to the JupyterHub configuration, the Notebook must also have some configuration values set. These are currently being set via `c.Spawner.cmd` as options during the call to the Notebook.
         - Unfortunately, the only documentation I have found for these settings is the `jupyterhub-singleuser --help` output. 
@@ -231,6 +232,7 @@ This is **not** an example of the ideal setup.
         - Set `BotoSpawner.security_group_id` to your node's security group id
         - Set `BotoSpawner.instance_type` to `'t2.nano'`
         - Set `BotoSpawner.user_data_bucket` to your user data bucket's name
+        - Optionally set `BotoSpawner.default_userdata_archive` to a `.zip` file stored in your user data bucket
         - Set `c.JupyterHub.spawner_class` to `'BotoSpawner.BotoSpawner'`
         - Set `c.JupyterHub.ssl_cert/key` to the location of your ssl cert/key or the location they will be generated at
         - Set `c.Spawner.cmd` to `'<full path to jupyterhub-singleuser on your Node AMI> --allow-root --ip 0.0.0.0 --port 8080'`
