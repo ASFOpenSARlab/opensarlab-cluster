@@ -517,7 +517,6 @@ c.JupyterHub.ssl_key = 'jupyterhub.key'
 #  environment variables. Most, including the default, do not. Consult the
 #  documentation for your spawner to verify!
 # TODO move to programmatic setting of port and ip
-# TODO --allow-root should not be necessary any more, check it that is the case
 # the port here should match hub_port i think
 c.Spawner.cmd = '/usr/local/bin/jupyterhub-singleuser --ip 0.0.0.0 --port 8080'
 
