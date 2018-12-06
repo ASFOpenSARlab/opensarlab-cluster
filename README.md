@@ -310,6 +310,7 @@ Additionally, if we want to run a jupyterhub system accessible to anyone with an
 - AWS IAM Roles
     - **temp-jupyterhub-hub-role**: Temporary role allowing sufficient access for the hub to run correctly. Should be pruned of unnecessary permissions.
     - **jupyterhub-hub-role-secure**: Prototype of a more secure IAM role for the JupyterHub hub instance. Currently not operational due to permission issues with AWS key pairs.
+- **mnamneus-test-user-data**: The S3 bucket that has been used to test user data import/export functionality.
 
 [1]: https://jupyterhub.readthedocs.io/en/stable/index.html#
 [2]: #AWS-Resource-Setup
