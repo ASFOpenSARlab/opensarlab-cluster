@@ -27,7 +27,7 @@ class BotoSpawner(Spawner):
         self.exit_value = 0
         # TODO hook warning logs into jupyterhub's logging system
         # TODO finish writing warning logs
-        # set ssh key name to environment if not set
+        # generate ssh key and set the name to environment if not already set
         # this avoids problems with overwriting keys when spawning multiple nodes
         if not hasattr(self, 'user_data_bucket'):
             print('WARNING: bucket for user data not set, data will not persist after server shutdown')
@@ -39,9 +39,9 @@ class BotoSpawner(Spawner):
                 env['JUPYTERHUB_SSH_KEY'] = self.generate_ssh_key()
         self.ssh_key = env['JUPYTERHUB_SSH_KEY']
 
+        # set defaults for things that should be set in the config file
         if not hasattr(self, 'user_startup_script'):
             self.user_startup_script = ''
-        # default to the smallest machine running ubuntu server 18.04
         if not hasattr(self, 'image_id'):
             self.image_id = 'ami-0ac019f4fcb7cb7e6'
             print(f'WARNING: no image_id set, using default bare ubuntu image, server creation will fail due to lacking jupyterhub-singleuser')
@@ -52,9 +52,12 @@ class BotoSpawner(Spawner):
             self.security_group_id = self.get_default_sec_group()
         self.node = None
 
+    # create a new ssh key for access to the nodes in AWS return the AWS id
     # TODO this could cause errors if two hubs are running key_name should really be set on a per-hub basis
-    # TODO put this in the jupyterhub_config.py file
     def generate_ssh_key(self):
+        """
+        :return: string, the name of the new key as stored in AWS
+        """
         key_name = 'Jupyterhub-Node-key'
         keys = self.ec2c.describe_key_pairs(Filters=[{'Name': 'key-name', 'Values': [f'{key_name}']}])
         if len(keys) > 0:
@@ -65,7 +68,11 @@ class BotoSpawner(Spawner):
             key_file.write(key)
         return f'{key_name}'
 
+    # connect to the node via paramiko and return that connected client
     def ssh_to_node(self):
+        """
+        :return: paramiko.client.SSHClient object with an open connection to the node
+        """
         try:
             pkey = paramiko.RSAKey.from_private_key_file(f'/etc/ssh/{self.ssh_key}.pem')
         except Exception as e:
@@ -85,7 +92,13 @@ class BotoSpawner(Spawner):
             return -2
         return ssh
 
+    # download the user data folder from S3 and unzip it, if it doesn't exist create a new user data directory
     def import_user_data(self, connection):
+        """
+
+        :param connection: a paramiko.client.SSHClient object with an open ssh connection to the node
+        :return: 0 for successful completion
+        """
         s3r = boto3.resource('s3')
         bucket = s3r.Bucket(self.user_data_bucket)
 
@@ -114,7 +127,13 @@ class BotoSpawner(Spawner):
             print(ssh_stderr.read())
             return 0
 
+    # zip up the user data directory and upload it to S3
     def export_user_data(self, connection):
+        """
+
+        :param connection: a paramiko.client.SSHClient object with an open ssh connection to the node
+        :return: 0 for successful completion, -1 for failure
+        """
         s3r = boto3.resource('s3')
         bucket = s3r.Bucket(self.user_data_bucket)
         filename = f'{self.user.name}.zip'
@@ -148,7 +167,12 @@ class BotoSpawner(Spawner):
             print(f'no "{filename}" folder found')
             return -1
 
+    # compile everything that needs to run for startup into one bash script to be run on the node
     def create_startup_script(self):
+        """
+
+        :return: string: a bash script that exports necessary environment variables, runs configured startup commands and starts the Notebook server
+        """
         node_env = self.get_env()
         startup_commands = [f'#!/bin/bash', 'set -e -x']
         startup_commands += [f'export {e}={node_env[e]}' for e in node_env.keys()]
@@ -159,7 +183,11 @@ class BotoSpawner(Spawner):
         print(f'SCRIPT:\n{startup_script}')
         return startup_script
 
+    # get the default security group for the nodes from AWS, create one if it doesn't exist
     def get_default_sec_group(self):
+        """
+        :return: string: the AWS id of the default security group for JupyterHub nodes
+        """
         # make sure there isn't already a default security group created
         created_groups = self.ec2c.describe_security_groups(
             Filters=[
@@ -174,7 +202,11 @@ class BotoSpawner(Spawner):
             default_group_id = created_groups[0]['GroupId']
         return default_group_id
 
+    # creates the default security group
     def create_default_sec_group(self):
+        """
+        :return: string: the AWS id of the created default security group for JupyterHub nodes
+        """
         default_group = self.ec2r.create_security_group(
             Description='Default Jupyterhub Node Group',
             GroupName='default-jupyterhub-group'
@@ -206,23 +238,13 @@ class BotoSpawner(Spawner):
                     ]
                 },
                 {
-                    'FromPort': 80,
+                    'FromPort': 8080,
                     'IpProtocol': 'tcp',
                     'IpRanges': [
                         {'CidrIp': '0.0.0.0/0', 'Description': 'allow http from all sources'}
                     ],
                     'Ipv6Ranges': [
                         {'CidrIpv6': '::/0', 'Description': 'allow http from all sources'}
-                    ]
-                },
-                {
-                    'FromPort': 443,
-                    'IpProtocol': 'tcp',
-                    'IpRanges': [
-                        {'CidrIp': '0.0.0.0/0', 'Description': 'allow https from all sources'}
-                    ],
-                    'Ipv6Ranges': [
-                        {'CidrIpv6': '::/0', 'Description': 'allow https from all sources'}
                     ]
                 }
 
@@ -265,7 +287,7 @@ class BotoSpawner(Spawner):
             self.node = nodes[0]
             node_id = self.node.instance_id
 
-            # TODO waiting this way increases startup times significantly, maybe try waiting on the network interface?
+            # TODO waiting this way increases startup times by a couple of minutes, maybe try waiting on the network interface?
             # wait until the ec2 is accessible
             waiter = self.ec2c.get_waiter('instance_status_ok')
             waiter.wait(InstanceIds=[self.node.instance_id])
@@ -290,7 +312,7 @@ class BotoSpawner(Spawner):
             connection.close()
 
             ip = self.node.public_dns_name
-            # this should match the port specified in cmd from jupyterhub_config.py I think
+            # this should match the port specified in cmd from jupyterhub_config.py
             port = 8080
             return ip, port
 
