@@ -309,6 +309,7 @@ Additionally, if we want to run a jupyterhub system accessible to anyone with an
     - **asf-jupyterhub-hub-image**: Latest hub image. has paramiko installation to allow ssh access to nodes to facilitate data persistence.
 - AWS IAM Roles
     - **temp-jupyterhub-hub-role**: Temporary role allowing sufficient access for the hub to run correctly. Should be pruned of unnecessary permissions.
+    - **jupyterhub-hub-role-secure**: Prototype of a more secure IAM role for the JupyterHub hub instance. Currently not operational due to permission issues with AWS key pairs.
 
 [1]: https://jupyterhub.readthedocs.io/en/stable/index.html#
 [2]: #AWS-Resource-Setup
