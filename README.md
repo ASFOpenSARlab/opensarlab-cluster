@@ -68,6 +68,8 @@ This documentation is composed of the following sections:
     - There may also be a way to hook the spawner's logging into the rest of the JupyterHub logging system.
 - *Use an officially singed ssl cert*
     - Apparently self signed certs can cause issues with some browsers.
+- *Refactor for Supporting Multiple Operating Systems*
+    - The current version will likely not support non-linux Operating Systems at least due to a few directory paths.
 
 ### Security
 
