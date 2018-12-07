@@ -1,8 +1,3 @@
-from os import path
-import subprocess
-
-from BotoSpawner import BotoSpawner
-
 #Configuration file for jupyterhub.
 
 #------------------------------------------------------------------------------
@@ -366,6 +361,7 @@ c.JupyterHub.hub_ip = '0.0.0.0'
 
 # BotoSpawner specific variables should also be able to be set after c.JupyterHub.spawner_class
 # using c.Spawner.<variable_name>
+from BotoSpawner import BotoSpawner
 
 # sets the region to create nodes in. As of the time of this writing a list or regions can be found here: https://docs.aws.amazon.com/general/latest/gr/rande.html
 # currently not enabled to create nodes in different regions
@@ -410,7 +406,9 @@ c.JupyterHub.spawner_class = 'BotoSpawner.BotoSpawner'
 # ssl key/cert generation
 # openssl is preinstalled on the baseline ubuntu image in AWS
 # if this is deployed somewhere else it will be a requirement though
+from os import path
 if not path.exists('jupyterhub.key') or not path.exists('jupyterhub.crt'):
+    import subprocess
     # TODO set finalized expiration date
     subprocess.check_call(['openssl', 'req', '-batch', '-x509', '-newkey', 'rsa:4096', '-keyout', 'jupyterhub.key', '-out', 'jupyterhub.crt', '-nodes', '-days', '150'])
 
