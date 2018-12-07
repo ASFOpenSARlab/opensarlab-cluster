@@ -42,8 +42,6 @@ class BotoSpawner(Spawner):
         # set defaults for things that should be set in the config file
         if not hasattr(self, 'user_startup_script'):
             self.user_startup_script = ''
-        if not hasattr(self, 'default_userdata_archive'):
-            self.default_userdata_archive = None
         if not hasattr(self, 'image_id'):
             self.image_id = 'ami-0ac019f4fcb7cb7e6'
             print(f'WARNING: no image_id set, using default bare ubuntu image, server creation will fail due to lacking jupyterhub-singleuser')
@@ -110,15 +108,11 @@ class BotoSpawner(Spawner):
             bucket.download_file(filename, temp_location)
         except boto_excep.ClientError as e:
             if e.response['Error']['Code'] == "404":
-                if self.default_userdata_archive:
-                    print("The requested file was not found, creating default directory")
-                    bucket.download_file(self.default_userdata_archive, temp_location)
-                else:
-                    print("The requested file was not found and there is no default set, creating a new user directory")
-                    ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
-                    print(ssh_stdout.read())
-                    print(ssh_stderr.read())
-                    return 0
+                print("The requested file was not found, creating a user directory")
+                ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
+                print(ssh_stdout.read())
+                print(ssh_stderr.read())
+                return 0
             else:
                 raise
         with connection.open_sftp() as sftp:
@@ -316,8 +310,8 @@ class BotoSpawner(Spawner):
                 sftp.put('/tmp/jupyter_singleuser_script', '/tmp/startup_script', confirm=True)
             connection.exec_command('sudo chmod 755 /tmp/startup_script')
             # saves log file to /home/ubuntu/singleuser_output.txt
-            connection.exec_command('touch /var/log/singleuser_output.log')
-            connection.exec_command('. /tmp/startup_script &> /var/log/singleuser_output.log')
+            connection.exec_command('touch /home/ubuntu/singleuser_output.txt')
+            connection.exec_command('. /tmp/startup_script &> /home/ubuntu/singleuser_output.txt')
 
             connection.close()
 
