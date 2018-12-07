@@ -363,6 +363,9 @@ c.JupyterHub.hub_ip = '0.0.0.0'
 # using c.Spawner.<variable_name>
 from BotoSpawner import BotoSpawner
 
+# sets the directory to save Notebook server logs to, /var/log by default
+# BotoSpawner.log_dir =
+
 # sets the region to create nodes in. As of the time of this writing a list or regions can be found here: https://docs.aws.amazon.com/general/latest/gr/rande.html
 # currently not enabled to create nodes in different regions
 BotoSpawner.region_name = 'us-east-1'

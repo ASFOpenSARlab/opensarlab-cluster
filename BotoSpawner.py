@@ -52,6 +52,8 @@ class BotoSpawner(Spawner):
         print('security group before default setup:\t' + self.security_group_id)
         if not hasattr(self, 'security_group_id'):
             self.security_group_id = self.get_default_sec_group()
+        if not hasattr(self, 'log_dir'):
+            self.log_dir = '/var/log'
         self.node = None
 
     # create a new ssh key for access to the nodes in AWS return the AWS id
@@ -328,9 +330,9 @@ class BotoSpawner(Spawner):
             with connection.open_sftp() as sftp:
                 sftp.put('/tmp/jupyter_singleuser_script', '/tmp/startup_script', confirm=True)
             connection.exec_command('sudo chmod 755 /tmp/startup_script')
-            # saves log file to /home/ubuntu/singleuser_output.txt
-            connection.exec_command('touch /home/ubuntu/singleuser_output.txt')
-            connection.exec_command('. /tmp/startup_script &> /home/ubuntu/singleuser_output.txt')
+            # saves log file to /var/log/singleuser_output.txt
+            connection.exec_command(f'touch {self.log_dir}/singleuser_output.log')
+            connection.exec_command(f'. /tmp/startup_script &> {self.log_dir}/singleuser_output.log')
 
             connection.close()
 
