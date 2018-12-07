@@ -333,7 +333,7 @@ class BotoSpawner(Spawner):
             print(ssh_stdout.read().decode('ascii'))
             print(ssh_stderr.read().decode('ascii'))
             # saves log file to /var/log/singleuser_output.txt
-            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'touch {self.log_dir}/singleuser_output.log')
+            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'sudo touch {self.log_dir}/singleuser_output.log')
             print(ssh_stdout.read().decode('ascii'))
             print(ssh_stderr.read().decode('ascii'))
             ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'sudo chmod 666 {self.log_dir}/singleuser_output.log')
