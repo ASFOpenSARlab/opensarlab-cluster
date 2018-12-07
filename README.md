@@ -300,7 +300,6 @@ Additionally, if we want to run a jupyterhub system accessible to anyone with an
 - [The AWS Boto3 Documentation](https://boto3.amazonaws.com/v1/documentation/api/latest/index.html)
 - [This](https://russell.ballestrini.net/filtering-aws-resources-with-boto3/) helpful blog that has at least a few bits of  information about boto3 that isn't clearly explained in the docs.
 - [The JupyterHub Documentation][1]
-- [The JupyterHub GitHub](https://github.com/jupyterhub/jupyterhub) issues section has a significant volume of troubleshooting threads that may be helpful.
 - The comments in this repository. I've tried to record a lot of thoughts about possible implementations or improvements to the system in my comments, particularly ones flagged as TODO, if you can't find information about something here or in the JupyterHub or AWS documentation it may be worth scanning through the TODO items.
 
 ### Currently Created Resources
