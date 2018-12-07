@@ -128,9 +128,6 @@ class BotoSpawner(Spawner):
                             print(ssh_stderr.read().decode('ascii'))
                         else:
                             raise
-                    ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mv {self.default_userdata_archive.split(".")[0]} {self.user.name}')
-                    print(ssh_stdout.read().decode('ascii'))
-                    print(ssh_stderr.read().decode('ascii'))
                 else:
                     print('the requested file was not found and no default is set, creating a new user directory')
                     ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
@@ -149,6 +146,19 @@ class BotoSpawner(Spawner):
             ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'unzip {filename}')
             print(ssh_stdout.read().decode('ascii'))
             print(ssh_stderr.read().decode('ascii'))
+
+            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'ls home/ubuntu')
+            out = ssh_stdout.read().decode('ascii')
+            print(out)
+            print(ssh_stderr.read().decode('ascii'))
+
+            # if the default was used rename it to correspond to the username
+            default_folder = self.default_userdata_archive.split('.')[0]
+            if default_folder in out.split('\n'):
+                ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mv {self.default_userdata_archive.split(".")[0]} {self.user.name}')
+                print(ssh_stdout.read().decode('ascii'))
+                print(ssh_stderr.read().decode('ascii'))
+
             print('cleaning up archive')
             ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'rm {filename}')
             print(ssh_stdout.read().decode('ascii'))
