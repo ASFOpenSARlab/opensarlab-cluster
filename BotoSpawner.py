@@ -329,10 +329,16 @@ class BotoSpawner(Spawner):
 
             with connection.open_sftp() as sftp:
                 sftp.put('/tmp/jupyter_singleuser_script', '/tmp/startup_script', confirm=True)
-            connection.exec_command('sudo chmod 755 /tmp/startup_script')
+            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command('sudo chmod 755 /tmp/startup_script')
+            print(ssh_stdin.read().decode('ascii'))
+            print(ssh_stdout.read().decode('ascii'))
             # saves log file to /var/log/singleuser_output.txt
-            connection.exec_command(f'touch {self.log_dir}/singleuser_output.log')
-            connection.exec_command(f'. /tmp/startup_script &> {self.log_dir}/singleuser_output.log')
+            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'touch {self.log_dir}/singleuser_output.log')
+            print(ssh_stdin.read().decode('ascii'))
+            print(ssh_stdout.read().decode('ascii'))
+            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'. /tmp/startup_script &> {self.log_dir}/singleuser_output.log')
+            print(ssh_stdin.read().decode('ascii'))
+            print(ssh_stdout.read().decode('ascii'))
 
             connection.close()
 
