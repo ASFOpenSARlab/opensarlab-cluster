@@ -383,7 +383,7 @@ BotoSpawner.user_startup_script = ''
 BotoSpawner.image_id = 'ami-0618f03105de1df84'
 
 # TODO update the security group and default security group
-# defaults to allow all outgoing and allow all incoming TCP over ports 22 and 8080
+# defaults to allow all outgoing and allow all incoming ssh, http and https
 BotoSpawner.security_group_id = 'sg-0b17fce7b6092ee59'
 
 # sets the type of ec2 instance to create. As of writing a list can be found at https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
