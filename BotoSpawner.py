@@ -110,8 +110,8 @@ class BotoSpawner(Spawner):
             if e.response['Error']['Code'] == "404":
                 print("The requested file was not found, creating a user directory")
                 ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
-                print(ssh_stdout.read())
-                print(ssh_stderr.read())
+                print(ssh_stdout.read().decode('ascii'))
+                print(ssh_stderr.read().decode('ascii'))
                 return 0
             else:
                 raise
@@ -123,9 +123,13 @@ class BotoSpawner(Spawner):
             print('extracting files')
             # TODO finalize where user data should go on the nodes
             ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'unzip {filename}')
-            print(ssh_stdout.read())
-            print(ssh_stderr.read())
-            return 0
+            print(ssh_stdout.read().decode('ascii'))
+            print(ssh_stderr.read().decode('ascii'))
+            print('cleaning up archive')
+            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'rm {filename}')
+            print(ssh_stdout.read().decode('ascii'))
+            print(ssh_stderr.read().decode('ascii'))
+        return 0
 
     # zip up the user data directory and upload it to S3
     def export_user_data(self, connection):
