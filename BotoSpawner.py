@@ -42,6 +42,8 @@ class BotoSpawner(Spawner):
         # set defaults for things that should be set in the config file
         if not hasattr(self, 'user_startup_script'):
             self.user_startup_script = ''
+        if not hasattr(self, 'default_userdata_archive'):
+            self.default_userdata_archive = None
         if not hasattr(self, 'image_id'):
             self.image_id = 'ami-0ac019f4fcb7cb7e6'
             print(f'WARNING: no image_id set, using default bare ubuntu image, server creation will fail due to lacking jupyterhub-singleuser')
@@ -104,15 +106,32 @@ class BotoSpawner(Spawner):
 
         filename = f'{self.user.name}.zip'
         temp_location = f'/tmp/{filename}'
+
+        # this code is really ugly, I could shift it around some but I'm not sure how to do it in a way that's actually less complicated
+        # try to get their files, if we can't find them go to the default, if we can't find that then make them a new directory
+        # any s3 error that's not a 404 we raise
         try:
             bucket.download_file(filename, temp_location)
         except boto_excep.ClientError as e:
             if e.response['Error']['Code'] == "404":
-                print("The requested file was not found, creating a user directory")
-                ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
-                print(ssh_stdout.read().decode('ascii'))
-                print(ssh_stderr.read().decode('ascii'))
-                return 0
+                if self.default_userdata_archive:
+                    print('the requested file was not found, creating a default user directory')
+                    try:
+                        bucket.download_file(self.default_userdata_archive, temp_location)
+                    except boto_excep.ClientError as e:
+                        if e.response['Error']['Code'] == '404':
+                            print('the default file was not found, creating a new user directory')
+                            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
+                            print(ssh_stdout.read().decode('ascii'))
+                            print(ssh_stderr.read().decode('ascii'))
+                        else:
+                            raise
+                else:
+                    print('the requested file was not found and no default is set, creating a new user directory')
+                    ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mkdir /home/ubuntu/{self.user.name}')
+                    print(ssh_stdout.read().decode('ascii'))
+                    print(ssh_stderr.read().decode('ascii'))
+                    return 0
             else:
                 raise
         with connection.open_sftp() as sftp:

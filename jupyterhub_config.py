@@ -391,6 +391,10 @@ BotoSpawner.instance_type = 't2.nano'
 # sets the s3 bucket to store user's data in while their server is shut down
 BotoSpawner.user_data_bucket = 'mnamneus-test-user-data'
 
+# the full filename of the .zip file in the user data bucket to use in creating a user's directory if none exists
+# if not set an empty directory will be created
+BotoSpawner.default_userdata_archive = 'default_userdata.zip'
+
 ## The class to use for spawning single-user servers.
 #
 #  Should be a subclass of Spawner.
