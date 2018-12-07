@@ -125,11 +125,7 @@ class BotoSpawner(Spawner):
             ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'unzip {filename}')
             print(ssh_stdout.read())
             print(ssh_stderr.read())
-            print('cleaning up archive')
-            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'rm {filename}')
-            print(ssh_stdout.read())
-            print(ssh_stderr.read())
-        return 0
+            return 0
 
     # zip up the user data directory and upload it to S3
     def export_user_data(self, connection):
