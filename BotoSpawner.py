@@ -154,8 +154,9 @@ class BotoSpawner(Spawner):
 
             # if the default was used rename it to correspond to the username
             default_folder = self.default_userdata_archive.split('.')[0]
+            print(default_folder)
             if default_folder in out.split('\n'):
-                ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mv {self.default_userdata_archive.split(".")[0]} {self.user.name}')
+                ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'mv {default_folder} {self.user.name}')
                 print(ssh_stdout.read().decode('ascii'))
                 print(ssh_stderr.read().decode('ascii'))
 
