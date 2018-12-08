@@ -147,7 +147,7 @@ class BotoSpawner(Spawner):
             print(ssh_stdout.read().decode('ascii'))
             print(ssh_stderr.read().decode('ascii'))
 
-            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'ls home/ubuntu')
+            ssh_stdin, ssh_stdout, ssh_stderr = connection.exec_command(f'ls /home/ubuntu')
             out = ssh_stdout.read().decode('ascii')
             print(out)
             print(ssh_stderr.read().decode('ascii'))
