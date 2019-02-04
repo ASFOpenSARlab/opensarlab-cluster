@@ -1,0 +1,1 @@
+The idea is for each lab to have it's own image tags.

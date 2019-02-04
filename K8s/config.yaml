@@ -16,8 +16,13 @@ auth:
       - khogenso
 
 singleuser:
-  storage:  # storage needs to be commented out when PVC is working. Setting to none allows for non-persistent storage.
+  storage:  # storage and storage_type needs to be commented out when PVC is working. Setting to none allows for non-persistent storage.
     type: none
-  #image:
-  #  name: docker-registry.asf.alaska.edu:5000/some-image
-  #  tag: build.1
+  profileList:
+    - display_name: "Minimal environment"
+      description: "To avoid too much bells and whistles: Python."
+      default: true
+    - display_name: "Lab 1"
+      description: "All you ever wanted and more..."
+      kubespawner_override:
+        image: docker-registry.asf.alaska.edu:5000/asf-franz-labs:Lab_1
