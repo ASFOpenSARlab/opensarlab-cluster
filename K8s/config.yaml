@@ -1,0 +1,23 @@
+# This helm config file modifies the defaults found in zero-to-jupyterhub-k8s/jupyterhub/
+# Possible values are scattered throughout the doc starting at https://z2jh.jupyter.org/en/latest/setup-jupyterhub.html
+
+# Proxy token can be recreated via `openssl rand -hex 32`. This token isn't really used anywhere else so I'm not sure of the security concerns.
+proxy:
+  secretToken: aba0a4fe6a31e461626675f6492cb029bdbb01f9d6981e491473624b7825349b
+
+hub:
+  db:
+    type: sqlite-memory  # This is not persistent memory. Use 'sqlite-pvc' when PVCs work
+
+auth:
+  admin:
+    users:
+      - emlundell
+      - khogenso
+
+singleuser:
+  storage:  # storage needs to be commented out when PVC is working. Setting to none allows for non-persistent storage.
+    type: none
+  #image:
+  #  name: docker-registry.asf.alaska.edu:5000/some-image
+  #  tag: build.1
