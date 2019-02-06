@@ -50,7 +50,7 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
 
     ```bash
     export NAME=jupyter.k8s.local
-    export KOPS_STATE_STORE=s3://asf-jupyter-cluster`
+    export KOPS_STATE_STORE=s3://asf-jupyter-cluster
     export REGION=`curl -s http://169.254.169.254/latest/dynamic/instance-identity/document|grep region|awk -F\" '{print $4}'` 
     export ZONES=$(aws ec2 describe-availability-zones --region $REGION | grep ZoneName | awk '{print $2}' | tr -d '"')
     export ZONES=$(echo $ZONES | tr -d " " | rev | cut -c 2- | rev)
@@ -82,12 +82,18 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
 9. Wait and check for the k8s cluster to be setup. There are various AWS resources being created and it takes time. 
 
     `kops validate cluster`
+    
+    To list all the resources created (_note the lack of --yes_): 
+    
+    ```bash
+    kops delete cluster $NAME
+    ```
 
 10. Get the kubectl config needed to interact with the cluster
 
     `kops export kubecfg`
 
-    Use the created config on the local computer. 
+    Copy the config at _~/.kube/config_ to the corresponding location on your local machine. 
 
 11. Install `kubectl` on your local machine. Kubectl will also be used Helm later and so needs to be installed locally.
 
@@ -130,9 +136,12 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
     kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
     helm init --service-account tiller --wait
     ```
+    
 3. Ensure that tiller is secure from access inside the cluster
 
-    `kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{"op": "add", "path": "/spec/template/spec/containers/0/command", "value": ["/tiller", "--listen=localhost:44134"]}]'`
+    ```bash
+    kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{"op": "add", "path": "/spec/template/spec/containers/0/command", "value": ["/tiller", "--listen=localhost:44134"]}]'
+    ```
     
 4. Verify
 
@@ -196,9 +205,11 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
  
     `kubectl describe service proxy-public --namespace jhub`
     
-    The ip is found under `EXTERNAL-IP` for `proxy-public`
+    The ip is found under `LoadBalancer Ingress`. 
 
 5.  Open the ip in a browser and play.
+
+    Note that when initially logging in as an user, the volume for that user hasn't been created yet. There will be a self-correcting error displayed that will go away once the volume is formed and attached.
 
 ###To delete everything
 

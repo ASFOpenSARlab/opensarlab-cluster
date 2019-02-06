@@ -14,10 +14,31 @@ auth:
     users:
       - emlundell
       - khogenso
-      - qwerty
-      - bob
-  dummy:
-    password: "1111Q"
+      - s1
+      - s2
+      - s3
+      - s4
+      - s5
+      - s6
+      - s7
+      - s8
+      - s9
+      - s10
+      - s11
+      - s12
+      - s13
+      - s14
+      - s15
+      - s16
+      - s17
+      - s18
+      - s19
+      - s20
+      - s21
+      - s22
+      - s23
+  #dummy:
+  #  password: "1111Q"
 
   #type: custom
   #custom:
@@ -37,15 +58,15 @@ singleuser:
   image:
     name: jupyter/minimal-notebook
     tag: 2343e33dec46
-  profileList:
-    - display_name: "Minimal environment"
-      description: "To avoid too much bells and whistles: Python."
-      default: true
-    - display_name: "Datascience environment"
-      description: "If you want the additional bells and whistles: Python, R, and Julia."
-      kubespawner_override:
-        image: jupyter/datascience-notebook:2343e33dec46
-    - display_name: "Spark environment"
-      description: "The Jupyter Stacks spark image!"
-      kubespawner_override:
-        image: jupyter/all-spark-notebook:2343e33dec46
+  #profileList:
+  #  - display_name: "Minimal environment"
+  #    description: "To avoid too much bells and whistles: Python."
+  #    default: true
+  #  - display_name: "Datascience environment"
+  #    description: "If you want the additional bells and whistles: Python, R, and Julia."
+  #    kubespawner_override:
+  #      image: jupyter/datascience-notebook:2343e33dec46
+  #  - display_name: "Spark environment"
+  #    description: "The Jupyter Stacks spark image!"
+  #    kubespawner_override:
+  #      image: jupyter/all-spark-notebook:2343e33dec46
