@@ -60,7 +60,8 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
     The cluster will have a master ec2 and a number of slave ec2 nodes. These slave ec2 nodes will contain the pods that will be running JupyterHub.
     Note the various sizes being picked. It's important that the right sizes be picked here as changing them will be more difficult later. 
     Having the master run as t2.micro is fine. The node size needs to be big enough to handle multiple Jupyter notebooks/pods/users running.
-    The volume sizes are per pod which is really per user. We will pick nodes with t2.large with 10 GB volumes.
+    The volume sizes are per pod which is really per user. We will pick nodes with t2.large with 10 GB volumes. 
+    About 8 volumes can be attached to a node. So for 30 users, 5 nodes should be plenty.
     
     _Warning:_ Note that some EC2 instance types might have bad volume types: https://github.com/jupyterhub/zero-to-jupyterhub-k8s/issues/870#issuecomment-416712718
     
@@ -72,6 +73,7 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
         --master-volume-size 10 \
         --node-size t2.large \
         --node-volume-size 10 \
+        --node-count 4 \
         --yes
     ```
     
@@ -96,6 +98,8 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
     Copy the config at _~/.kube/config_ to the corresponding location on your local machine. 
 
 11. Install `kubectl` on your local machine. Kubectl will also be used Helm later and so needs to be installed locally.
+
+    It also might be beneficial to install `kubectl` on the cluster master. Some of the more advance `kops` options use `kubectl`. https://github.com/kubernetes/kops/blob/master/docs/install.md
 
 12. Enable dynamic storage on the k8s cluster. This will allow JupyterHub to give each user their own unique storage volumes.
 
