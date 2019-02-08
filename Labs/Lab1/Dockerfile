@@ -1,16 +1,14 @@
 FROM jupyter/minimal-notebook:83ed2c63671f
 LABEL MAINTAINER="Alaska Satellite Facility"
 
-ENV MAPREADY_VERSION=ASF_MapReady
-
 # By default, the notebook base image is set to non-sudo user joyvan. This makes root-ful actions difficult.
 USER root
 
 RUN apt-get update && \
-    apt-get install -y software-properties-common && \
+    apt-get install --no-install-recommends -y software-properties-common && \
     add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
-RUN apt-get update && \
-    apt-get install -y \
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y \
     python \
     python-pip \
     gdal-bin \
@@ -19,12 +17,14 @@ RUN apt-get update && \
     wget \
     python-gdal \
     awscli \
-    shapelib
+    shapelib \
+    groff \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN pip install 'boto3>=1.4.4' 'psycopg2>=2.7.1' 'pyyaml>=3.12' 'lxml>=3.8.0' 'numpy>=1.13.0'
+RUN pip install 'boto3>=1.4.4' 'psycopg2>=2.7.1' 'pyyaml>=3.12' 'lxml>=3.8.0' 'numpy>=1.13.0' 'pandas==0.23.0'
 
-COPY ${MAPREADY_VERSION}.tar.gz /tmp/
-RUN cd /tmp/ && tar xzvf ${MAPREADY_VERSION}.tar.gz && cd ${MAPREADY_VERSION} && make install && rm -rf /tmp/${MAPREADY_VERSION}*
+#COPY ASF_MapReady_CLI.tar.gz /tmp/ASF_MapReady.tar.gz
+#RUN cd /tmp/ && tar xzvf ASF_MapReady.tar.gz && cd ASF_MapReady && make install && rm -rf /tmp/ASF_MapReady*
 
 #COPY src /usr/local/sbin
 #COPY config /usr/local/config

@@ -40,33 +40,13 @@ auth:
   #dummy:
   #  password: "1111Q"
 
-  #type: custom
-  #custom:
-  #  className: oauthenticator.generic.GenericOAuthenticator
-  #  config:
-  #    login_service: "Earthdata URS"
-  #    client_id: "BO_n7nTIlMljdvU6kRRB3g"
-  #    client_secret: "Ech0.Ingest.Re5$t"
-      #token_url: https://${host}/auth/realms/${realm}/protocol/openid-connect/token
-      #userdata_url: https://${host}/auth/realms/${realm}/protocol/openid-connect/userinfo
-      #userdata_method: GET
-      #userdata_params: {'state': 'state'}
-      #username_key: preferred_username
-
 singleuser:
-  # Defines the default image
   image:
-    name: jupyter/minimal-notebook
-    tag: 2343e33dec46
-  #profileList:
-  #  - display_name: "Minimal environment"
-  #    description: "To avoid too much bells and whistles: Python."
-  #    default: true
-  #  - display_name: "Datascience environment"
-  #    description: "If you want the additional bells and whistles: Python, R, and Julia."
-  #    kubespawner_override:
-  #      image: jupyter/datascience-notebook:2343e33dec46
-  #  - display_name: "Spark environment"
-  #    description: "The Jupyter Stacks spark image!"
-  #    kubespawner_override:
-  #      image: jupyter/all-spark-notebook:2343e33dec46
+    name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
+    tag: base
+
+prepuller:
+  continuous:
+    enabled: false
+  hook:
+     enabled: false
