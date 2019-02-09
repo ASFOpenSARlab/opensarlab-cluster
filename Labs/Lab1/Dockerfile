@@ -19,6 +19,7 @@ RUN apt-get update \
     awscli \
     shapelib \
     groff \
+    vim \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install 'boto3>=1.4.4' 'psycopg2>=2.7.1' 'pyyaml>=3.12' 'lxml>=3.8.0' 'numpy>=1.13.0' 'pandas==0.23.0'
@@ -29,6 +30,13 @@ RUN pip install 'boto3>=1.4.4' 'psycopg2>=2.7.1' 'pyyaml>=3.12' 'lxml>=3.8.0' 'n
 #COPY src /usr/local/sbin
 #COPY config /usr/local/config
 
-#USER jovyan
+# Copy aws config for locked-down user. Secret keys will be via the helm config
+#COPY .aws/ /home/commons/.aws/
+RUN cp -r /home/jovyan/. /home/commons/
 
-#ENTRYPOINT ["/usr/bin/python", "/usr/local/sbin/daemon.py"]
+ARG buildtag
+RUN echo $buildtag > /home/commons/.build_tag
+
+RUN chown -R jovyan:root /home/commons/
+
+USER jovyan

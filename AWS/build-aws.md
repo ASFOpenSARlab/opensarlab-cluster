@@ -1,9 +1,9 @@
 This is largely taken from https://z2jh.jupyter.org/en/latest/amazon/step-zero-aws.html and https://kubernetes.io/docs/setup/custom-cloud/kops/
 To simplify AWS management, a subaccount was created in AWS called JupyterHub that contains only the following.
 
-###Install the k8s cluster in AWS
+### Install the k8s cluster in AWS
 
-1. Create a IAM Role
+1. Create a IAM Role for the cluster
 
     Name: `jupyterhub-cluster`
     - AmazonEC2FullAccess
@@ -12,7 +12,7 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
     - AmazonVPCFullAccess
     - Route53FullAccess (Optional. This is useful later for url routing if wanted)
 
-2. Create a Ec2 instance that will be the cluster master
+1. Create a Ec2 instance that will be the cluster master
 
     - type: AWS Linux
     - size: t2.micro
@@ -21,11 +21,11 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
 
     On creation, note the public ip.
 
-3. SSH into the cluster master
+1. SSH into the cluster master
     
     `ssh -i my-key.pem ec2-user@cluster-master-public-ip`
 
-4. Install `kops` on the cluster master. https://github.com/kubernetes/kops/blob/master/docs/install.md
+1. Install `kops` on the cluster master. https://github.com/kubernetes/kops/blob/master/docs/install.md
 
     ```
     curl -Lo kops https://github.com/kubernetes/kops/releases/download/$(curl -s https://api.github.com/repos/kubernetes/kops/releases/latest | grep tag_name | cut -d '"' -f 4)/kops-linux-amd64
@@ -36,17 +36,17 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
 
     We are keeping kops only on the cluster master for security reasons. any changes to the cluster will need to be done only within the ec2.
 
-5. Create a keypair to be used by the cluster and other AWS resources
+1. Create a keypair to be used by the cluster and other AWS resources
 
     `ssh-keygen`
     
     Skip the name and passphrase. Save in the rsa public default.
 
-6. Manually create s3 bucket named `asf-jupyter-cluster` (or something similar. Remember that it has to be globally unique.)
+1. Manually create s3 bucket named `asf-jupyter-cluster` (or something similar. Remember that it has to be globally unique.)
 
     This bucket will contain cluster metadata used by kops. The docs recommmend that versioning be turned on.
 
-7. Create some enviroment varibles: cluster name, bucket name, region, and AZs.
+1. Create some enviroment varibles: cluster name, bucket name, region, and AZs.
 
     ```bash
     export NAME=jupyter.k8s.local
@@ -55,7 +55,7 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
     export ZONES=$(aws ec2 describe-availability-zones --region $REGION | grep ZoneName | awk '{print $2}' | tr -d '"')
     export ZONES=$(echo $ZONES | tr -d " " | rev | cut -c 2- | rev)
     ```
-8. Create k8s cluster. 
+1. Create k8s cluster. 
 
     The cluster will have a master ec2 and a number of slave ec2 nodes. These slave ec2 nodes will contain the pods that will be running JupyterHub.
     Note the various sizes being picked. It's important that the right sizes be picked here as changing them will be more difficult later. 
@@ -81,7 +81,7 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
     
     _Tip:_ To delete the cluster, `kops delete cluster $NAME --yes` 
     
-9. Wait and check for the k8s cluster to be setup. There are various AWS resources being created and it takes time. 
+1. Wait and check for the k8s cluster to be setup. There are various AWS resources being created and it takes time. 
 
     `kops validate cluster`
     
@@ -91,17 +91,17 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
     kops delete cluster $NAME
     ```
 
-10. Get the kubectl config needed to interact with the cluster
+1. Get the kubectl config needed to interact with the cluster
 
     `kops export kubecfg`
 
     Copy the config at _~/.kube/config_ to the corresponding location on your local machine. 
 
-11. Install `kubectl` on your local machine. Kubectl will also be used Helm later and so needs to be installed locally.
+1. Install `kubectl` on your local machine. Kubectl will also be used Helm later and so needs to be installed locally.
 
     It also might be beneficial to install `kubectl` on the cluster master. Some of the more advance `kops` options use `kubectl`. https://github.com/kubernetes/kops/blob/master/docs/install.md
 
-12. Enable dynamic storage on the k8s cluster. This will allow JupyterHub to give each user their own unique storage volumes.
+1. Enable dynamic storage on the k8s cluster. This will allow JupyterHub to give each user their own unique storage volumes.
 
     The docs have a different config file given. But that breaks. The following was found at https://github.com/helm/charts/issues/5188. 
     On your local machine, create a `storageclass.yml`. This assumes that the zones are the same as `ZONES` above.
@@ -121,7 +121,49 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
 
 The cluster should be ready now.
 
-###Install Helm 
+### Add Other Needed AWS Resources
+
+Data that is too big to hold in the notebook images will need to be stored in a s3 bucket that is readonly for users. We will create an user and role that grants access for the users.
+
+1. Create s3 bucket to hold common data: `asf-jupyter-data` (or something else globally unique)
+
+1. Create an user to hold the access keys for aws cli
+
+    - User name: _Read_asf_jupyter_data_only_
+    - Access type: _Programmatic Access_
+    - The notebook users should only be able to only read from only the one bucket. Any other operations are prohibited. 
+    - Create a policy like below and attach to the user. Modify the bucjet name as needed.
+    
+    ```config
+    {
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket",
+                "s3:ListBucketMultipartUploads",
+                "s3:GetObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::asf-jupyter-data",
+                "arn:aws:s3:::asf-jupyter-data/*"
+            ]
+        }
+    ]
+    }
+    ```
+    - Save the secret access key info somewhere for later.
+
+1. Create a ECR repo to hold the custom images used by the notebooks
+
+    This ensures that any images used can be used within AWS.
+    
+    - Within AWS ECR, click on `Create Repository`. This is where the images with tags are held. So name the repo the name of the image being held. (It's confusing, I know.)
+    - When building images, try to `--squash` them to reduce size. The Notebook images can get big.
+
+### Install Helm 
 
 https://z2jh.jupyter.org/en/latest/setup-helm.html
 
@@ -131,7 +173,7 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
 
     `curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash`
     
-2. Create a Service Account in the cluster, initalize and secure Helm and Tiller. 
+1. Create a Service Account in the cluster, initalize and secure Helm and Tiller. 
 
     Helm uses kubectl to interact with the k8s cluster. Make sure that the wanted k8s cluster is being used, i.e. that the right kubectl config is being used.
 
@@ -141,19 +183,19 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
     helm init --service-account tiller --wait
     ```
     
-3. Ensure that tiller is secure from access inside the cluster
+1. Ensure that tiller is secure from access inside the cluster
 
     ```bash
     kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{"op": "add", "path": "/spec/template/spec/containers/0/command", "value": ["/tiller", "--listen=localhost:44134"]}]'
     ```
     
-4. Verify
+1. Verify
 
     The helm and tiller versions should be the same
     
     `helm version`
  
- ###Setup JupyterHub
+ ### Setup JupyterHub
  
  Most of the configuration work has already been done with Helm charts. However, there is some specific things that ned to still be done.
  
@@ -172,18 +214,47 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
     
     ```yaml
     proxy:
-        secretToken: <The key hash derived above>
+      secretToken: <token>
+
     auth:
       admin:
         users:
-          - <list of users that will be JupyterHub admins>
+          - user1
+          - user2
+      whitelist:
+        users:
+          - user1
+          - user2
       dummy:
-        password: <unicode string that will be a shared password among users>
+        password: "password"  # This password will be shared among all users.
+    
+    singleuser:
+      image:
+        name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
+        tag: build.7
+      extraEnv:
+        AWS_ACCESS_KEY_ID: "AWS_ACCESS_KEY_ID"
+        AWS_SECRET_ACCESS_KEY: "AWS_SECRET_ACCESS_KEY"
+      lifecycleHooks:
+        postStart:
+          exec:
+            # When the jupyterhub server mounts the EBS volumes to $HOME, it "deletes" anything in that directory.
+            # The volumes cannot be mounted anywhere else.
+            # Thus hidden directories for condas and other programs when originally built will get destroyed.
+            # This hook takes copies of those files (safely moved during the image build) and copies them back to $HOME. 
+            command: ["cp", "-r", "/home/commons/.", "/home/jovyan/"]
+    
+    # Always pull the latest image when the Helm chart is updated
+    prePuller:
+      continuous:
+        enabled: true
+      hook:
+         enabled: true    
     ```
     
-    This basic config will allow anyone to sign into JupyterHub with basic notebook creation rights, using the designated password. Admins listed will have the power to start and stop notebook servers of others.
+    This basic config will allow anyone whitelisted to sign into JupyterHub with basic notebook creation rights, using the designated password. Admins listed will have the power to start and stop notebook servers of others.
   
-2.  Install the chart into the k8s cluster from your local machine.
+1.  Install the chart into the k8s cluster from your local machine.
   
      ```bash
      # Suggested values: advanced users of Kubernetes and Helm should feel
@@ -199,37 +270,36 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
      
      The version number 0.7.0 is the Helm version. The JupyterHub version matches accordingly to https://github.com/jupyterhub/helm-chart#versions-coupled-to-each-chart-release.
      
-3.  Wait for the pods in the cluster to spin up. 
+1.  Wait for the pods in the cluster to spin up. 
  
     `kubectl get pod --namespace jhub`
     
     Wait till pods `hub` and `proxy` are in a `ready` state.
     
-4.  Get the public IP to sign into JupyterHub
+1.  Get the public IP to sign into JupyterHub
  
     `kubectl describe service proxy-public --namespace jhub`
     
     The ip is found under `LoadBalancer Ingress`. 
 
-5.  Open the ip in a browser and play.
+1.  Open the ip in a browser and play.
 
     Note that when initially logging in as an user, the volume for that user hasn't been created yet. There will be a self-correcting error displayed that will go away once the volume is formed and attached.
 
-###To delete everything
+### To delete everything
 
 1. Delete the Helm Release
 
     On your local machine, `helm delete <YOUR-HELM-RELEASE-NAME> --purge`. Assume that `jhub` is the release name though it can be found via `helm list`.
 
-2. Delete the k8s resources (not the actual k8s cluster).
+1. Delete the k8s resources (not the actual k8s cluster).
     
     On your local machine, `kubectl delete namespace jhub`. (Assuming that `jhub` is the k8s namespace used.)
     
-3. Delete the k8s cluster
+1. Delete the k8s cluster
 
     On the cluster master EC2 (created in _Install the k8s cluster in AWS_), `kops delete cluster asf-jupyter-cluster.k8s.local --yes`
     
     It will take a while to delete all the resources. It would be wise to double check that there is nothing orphaned.
 
-4. Delete the cluster master EC2.
-
+1. Delete the cluster master EC2.
