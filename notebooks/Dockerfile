@@ -4,12 +4,12 @@ LABEL MAINTAINER="Alaska Satellite Facility"
 # By default, the notebook base image is set to non-sudo user joyvan. This makes root-ful actions difficult.
 USER root
 
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y software-properties-common && \
+RUN apt update && \
+    apt install --no-install-recommends -y software-properties-common && \
     add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
-RUN apt-get update \
-    && apt-get install --no-install-recommends -y \
-    python3 \
+RUN apt update \
+    && apt install --no-install-recommends -y \
+    python3.6 \
     python3-pip \
     gdal-bin \
     libgsl-dev \
@@ -19,10 +19,11 @@ RUN apt-get update \
     awscli \
     shapelib \
     groff \
-    vim
+    vim \
+    python3-setuptools
 
 # Some libraries for MapReady
-RUN apt-get install --no-install-recommends -y \
+RUN apt install --no-install-recommends -y \
     pkg-config \
     libxml2-dev \
     libgsl-dev \
@@ -37,9 +38,15 @@ RUN apt-get install --no-install-recommends -y \
     libgdal-dev \
     libshp-dev
 
+# Some libaries for ISCE
+RUN apt install --no-install-recommends -y \
+    libgfortran3 \
+    libfftw3-dev \
+    curl
+
 RUN rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install 'boto3>=1.4.4' 'psycopg2>=2.7.1' 'pyyaml>=3.12' 'lxml>=3.8.0' 'numpy>=1.13.0' 'pandas==0.23.0'
+RUN conda install 'boto3>=1.4.4' 'psycopg2>=2.7.1' 'pyyaml>=3.12' 'lxml>=3.8.0' 'numpy>=1.13.0' 'pandas==0.23.0' 'scipy' 'bokeh'
 
 # Install MapReady
 COPY software/ASF_MapReady_CLI.tar.gz /tmp/ASF_MapReady.tar.gz
@@ -56,18 +63,18 @@ RUN wget -q -O /tmp/libpng12.deb http://mirrors.kernel.org/ubuntu/pool/main/libp
     && rm /tmp/libpng12.deb
 
 
-# Install ISCE
+# Install ISCE.
 ENV ISCE_HOME /usr/local/isce
-ENV PATH $PATH:$ISCE_HOME/bin:$ISCE_HOME/applications
 ENV PYTHONPATH $PYTHONPATH:/usr/local/
+ENV PATH $PATH:$ISCE_HOME/bin:$ISCE_HOME/applications
 
-COPY software/ice.tar.bz2 /tmp/ice.tar.bz2
-RUN cd /tmp/ && tar -xjf ice.tar.bz2 && mv isce-20160906 $ISCE_HOME
-
+# This assumes that the ISCE package is a .zip
+COPY software/isce.zip /tmp/isce.zip
+RUN cd /tmp/ && unzip isce.zip && mv isce $ISCE_HOME
 
 # Copy aws config for locked-down user. Secret keys will be via the helm config
 RUN cp -r /home/jovyan/. /home/commons/
 
 RUN chown -R jovyan:root /home/commons/
 
-#USER jovyan
+USER jovyan
