@@ -25,7 +25,7 @@ auth:
 singleuser:
   image:
     name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
-    tag: build.9
+    tag: build.10
   extraEnv:
     # Keys needed for the notebook servers to talk to s3
     AWS_ACCESS_KEY_ID: "AKIAJKMUJ4GJWSDOUQSA"
@@ -37,7 +37,7 @@ singleuser:
         # The volumes cannot be mounted anywhere else.
         # Thus hidden directories for condas and other programs when originally built will get destroyed.
         # This hook takes copies of those files (safely moved during the image build) and copies them back to $HOME.
-        command: ["rsync", "-a", "-v", "--ignore-existing", "/home/commons/.", "/home/jovyan/"]
+        command: ["rsync", "-r", "--ignore-existing", "/home/commons/.", "/home/jovyan/"]
 
 # Always pull the latest image when the Helm chart is updated
 prePuller:

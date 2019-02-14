@@ -47,7 +47,7 @@ RUN apt install --no-install-recommends -y \
 
 RUN rm -rf /var/lib/apt/lists/*
 
-RUN conda install 'boto3>=1.4.4' 'psycopg2>=2.7.1' 'pyyaml>=3.12' 'lxml>=3.8.0' 'numpy>=1.13.0' 'pandas==0.23.0' 'scipy' 'bokeh'
+RUN conda install -c conda-forge 'boto3>=1.4.4' 'psycopg2>=2.7.1' 'pyyaml>=3.12' 'lxml>=3.8.0' 'numpy>=1.13.0' 'pandas==0.23.0' 'scipy' 'bokeh' 'gdal' 'matplotlib'
 
 # Install MapReady
 COPY software/ASF_MapReady_CLI.tar.gz /tmp/ASF_MapReady.tar.gz
@@ -72,6 +72,11 @@ ENV PATH $PATH:$ISCE_HOME/bin:$ISCE_HOME/applications
 # This assumes that the ISCE package is a .zip
 COPY software/isce.zip /tmp/isce.zip
 RUN cd /tmp/ && unzip isce.zip && mv isce $ISCE_HOME
+
+# Add extra files to ISCE
+COPY software/focus.py $ISCE_HOME/applications/
+COPY software/topo.py $ISCE_HOME/applications/
+COPY software/unpackFrame_ALOS_raw.py $ISCE_HOME/applications/
 
 # Copy aws config for locked-down user. Secret keys will be via the helm config
 RUN cp -r /home/jovyan/. /home/commons/
