@@ -20,7 +20,8 @@ RUN apt update \
     shapelib \
     groff \
     vim \
-    python3-setuptools
+    python3-setuptools \
+    rsync
 
 # Some libraries for MapReady
 RUN apt install --no-install-recommends -y \
@@ -76,5 +77,9 @@ RUN cd /tmp/ && unzip isce.zip && mv isce $ISCE_HOME
 RUN cp -r /home/jovyan/. /home/commons/
 
 RUN chown -R jovyan:root /home/commons/
+
+# Add notebooks and other resources
+COPY resources/notebooks/* /home/commons/
+COPY resources/images/* /home/commons/NotebookAddons/
 
 USER jovyan

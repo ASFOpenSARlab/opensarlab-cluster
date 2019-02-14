@@ -1,7 +1,9 @@
 This is largely taken from https://z2jh.jupyter.org/en/latest/amazon/step-zero-aws.html and https://kubernetes.io/docs/setup/custom-cloud/kops/
 To simplify AWS management, a subaccount was created in AWS called JupyterHub that contains only the following.
 
-### Install the k8s cluster in AWS
+### Install the k8s cluster master in AWS
+
+This EC2 will be used to build and update the k8s clusters. Only one master needs to be built; mulitple clusters can be created via one master.
 
 1. Create a IAM Role for the cluster
 
@@ -46,7 +48,15 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
 
     This bucket will contain cluster metadata used by kops. The docs recommmend that versioning be turned on.
 
-1. Create some enviroment varibles: cluster name, bucket name, region, and AZs.
+### Create a k8s cluster
+
+Different clusters can be created and managed from the previously made cluster master.
+
+__Pro Tip:__ Use the command `kops get clusters` to see all the clusters currently built.
+
+1. Within the cluster master, create some enviroment varibles: cluster name, bucket name, region, and AZs.
+
+    The biggest difference between clusters is the _NAME_ and _KOPS_STATE_STORE_. These enviromental variables will need to be re-added whenever logging into the cluster master or switching to another cluster.
 
     ```bash
     export NAME=jupyter.k8s.local
@@ -79,7 +89,7 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
     
     __There are options to create a private subnet within AWS and encrypt volumes. We are not going to do this. But the docs do state how if interested.__
     
-    _Tip:_ To delete the cluster, `kops delete cluster $NAME --yes` 
+    __Pro Tip:__ To delete the cluster, `kops delete cluster $NAME --yes`
     
 1. Wait and check for the k8s cluster to be setup. There are various AWS resources being created and it takes time. 
 
@@ -95,7 +105,9 @@ To simplify AWS management, a subaccount was created in AWS called JupyterHub th
 
     `kops export kubecfg`
 
-    Copy the config at _~/.kube/config_ to the corresponding location on your local machine. 
+    Copy the config at _~/.kube/config_ to the corresponding location on your local machine.
+
+    Since this config is dependent on the cluster specifics, it's recommended that the config be renamed (e.g. `config.jupyter`) as to avoid being overwritten.
 
 1. Install `kubectl` on your local machine. Kubectl will also be used Helm later and so needs to be installed locally.
 
@@ -191,7 +203,8 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
     
 1. Verify
 
-    The helm and tiller versions should be the same
+    The helm and tiller versions should be the same.
+    It critical that if the k8s version is updated that helm and tiller versions also match. Otherwise, the cluster might become unstable.
     
     `helm version`
  
@@ -213,6 +226,10 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
     On your local computer, create a yaml config file `config.yaml` and within it add:
     
     ```yaml
+    # This helm config file modifies the defaults found in zero-to-jupyterhub-k8s/jupyterhub/
+    # Possible values are scattered throughout the doc starting at https://z2jh.jupyter.org/en/latest/setup-jupyterhub.html
+
+    # Proxy token can be recreated via `openssl rand -hex 32`. This token isn't really used anywhere else so I'm not sure of the security concerns.
     proxy:
       secretToken: <token>
 
@@ -221,46 +238,51 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
         users:
           - user1
           - user2
+
       whitelist:
         users:
           - user1
           - user2
+
       dummy:
-        password: "password"  # This password will be shared among all users.
-    
+        password: <pass>  # This password will be shared among all users.
+
     singleuser:
       image:
         name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
-        tag: build.7
+        tag: build.9
       extraEnv:
-        AWS_ACCESS_KEY_ID: "AWS_ACCESS_KEY_ID"
-        AWS_SECRET_ACCESS_KEY: "AWS_SECRET_ACCESS_KEY"
+        # Keys needed for the notebook servers to talk to s3
+        AWS_ACCESS_KEY_ID: "AKIAJKMUJ4GJWSDOUQSA"
+        AWS_SECRET_ACCESS_KEY: "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"
       lifecycleHooks:
         postStart:
           exec:
             # When the jupyterhub server mounts the EBS volumes to $HOME, it "deletes" anything in that directory.
             # The volumes cannot be mounted anywhere else.
             # Thus hidden directories for condas and other programs when originally built will get destroyed.
-            # This hook takes copies of those files (safely moved during the image build) and copies them back to $HOME. 
-            command: ["cp", "-r", "/home/commons/.", "/home/jovyan/"]
-    
+            # This hook takes copies of those files (safely moved during the image build) and copies them back to $HOME.
+            command: ["rsync", "-a", "-v", "--ignore-existing", "/home/commons/.", "/home/jovyan/"]
+
     # Always pull the latest image when the Helm chart is updated
     prePuller:
       continuous:
         enabled: true
       hook:
-         enabled: true    
+         enabled: true
     ```
     
     This basic config will allow anyone whitelisted to sign into JupyterHub with basic notebook creation rights, using the designated password. Admins listed will have the power to start and stop notebook servers of others.
   
 1.  Install the chart into the k8s cluster from your local machine.
+
+    It's suggested that the _RELEASE_ and _NAMESPACE_ match the basic name of the cluster in some fashion. This wil reduce confusion when multiple clusters are used.
   
      ```bash
      # Suggested values: advanced users of Kubernetes and Helm should feel
      # free to use different values.
-     RELEASE=jhub
-     NAMESPACE=jhub
+     RELEASE=jupyter
+     NAMESPACE=jupyter
 
      helm upgrade --install $RELEASE jupyterhub/jupyterhub \
         --namespace $NAMESPACE  \
@@ -272,13 +294,13 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
      
 1.  Wait for the pods in the cluster to spin up. 
  
-    `kubectl get pod --namespace jhub`
+    `kubectl get pod --namespace jupyter`
     
     Wait till pods `hub` and `proxy` are in a `ready` state.
     
 1.  Get the public IP to sign into JupyterHub
  
-    `kubectl describe service proxy-public --namespace jhub`
+    `kubectl describe service proxy-public --namespace jupyter`
     
     The ip is found under `LoadBalancer Ingress`. 
 
@@ -290,11 +312,11 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
 
 1. Delete the Helm Release
 
-    On your local machine, `helm delete <YOUR-HELM-RELEASE-NAME> --purge`. Assume that `jhub` is the release name though it can be found via `helm list`.
+    On your local machine, `helm delete jupyter --purge`. Assume that `jupyter` is the release name though it can be found via `helm list`.
 
 1. Delete the k8s resources (not the actual k8s cluster).
     
-    On your local machine, `kubectl delete namespace jhub`. (Assuming that `jhub` is the k8s namespace used.)
+    On your local machine, `kubectl delete namespace jupyter`. (Assuming that `jupyter` is the k8s namespace used.)
     
 1. Delete the k8s cluster
 

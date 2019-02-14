@@ -10,41 +10,24 @@ auth:
     users:
       - emlundell
       - khogenso
+      - fjmeyer
+
   whitelist:
     users:
       - emlundell
       - khogenso
-      - s1
-      - s2
-      - s3
-      - s4
-      - s5
-      - s6
-      - s7
-      - s8
-      - s9
-      - s10
-      - s11
-      - s12
-      - s13
-      - s14
-      - s15
-      - s16
-      - s17
-      - s18
-      - s19
-      - s20
-      - s21
-      - s22
-      - s23
+      - fjmeyer
+      - knicelyjoshua
+
   dummy:
     password: "sariscool"  # This password will be shared among all users.
 
 singleuser:
   image:
     name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
-    tag: build.7
+    tag: build.9
   extraEnv:
+    # Keys needed for the notebook servers to talk to s3
     AWS_ACCESS_KEY_ID: "AKIAJKMUJ4GJWSDOUQSA"
     AWS_SECRET_ACCESS_KEY: "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"
   lifecycleHooks:
@@ -54,7 +37,7 @@ singleuser:
         # The volumes cannot be mounted anywhere else.
         # Thus hidden directories for condas and other programs when originally built will get destroyed.
         # This hook takes copies of those files (safely moved during the image build) and copies them back to $HOME.
-        command: ["cp", "-r", "/home/commons/.", "/home/jovyan/"]
+        command: ["rsync", "-a", "-v", "--ignore-existing", "/home/commons/.", "/home/jovyan/"]
 
 # Always pull the latest image when the Helm chart is updated
 prePuller:
