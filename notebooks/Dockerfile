@@ -50,8 +50,8 @@ RUN rm -rf /var/lib/apt/lists/*
 RUN conda install -c conda-forge 'boto3>=1.4.4' 'psycopg2>=2.7.1' 'pyyaml>=3.12' 'lxml>=3.8.0' 'numpy>=1.13.0' 'pandas==0.23.0' 'scipy' 'bokeh' 'gdal' 'matplotlib'
 
 # Install MapReady
-COPY software/ASF_MapReady_CLI.tar.gz /tmp/ASF_MapReady.tar.gz
-RUN cd /tmp/ && tar xzvf ASF_MapReady.tar.gz && cd ASF_MapReady && make install && rm -rf /tmp/ASF_MapReady*
+COPY software/ASF_MapReady_cli.tar.gz /tmp/ASF_MapReady_cli.tar.gz
+RUN cd /tmp/ && tar xzvf ASF_MapReady_cli.tar.gz && cd ASF_MapReady_cli && make install && rm -rf /tmp/ASF_MapReady*
 
 # It's assumed that the compiled versions of previous libaries will have the same behavior
 RUN cp /usr/lib/x86_64-linux-gnu/libgsl.so /usr/lib/x86_64-linux-gnu/libgsl.so.19
@@ -77,6 +77,8 @@ RUN cd /tmp/ && unzip isce.zip && mv isce $ISCE_HOME
 COPY software/focus.py $ISCE_HOME/applications/
 COPY software/topo.py $ISCE_HOME/applications/
 COPY software/unpackFrame_ALOS_raw.py $ISCE_HOME/applications/
+
+RUN chmod 755 $ISCE_HOME/applications/*
 
 # Copy aws config for locked-down user. Secret keys will be via the helm config
 RUN cp -r /home/jovyan/. /home/commons/
