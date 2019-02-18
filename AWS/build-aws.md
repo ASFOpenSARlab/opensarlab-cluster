@@ -62,10 +62,13 @@ __Pro Tip:__ Use the command `kops get clusters` to see all the clusters current
     export NAME=jupyter.k8s.local
     export KOPS_STATE_STORE=s3://asf-jupyter-cluster
     export REGION=`curl -s http://169.254.169.254/latest/dynamic/instance-identity/document|grep region|awk -F\" '{print $4}'` 
-    export ZONES=$(aws ec2 describe-availability-zones --region $REGION | grep ZoneName | awk '{print $2}' | tr -d '"')
-    export ZONES=$(echo $ZONES | tr -d " " | rev | cut -c 2- | rev)
+    #export ZONES=$(aws ec2 describe-availability-zones --region $REGION | grep ZoneName | awk '{print $2}' | tr -d '"')
+    #export ZONES=$(echo $ZONES | tr -d " " | rev | cut -c 2- | rev)
+    export ZONES=us-east-1a
     ```
-1. Create k8s cluster. 
+    The reason we are doing one zone only is because of the issue with EBS volumes mismatching zones with the EC2s. There is a fix in the latest version of K8s but kops is not quite there yet.
+
+1. Create k8s cluster.
 
     The cluster will have a master ec2 and a number of slave ec2 nodes. These slave ec2 nodes will contain the pods that will be running JupyterHub.
     Note the various sizes being picked. It's important that the right sizes be picked here as changing them will be more difficult later. 
@@ -79,17 +82,19 @@ __Pro Tip:__ Use the command `kops get clusters` to see all the clusters current
     kops create cluster $NAME \
         --zones $ZONES \
         --authorization RBAC \
-        --master-size t2.micro \
+        --master-size t2.xlarge \
         --master-volume-size 10 \
-        --node-size t2.large \
+        --node-size m5.xlarge \
         --node-volume-size 10 \
-        --node-count 4 \
+        --node-count 7 \
         --yes
     ```
     
     __There are options to create a private subnet within AWS and encrypt volumes. We are not going to do this. But the docs do state how if interested.__
     
     __Pro Tip:__ To delete the cluster, `kops delete cluster $NAME --yes`
+
+    Clusters can be updated in place (https://kubernetes.io/docs/setup/custom-cloud/kops/) but to do so takes a long time and could create instablilties. Thus do so under the most distressful circumstances.
     
 1. Wait and check for the k8s cluster to be setup. There are various AWS resources being created and it takes time. 
 
