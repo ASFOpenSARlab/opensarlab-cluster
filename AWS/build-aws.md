@@ -82,11 +82,11 @@ __Pro Tip:__ Use the command `kops get clusters` to see all the clusters current
     kops create cluster $NAME \
         --zones $ZONES \
         --authorization RBAC \
-        --master-size t2.xlarge \
-        --master-volume-size 10 \
+        --master-size m4.xlarge \
+        --master-volume-size 30 \
         --node-size m5.xlarge \
         --node-volume-size 10 \
-        --node-count 7 \
+        --node-count 4 \
         --yes
     ```
     

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BASE_IMAGE=553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
-BASE_TAG=build.12
+BASE_TAG=build.13
 
 docker build -t $BASE_IMAGE:$BASE_TAG -f Dockerfile --squash .
 

@@ -17,7 +17,6 @@ auth:
       - emlundell
       - khogenso
       - fjmeyer
-      - knicelyjoshua
 
   dummy:
     password: "sariscool"  # This password will be shared among all users.
@@ -25,7 +24,7 @@ auth:
 singleuser:
   image:
     name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
-    tag: build.12
+    tag: build.13
   extraEnv:
     # Keys needed for the notebook servers to talk to s3
     AWS_ACCESS_KEY_ID: "AKIAJKMUJ4GJWSDOUQSA"
@@ -42,6 +41,6 @@ singleuser:
 # Always pull the latest image when the Helm chart is updated
 prePuller:
   continuous:
-    enabled: true
+    enabled: false
   hook:
-     enabled: true
+    enabled: false
