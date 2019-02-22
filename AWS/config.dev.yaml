@@ -1,0 +1,40 @@
+# This helm config file modifies the defaults found in zero-to-jupyterhub-k8s/jupyterhub/
+# Possible values are scattered throughout the doc starting at https://z2jh.jupyter.org/en/latest/setup-jupyterhub.html
+
+# Proxy token can be recreated via `openssl rand -hex 32`. This token isn't really used anywhere else so I'm not sure of the security concerns.
+proxy:
+  secretToken: fc097874c87cc7af8aa0fd47bf7a05baf937a3fdd9afc8d7e48242eaba4a8952
+
+auth:
+  admin:
+    users:
+      - emlundell
+
+  whitelist:
+    users:
+      - emlundell
+
+singleuser:
+  image:
+    name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
+    tag: build.15
+  extraEnv:
+    # Keys needed for the notebook servers to talk to s3
+    AWS_ACCESS_KEY_ID: "AKIAJKMUJ4GJWSDOUQSA"
+    AWS_SECRET_ACCESS_KEY: "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"
+  lifecycleHooks:
+    postStart:
+      exec:
+        # When the jupyterhub server mounts the EBS volumes to $HOME, it "deletes" anything in that directory.
+        # The volumes cannot be mounted anywhere else.
+        # Thus hidden directories for condas and other programs when originally built will get destroyed.
+        # This hook takes copies of those files (safely moved during the image build) and copies them back to $HOME.
+        command: ["gitpuller", "https://github.com/asfadmin/asf-jupyter-notebooks.git", "eml", "notebooks"]
+
+# Always pull the latest image when the Helm chart is updated
+prePuller:
+  continuous:
+    enabled: false
+  hook:
+    enabled: false
+
