@@ -11,6 +11,10 @@ RUN apt update \
     && apt install --no-install-recommends -y \
     python3.6 \
     python3-pip \
+    python2.7 \
+    python-pip \
+    gfortran \
+    python-gdal \
     gdal-bin \
     libgsl-dev \
     zip \
@@ -47,7 +51,12 @@ RUN apt install --no-install-recommends -y \
 
 RUN rm -rf /var/lib/apt/lists/*
 
-RUN conda install -c conda-forge 'boto3>=1.4.4' 'psycopg2>=2.7.1' 'pyyaml>=3.12' 'lxml>=3.8.0' 'numpy>=1.13.0' 'pandas==0.23.0' 'scipy' 'bokeh' 'gdal' 'matplotlib'
+RUN conda install -c conda-forge 'boto3>=1.4.4' 'psycopg2>=2.7.1' 'pyyaml>=3.12' 'lxml>=3.8.0' 'numpy>=1.13.0' 'pandas==0.23.0' 'scipy' 'bokeh' 'gdal' 'matplotlib' 'gmt=5.4.5' 'h5py'
+
+# Pip is ran under /opt/conda/lib/python3.6/site-packages/pip
+# Pip3 is ran under /usr/lib/python3/dist-packages
+# Choose wisely
+RUN pip install nbgitpuller asf-hyp3
 
 # Install MapReady
 COPY software/ASF_MapReady_cli.tar.gz /tmp/ASF_MapReady_cli.tar.gz
@@ -69,7 +78,7 @@ ENV ISCE_HOME /usr/local/isce
 ENV PYTHONPATH $PYTHONPATH:/usr/local/
 ENV PATH $PATH:$ISCE_HOME/bin:$ISCE_HOME/applications
 
-# This assumes that the ISCE package is a .zip
+# This assumes that the ISCE package is a .zip found in .
 COPY software/isce.zip /tmp/isce.zip
 RUN cd /tmp/ && unzip isce.zip && mv isce $ISCE_HOME
 
@@ -80,13 +89,24 @@ COPY software/unpackFrame_ALOS_raw.py $ISCE_HOME/applications/
 
 RUN chmod 755 $ISCE_HOME/applications/*
 
-# Copy aws config for locked-down user. Secret keys will be via the helm config
-RUN cp -r /home/jovyan/. /home/commons/
 
-RUN chown -R jovyan:root /home/commons/
+# Install SNAP
+#RUN wget --no-verbose http://step.esa.int/downloads/5.0/installers/esa-snap_sentinel_unix_5_0.sh
+COPY software/esa-snap_sentinel_unix_5_0.sh /usr/local/etc/esa-snap_sentinel_unix_5_0.sh
+COPY software/snap_install.varfile /usr/local/etc/snap_install.varfile
+RUN sh /usr/local/etc/esa-snap_sentinel_unix_5_0.sh -q -varfile /usr/local/etc/snap_install.varfile
+COPY software/gpt.vmoptions /usr/local/snap/bin/gpt.vmoptions
+RUN rm /usr/local/etc/esa-snap_sentinel_unix_5_0.sh
 
-# Add notebooks and other resources
-COPY resources/notebooks/* /home/commons/
-COPY resources/images/* /home/commons/NotebookAddons/
+
+# Install GIAnT (which only runs in python 2)
+#RUN pip2 install setuptools 'scipy==0.18.1' h5py lmxl 'matplotlib==2.0.2'
+#RUN apt update --no-install-recommends && apt install python-tk python-configobj python-configparser && rm -rf /var/lib/apt/lists/*
+#COPY software/GIAnT/ /usr/local/GIAnT/
+#RUN python2.7 /usr/local/GIAnT/setup.py build_ext
+
+
+# Get the git puller activated
+RUN jupyter serverextension enable --py nbgitpuller --sys-prefix
 
 USER jovyan
