@@ -14,13 +14,19 @@ RUN apt update && \
     apt install --no-install-recommends -y \
     python3 \
     python3-pip \
-    python \
+    python2.7 \
     python-pip \
+    python2.7-setuptools \
+    python3-setuptools \
     zip \
     wget \
     awscli \
     vim \
     rsync
+
+# Pip is ran under /opt/conda/lib/python3.6/site-packages/pip.
+# Pip3 is ran under /usr/lib/python3.6/dist-packages.
+# Pip2 is ran under /usr/lib/python2.7/dist-packages. Choose wisely.
 
 RUN conda install -c conda-forge 'boto3>=1.4.4' 'pyyaml>=3.12' 'pandas==0.23.0' 'bokeh'
 
@@ -109,21 +115,22 @@ RUN conda install -c conda-forge 'boto3>=1.4.4' 'pyyaml>=3.12' 'pandas==0.23.0' 
 # gmt=5.4.5 'matplotlib==2.0.2'
 RUN apt update && \
     apt install --no-install-recommends -y \
-    python-tk \
-    python-configobj \
-    python-configparser
-# These RUNs are intentionally seperate. Otherwise, the setuptools can't find the proper dependencies.
-RUN pip2 install 'setuptools'
-RUN pip2 install 'pyproj'
-RUN pip2 install 'numpy' 'scipy==0.18.1' 'h5py' 'lxml' 'matplotlib' 'pywavelets'
-COPY software/GIAnT/ /usr/local/GIAnT/
-RUN python2.7 /usr/local/GIAnT/setup.py build_ext
+    python-numpy \
+    python-scipy \
+    cython \
+    python-matplotlib \
+    python-h5py \
+    python-grib \
+    python-pywt \
+    python-lxml
 
+COPY software/GIAnT/ /usr/local/GIAnT/
+#RUN python2.7 /usr/local/GIAnT/setup.py build_ext
+ENV PYTHONPATH $PYTHONPATH:/usr/local/GIAnT
 
 # ---------------------------------------------------------------------------------------------------------------
 # Install any other custom and jupyter libaries
-# Pip is ran under /opt/conda/lib/python3.6/site-packages/pip. Pip3 is ran under /usr/lib/python3.6/dist-packages. Pip2 is ran under /usr/lib/python2.7/dist-packages. Choose wisely.
-
+# Use pip (conda version) since we want to corner off GIAnT's work and also run it with Jupyter
 RUN pip install nbgitpuller asf-hyp3
 
 # Get the git puller activated
