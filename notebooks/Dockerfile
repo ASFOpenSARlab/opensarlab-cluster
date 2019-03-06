@@ -22,7 +22,8 @@ RUN apt update && \
     wget \
     awscli \
     vim \
-    rsync
+    rsync \
+    less
 
 # Pip is ran under /opt/conda/lib/python3.6/site-packages/pip.
 # Pip3 is ran under /usr/lib/python3.6/dist-packages.
@@ -104,32 +105,57 @@ RUN conda install -c conda-forge 'boto3>=1.4.4' 'pyyaml>=3.12' 'pandas==0.23.0' 
 
 # ---------------------------------------------------------------------------------------------------------------
 # Install GIAnT (which only runs in python 2)
-RUN apt update && \
-    apt install --no-install-recommends -y \
-    cython \
-    python-lxml \
-    gfortran \
-    liblapack3 \
-    liblapack-dev \
-    python-tk \
-    python-configobj \
-    libopenblas-base \
-    libopenblas-dev
+#RUN apt update && \
+#    apt install --no-install-recommends -y \
+#    cython \
+#    gfortran \
+#    python-numpy \
+#    python-h5py \
+#    python-lxml \
+#    python-pyresample \
+#    liblapack3 \
+#    liblapack-dev \
+#    python-tk \
+#    python-configobj \
+#    libopenblas-base \
+#    libopenblas-dev \
+#    libatlas3-base \
+#    libatlas-base-dev \
+#    libmotif-dev
 
-# Still have the following errors in giant:
-# File "/usr/local/GIAnT/solver/gsvd/cgsvd.py", line 1, in <module>
-#    import gensvd
-#
-# However, there is no python file named gensvd. There is a fortran file named gensvd.pyf. Was this fortran file suppose to be somehow trans-compiled into python?
-# ? f2py -c gensvd.pyf
-#
-# Traceback (most recent call last):
-#    File "make_kml.py", line 5, in <module>
-#    import matplotlib.mpl as mpl
+RUN apt install build-essential \
+                   gfortran \
+                   zlibc \
+                   zlib1g-dev \
+                   libpng-dev \
+                   libopenjp2-7-dev \
+                   environment-modules \
+                   libopenblas-dev \
+                   libfreetype6-dev \
+                   pkg-config \
+                   cython \
+                   ipython \
+                   python-pip \
+                   python-numpy \
+                   python-scipy \
+                   python-numexpr \
+                   python-setuptools \
+                   python-distutils-extra \
+                   python-matplotlib \
+                   python-h5py \
+                   python-pyproj \
+                   python-mpltoolkits.basemap \
+                   python-lxml \
+                   python-requests \
+                   python-gdal \
+                   python-pyshp \
+                   python-shapely \
+                   python-pywt \
+                   python-simplejson \
+                   python-netcdf4 \
+                   python-pyresample
 
-
-# python-grib python-h5py python-matplotlib python-numpy python-pywt
-RUN pip2 install 'scipy==0.18.1' 'pyap' 'pyresample' 'numpy==1.11.3' 'matplotlib==2.0.2' 'h5py'
+RUN pip2 install 'scipy==0.18.1' 'matplotlib==1.4.3' 'pykml'
 
 COPY software/GIAnT/ /usr/local/GIAnT/
 #RUN python2.7 /usr/local/GIAnT/setup.py build_ext
