@@ -30,14 +30,6 @@ RUN apt update && \
 
 RUN conda install -c conda-forge 'boto3>=1.4.4' 'pyyaml>=3.12' 'pandas==0.23.0' 'bokeh'
 
-# Do these have a home now??????
-#RUN apt install --no-install-recommends -y \
-#    libgsl-dev \
-#    python3-gdal \
-#    shapelib \
-#    groff \
-#    python3-setuptools
-
 
 # ---------------------------------------------------------------------------------------------------------------
 # Install MapReady
@@ -112,17 +104,32 @@ RUN conda install -c conda-forge 'boto3>=1.4.4' 'pyyaml>=3.12' 'pandas==0.23.0' 
 
 # ---------------------------------------------------------------------------------------------------------------
 # Install GIAnT (which only runs in python 2)
-# gmt=5.4.5 'matplotlib==2.0.2'
 RUN apt update && \
     apt install --no-install-recommends -y \
-    python-numpy \
-    python-scipy \
     cython \
-    python-matplotlib \
-    python-h5py \
-    python-grib \
-    python-pywt \
-    python-lxml
+    python-lxml \
+    gfortran \
+    liblapack3 \
+    liblapack-dev \
+    python-tk \
+    python-configobj \
+    libopenblas-base \
+    libopenblas-dev
+
+# Still have the following errors in giant:
+# File "/usr/local/GIAnT/solver/gsvd/cgsvd.py", line 1, in <module>
+#    import gensvd
+#
+# However, there is no python file named gensvd. There is a fortran file named gensvd.pyf. Was this fortran file suppose to be somehow trans-compiled into python?
+# ? f2py -c gensvd.pyf
+#
+# Traceback (most recent call last):
+#    File "make_kml.py", line 5, in <module>
+#    import matplotlib.mpl as mpl
+
+
+# python-grib python-h5py python-matplotlib python-numpy python-pywt
+RUN pip2 install 'scipy==0.18.1' 'pyap' 'pyresample' 'numpy==1.11.3' 'matplotlib==2.0.2' 'h5py'
 
 COPY software/GIAnT/ /usr/local/GIAnT/
 #RUN python2.7 /usr/local/GIAnT/setup.py build_ext
