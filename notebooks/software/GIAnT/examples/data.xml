@@ -1,0 +1,190 @@
+<data>
+  <master>
+    <width>
+      <value>437</value>
+      <type>INT</type>
+      <help>WIDTH of the IFGs to be read in.</help>
+    </width>
+    <file_length>
+      <value>678</value>
+      <type>INT</type>
+      <help>FILE_LENGTH of the IFGS to be read in.</help>
+    </file_length>
+    <wavelength>
+      <value>0.0562356424</value>
+      <type>FLOAT</type>
+      <help>WAVELENGTH of the Stack. If combining sensors,ensure that they are all converted to same units.</help>
+    </wavelength>
+    <heading>
+      <value>-166.1236</value>
+      <type>FLOAT</type>
+      <help>Heading of the satellite in degrees.</help>
+    </heading>
+    <utc>
+      <value>65360</value>
+      <type>INT</type>
+      <help>Average time of acquisition in seconds of the day</help>
+    </utc>
+    <mask>
+      <value></value>
+      <type>STR</type>
+      <help>Common mask applied to all the images. Useful forfiltering out water bodies.</help>
+    </mask>
+    <cthresh>
+      <value>0.2</value>
+      <type>FLOAT</type>
+      <help>Coherence threshold for pixels to be included in analysis.</help>
+    </cthresh>
+    <latfile>
+      <value>lat.map</value>
+      <type>STR</type>
+      <help>Latitude file. Same size as IFGs.</help>
+    </latfile>
+    <lonfile>
+      <value>lon.map</value>
+      <type>STR</type>
+      <help>Longitude file. Same size as IFGs.</help>
+    </lonfile>
+    <hgtfile>
+      <value>hgt.map</value>
+      <type>STR</type>
+      <help>DEM height in radar coordinates. Same size as IFGs.</help>
+    </hgtfile>
+    <incidence>
+      <value>21.0</value>
+      <type>FLOAT</type>
+      <help>Incidence angle file. Same size as IFGs. Can be a constant float too.</help>
+    </incidence>
+  </master>
+  <subimage>
+    <looks>
+      <value>1</value>
+      <type>INT</type>
+      <help>Number of additional looks to be applied for time-series analysis</help>
+    </looks>
+    <width>
+      <value>350</value>
+      <type>INT</type>
+      <help>WIDTH of the analyzed image</help>
+    </width>
+    <xmin>
+      <value>30</value>
+      <type>INT</type>
+      <help>START of the valid region in X. After taking looks.</help>
+    </xmin>
+    <xmax>
+      <value>380</value>
+      <type>INT</type>
+      <help>END of the valid region in X. After taking looks.</help>
+    </xmax>
+    <length>
+      <value>500</value>
+      <type>INT</type>
+      <help>LENGTH of the cropped image</help>
+    </length>
+    <ymin>
+      <value>100</value>
+      <type>INT</type>
+      <help>START of the crop region in Y. After taking looks.</help>
+    </ymin>
+    <ymax>
+      <value>600</value>
+      <type>INT</type>
+      <help>END of the crop region in Y. After taking looks.</help>
+    </ymax>
+    <rxmin>
+      <value>30</value>
+      <type>INT</type>
+      <help>Start of reference region in X. After multilooking and cropping.</help>
+    </rxmin>
+    <rxmax>
+      <value>50</value>
+      <type>INT</type>
+      <help>End of reference region in X. After multilooking and cropping.</help>
+    </rxmax>
+    <rymin>
+      <value>50</value>
+      <type>INT</type>
+      <help>Start of reference region in Y. After multilooking and cropping.</help>
+    </rymin>
+    <rymax>
+      <value>70</value>
+      <type>INT</type>
+      <help>End of reference region in Y. After multilooking and cropping.</help>
+    </rymax>
+    <latfile>
+      <value>lat.flt</value>
+      <type>STR</type>
+      <help>Latitude file for the cropped and multilooked image.</help>
+    </latfile>
+    <lonfile>
+      <value>lon.flt</value>
+      <type>STR</type>
+      <help>Longitude file for the cropped and multilooked image.</help>
+    </lonfile>
+    <incidence>
+      <value>21.0</value>
+      <type>FLOAT</type>
+      <help>Incidence angle file for the cropped and multilooked image.</help>
+    </incidence>
+    <hgtfile>
+      <value>hgt.flt</value>
+      <type>STR</type>
+      <help>Height file for the cropped and multilooked image.</help>
+    </hgtfile>
+  </subimage>
+  <dirs>
+    <h5dir>
+      <value>Stack</value>
+      <type>STR</type>
+      <help>Directory for storing all the HDF5 files.</help>
+    </h5dir>
+    <atmosdir>
+      <value>Atmos</value>
+      <type>STR</type>
+      <help>Directory for storing all the weather model data.</help>
+    </atmosdir>
+    <figsdir>
+      <value>Figs</value>
+      <type>STR</type>
+      <help>Directory for storing all the PNG previews at intermediate stages.</help>
+    </figsdir>
+    <respdir>
+      <value>RESP</value>
+      <type>STR</type>
+      <help>Directory for storing wavelet impulse responses.</help>
+    </respdir>
+  </dirs>
+  <format>
+    <unwfmt>
+      <value>RMG</value>
+      <type>STR</type>
+      <help>Unwrapped file format. FLT/RMG</help>
+    </unwfmt>
+    <corfmt>
+      <value>RMG</value>
+      <type>STR</type>
+      <help>Coherence file format. FLT/RMG</help>
+    </corfmt>
+    <demfmt>
+      <value>RMG</value>
+      <type>STR</type>
+      <help>DEM file format. FLT/RMG</help>
+    </demfmt>
+    <chgendian>
+      <value>False</value>
+      <type>BOOL</type>
+      <help>Convert Endianness when reading in data.</help>
+    </chgendian>
+    <endianlist>
+      <value>["UNW", "COR", "HGT"]</value>
+      <type>LIST</type>
+      <help>List for changing endianness. Possible Entries:UNW,COR,HGT,LAT,LON,INC,MASK</help>
+    </endianlist>
+    <masktype>
+      <value>f4</value>
+      <type>STR</type>
+      <help>Mask datatype.</help>
+    </masktype>
+  </format>
+</data>

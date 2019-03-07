@@ -123,7 +123,7 @@ RUN conda install -c conda-forge 'boto3>=1.4.4' 'pyyaml>=3.12' 'pandas==0.23.0' 
 #    libatlas-base-dev \
 #    libmotif-dev
 
-RUN apt install build-essential \
+RUN apt install -y build-essential \
                    gfortran \
                    zlibc \
                    zlib1g-dev \
@@ -158,7 +158,7 @@ RUN apt install build-essential \
 RUN pip2 install 'scipy==0.18.1' 'matplotlib==1.4.3' 'pykml'
 
 COPY software/GIAnT/ /usr/local/GIAnT/
-#RUN python2.7 /usr/local/GIAnT/setup.py build_ext
+RUN cd /usr/local/GIAnT/ && python2.7 setup.py build_ext
 ENV PYTHONPATH $PYTHONPATH:/usr/local/GIAnT
 
 # ---------------------------------------------------------------------------------------------------------------

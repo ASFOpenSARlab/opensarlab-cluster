@@ -1,0 +1,108 @@
+<params>
+  <proc>
+    <nvalid>
+      <value>30</value>
+      <type>INT</type>
+      <help>Minimum number of coherent IFGs for a single pixel. If zero, pixel should be coherent in all IFGs.</help>
+    </nvalid>
+    <uwcheck>
+      <value>False</value>
+      <type>BOOL</type>
+    </uwcheck>
+    <netramp>
+      <value>True</value>
+      <type>BOOL</type>
+      <help>Network deramp. Remove ramps from IFGs in a network sense.</help>
+    </netramp>
+    <gpsramp>
+      <value>False</value>
+      <type>BOOL</type>
+      <help>GPS deramping. Use GPS network information to correct ramps.</help>
+    </gpsramp>
+    <stnlist>
+      <value></value>
+      <type>STR</type>
+      <help>Station list for position of GPS stations.</help>
+    </stnlist>
+    <stntype>
+      <value></value>
+      <type>STR</type>
+      <help>Type of station list. False for Sopac, True for (Name,Lat,Lon), velocity for (Name,lat,lon,ve,vn,vu)</help>
+    </stntype>
+    <gpspath>
+      <value></value>
+      <type>STR</type>
+      <help>Directory that stores the files for SOPAC or full path of the velotable.</help>
+    </gpspath>
+    <gpstype>
+      <value></value>
+      <type>STR</type>
+      <help>Type of data that is provided. Can be sopac or velocity.</help>
+    </gpstype>
+    <gpsvert>
+      <value>False</value>
+      <type>BOOL</type>
+      <help>Use vertical components from the GPS data.</help>
+    </gpsvert>
+    <gpsmodel>
+      <value>False</value>
+      <type>BOOL</type>
+      <help>Use SOPAC model header for the GPS stations.</help>
+    </gpsmodel>
+    <gpspreproc>
+      <value>False</value>
+      <type>BOOL</type>
+      <help>Preprocess and smoothen the data using before using.</help>
+    </gpspreproc>
+    <gpspad>
+      <value>3</value>
+      <type>INT</type>
+      <help>Number of pixels around GPS station to be averaged for comparison.</help>
+    </gpspad>
+    <gpsmin>
+      <value>5</value>
+      <type>INT</type>
+      <help>Minimum number of GPS needed for ramp correction.</help>
+    </gpsmin>
+    <atmos>
+      <value>TROPO</value>
+      <type>STR</type>
+      <help>Atmospheric correction using weather models.</help>
+    </atmos>
+    <demerr>
+      <value>False</value>
+      <type>BOOL</type>
+      <help>Correct for DEM Error. Use in case when IFGs</help>
+    </demerr>
+    <regularize>
+      <value>True</value>
+      <type>BOOL</type>
+      <help>Regularization of the inverted time-series, if</help>
+    </regularize>
+    <masterdate>
+      <value>19920604</value>
+      <type>STR</type>
+      <help>SAR acquisition to be chosen as time zero. If none, first acquisition is used. </help>
+    </masterdate>
+    <filterlen>
+      <value>1.0</value>
+      <type>FLOAT</type>
+      <help>Width of the Gaussian filter used for smoothing final time-series</help>
+    </filterlen>
+    <tropomin>
+      <value>1</value>
+      <type>INT</type>
+      <help>Minimum scale to be analyzed for empirical tropospheric corrections.</help>
+    </tropomin>
+    <tropomax>
+      <value>4</value>
+      <type>INT</type>
+      <help>Maximum scale to be analyzed for empirical tropospheric corrections.</help>
+    </tropomax>
+    <tropolooks>
+      <value>4</value>
+      <type>INT</type>
+      <help>Number of additional looks to be applied before estimating tropospheric parameters.</help>
+    </tropolooks>
+  </proc>
+</params>

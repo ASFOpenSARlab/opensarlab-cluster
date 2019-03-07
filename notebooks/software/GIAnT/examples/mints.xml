@@ -1,0 +1,128 @@
+<params>
+  <proc>
+    <minscale>
+      <value>2</value>
+      <type>INT</type>
+      <help>Number of smallest scales to ignore for reconstruction.</help>
+    </minscale>
+    <maxscale>
+      <value>0</value>
+      <type>INT</type>
+      <help>Number of largest scales to ignore for reconstruction.</help>
+    </maxscale>
+    <uwcheck>
+      <value>False</value>
+      <type>BOOL</type>
+    </uwcheck>
+    <netramp>
+      <value>True</value>
+      <type>BOOL</type>
+      <help>Network deramp. Remove ramps from IFGs in a network sense.</help>
+    </netramp>
+    <gpsramp>
+      <value>True</value>
+      <type>BOOL</type>
+      <help>Use GPS network information to correct ramps.</help>
+    </gpsramp>
+    <stnlist>
+      <value></value>
+      <type>STR</type>
+      <help>Station list for position of GPS stations.</help>
+    </stnlist>
+    <stntype>
+      <value></value>
+      <type>STR</type>
+      <help>Type of station list. False for Sopac, True for (Name,Lat,Lon), velocity for (Name,lat,lon,ve,vn,vu)</help>
+    </stntype>
+    <gpspath>
+      <value></value>
+      <type>STR</type>
+      <help>Directory that stores the files for SOPAC or full path of the velotable.</help>
+    </gpspath>
+    <gpstype>
+      <value></value>
+      <type>STR</type>
+      <help>Type of data that is provided. Can be sopac or velocity.</help>
+    </gpstype>
+    <gpsvert>
+      <value>False</value>
+      <type>BOOL</type>
+      <help>Use vertical components from the GPS data.</help>
+    </gpsvert>
+    <gpsmodel>
+      <value>False</value>
+      <type>BOOL</type>
+      <help>Use SOPAC model header for the GPS stations.</help>
+    </gpsmodel>
+    <gpspreproc>
+      <value>False</value>
+      <type>BOOL</type>
+      <help>Preprocess and smoothen the data using before using.</help>
+    </gpspreproc>
+    <gpspad>
+      <value>2</value>
+      <type>INT</type>
+      <help>Number of pixels around GPS station to be averaged for comparison.</help>
+    </gpspad>
+    <gpsmin>
+      <value>5</value>
+      <type>INT</type>
+      <help>Minimum number of GPS needed for ramp correction.</help>
+    </gpsmin>
+    <atmos>
+      <value>ECMWF</value>
+      <type>STR</type>
+      <help>Atmospheric correction using weather models.</help>
+    </atmos>
+    <demerr>
+      <value>False</value>
+      <type>BOOL</type>
+      <help>Correct for DEM Error. Use in case when IFGs are generated from coregistered SLCs.</help>
+    </demerr>
+    <regularize>
+      <value>True</value>
+      <type>BOOL</type>
+      <help>Regularization of the inverted time-series, if deformation is described using time functions.</help>
+    </regularize>
+    <masterdate>
+      <value>19920604</value>
+      <type>STR</type>
+      <help>SAR acquisition to be chosen as time zero. If none, first acquisition is used. </help>
+    </masterdate>
+    <minpad>
+      <value>0.1</value>
+      <type>FLOAT</type>
+      <help>Minimum padding to dyadic length for interferograms.</help>
+    </minpad>
+    <wavelet>
+      <value>meyer</value>
+      <type>STR</type>
+      <help>Wavelet to use for analysis. Meyer or list from pywt.</help>
+    </wavelet>
+    <shape>
+      <value>15</value>
+      <type>INT</type>
+      <help>Shape smoothing during Regularization</help>
+    </shape>
+    <smooth>
+      <value>1</value>
+      <type>INT</type>
+      <help>Window size for smoothing of regularization parameter</help>
+    </smooth>
+    <smoothskip>
+      <value>1</value>
+      <type>INT</type>
+      <help>Skip for smoothing parameter estimation</help>
+    </smoothskip>
+    <kfolds>
+        <value>10</value>
+        <type>INT</type>
+        <help>Number of folds for cross validation.</help>
+    </kfolds>
+    <lamrange>
+        <value>[-5.0, 5.0, 50]</value>
+        <type>LIST</type>
+        <help>Range of penalty parameters</help>
+    </lamrange>
+  </proc>
+</params>
