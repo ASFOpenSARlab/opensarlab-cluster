@@ -258,8 +258,8 @@ https://z2jh.jupyter.org/en/latest/setup-helm.html
         tag: build.9
       extraEnv:
         # Keys needed for the notebook servers to talk to s3
-        AWS_ACCESS_KEY_ID: "AKIAJKMUJ4GJWSDOUQSA"
-        AWS_SECRET_ACCESS_KEY: "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"
+        AWS_ACCESS_KEY_ID: "AKIAJ**"
+        AWS_SECRET_ACCESS_KEY: "***"
       lifecycleHooks:
         postStart:
           exec:

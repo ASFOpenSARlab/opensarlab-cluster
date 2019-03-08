@@ -1,10 +1,11 @@
+# !!!! This config is used in the first round of Franz's labs. It will not be used afterwards. Though some of the settings could still prove useful.
+#
 # This helm config file modifies the defaults found in zero-to-jupyterhub-k8s/jupyterhub/
 # Possible values are scattered throughout the doc starting at https://z2jh.jupyter.org/en/latest/setup-jupyterhub.html
 
 # Proxy token can be recreated via `openssl rand -hex 32`. This token isn't really used anywhere else so I'm not sure of the security concerns.
 proxy:
-  secretToken: fc097874c87cc7af8aa0fd47bf7a05baf937a3fdd9afc8d7e48242eaba4a8952
-
+  secretToken: <>
 auth:
   admin:
     users:
@@ -27,8 +28,8 @@ singleuser:
     tag: build.13
   extraEnv:
     # Keys needed for the notebook servers to talk to s3
-    AWS_ACCESS_KEY_ID: "AKIAJKMUJ4GJWSDOUQSA"
-    AWS_SECRET_ACCESS_KEY: "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"
+    AWS_ACCESS_KEY_ID: "AKIA****"
+    AWS_SECRET_ACCESS_KEY: "*****"
   lifecycleHooks:
     postStart:
       exec:

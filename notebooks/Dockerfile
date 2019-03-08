@@ -144,6 +144,8 @@ COPY software/GIAnT/ /usr/local/GIAnT/
 RUN cd /usr/local/GIAnT/ && python2.7 setup.py build_ext
 ENV PYTHONPATH $PYTHONPATH:/usr/local/GIAnT
 
+COPY software/prepdataxml.py /usr/local/GIAnT/prepdataxml.py
+
 # ---------------------------------------------------------------------------------------------------------------
 # Install any other custom and jupyter libaries
 # Use pip (conda version) since we want to corner off GIAnT's work and also run it with Jupyter
