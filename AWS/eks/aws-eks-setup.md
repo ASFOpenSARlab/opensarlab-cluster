@@ -300,15 +300,12 @@ Most of the configuration work has already been done with Helm charts. However, 
      ```bash
      # Suggested values: advanced users of Kubernetes and Helm should feel
      # free to use different values.
-     RELEASE=jupyter
-     NAMESPACE=jupyter
-
-     helm upgrade --install $RELEASE jupyterhub/jupyterhub --namespace $NAMESPACE  --version 0.8.0  --values config.yaml
+     RELEASE=jupyter; NAMESPACE=jupyter; helm upgrade --install $RELEASE jupyterhub/jupyterhub --namespace $NAMESPACE  --version 0.8.0  --values config.yaml
      ```
 
      The version number 0.8.0 is the Helm version. The JupyterHub version matches accordingly to https://github.com/jupyterhub/helm-chart#versions-coupled-to-each-chart-release.
 
-1.  Wait for the pods in the cluster to spin up. 
+1.  Wait for the pods in the cluster to spin up.
 
     `kubectl get pod --namespace jupyter`
 

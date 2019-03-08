@@ -4,6 +4,17 @@ LABEL MAINTAINER="Alaska Satellite Facility"
 # By default, the notebook base image is set to non-sudo user joyvan. This makes root-ful actions difficult.
 USER root
 
+# Pip is ran under /opt/conda/lib/python3.6/site-packages/pip.
+# Pip3 is ran under /usr/lib/python3.6/dist-packages.
+# Pip2 is ran under /usr/lib/python2.7/dist-packages. Choose wisely.
+
+# Manually update nbconvert. A dicrepancy in the versioning causes a 500 when opening a notebook. https://github.com/jupyter/notebook/issues/3629#issuecomment-399408222
+# Remember, here pip is updating within the condas namespace where jupyter notebook items are held.
+RUN pip install --upgrade nbconvert
+
+# Downgrade tornado otherwise the notebook can't connect to the notebook server. https://github.com/jupyter/notebook/issues/2664#issuecomment-468954423
+RUN pip install tornado==4.5.3
+
 # ---------------------------------------------------------------------------------------------------------------
 # Install general items. If a library is needed for a specific piece of software, put it with that software.
 RUN apt update && \
@@ -25,11 +36,7 @@ RUN apt update && \
     rsync \
     less
 
-# Pip is ran under /opt/conda/lib/python3.6/site-packages/pip.
-# Pip3 is ran under /usr/lib/python3.6/dist-packages.
-# Pip2 is ran under /usr/lib/python2.7/dist-packages. Choose wisely.
-
-RUN conda install -c conda-forge 'boto3>=1.4.4' 'pyyaml>=3.12' 'pandas==0.23.0' 'bokeh'
+RUN pip install 'boto3>=1.4.4' 'pyyaml>=3.12' 'pandas==0.23.0' 'bokeh' 'matplotlib'
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -75,7 +82,7 @@ RUN apt update && \
     libfftw3-dev \
     curl
 
-RUN conda install -c conda-forge 'numpy>=1.13.0' 'h5py' 'gdal' 'scipy'
+RUN pip install 'numpy>=1.13.0' 'h5py' 'gdal' 'scipy'
 
 ENV ISCE_HOME /usr/local/isce
 ENV PYTHONPATH $PYTHONPATH:/usr/local/
@@ -146,6 +153,7 @@ ENV PYTHONPATH $PYTHONPATH:/usr/local/GIAnT
 
 COPY software/prepdataxml.py /usr/local/GIAnT/prepdataxml.py
 
+
 # ---------------------------------------------------------------------------------------------------------------
 # Install any other custom and jupyter libaries
 # Use pip (conda version) since we want to corner off GIAnT's work and also run it with Jupyter
@@ -153,6 +161,7 @@ RUN pip install nbgitpuller asf-hyp3
 
 # Get the git puller activated
 RUN jupyter serverextension enable --py nbgitpuller --sys-prefix
+
 
 
 RUN rm -rf /var/lib/apt/lists/*
