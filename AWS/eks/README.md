@@ -1,18 +1,4 @@
-
-### Deploy the EKS Cluster via Cloudformation
-1. Deploy the Cloudformation template
-
-    Review the stack parameters and determine whether any of the default values should be overridden for your particular deployment.
-
-    ```
-    aws cloudformation deploy --stack-name myStackName \
-                              --template-file cloudformation.yaml \
-                              --capabilities CAPABILITY_NAMED_IAM \
-                              --parameter-overrides VpcId=myVpcId \
-                                                    Subnets=mySubnetId1,mySubnetId2 \
-                                                    CertificateArn=myCertificateArn \
-                                                    NodeProxyPort=myProxyPort
-    ```
+### Install Prerequisites
 
 1. Setup kubectl, aws-cli and aws-iam-authenticator
 
@@ -47,6 +33,22 @@
 
     # Test to see if it works
     aws-iam-authenticator help
+    ```
+
+### Deploy the EKS Cluster
+
+1. Deploy the Cloudformation template
+
+    Review the stack parameters and determine whether any of the default values should be overridden for your particular deployment.
+
+    ```
+    aws cloudformation deploy --stack-name myStackName \
+                              --template-file cloudformation.yaml \
+                              --capabilities CAPABILITY_NAMED_IAM \
+                              --parameter-overrides VpcId=myVpcId \
+                                                    Subnets=mySubnetId1,mySubnetId2 \
+                                                    CertificateArn=myCertificateArn \
+                                                    NodeProxyPort=myProxyPort
     ```
 
 1. Kubectl config
