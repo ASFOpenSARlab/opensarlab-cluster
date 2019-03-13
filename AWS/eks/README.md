@@ -1,5 +1,10 @@
 
-### EKS Cluster
+## EKS Cluster
+
+These are the manual steps to create a JupyterHub instance running in a Kubernetes cluster via AWS's EKS.
+
+### Create Cluster Prerequisites
+
 1. Create a role for EKS
 
     Within https://console.aws.amazon.com/iam, create a role with the following:
@@ -8,6 +13,8 @@
     - Policies: (default) AmazonEKSClusterPolicy, (default) AmazonEKSServicePolicy
     - Role Name: jupyter-eks
     - Trust Relationship: eks.amazonaws.com
+
+    This role can be shared among multple clusters in the same region.
 
 1. Create a VPC for the cluster
 
@@ -25,13 +32,16 @@
 
     After creation of the stack, within _Outputs_ remember the __SecurityGroups__, __VpcId__, and __SubnetIds__.
 
+    This VPC can be shared among multiple clusters in the same region.
+
 1. Setup kubectl, aws-cli and aws-iam-authenticator
 
     It's assumed that kubectl is setup already. If not, follow https://kubernetes.io/docs/tasks/tools/install-kubectl/
 
     It's assumed that aws-cli is setup already. If not, follow https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html
 
-    _aws-iam-authenticator_ is "a tool to use AWS IAM credentials to authenticate to a Kubernetes cluster". This makes it far easier to manage EKS from a local machine.
+    _aws-iam-authenticator_ is "a tool to use AWS IAM credentials to authenticate to a Kubernetes cluster".
+    This makes it far easier to manage EKS from a local machine.
 
     Download and install aws-iam-authenticator:
 
@@ -60,9 +70,11 @@
     aws-iam-authenticator help
     ```
 
-1. Create cluster
+### Create Cluster
 
-    Some parameters decided in previous steps. The values will most likely be different that what is listed here.
+1. Use EKS to create a cluster
+
+    Some parameters were decided in previous steps. It's possible some values will be different that what is listed here.
 
     ```bash
     export EKS_CLUSTER_NAME=jupyter-dev
@@ -80,14 +92,17 @@
     # Wait until clsuter is active
     aws eks wait cluster-active --name $EKS_CLUSTER_NAME
     ```
-    Note the output during setup. Check that values are correct. Setup can take up to 10 minutes. To check on the status of the cluster, `aws eks describe-cluster --name $EKS_CLUSTER_NAME --query cluster.status`
+    Note the output during setup. Check that values are correct. Setup can take up to 10 minutes.
+    To check on the status of the cluster, `aws eks describe-cluster --name $EKS_CLUSTER_NAME --query cluster.status`
 
 
 1. Kubectl config
 
-    Once setup is complete, let's update the kubeconfig on the local machine so that we can talk with the cluster. Note that usually this appends to new credentials to the file.
+    Once setup is complete, let's update the kubeconfig on the local machine so that we can talk with the cluster.
+    Note that usually this appends to new credentials to the file.
 
-    **Note: DO NOT use the --role-arn option. Doing so will cause a mass of headaches.** Using assumed roles for AWS access can cause issues with local kubectl. Even though the cluster was created by a particular user, authentication will use AWS credentials which might not match.
+    **Note: DO NOT use the --role-arn option. Doing so will cause a mass of headaches.** Using assumed roles for AWS access can cause issues with local kubectl.
+    Even though the cluster was created by a particular user, authentication will use AWS credentials which might not match.
     Within kubeconfig replace the section
 
     ```bash
@@ -193,13 +208,19 @@
     kubectl get nodes --watch
     ```
 
-    The cluster should be fully setup. Check by doing a `kubectl get all --all-namespaces -owide`. The number of nodes listed should equal the number of EC2s. However, no load balancers should exist. That comes when Jupyterhub is set up.
+    The cluster should be fully setup. Check by doing a `kubectl get all --all-namespaces -owide`.
+    The number of nodes listed should equal the number of EC2s.
+    However, no load balancers should exist. That will be deployed later.
 
 #### Pick a load balancer port number
 
-We will be manually setting the ports that the proxy is listening for the balancer. The proxy is a pod (with service) within one of the EC2 nodes running within the cluster. If more than one non-system namespace is running on the node, then there might be more than one proxy service.
+We will be manually setting the ports that the proxy is listening for the balancer.
+The proxy is a pod (with service) within one of the EC2 nodes running within the cluster.
+If more than one non-system namespace is running on the node, then there might be more than one proxy service.
 
-To see all the services, `kubectl get svc --all-namespaces`. If there are any _proxy_public_, make sure that any redirection ports chosen don't conflict. For instance, within `80:31855/TCP,443:31413/TCP`, we can't choose the port of 31855 or 31413.
+To see all the services, `kubectl get svc --all-namespaces`.
+If there are any _proxy_public_, make sure that any redirection ports chosen don't conflict.
+For instance, within `80:31855/TCP,443:31413/TCP`, we can't choose the port of 31855 or 31413.
 
 Pick any number between 30000 - 40000 that doesn't conflict. Remember these. They will be added to the helm config later.
 
@@ -208,7 +229,10 @@ Pick any number between 30000 - 40000 that doesn't conflict. Remember these. The
 
 Follow along at https://z2jh.jupyter.org/en/latest/setup-helm.html
 
-We wil be using Helm to manage installation. `Helm` is a package manager for k8s. It will be used to install and update JupyterHub with the k8s cluster. Helm is the name of the local command-line client. Tiller is the server-side executor that interacts with Helm.
+The Helm GitHub repo is
+
+We wil be using Helm to manage installation. `Helm` is a package manager for k8s. It will be used to install and update JupyterHub with the k8s cluster.
+Helm is the name of the local command-line client. Tiller is the server-side executor that interacts with Helm.
 
 1. Install Helm on your local machine.
 
@@ -305,11 +329,13 @@ Most of the configuration work has already been done with Helm charts. However, 
          enabled: true
     ```
 
-    This basic config will allow anyone whitelisted to sign into JupyterHub with basic notebook creation rights, using the designated password. Admins listed will have the power to start and stop notebook servers of others.
+    This basic config will allow anyone whitelisted to sign into JupyterHub with basic notebook creation rights, using the designated password.
+    Admins listed will have the power to start and stop notebook servers of others.
 
 1.  Install the chart into the k8s cluster from your local machine.
 
-    It's suggested that the _RELEASE_ and _NAMESPACE_ match the basic name of the cluster in some fashion. This wil reduce confusion when multiple clusters are used.
+    It's suggested that the _RELEASE_ and _NAMESPACE_ match the basic name of the cluster in some fashion.
+    This wil reduce confusion when multiple clusters are used.
 
     **Make sure that the right config file is picked aws well as the namespace. Otherwise grave consequences will follow.**
 
@@ -319,7 +345,8 @@ Most of the configuration work has already been done with Helm charts. However, 
      RELEASE=jupyter; NAMESPACE=jupyter; helm upgrade --install $RELEASE jupyterhub/jupyterhub --namespace $NAMESPACE  --version 0.8.0  --values config.yaml
      ```
 
-     The version number 0.8.0 is the Helm version. The JupyterHub version matches accordingly to https://github.com/jupyterhub/helm-chart#versions-coupled-to-each-chart-release.
+     The version number 0.8.0 is the Helm version.
+     The JupyterHub version matches accordingly to https://github.com/jupyterhub/helm-chart#versions-coupled-to-each-chart-release.
 
 1.  Wait for the pods in the cluster to spin up.
 
@@ -332,19 +359,26 @@ Most of the configuration work has already been done with Helm charts. However, 
 
 1. Create an appliction load balancer
 
-    The load balancer that is installed by default is a classic load balancer. This cannot be changed. To enable http redirect (for security), we need to use an application load balancer (alb). To accomplish this, an alb is formed outside of the cluster with traffic forwarded to the hub proxy.
+    The load balancer that is installed by default is a classic load balancer. This cannot be changed.
+    To enable http redirect (for security), we need to use an application load balancer (alb).
+    To accomplish this, an alb is formed outside of the cluster with traffic forwarded to the hub proxy.
+
+    Before we begin, note the custom http port picked eariler and the EC2 running the hub proxy pod (it's security group and instance ID).
 
     Within the EC2 menu, click on the __Load Balancer__ menu. Select an Appliction Load Balancer.
 
     When choosing a name, remember that it will be prepended on the public-facing url.
 
-    For listeners, add HTTPS on port 443.
+    For listeners, in additional to HTTP 80, add HTTPS on port 443.
 
-    Choose the VPC created earlier with all AZs.
+    Choose the VPC created earlier and include all AZs.
 
     Choose the proper certificate and default ELB security policy.
 
-    From the default security group, create a new group. Name it properly, e.g. _jupyter-dev-alb_. Delete the one default rule and add HTTPS from Anywhere. Add another rule that allows Custom TCP for the picked port (of the public-proxy service) on the security group of the EC2 that is running the hub proxy.
+    From the default security group, create a new group. Name it properly, e.g. _jupyter-dev-alb_.
+    We want a security group policy just for the balancer since it's seperate from cluster.
+    Delete the one default rule and add HTTPS from Anywhere.
+    The intention is to have the alb's traffic only open to 443 from the internet.
 
     Target a new group using _instance_ and http 80. The health check should be http at _/hub/login_.
 
@@ -352,26 +386,48 @@ Most of the configuration work has already been done with Helm charts. However, 
 
     Create the balancer. It will take a little while to provision and become active.
 
+    Once the alb is created, click on it's listener tab and make sure that http 80 is being redirected to https 443 and that the https 443 is being forwarded to the right group.
+
+2. Check security groups
+
+    Make sure that the security group for the alb allows
+
+    - Inbound http 80 from Everywhere
+    - Inbound https 443 from Everywhere
+
+    Make sure that the security group for the node that contains the hub proxy pod allows
+
+    - Inbound tcp on the picked port for the alb's security group
 
 ###  Open the ip in a browser and play.
 
-    Note that when initially logging in as an user, the volume for that user hasn't been created yet. There will be a self-correcting error displayed that will go away once the volume is formed and attached.
+If the connection hangs or there is a 502 Gateway error, most likely the ports and/or security groups are not properly configured.
+
+Note that when initially logging in as an user, the volume for that user hasn't been created yet.
+There will be a self-correcting error displayed that will go away once the volume is formed and attached.
 
 ### To delete everything
 
-1. Delete the Helm Release
+1. Delete the Helm Release resources
 
-    On your local machine, `helm delete jupyter --purge`. Assume that `jupyter` is the release name though it can be found via `helm list`.
+    On your local machine, `helm delete $RELEASE --purge`. The release name though it can be found via `helm list`.
+
+    This will delete most of the resources in the accompying namespace. It's possible that active user pods will be orphaned.
+    However, if the cluster is rebuilt within the same namespace, the active user pod will be reassigned into the new cluster setup. The pod won't be lost.
 
 1. Delete the k8s resources (not the actual k8s cluster).
 
-    On your local machine, `kubectl delete namespace jupyter`. (Assuming that `jupyter` is the k8s namespace used.)
+    On your local machine, `kubectl delete namespace $NAMESPACE`.
 
-1. Delete the k8s cluster
+    Unlike deleting a Helm Release which may or may not delete all resources in the particular namespace, this command will delete everything. So be extra careful.
 
-    On the cluster master EC2 (created in _Install the k8s cluster in AWS_), `kops delete cluster asf-jupyter-cluster.k8s.local --yes`
+1. Delete the k8s cluster.
 
-    It will take a while to delete all the resources. It would be wise to double check that there is nothing orphaned.
+    `aws eks delete-cluster --name $CLUSTER_NAME`
 
-1. Delete the cluster master EC2.
+    Cluster names can be retrieved by `aws eks list-clusters`
 
+    It will take a while to delete all the resources. It would be wise to double check that there is nothing orphaned afterwards.
+
+1. Since the application load balancer is seperate from EKS, this will need to be deleted seperately.
+    If the security groups are not being used by other resources, those can be deleted as well.
