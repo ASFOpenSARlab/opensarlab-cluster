@@ -1,29 +1,18 @@
 
-### EKS Cluster
-1. Create a role for EKS
+### Deploy the EKS Cluster via Cloudformation
+1. Deploy the Cloudformation template
 
-    Within https://console.aws.amazon.com/iam, create a role with the following:
+    Review the stack parameters and determine whether any of the default values should be overridden for your particular deployment.
 
-    - AWS Service: EKS
-    - Policies: (default) AmazonEKSClusterPolicy, (default) AmazonEKSServicePolicy
-    - Role Name: jupyter-eks
-    - Trust Relationship: eks.amazonaws.com
-
-1. Create a VPC for the cluster
-
-    (The following largely follows _Create your Amazon EKS Cluster VPC_ in https://docs.aws.amazon.com/eks/latest/userguide/getting-started.html)
-
-    Open CloudFormation https://console.aws.amazon.com/cloudformation
-
-    Click _Create Stack_
-
-    Within _Specify an Amazon S3 template URL_ enter https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-02-11/amazon-eks-vpc-sample.yaml
-
-    Specfify name: _eks-vpc_. Use default subnet values.
-
-    Hit **Create**
-
-    After creation of the stack, within _Outputs_ remember the __SecurityGroups__, __VpcId__, and __SubnetIds__.
+    ```
+    aws cloudformation deploy --stack-name myStackName \
+                              --template-file cloudformation.yaml \
+                              --capabilities CAPABILITY_NAMED_IAM \
+                              --parameter-overrides VpcId=myVpcId \
+                                                    Subnets=mySubnetId1,mySubnetId2 \
+                                                    CertificateArn=myCertificateArn \
+                                                    NodeProxyPort=myProxyPort
+    ```
 
 1. Setup kubectl, aws-cli and aws-iam-authenticator
 
@@ -59,29 +48,6 @@
     # Test to see if it works
     aws-iam-authenticator help
     ```
-
-1. Create cluster
-
-    Some parameters decided in previous steps. The values will most likely be different that what is listed here.
-
-    ```bash
-    export EKS_CLUSTER_NAME=jupyter-dev
-    export EKS_ROLE_ARN=arn:aws:iam::553778890976:role/jupyter-eks
-    ```
-
-    Using the AWS UI may seem simpler, but in experimenting with the setup I have found that creating the cluster on the command line avoids possible issues later.
-
-    ```bash
-    aws eks create-cluster \
-        --name $EKS_CLUSTER_NAME \
-        --role-arn $EKS_ROLE_ARN \
-        --resources-vpc-config subnetIds=subnet-0045e5b992d9afe35,subnet-0d7ed44f212844dfe,securityGroupIds=sg-0e0c12237a49fccaf
-
-    # Wait until clsuter is active
-    aws eks wait cluster-active --name $EKS_CLUSTER_NAME
-    ```
-    Note the output during setup. Check that values are correct. Setup can take up to 10 minutes. To check on the status of the cluster, `aws eks describe-cluster --name $EKS_CLUSTER_NAME --query cluster.status`
-
 
 1. Kubectl config
 
@@ -134,36 +100,7 @@
 
     To check that kubectl can get to the EKS cluster, `aws get svc` should give the cluster name.
 
-1. Add worker nodes
-
-    By this point in the setup there should be a K8s cluster running in AWS including
-     - VPCs
-     - Roles
-     - Security Groups
-     - Subnets
-     - Basic Kubernetes cluster with certificate and credentials
-
-    However, there should be no EC2s running that will support pods. For this to occur, worker nodes need to be set up.
-
-    Open CloudFormation https://console.aws.amazon.com/cloudformation/
-
-    Create a Stack with the following:
-
-     - Specify an Amazon S3 template URL: https://amazon-eks.s3-us-west-2.amazonaws.com/cloudformation/2019-02-11/amazon-eks-nodegroup.yaml
-     - StackName: jupyter-dev-worker-nodes
-     - ClusterName: jupyter-dev
-     - ClusterControlPlaneSecurityGroup: The security group gotten in _Create a VPC for the cluster_ above.
-     - NodeGroupName: jupyter-dev
-     - NodeInstanceType: m4.xlarge.  Note that this will need to be fine-tuned based on the needs of the cluster.
-     - NodeImageId: ami-0eeeef929db40543c. This assumes that kubernetes 1.11 is being used.
-     - BootstrapArguments: None for now. Though autoscaling will have values here in future development.
-     - VpcId: The vpc id gotten in _Create a VPC for the cluster_ above.
-     - Subnets: The subnets gotten in _Create a VPC for the cluster_ above.
-     - For other values, pick what is best to your heart's content
-
-    Choose **Create**
-
-    Note **NodeInstanceRole** in _Outputs_. This will be used later.
+1. Configure Kubernetes to find worker nodes
 
     Apparently, nodes still need help in joining the cluster they are assigned to via kubectl.
 
@@ -327,32 +264,6 @@ Most of the configuration work has already been done with Helm charts. However, 
 
     Wait till pods `hub` and `proxy` are in a `ready` state.
 
-
-### Create an application load balancer and related resources
-
-1. Create an appliction load balancer
-
-    The load balancer that is installed by default is a classic load balancer. This cannot be changed. To enable http redirect (for security), we need to use an application load balancer (alb). To accomplish this, an alb is formed outside of the cluster with traffic forwarded to the hub proxy.
-
-    Within the EC2 menu, click on the __Load Balancer__ menu. Select an Appliction Load Balancer.
-
-    When choosing a name, remember that it will be prepended on the public-facing url.
-
-    For listeners, add HTTPS on port 443.
-
-    Choose the VPC created earlier with all AZs.
-
-    Choose the proper certificate and default ELB security policy.
-
-    From the default security group, create a new group. Name it properly, e.g. _jupyter-dev-alb_. Delete the one default rule and add HTTPS from Anywhere. Add another rule that allows Custom TCP for the picked port (of the public-proxy service) on the security group of the EC2 that is running the hub proxy.
-
-    Target a new group using _instance_ and http 80. The health check should be http at _/hub/login_.
-
-    Register the EC2 that is running the proxy on the picked port.
-
-    Create the balancer. It will take a little while to provision and become active.
-
-
 ###  Open the ip in a browser and play.
 
     Note that when initially logging in as an user, the volume for that user hasn't been created yet. There will be a self-correcting error displayed that will go away once the volume is formed and attached.
@@ -374,4 +285,3 @@ Most of the configuration work has already been done with Helm charts. However, 
     It will take a while to delete all the resources. It would be wise to double check that there is nothing orphaned.
 
 1. Delete the cluster master EC2.
-
