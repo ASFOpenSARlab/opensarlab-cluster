@@ -195,6 +195,14 @@
 
     The cluster should be fully setup. Check by doing a `kubectl get all --all-namespaces -owide`. The number of nodes listed should equal the number of EC2s. However, no load balancers should exist. That comes when Jupyterhub is set up.
 
+#### Pick a load balancer port number
+
+We will be manually setting the ports that the proxy is listening for the balancer. The proxy is a pod (with service) within one of the EC2 nodes running within the cluster. If more than one non-system namespace is running on the node, then there might be more than one proxy service.
+
+To see all the services, `kubectl get svc --all-namespaces`. If there are any _proxy_public_, make sure that any redirection ports chosen don't conflict. For instance, within `80:31855/TCP,443:31413/TCP`, we can't choose the port of 31855 or 31413.
+
+Pick any number between 30000 - 40000 that doesn't conflict. Remember these. They will be added to the helm config later.
+
 
 ### Install JupyterHub
 
@@ -251,6 +259,12 @@ Most of the configuration work has already been done with Helm charts. However, 
     # Proxy token can be recreated via `openssl rand -hex 32`. This token isn't really used anywhere else so I'm not sure of the security concerns.
     proxy:
       secretToken: <token>
+       https:
+            enabled: false
+       service:
+            type: NodePort
+            nodePorts:
+                http: 31080
 
     auth:
       admin:
@@ -269,19 +283,19 @@ Most of the configuration work has already been done with Helm charts. However, 
     singleuser:
       image:
         name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
-        tag: build.9
+        tag: build.22
       extraEnv:
         # Keys needed for the notebook servers to talk to s3
         AWS_ACCESS_KEY_ID: "AKIAJ**"
         AWS_SECRET_ACCESS_KEY: "***"
-      lifecycleHooks:
-        postStart:
-          exec:
-            # When the jupyterhub server mounts the EBS volumes to $HOME, it "deletes" anything in that directory.
-            # The volumes cannot be mounted anywhere else.
-            # Thus hidden directories for condas and other programs when originally built will get destroyed.
-            # This hook takes copies of those files (safely moved during the image build) and copies them back to $HOME.
-            command: ["rsync", "-a", "-v", "--ignore-existing", "/home/commons/.", "/home/jovyan/"]
+        lifecycleHooks:
+            postStart:
+              exec:
+                # When the jupyterhub server mounts the EBS volumes to $HOME, it "deletes" anything in that directory.
+                # The volumes cannot be mounted anywhere else.
+                # Thus hidden directories for condas and other programs when originally built will get destroyed.
+                # This hook takes copies of those files (safely moved during the image build) and copies them back to $HOME.
+                command: ["gitpuller", "https://github.com/asfadmin/asf-jupyter-notebooks.git", "master", "notebooks"]
 
     # Always pull the latest image when the Helm chart is updated
     prePuller:
@@ -297,6 +311,8 @@ Most of the configuration work has already been done with Helm charts. However, 
 
     It's suggested that the _RELEASE_ and _NAMESPACE_ match the basic name of the cluster in some fashion. This wil reduce confusion when multiple clusters are used.
 
+    **Make sure that the right config file is picked aws well as the namespace. Otherwise grave consequences will follow.**
+
      ```bash
      # Suggested values: advanced users of Kubernetes and Helm should feel
      # free to use different values.
@@ -311,13 +327,33 @@ Most of the configuration work has already been done with Helm charts. However, 
 
     Wait till pods `hub` and `proxy` are in a `ready` state.
 
-1.  Get the public IP to sign into JupyterHub
 
-    `kubectl describe service proxy-public --namespace jupyter`
+### Create an application load balancer and related resources
 
-    The ip is found under `LoadBalancer Ingress`.
+1. Create an appliction load balancer
 
-1.  Open the ip in a browser and play.
+    The load balancer that is installed by default is a classic load balancer. This cannot be changed. To enable http redirect (for security), we need to use an application load balancer (alb). To accomplish this, an alb is formed outside of the cluster with traffic forwarded to the hub proxy.
+
+    Within the EC2 menu, click on the __Load Balancer__ menu. Select an Appliction Load Balancer.
+
+    When choosing a name, remember that it will be prepended on the public-facing url.
+
+    For listeners, add HTTPS on port 443.
+
+    Choose the VPC created earlier with all AZs.
+
+    Choose the proper certificate and default ELB security policy.
+
+    From the default security group, create a new group. Name it properly, e.g. _jupyter-dev-alb_. Delete the one default rule and add HTTPS from Anywhere. Add another rule that allows Custom TCP for the picked port (of the public-proxy service) on the security group of the EC2 that is running the hub proxy.
+
+    Target a new group using _instance_ and http 80. The health check should be http at _/hub/login_.
+
+    Register the EC2 that is running the proxy on the picked port.
+
+    Create the balancer. It will take a little while to provision and become active.
+
+
+###  Open the ip in a browser and play.
 
     Note that when initially logging in as an user, the volume for that user hasn't been created yet. There will be a self-correcting error displayed that will go away once the volume is formed and attached.
 
