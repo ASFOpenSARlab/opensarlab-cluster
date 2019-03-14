@@ -321,13 +321,8 @@ Most of the configuration work has already been done with Helm charts. However, 
 
     Unlike deleting a Helm Release which may or may not delete all resources in the particular namespace, this command will delete everything. So be extra careful.
 
-1. Delete the k8s cluster.
+1. Delete the k8s cluster via cloudformation.
 
-    `aws eks delete-cluster --name $CLUSTER_NAME`
-
-    Cluster names can be retrieved by `aws eks list-clusters`
+    `aws cloudformation delete-stack --stack-name $STACK_NAME`
 
     It will take a while to delete all the resources. It would be wise to double check that there is nothing orphaned afterwards.
-
-1. Since the application load balancer is seperate from EKS, this will need to be deleted seperately.
-    If the security groups are not being used by other resources, those can be deleted as well.
