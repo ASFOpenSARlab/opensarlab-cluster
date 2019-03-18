@@ -2,36 +2,23 @@ AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
 
+  VpcId:
+    Description: The VPC of the worker instances
+    Type: AWS::EC2::VPC::Id
+
+  Subnets:
+    Description: The subnets where workers can be created.
+    Type: List<AWS::EC2::Subnet::Id>
+
   NodeImageId:
-    Description: AMI id for the node instances. #TODO reference EKS optimized ami web page
+    Description: AMI id for the node instances.
     Type: AWS::EC2::Image::Id
     Default: ami-0eeeef929db40543c
 
   NodeInstanceType:
     Description: EC2 instance type for the node instances
     Type: String
-    Default: t3.medium
-    ConstraintDescription: Must be a valid EC2 instance type
-    AllowedValues:
-    - t3.nano
-    - t3.micro
-    - t3.small
-    - t3.medium
-    - t3.large
-    - t3.xlarge
-    - t3.2xlarge
-    - m5.large
-    - m5.xlarge
-    - m5.2xlarge
-    - m5.4xlarge
-    - m5.12xlarge
-    - m5.24xlarge
-    - c5.large
-    - c5.xlarge
-    - c5.2xlarge
-    - c5.4xlarge
-    - c5.9xlarge
-    - c5.18xlarge
+    Default: m5.2xlarge
 
   NodeAutoScalingGroupMinSize:
     Description: Minimum size of Node Group ASG.
@@ -51,17 +38,7 @@ Parameters:
   NodeVolumeSize:
     Description: Node volume size
     Type: Number
-    Default: 10
-
-  VpcId:
-    Description: The VPC of the worker instances
-    Type: AWS::EC2::VPC::Id
-    Default: vpc-4da21e37
-
-  Subnets:
-    Description: The subnets where workers can be created.
-    Type: List<AWS::EC2::Subnet::Id>
-    Default: subnet-39a09073,subnet-4388e824,subnet-68a1fb67,subnet-c0ef829c,subnet-e5ff90cb
+    Default: 100
 
   LoadBalancerCidrBlock:
     Type: String
@@ -82,6 +59,12 @@ Outputs:
 
   AppUrl:
     Value: !GetAtt LoadBalancer.DNSName
+
+  NodeProxyPort:
+    Value: !Ref NodeProxyPort
+
+  NodeRoleArn:
+    Value: !GetAtt NodeInstanceRole.Arn
 
 Resources:
 
