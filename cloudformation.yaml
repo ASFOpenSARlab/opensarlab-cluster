@@ -341,7 +341,7 @@ Resources:
             - s3:PutObject
             Resource: "arn:aws:s3:::*/*"
           - Effect: Allow
-            Action: eks:DescribeCluster
+            Action: eks:*
             Resource: !GetAtt Cluster.Arn
 
   Project:
