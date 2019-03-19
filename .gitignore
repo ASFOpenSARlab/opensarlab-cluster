@@ -1,6 +1,6 @@
 *
 !.gitignore
-!software/*
+!software/download.sh
 !buildspec.yml
 !helm_config.yaml.example
 !cloudformation.yaml
