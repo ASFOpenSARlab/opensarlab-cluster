@@ -3,45 +3,50 @@
 # This helm config file modifies the defaults found in zero-to-jupyterhub-k8s/jupyterhub/
 # Possible values are scattered throughout the doc starting at https://z2jh.jupyter.org/en/latest/setup-jupyterhub.html
 
-# Proxy token can be recreated via `openssl rand -hex 32`. This token isn't really used anywhere else so I'm not sure of the security concerns.
-proxy:
-  secretToken: <>
 auth:
   admin:
     users:
-      - emlundell
-      - khogenso
-      - fjmeyer
+    - user1
+    - user2
 
   whitelist:
     users:
-      - emlundell
-      - khogenso
-      - fjmeyer
+    - user1
+    - user2
+    - user3
 
   dummy:
-    password: "sariscool"  # This password will be shared among all users.
+    password: <common password for all users>
+
+prePuller:
+  continuous:
+    enabled: true
+  hook:
+    enabled: true
+
+proxy:
+  https:
+    enabled: false
+  secretToken: <Secret token for hub to communicate to nodes. Get by openssl rand -hex 32>
+  service:
+    nodePorts:
+      http: 30052
+    type: NodePort
 
 singleuser:
+  extraEnv:
+    AWS_ACCESS_KEY_ID: <secret>
+    AWS_SECRET_ACCESS_KEY: <secret>
   image:
     name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
     tag: build.23
-  extraEnv:
-    # Keys needed for the notebook servers to talk to s3
-    AWS_ACCESS_KEY_ID: "AKIA****"
-    AWS_SECRET_ACCESS_KEY: "*****"
   lifecycleHooks:
     postStart:
       exec:
-        # When the jupyterhub server mounts the EBS volumes to $HOME, it "deletes" anything in that directory.
-        # The volumes cannot be mounted anywhere else.
-        # Thus hidden directories for condas and other programs when originally built will get destroyed.
-        # This hook takes copies of those files (safely moved during the image build) and copies them back to $HOME.
-        command: ["rsync", "-r", "--ignore-existing", "/home/commons/.", "/home/jovyan/"]
-
-# Always pull the latest image when the Helm chart is updated
-prePuller:
-  continuous:
-    enabled: false
-  hook:
-    enabled: false
+        command:
+        - gitpuller
+        - https://github.com/asfadmin/asf-jupyter-notebooks.git
+        - eml
+        - notebooks
+  storage:
+    capacity: 100Gi
