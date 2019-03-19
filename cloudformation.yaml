@@ -368,6 +368,8 @@ Resources:
               - chmod +x ./kubectl ./aws-iam-authenticator
               - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
               - aws eks update-kubeconfig --name ${Cluster}
+              - sed -i "s/INSTANCE_ROLE_ARN/${NodeInstanceRole.Arn}/" aws-auth-cm.yaml
+              - kubectl apply -f aws-auth-cm.yaml
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
