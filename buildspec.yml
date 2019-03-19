@@ -8,13 +8,9 @@ env:
 phases:
   build:
     commands:
-    - aws --version
-    - pip --version
-    - pip install awscli --upgrade
-    - aws --version
     - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/aws-iam-authenticator
     - chmod +x ./aws-iam-authenticator
     - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
     - chmod +x ./kubectl
     - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
-    - aws eks update-kubeconfig $CLUSTER_NAME
+    - aws eks update-kubeconfig --name $CLUSTER_NAME
