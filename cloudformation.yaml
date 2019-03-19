@@ -340,6 +340,9 @@ Resources:
             - s3:GetObject
             - s3:PutObject
             Resource: "arn:aws:s3:::*/*"
+          - Effect: Allow
+            Action: eks:DescribeCluster
+            Resource: !GetAtt Cluster.Arn
 
   Project:
     Type: AWS::CodeBuild::Project
@@ -359,10 +362,7 @@ Resources:
           phases:
             build:
               commands:
-              - aws --version
-              - pip3 --version
               - pip3 install awscli --upgrade
-              - aws --version
               - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/aws-iam-authenticator
               - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
               - chmod +x ./kubectl ./aws-iam-authenticator
