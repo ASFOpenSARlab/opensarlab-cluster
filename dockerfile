@@ -36,7 +36,7 @@ RUN apt update && \
     rsync \
     less
 
-RUN pip install 'boto3>=1.4.4' 'pyyaml>=3.12' 'pandas==0.23.0' 'bokeh' 'matplotlib'
+RUN pip install 'boto3>=1.4.4' 'pyyaml>=3.12' 'pandas==0.23.0' 'bokeh' 'matplotlib' 'tensorflow==1.13.1'
 
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -57,8 +57,8 @@ RUN apt update && \
     libgdal-dev \
     libshp-dev
 
-COPY software/ASF_MapReady_cli.tar.gz /tmp/ASF_MapReady_cli.tar.gz
-RUN cd /tmp/ && tar xzvf ASF_MapReady_cli.tar.gz && cd ASF_MapReady_cli && make install && rm -rf /tmp/ASF_MapReady*
+COPY software/ASF_MapReady /tmp/ASF_MapReady
+RUN cd /tmp/ASF_MapReady && make install && rm -rf /tmp/ASF_MapReady*
 
 # It's assumed that the compiled versions of previous libaries will have the same behavior
 RUN cp /usr/lib/x86_64-linux-gnu/libgsl.so /usr/lib/x86_64-linux-gnu/libgsl.so.19
@@ -88,9 +88,7 @@ ENV ISCE_HOME /usr/local/isce
 ENV PYTHONPATH $PYTHONPATH:/usr/local/
 ENV PATH $PATH:$ISCE_HOME/bin:$ISCE_HOME/applications
 
-# This assumes that the ISCE package is a .zip found in .
-COPY software/isce.zip /tmp/isce.zip
-RUN cd /tmp/ && unzip isce.zip && mv isce $ISCE_HOME
+COPY software/isce $ISCE_HOME
 
 # Add extra files to ISCE
 COPY software/focus.py $ISCE_HOME/applications/
@@ -102,7 +100,6 @@ RUN chmod 755 $ISCE_HOME/applications/*
 
 # ---------------------------------------------------------------------------------------------------------------
 # Install SNAP
-# wget --no-verbose http://step.esa.int/downloads/5.0/installers/esa-snap_sentinel_unix_5_0.sh
 COPY software/esa-snap_sentinel_unix_5_0.sh /usr/local/etc/esa-snap_sentinel_unix_5_0.sh
 COPY software/snap_install.varfile /usr/local/etc/snap_install.varfile
 RUN sh /usr/local/etc/esa-snap_sentinel_unix_5_0.sh -q -varfile /usr/local/etc/snap_install.varfile
