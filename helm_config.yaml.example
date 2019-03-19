@@ -25,7 +25,7 @@ auth:
 singleuser:
   image:
     name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
-    tag: build.13
+    tag: build.23
   extraEnv:
     # Keys needed for the notebook servers to talk to s3
     AWS_ACCESS_KEY_ID: "AKIA****"
