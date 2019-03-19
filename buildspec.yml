@@ -1,7 +1,16 @@
 # https://docs.aws.amazon.com/codebuild/latest/userguide/build-spec-ref.html
 version: 0.2
 
+env:
+  variables:
+    CLUSTER_NAME: opensarlab-dev
+
 phases:
   build:
     commands:
-    - echo "hello world!"
+    - wget https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/aws-iam-authenticator
+    - chmod +x ./aws-iam-authenticator
+    - wget https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
+    - chmod +x ./kubectl
+    - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
+    - aws eks update-kubeconfig $CLUSTER_NAME
