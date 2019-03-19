@@ -9,8 +9,8 @@ phases:
   build:
     commands:
     - aws --version
-    - /usr/bin/pip3 --version
-    - /usr/bin/pip3 install awscli --upgrade
+    - pip --version
+    - pip install awscli --upgrade
     - aws --version
     - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/aws-iam-authenticator
     - chmod +x ./aws-iam-authenticator
