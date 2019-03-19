@@ -307,3 +307,69 @@ Resources:
       DefaultActions:
       - Type: forward
         TargetGroupArn: !Ref TargetGroup
+
+  ProjectLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${AWS::StackName}"
+      RetentionInDays: 30
+
+  ProjectRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-project
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          Action: sts:AssumeRole
+          Principal:
+            Service: codebuild.amazonaws.com
+          Effect: Allow
+      Policies:
+      - PolicyName: policy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:CreateLogStream
+            - logs:PutLogEvents
+            Resource: !GetAtt ProjectLogGroup.Arn
+          - Effect: Allow
+            Action:
+            - s3:GetObject
+            - s3:PutObject
+            Resource: "arn:aws:s3:::*/*"
+
+  Project:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Ref AWS::StackName
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:1.0
+      Artifacts:
+        Type: CODEPIPELINE
+      ServiceRole: !Ref ProjectRole
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |-
+          version: 0.2
+          phases:
+            build:
+              commands:
+              - aws --version
+              - pip3 --version
+              - pip3 install awscli --upgrade
+              - aws --version
+              - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/aws-iam-authenticator
+              - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
+              - chmod +x ./kubectl ./aws-iam-authenticator
+              - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
+              - aws eks update-kubeconfig --name ${Cluster}
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Ref ProjectLogGroup
+      TimeoutInMinutes: 10
