@@ -343,7 +343,7 @@ Resources:
               - aws eks update-kubeconfig --name ${Cluster}
               - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" aws-auth-cm.yaml
               - kubectl apply -f aws-auth-cm.yaml
-              - kubectl --namespace kube-system create serviceaccount tiller
+              - kubectl --namespace kube-system create serviceaccount tiller --dry-run -o yaml | kubectl apply -f -
               - kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
               - helm init --service-account tiller --wait
               #- kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{"op": "add", "path": "/spec/template/spec/containers/0/command", "value": ["/tiller", "--listen=localhost:44134"]}]'
