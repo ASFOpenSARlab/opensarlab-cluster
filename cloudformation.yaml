@@ -63,7 +63,6 @@ Parameters:
 
   CertificateArn:
     Type: String
-    Default: arn:aws:acm:us-east-1:553778890976:certificate/862ecb20-8df6-458a-b45d-bc03b9b02af5
 
   NodeProxyPort:
     Type: Number
