@@ -16,9 +16,16 @@ Parameters:
   AdminUserName:
     Type: String
 
-  Password:
+  AppPassword:
     Type: String
     NoEcho: true
+
+  ImageName:
+    Type: String
+    Default: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
+
+  ImageTag:
+    Type: String
 
   NodeImageId:
     Description: AMI id for the node instances.
@@ -356,9 +363,7 @@ Resources:
               #- kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{"op": "add", "path": "/spec/template/spec/containers/0/command", "value": ["/tiller", "--listen=localhost:44134"]}]'
               - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
               - helm repo update
-              - sed -i "s/ADMIN_USER/${AdminUserName}/" helm_config.yaml
-              - sed -i "s/SECRET_TOKEN/$(openssl rand -hex 32)/" helm_config.yaml
-              - sed -i "s/PASSWORD/${Password}/" helm_config.yaml
+              - sed -i -e "s/ADMIN_USER/${AdminUserName}/" -e "s/PASSWORD/${AppPassword}/" -e "s/SECRET_TOKEN/$(openssl rand -hex 32)/" -e "s/NODE_PORT/${NodePort}/" -e "s/IMAGE_NAME/${ImageName}/" -e "s/IMAGE_TAG/${ImageTag}/" helm_config.yaml
               - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml
       LogsConfig:
         CloudWatchLogs:

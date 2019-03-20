@@ -23,13 +23,13 @@ proxy:
   secretToken: SECRET_TOKEN
   service:
     nodePorts:
-      http: 30052
+      http: NODE_PORT
     type: NodePort
 
 singleuser:
   image:
-    name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
-    tag: build.23
+    name: IMAGE_NAME
+    tag: IMAGE_TAG
   lifecycleHooks:
     postStart:
       exec:
