@@ -358,7 +358,7 @@ Resources:
               - helm repo update
               - sed -i "s/ADMIN_USER/${AdminUserName}/" helm_config.yaml
               - sed -i "s/SECRET_TOKEN/$(openssl rand -hex 32)/" helm_config.yaml
-              - sed -i "S/PASSWORD/${Password}/" helm_config.yaml
+              - sed -i "s/PASSWORD/${Password}/" helm_config.yaml
               - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml
       LogsConfig:
         CloudWatchLogs:
