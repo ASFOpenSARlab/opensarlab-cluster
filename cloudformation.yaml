@@ -354,6 +354,7 @@ Resources:
               - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
               - helm repo update
               - sed -i -e "s/ADMIN_USER/${AdminUserName}/" -e "s/PASSWORD/${AppPassword}/" -e "s/SECRET_TOKEN/$(openssl rand -hex 32)/" -e "s/NODE_PORT/${NodeProxyPort}/" -e "s|IMAGE_NAME|${ImageName}|" -e "s/IMAGE_TAG/${ImageTag}/" helm_config.yaml
+              - kubectl wait --namespace kube-system --for=condition=Ready $(kubectl get pod --namespace kube-system -o name | grep tiller-deploy) --timeout 300s
               - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml
       LogsConfig:
         CloudWatchLogs:
