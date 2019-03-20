@@ -343,6 +343,8 @@ Resources:
               - aws eks update-kubeconfig --name ${Cluster}
               - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" aws-auth-cm.yaml
               - kubectl apply -f aws-auth-cm.yaml
+              - kubectl --namespace kube-system create serviceaccount tiller
+              - kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
