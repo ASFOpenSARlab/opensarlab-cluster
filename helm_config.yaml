@@ -1,0 +1,52 @@
+# !!!! This config is used in the first round of Franz's labs. It will not be used afterwards. Though some of the settings could still prove useful.
+#
+# This helm config file modifies the defaults found in zero-to-jupyterhub-k8s/jupyterhub/
+# Possible values are scattered throughout the doc starting at https://z2jh.jupyter.org/en/latest/setup-jupyterhub.html
+
+auth:
+  admin:
+    users:
+    - user1
+    - user2
+
+  whitelist:
+    users:
+    - user1
+    - user2
+    - user3
+
+  dummy:
+    password: <common password for all users>
+
+prePuller:
+  continuous:
+    enabled: true
+  hook:
+    enabled: true
+
+proxy:
+  https:
+    enabled: false
+  secretToken: <Secret token for hub to communicate to nodes. Get by openssl rand -hex 32>
+  service:
+    nodePorts:
+      http: 30052
+    type: NodePort
+
+singleuser:
+  extraEnv:
+    AWS_ACCESS_KEY_ID: <secret>
+    AWS_SECRET_ACCESS_KEY: <secret>
+  image:
+    name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
+    tag: build.23
+  lifecycleHooks:
+    postStart:
+      exec:
+        command:
+        - gitpuller
+        - https://github.com/asfadmin/asf-jupyter-notebooks.git
+        - eml
+        - notebooks
+  storage:
+    capacity: 100Gi
