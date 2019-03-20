@@ -10,6 +10,9 @@ Parameters:
     Description: The subnets where workers can be created.
     Type: List<AWS::EC2::Subnet::Id>
 
+  CodeBuildServiceRoleArn:
+    Type: String
+
   NodeImageId:
     Description: AMI id for the node instances.
     Type: AWS::EC2::Image::Id
@@ -314,36 +317,6 @@ Resources:
       LogGroupName: !Sub "/aws/codebuild/${AWS::StackName}"
       RetentionInDays: 30
 
-  ProjectRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::StackName}-project
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          Action: sts:AssumeRole
-          Principal:
-            Service: codebuild.amazonaws.com
-          Effect: Allow
-      Policies:
-      - PolicyName: policy
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-          - Effect: Allow
-            Action:
-            - logs:CreateLogStream
-            - logs:PutLogEvents
-            Resource: !GetAtt ProjectLogGroup.Arn
-          - Effect: Allow
-            Action:
-            - s3:GetObject
-            - s3:PutObject
-            Resource: "arn:aws:s3:::*/*"
-          - Effect: Allow
-            Action: eks:*
-            Resource: !GetAtt Cluster.Arn
-
   Project:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -354,7 +327,7 @@ Resources:
         Image: aws/codebuild/standard:1.0
       Artifacts:
         Type: CODEPIPELINE
-      ServiceRole: !Ref ProjectRole
+      ServiceRole: !Ref CodeBuildServiceRoleArn
       Source:
         Type: CODEPIPELINE
         BuildSpec: !Sub |-
