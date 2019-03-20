@@ -8,6 +8,10 @@ auth:
     users:
     - ADMIN_USER
 
+  whitelist:
+    users:
+    - ADMIN_USER
+
   dummy:
     password: PASSWORD
 
