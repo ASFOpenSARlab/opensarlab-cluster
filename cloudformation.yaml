@@ -18,7 +18,7 @@ Parameters:
 
   Password:
     Type: String
-    NoeEcho: true
+    NoEcho: true
 
   NodeImageId:
     Description: AMI id for the node instances.
