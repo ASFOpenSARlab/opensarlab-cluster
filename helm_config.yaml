@@ -6,17 +6,14 @@
 auth:
   admin:
     users:
-    - user1
-    - user2
+    - ADMIN_USER
 
   whitelist:
     users:
-    - user1
-    - user2
-    - user3
+    - ADMIN_USER
 
   dummy:
-    password: <common password for all users>
+    password: PASSWORD
 
 prePuller:
   continuous:
@@ -27,19 +24,19 @@ prePuller:
 proxy:
   https:
     enabled: false
-  secretToken: <Secret token for hub to communicate to nodes. Get by openssl rand -hex 32>
+  secretToken: SECRET_TOKEN
   service:
     nodePorts:
-      http: 30052
+      http: NODE_PORT
     type: NodePort
 
 singleuser:
   extraEnv:
-    AWS_ACCESS_KEY_ID: <secret>
-    AWS_SECRET_ACCESS_KEY: <secret>
+    AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
   image:
-    name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
-    tag: build.23
+    name: IMAGE_NAME
+    tag: IMAGE_TAG
   lifecycleHooks:
     postStart:
       exec:
