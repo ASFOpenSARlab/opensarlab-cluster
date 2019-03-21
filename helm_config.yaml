@@ -31,6 +31,9 @@ proxy:
     type: NodePort
 
 singleuser:
+  extraEnv:
+    AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
   image:
     name: IMAGE_NAME
     tag: IMAGE_TAG
