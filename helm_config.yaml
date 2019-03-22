@@ -43,7 +43,7 @@ singleuser:
         command:
         - gitpuller
         - https://github.com/asfadmin/asf-jupyter-notebooks.git
-        - eml
+        - master
         - notebooks
   storage:
     capacity: 100Gi
