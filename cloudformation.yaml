@@ -2,36 +2,40 @@ AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
 
+  VpcId:
+    Description: The VPC of the worker instances
+    Type: AWS::EC2::VPC::Id
+
+  Subnets:
+    Description: The subnets where workers can be created.
+    Type: List<AWS::EC2::Subnet::Id>
+
+  CodeBuildServiceRoleArn:
+    Type: String
+
+  AdminUserName:
+    Type: String
+
+  AppPassword:
+    Type: String
+    NoEcho: true
+
+  ImageName:
+    Type: String
+    Default: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
+
+  ImageTag:
+    Type: String
+
   NodeImageId:
-    Description: AMI id for the node instances. #TODO reference EKS optimized ami web page
+    Description: AMI id for the node instances.
     Type: AWS::EC2::Image::Id
     Default: ami-0eeeef929db40543c
 
   NodeInstanceType:
     Description: EC2 instance type for the node instances
     Type: String
-    Default: t3.medium
-    ConstraintDescription: Must be a valid EC2 instance type
-    AllowedValues:
-    - t3.nano
-    - t3.micro
-    - t3.small
-    - t3.medium
-    - t3.large
-    - t3.xlarge
-    - t3.2xlarge
-    - m5.large
-    - m5.xlarge
-    - m5.2xlarge
-    - m5.4xlarge
-    - m5.12xlarge
-    - m5.24xlarge
-    - c5.large
-    - c5.xlarge
-    - c5.2xlarge
-    - c5.4xlarge
-    - c5.9xlarge
-    - c5.18xlarge
+    Default: m5.2xlarge
 
   NodeAutoScalingGroupMinSize:
     Description: Minimum size of Node Group ASG.
@@ -51,17 +55,16 @@ Parameters:
   NodeVolumeSize:
     Description: Node volume size
     Type: Number
-    Default: 10
+    Default: 100
 
-  VpcId:
-    Description: The VPC of the worker instances
-    Type: AWS::EC2::VPC::Id
-    Default: vpc-4da21e37
+  NodeAccessKeyId:
+    Type: String
+    Default: ""
 
-  Subnets:
-    Description: The subnets where workers can be created.
-    Type: List<AWS::EC2::Subnet::Id>
-    Default: subnet-39a09073,subnet-4388e824,subnet-68a1fb67,subnet-c0ef829c,subnet-e5ff90cb
+  NodeSecretKey:
+    Type: String
+    Default: ""
+    NoEcho: true
 
   LoadBalancerCidrBlock:
     Type: String
@@ -69,16 +72,12 @@ Parameters:
 
   CertificateArn:
     Type: String
-    Default: arn:aws:acm:us-east-1:553778890976:certificate/862ecb20-8df6-458a-b45d-bc03b9b02af5
 
   NodeProxyPort:
     Type: Number
     Default: 30052
 
 Outputs:
-
-  ClusterName:
-    Value: !Ref Cluster
 
   AppUrl:
     Value: !GetAtt LoadBalancer.DNSName
@@ -324,3 +323,50 @@ Resources:
       DefaultActions:
       - Type: forward
         TargetGroupArn: !Ref TargetGroup
+
+  ProjectLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${AWS::StackName}"
+      RetentionInDays: 30
+
+  Project:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Ref AWS::StackName
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:1.0
+      Artifacts:
+        Type: CODEPIPELINE
+      ServiceRole: !Ref CodeBuildServiceRoleArn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |-
+          version: 0.2
+          phases:
+            build:
+              commands:
+              - pip3 install awscli --upgrade
+              - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/aws-iam-authenticator
+              - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
+              - chmod +x ./kubectl ./aws-iam-authenticator
+              - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
+              - aws eks update-kubeconfig --name ${Cluster}
+              - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" aws-auth-cm.yaml
+              - kubectl apply -f aws-auth-cm.yaml
+              - kubectl --namespace kube-system create serviceaccount tiller || continue
+              - kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller || continue
+              - helm init --service-account tiller --wait
+              - "kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{\"op\": \"add\", \"path\": \"/spec/template/spec/containers/0/command\", \"value\": [\"/tiller\", \"--listen=localhost:44134\"]}]' || continue"
+              - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
+              - helm repo update
+              - sed -i -e "s/ADMIN_USER/${AdminUserName}/" -e "s/PASSWORD/${AppPassword}/" -e "s/SECRET_TOKEN/$(openssl rand -hex 32)/" -e "s/NODE_PORT/${NodeProxyPort}/" -e "s|IMAGE_NAME|${ImageName}|" -e "s/IMAGE_TAG/${ImageTag}/" -e "s/NODE_ACCESS_KEY_ID/${NodeAccessKeyId}/" -e "s/NODE_SECRET_KEY/${NodeSecretKey}/" helm_config.yaml
+              - kubectl wait --namespace kube-system --for=condition=Ready $(kubectl get pod --namespace kube-system -o name | grep tiller-deploy) --timeout 300s
+              - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Ref ProjectLogGroup
+      TimeoutInMinutes: 10

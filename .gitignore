@@ -1,0 +1,8 @@
+*
+!.gitignore
+!software/download.sh
+!buildspec.yml
+!helm_config.yaml.example
+!cloudformation.yaml
+!dockerfile
+!README.md
