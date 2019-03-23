@@ -13,9 +13,7 @@ In general, the following will be performed:
 
 1. Create an User Role (jupyter-hub-build)
 1. Create a Build Pipeline 
-1. Run the Pipeline
 1. Add build step to pipeline and rerun
-1. Handle any issues that might arise 
 
 ### Create an User Role
 
@@ -30,35 +28,35 @@ We will be creating a custom role. Within IAM, create a _Role_ by doing the foll
 1. Within _Permissions_, delete the EKS policies.
 1. Add to the inline policy the following JSON:
 
-	```json
-	{
-	    "Version": "2012-10-17",
-	    "Statement": [
-	        {
-	            "Effect": "Allow",
-	            "Action": [
-	                "ec2:*",
-	                "logs:*",
-	                "s3:*",
-	                "iam:*",
-	                "eks:*",
-	                "autoscaling:*",
-	                "elasticloadbalancing:*",
-	                "codebuild:*",
-	                "cloudformation:*"
-	            ],
-	            "Resource": "*"
-	        }
-	    ]
-	}
-```
+    ```json
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "ec2:*",
+                    "logs:*",
+                    "s3:*",
+                    "iam:*",
+                    "eks:*",
+                    "autoscaling:*",
+                    "elasticloadbalancing:*",
+                    "codebuild:*",
+                    "cloudformation:*"
+                ],
+                "Resource": "*"
+            }
+        ]
+    }
+    ```
 
-1. Within _Trust Relationships_ add 
+1. Within _Trust Relationships_ add
 
-  - codepipeline
-  - cloudformation
-  - codebuild
-  - (Optional) Any user role ARN. This will allow users to interact with cluster via AWS. 
+    - codepipeline
+    - cloudformation
+    - codebuild
+    - (Optional) Any user role ARN. This will allow users to interact with cluster via AWS.
 
 ### Create a Build Pipeline
 
@@ -66,24 +64,26 @@ Go to https://console.aws.amazon.com/codesuite/codepipeline/pipelines.
 
 Create a new pipeline 
 
-- Pipeline name: anything you want
-- Existing service role: _jupyter-hub-build_
-- Default Location for the S3 bucket
-- Source stage will be GitHub. 
+- __Pipeline name__: anything you want
+- __Existing service role__: _jupyter-hub-build_
+- __Default Location__ for the S3 bucket works though a custom location might have some benefits.
+- __Source provider__: GitHub. 
     - Opt-in to connect
     - Pick repo _asf\_jupyter\_hub_
     - Choose the proper branch (most likely _prod_)
     - Use GitHub webhooks
-- Skip the Build stage
+- Skip the __Build stage__
 - Deploy an AWS CloudFormation template
     - US East
     - Create or Update Stack
-    - Stack Name: Use a meaningful unique name. Otherwise, an existing stack will get clobbered. Also, all resources created by the cloudformation template will be prepended by this name.
-    - Template: `SourceArtifact::cloudformation.yaml`
-    - Template configuration: skip
-    - Capabilities: `CAPABILITY_NAMED_IAM`
-    - Role Name: `jupyter-hub-build`
-    - Advanced: Parameter overrides as described below
+    - __Stack Name__: Use a meaningful unique name. Otherwise, an existing stack will get clobbered. Also, all resources created by the cloudformation template will be prepended by this name.
+    - __Template__: `SourceArtifact::cloudformation.yaml`
+    - __Template configuration__: _skip_
+    - __Capabilities__: `CAPABILITY_NAMED_IAM`
+    - __Role Name__: `jupyter-hub-build`
+    - Advanced: 
+        - __Output file name__: _skip_
+        - __Parameter overrides__ as described below
 
 The parameter overrides for the cloudformation template can be the following:
 
@@ -120,17 +120,43 @@ They need to be in JSON format like:
 }
 ```
 
-### Run the Pipeline
+After entering in the parameter overrides, click and review and then __Create__.  
 
-### Add build step to Pipeline
+And then wait. 
 
-### Add build step to pipeline and rerun
+### Add build step to Pipeline and rerun
 
-#### Rerun the build step if Tiller fails 
+In the initial creation of the Code Pipeline, a build step was not given. This is intentional. Only after the CloudFormation template is initially built will the Code Build project exist. Thus the build step will need to be added afterwards and the pipeline reran.
+
+Once the full pipeline (including the Code Build parts) has been successfully built, future pipeline runs will be able to run the pipeline as it . 
+
+To add Code Build, click on the just created pipeline in the console.
+
+Click __Edit__ at the top of the main flowchart.
+
+Click __Add Stage__ at the bottom after _Deploy_ and name it _build_.
+
+Click __Action Group__ within the following: 
+
+ - __Action Name__: _build_
+ - __Action Provider__: _AWS CodeBuild_
+ - __Input artifacts__: _SourceArtifact_
+ - __Project name__: The stack name
+ - __Output artifacts__: skip
+
+ Click save, save, save
+ Click __Release Change__
+
+If there is a build error with Tiller failing, then retry.
+
+If all goes well, everything will be green and you will have a working cluster.
+
+Don't forget to grab load balancer URL from CloudFormation Outputs.
+
 
 ### Manage cluster locally (under development)
 
-While not needed to setup the cluster, _kubectl_ can be useful in monitoring the health of the cluster and making manual changes (though to do so is not recommended).
+While not needed to setup the cluster, _kubectl_ can be useful in monitoring the health of the cluster and making manual changes (doing so with a heap of caution).
 
 1. Setup kubectl
 
@@ -171,9 +197,30 @@ While not needed to setup the cluster, _kubectl_ can be useful in monitoring the
     # Test to see if it works
     aws-iam-authenticator help
     ```   
- 
 
-## Manual installation of JupyterHub using CloudFormation
+Once kubectl, aws-cli, and the authenticator is installed properly, we can check what EKS clusters are active via `aws eks list-clusters`.
+
+If the cluster that we want is active we can get the _kubeconfig_ file to interact with the cluster.
+
+Note: the _kubeconfig_ file is appended and not overwritten. 
+
+```bash
+# You need to run against the root account and not a sub-account
+# Users will need to be added as Trusted to the _jupyter-hub-build_ role for this to work.
+STS_DICT=$(aws sts assume-role --role-arn arn:aws:iam::553778890976:role/jupyter-hub-build --role-session-name ARandomSessionNameYouPickHere --profile=us-east-1)
+
+export AWS_ACCESS_KEY_ID=$(python -c "print($STS_DICT['Credentials']['AccessKeyId'])")
+export AWS_SECRET_ACCESS_KEY=$(python -c "print($STS_DICT['Credentials']['SecretAccessKey'])")
+export AWS_SESSION_TOKEN=$(python -c "print($STS_DICT['Credentials']['SessionToken'])")
+
+aws eks update-kubeconfig --name $EKS_CLUSTER_NAME
+
+# Check to see if the update was successful
+kubectl get svc
+```
+You can now do full `kubectl` commands against the cluster for a short period of time (about one hour).
+
+## Manual installation of JupyterHub using CloudFormation (not recommended)
 
 These are the steps to create a JupyterHub instance running in a Kubernetes cluster via AWS's EKS.
 
