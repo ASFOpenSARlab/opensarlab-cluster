@@ -6,17 +6,17 @@
 auth:
   admin:
     users:
-      - ADMIN_USER
+    - ADMIN_USER
   whitelist:
     users:
-      - ADMIN_USER
+    - ADMIN_USER
   type: google
-    google:
-      clientId: GOOGLE_CLIENT_ID
-      clientSecret: GOOGLE_CLIENT_SECRET
-      callbackUrl: "https://opensarlab-test.asf.alaska.edu/hub/oauth_callback"
-      hostedDomain: "alaska.edu"
-      loginService: "Univerisy of Alaska"
+  google:
+    clientId: GOOGLE_CLIENT_ID
+    clientSecret: GOOGLE_CLIENT_SECRET
+    callbackUrl: "https://opensarlab-test.asf.alaska.edu/hub/oauth_callback"
+    hostedDomain: "alaska.edu"
+    loginService: "Univerisy of Alaska"
 
 prePuller:
   continuous:
