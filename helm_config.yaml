@@ -6,12 +6,10 @@
 auth:
   admin:
     users:
-    - ADMIN_USER
-
+      - ADMIN_USER
   whitelist:
     users:
-    - ADMIN_USER
-
+      - ADMIN_USER
   type: google
     google:
       clientId: GOOGLE_CLIENT_ID
