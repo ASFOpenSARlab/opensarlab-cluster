@@ -86,12 +86,14 @@ Create a new pipeline
 
 The parameter overrides for the cloudformation template can be the following:
 
+* __OAuthDnsName__ (required). DNS name used for Earthdata authentication. *
+* __OAuthClientId__ (required). Earthdata authentication client id. *
+* __OAuthClientSecret__ (required). Earthdata authentication client secret. *
 * __CertificateArn__ (required). The ARN of the SSL certificate used by the load balancer (e.g.  arn:aws:acm:us-east-1:553778890976:certificate/862ecb20-8df6-458a-b45d-bc03b9b02af5).
 * __VpcId__ (required). Within the AWS main menu, select _VPC_. Get the default VPC ID from within _Your VPCs_ (e.g. vpc-4da21e37).  
 * __Subnets__ (required). Within the AWS main menu, select _VPC_. Choose any number of _Subnet ID_s from within _Subnets_ (e.g. subnet-39a09073,subnet-4388e824).
 * __CodeBuildServiceRoleArn__ (required). The service role created eariler (e.g. _jupyter-hub-build_). 
 * __AdminUserName__ (required). The name of the initial Jupyter Hub admin who is also the only one initially whitelisted. Without this admin, no one else can be added as an Jupyter Hub user.
-* __AppPassword__ (required). The common Jupyter Hub login password used by all users.
 * __ImageTag__ (required). The build tag of the jupyter notebook docker image.
 * __ImageName__. The jupyter notebook docker image. While not required, it's better to use ECR.
 * __NodeImageId__. The AMI id for the node instances.
@@ -113,9 +115,11 @@ They need to be in JSON format like:
     "VpcId":"vpc-4da21e37", 
     "Subnets":"subnet-39a09073,subnet-4388e824",
     "CodeBuildServiceRoleArn":"jupyter-hub-build",
-    "AdminUserName":"admin",
-    "AppPassword":"admin",
-    "ImageTag":"build.23"
+    "AdminUserName":"someEarthdataUser",
+    "ImageTag":"build.23",
+    "OAuthDnsName":"opensarlab-test.asf.alaska.edu",
+    "OAuthClientId":"1QD_HXBUsZHQnlO9d7Lc6A",
+    "OAuthClientSecret":"mySecret"
 }
 ```
 
