@@ -18,9 +18,12 @@ from traitlets import Unicode
 from oauthenticator.oauth2 import OAuthLoginHandler, OAuthenticator
 
 
+EARTHDATA_URL = "https://urs.earthdata.nasa.gov"
+
+
 class GenericEnvMixin(OAuth2Mixin):
-    _OAUTH_ACCESS_TOKEN_URL = 'https://urs.earthdata.nasa.gov/oauth/token'
-    _OAUTH_AUTHORIZE_URL = 'https://urs.earthdata.nasa.gov/oauth/authorize'
+    _OAUTH_ACCESS_TOKEN_URL = '{0}/oauth/token'.format(EARTHDATA_URL)
+    _OAUTH_AUTHORIZE_URL = '{0}/oauth/authorize'.format(EARTHDATA_URL)
 
 
 class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
@@ -41,6 +44,7 @@ class EarthdataOAuthenticator(OAuthenticator):
     # To override OAuthenticator
     @gen.coroutine
     def authenticate(self, handler, data=None):
+
         code = handler.get_argument("code")
         http_client = AsyncHTTPClient()
 
@@ -62,7 +66,7 @@ class EarthdataOAuthenticator(OAuthenticator):
             "User-Agent": "JupyterHub",
             "Authorization": "Basic {}".format(b64key.decode("utf8"))
         }
-        req = HTTPRequest('https://urs.earthdata.nasa.gov/oauth/token',
+        req = HTTPRequest('{0}/oauth/token'.format(EARTHDATA_URL),
                           method="POST",
                           headers=headers,
                           validate_cert=True,
@@ -90,7 +94,7 @@ class EarthdataOAuthenticator(OAuthenticator):
             "Authorization": "{} {}".format(token_type, access_token)
         }
 
-        req = HTTPRequest("https://urs.earthdata.nasa.gov{0}".format(endpoint),
+        req = HTTPRequest("{0}{1}".format(EARTHDATA_URL, endpoint),
                           method='GET',
                           headers=headers,
                           validate_cert=True,
