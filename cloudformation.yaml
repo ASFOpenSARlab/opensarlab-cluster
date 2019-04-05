@@ -385,7 +385,7 @@ Resources:
               - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml --wait
               - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
               - kubectl cp earthdata.py jupyter/$hub_name:/srv/jupyterhub/earthdata.py
-              - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml --set hub.labels.hash=$(openssl rand -hex 32)
+              - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml --set hub.labels.hash=$(openssl rand -hex 4)
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
