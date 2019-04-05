@@ -59,10 +59,16 @@ hub:
 
          # Uncomment this line after merging earthdata.py into the oauthenticator module
          #from oauthenticator.earthdata import EarthdataOAuthenticator
+         import z2jh
          c.JupyterHub.authenticator_class = EarthdataOAuthenticator
-         c.EarthdataOAuthenticator.oauth_callback_url = 'OAUTH_DNS_NAME/hub/oauth_callback'
-         c.EarthdataOAuthenticator.client_id = 'OAUTH_CLIENT_ID'
-         c.EarthdataOAuthenticator.client_secret = 'OAUTH_CLIENT_SECRET'
+         c.EarthdataOAuthenticator.oauth_callback_url = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+         c.EarthdataOAuthenticator.client_id = '{0}'.format(z2jh.get_config("custom.OAUTH_CLIENT_ID"))
+         c.EarthdataOAuthenticator.client_secret = '{0}'.format(z2jh.get_config("custom.OAUTH_CLIENT_SECRET"))
          c.EarthdataOAuthenticator.login_service = 'Earthdata Login'
        except Exception as e:
          print(e)
+
+custom:
+  OAUTH_DNS_NAME: OAUTH_DNS_NAME
+  OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
+  OAUTH_CLIENT_SECRET: OAUTH_CLIENT_SECRET
