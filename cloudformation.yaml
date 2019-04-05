@@ -15,13 +15,21 @@ Parameters:
     Type: String
 
   AdminUserName:
-    Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console.
+    Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
     Type: String
 
-  AppPassword:
-    Description: The dummy password used to log into Jupyter Hub. This passowrd is shared among all users.
+  OAuthDnsName:
+    Description: DNS name used for Earthdata authentication.
     Type: String
-    NoEcho: true
+
+  OAuthClientId:
+    Description: Earthdata authentication client id.
+    Type: String
+
+  OAuthClientSecret:
+    Description: Earthdata authentication client secret.
+    Type: String
+    NoEcho: True
 
   ImageName:
     Description: Name of ECR docker image.
@@ -372,9 +380,12 @@ Resources:
               - "kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{\"op\": \"add\", \"path\": \"/spec/template/spec/containers/0/command\", \"value\": [\"/tiller\", \"--listen=localhost:44134\"]}]' || continue"
               - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
               - helm repo update
-              - sed -i -e "s/ADMIN_USER/${AdminUserName}/" -e "s/PASSWORD/${AppPassword}/" -e "s/SECRET_TOKEN/$(openssl rand -hex 32)/" -e "s/NODE_PORT/${NodeProxyPort}/" -e "s|IMAGE_NAME|${ImageName}|" -e "s/IMAGE_TAG/${ImageTag}/" -e "s/NODE_ACCESS_KEY_ID/${NodeAccessKeyId}/" -e "s|NODE_SECRET_KEY|${NodeSecretKey}|" helm_config.yaml
+              - sed -i -e "s/ADMIN_USER/${AdminUserName}/" -e "s/OAUTH_DNS_NAME/${OAuthDnsName}/" -e "s/OAUTH_CLIENT_ID/${OAuthClientId}/" -e "s/OAUTH_CLIENT_SECRET/${OAuthClientSecret}/" -e "s/SECRET_TOKEN/$(openssl rand -hex 32)/" -e "s/NODE_PORT/${NodeProxyPort}/" -e "s|IMAGE_NAME|${ImageName}|" -e "s/IMAGE_TAG/${ImageTag}/" -e "s/NODE_ACCESS_KEY_ID/${NodeAccessKeyId}/" -e "s|NODE_SECRET_KEY|${NodeSecretKey}|" helm_config.yaml
               - kubectl wait --namespace kube-system --for=condition=Ready $(kubectl get pod --namespace kube-system -o name | grep tiller-deploy) --timeout 300s
-              - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml
+              - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml --wait
+              - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
+              - kubectl cp earthdata.py jupyter/$hub_name:/srv/jupyterhub/earthdata.py
+              - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml --set hub.labels.hash=$(openssl rand -hex 32)
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
