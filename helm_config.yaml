@@ -61,8 +61,8 @@ hub:
          #from oauthenticator.earthdata import EarthdataOAuthenticator
          c.JupyterHub.authenticator_class = EarthdataOAuthenticator
          c.EarthdataOAuthenticator.oauth_callback_url = 'OAUTH_DNS_NAME/hub/oauth_callback'
-         c.EarthdataOAuthenticator.client_id = OAUTH_CLIENT_ID
-         c.EarthdataOAuthenticator.client_secret = OAUTH_CLIENT_SECRET
+         c.EarthdataOAuthenticator.client_id = 'OAUTH_CLIENT_ID'
+         c.EarthdataOAuthenticator.client_secret = 'OAUTH_CLIENT_SECRET'
          c.EarthdataOAuthenticator.login_service = 'Earthdata Login'
        except Exception as e:
          print(e)
