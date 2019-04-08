@@ -21,7 +21,7 @@ Parameters:
   OAuthDnsName:
     Description: DNS name used for Earthdata authentication.
     Type: String
-    default: ''
+    Default: ''
 
   OAuthClientId:
     Description: Earthdata authentication client id.
