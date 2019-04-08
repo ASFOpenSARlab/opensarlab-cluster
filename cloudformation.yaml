@@ -385,7 +385,7 @@ Resources:
               - kubectl -n jupyter rollout status -w deployment.apps/hub
               - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
               - kubectl cp earthdata.py jupyter/$hub_name:/srv/jupyterhub/earthdata.py
-              - kubectl -n jupyter delete pod $helm_name
+              - kubectl -n jupyter delete pod $hub_name
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
