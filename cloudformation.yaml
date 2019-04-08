@@ -21,6 +21,7 @@ Parameters:
   OAuthDnsName:
     Description: DNS name used for Earthdata authentication.
     Type: String
+    default: ''
 
   OAuthClientId:
     Description: Earthdata authentication client id.
@@ -380,7 +381,7 @@ Resources:
               - "kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{\"op\": \"add\", \"path\": \"/spec/template/spec/containers/0/command\", \"value\": [\"/tiller\", \"--listen=localhost:44134\"]}]' || continue"
               - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
               - helm repo update
-              - kubectl wait --namespace kube-system --for=condition=Ready $(kubectl get pod --namespace kube-system -o name | grep tiller-deploy) --timeout 300s
+              - kubectl -n kube-system rollout status -w deployment.apps/tiller-deploy
               - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml --timeout=30 --set auth.admin.users[0]=${AdminUserName},auth.whitelist.users[0]=${AdminUserName},proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}',singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}',singleuser.image.name='${ImageName}',singleuser.image.tag='${ImageTag}',custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}',custom.OAUTH_DNS_NAME=$( [ -n '${OAuthDnsName}' ] && echo '${OAuthDnsName}' || echo '${LoadBalancer.DNSName}' )
               - kubectl -n jupyter rollout status -w deployment.apps/hub
               - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
