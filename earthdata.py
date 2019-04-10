@@ -2,6 +2,7 @@
 Custom Authenticator to use Earthdata (https://urs.earthdata.nasa.gov) OAuth2 with JupyterHub
 """
 
+import os
 import json
 import base64
 import urllib
