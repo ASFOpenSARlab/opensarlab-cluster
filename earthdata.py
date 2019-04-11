@@ -12,6 +12,7 @@ from tornado import gen
 
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
+from jupyterhub.handlers import LogoutHandler
 from jupyterhub.auth import LocalAuthenticator
 
 from traitlets import Unicode
@@ -29,6 +30,19 @@ class GenericEnvMixin(OAuth2Mixin):
 class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
     pass
 
+class EarthdataLogoutHandler(LogoutHandler):
+    """
+    Handle custom logout URLs and token revocation. If a custom logout url
+    is specified, the 'logout' button will log the user out of that identity
+    provider in addition to clearing the session with Jupyterhub, otherwise
+    only the Jupyterhub session is cleared.
+    """
+    @gen.coroutine
+    def get(self):
+        user = self.get_current_user()
+        if user:
+            self.clear_login_cookie()
+        self.redirect("{0}/logout".format(EARTHDATA_URL))
 
 class EarthdataOAuthenticator(OAuthenticator):
 
@@ -40,6 +54,10 @@ class EarthdataOAuthenticator(OAuthenticator):
 
     # To override OAuthenticator
     login_handler = GenericLoginHandler
+    logout_handler = EarthdataLogoutHandler
+
+    def get_handlers(self, app):
+        return super().get_handlers(app) + [(r'/logout', self.logout_handler)]
 
     # To override OAuthenticator
     @gen.coroutine
@@ -111,7 +129,6 @@ class EarthdataOAuthenticator(OAuthenticator):
                 'scope': scope,
             }
         }
-
 
 class LocalGenericOAuthenticator(LocalAuthenticator, EarthdataOAuthenticator):
 
