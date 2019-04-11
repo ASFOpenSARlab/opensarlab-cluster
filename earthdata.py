@@ -18,13 +18,8 @@ from traitlets import Unicode
 
 from oauthenticator.oauth2 import OAuthLoginHandler, OAuthenticator
 
-
-EARTHDATA_URL = Unicode(
-    os.environ.get('OAUTH2_EARTHDATA_URL', 'https://urs.earthdata.nasa.gov'),
-    config=True,
-    help="Userdata url to urs. Defaults to 'https://urs.earthdata.nasa.gov'. Can be used for 'https://uat.urs.earthdata.nasa.gov'"
-)
-
+# This only supports another url via enviroment
+EARTHDATA_URL = os.environ.get('OAUTH2_EARTHDATA_URL', 'https://urs.earthdata.nasa.gov')
 
 class GenericEnvMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = '{0}/oauth/token'.format(EARTHDATA_URL)
