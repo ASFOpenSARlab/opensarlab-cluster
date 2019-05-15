@@ -367,10 +367,8 @@ Resources:
           phases:
             build:
               commands:
-              - pip3 install awscli --upgrade
-              - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/aws-iam-authenticator
+              - pip3 install awscli>=1.16.158 --upgrade
               - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
-              - chmod +x ./kubectl ./aws-iam-authenticator
               - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
               - aws eks update-kubeconfig --name ${Cluster}
               - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" aws-auth-cm.yaml
