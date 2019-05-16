@@ -47,3 +47,8 @@ singleuser:
         - notebooks
   storage:
     capacity: 100Gi
+
+hub:
+  extraConfig:
+    myAnnouncement.py: |
+      c.JupyterHub.template_vars = {'announcement': 'This platform will be decommisioned on 29 May 2019. Please save any work you may have before that time.'}
