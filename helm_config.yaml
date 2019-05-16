@@ -51,4 +51,4 @@ singleuser:
 hub:
   extraConfig:
     myAnnouncement.py: |
-      c.JupyterHub.template_vars = {'announcement': 'This platform will be decommisioned on Mon, 27 May 2019. Any work afterwards will be lost.'}
+      c.JupyterHub.template_vars = {'announcement': 'This platform will be decommisioned on Mon, 27 May 2019 and replaced. This will be a breaking change and all work will be forever gone. So please save and download any work before this time.'}
