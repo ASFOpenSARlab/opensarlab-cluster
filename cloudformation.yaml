@@ -272,8 +272,10 @@ Resources:
         Value: owned
         PropagateAtLaunch: true
       - Key: k8s.io/cluster-autoscaler/enabled
+        Value: true
         PropagateAtLaunch: true
       - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+        Value: true
         PropagateAtLaunch: true
 
   LaunchConfiguration:
