@@ -116,6 +116,20 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
       - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+      Policies:
+      - PolicyName: "autoscaler"
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+          - Effect: "Allow"
+            Action:
+                - autoscaling:DescribeAutoScalingGroups
+                - autoscaling:DescribeAutoScalingInstances
+                - autoscaling:DescribeLaunchConfigurations
+                - autoscaling:DescribeTags
+                - autoscaling:SetDesiredCapacity
+                - autoscaling:TerminateInstanceInAutoScalingGroup
+            Resource: "*"
 
   ClusterSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -257,6 +271,10 @@ Resources:
       - Key: !Sub kubernetes.io/cluster/${Cluster}
         Value: owned
         PropagateAtLaunch: true
+      - Key: k8s.io/cluster-autoscaler/enabled
+        PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+        PropagateAtLaunch: true
 
   LaunchConfiguration:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -390,6 +408,11 @@ Resources:
               - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
               - kubectl cp earthdata.py jupyter/$hub_name:/srv/jupyterhub/earthdata.py
               - kubectl -n jupyter delete pod $hub_name
+              - helm repo update
+              - helm fetch stable/cluster-autoscaler
+              - tar -zxf cluster-autoscaler*
+              - helm upgrade --install jupyter stable/cluster-autoscaler --namespace jupyter --version 0.8.0 --values cluster-autoscaler*/values.yaml --timeout=120
+                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt'
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
