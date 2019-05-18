@@ -387,34 +387,32 @@ Resources:
           phases:
             build:
               commands:
-              - pip3 install awscli>=1.16.158 --upgrade
-              - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
-              - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
-              - aws eks update-kubeconfig --name ${Cluster}
-              - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" aws-auth-cm.yaml
-              - kubectl apply -f aws-auth-cm.yaml
-              - kubectl --namespace kube-system create serviceaccount tiller || continue
-              - kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller || continue
-              - helm init --service-account tiller --wait
-              - "kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{\"op\": \"add\", \"path\": \"/spec/template/spec/containers/0/command\", \"value\": [\"/tiller\", \"--listen=localhost:44134\"]}]' || continue"
-              - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
-              - helm repo update
-              - kubectl -n kube-system rollout status -w deployment.apps/tiller-deploy
-              - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml --timeout=120
-                    --set auth.admin.users[0]=${AdminUserName},auth.whitelist.users[0]=${AdminUserName}
-                    --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
-                    --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}',singleuser.image.name='${ImageName}',singleuser.image.tag='${ImageTag}'
-                    --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
-                    --set custom.OAUTH_DNS_NAME=$( [ -n '${OAuthDnsName}' ] && echo '${OAuthDnsName}' || echo 'https://${LoadBalancer.DNSName}' )
-              - kubectl -n jupyter rollout status -w deployment.apps/hub
-              - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
-              - kubectl cp earthdata.py jupyter/$hub_name:/srv/jupyterhub/earthdata.py
-              - kubectl -n jupyter delete pod $hub_name
-              - helm repo update
-              - helm fetch stable/cluster-autoscaler
-              - tar -zxf cluster-autoscaler*
-              - helm upgrade --install jupyter stable/cluster-autoscaler --namespace jupyter --version 0.8.0 --values cluster-autoscaler*/values.yaml --timeout=120
-                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt'
+                - pip3 install awscli>=1.16.158 --upgrade
+                - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
+                - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
+                - aws eks update-kubeconfig --name eml-test
+                - sed -i "s|INSTANCE_ROLE_ARN|arn:aws:iam::553778890976:role/eml-test-instance|" aws-auth-cm.yaml
+                - kubectl apply -f aws-auth-cm.yaml
+                - helm init --client-only
+                - helm plugin install https://github.com/rimusz/helm-tiller
+                - helm tiller start-ci
+                - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
+                - helm repo update
+                - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml --timeout=120
+                      --set auth.admin.users[0]=emlundell,auth.whitelist.users[0]=emlundell
+                      --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='30052'
+                      --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='AKIAJFRZZ4R4F2UY2NXQ',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='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',singleuser.image.name='553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs',singleuser.image.tag='2019-04-16-19-42-52'
+                      --set custom.OAUTH_CLIENT_ID='PpbfJYLDgpFV4g9bV0uREA',custom.OAUTH_CLIENT_SECRET='XXXXXXX'
+                      --set custom.OAUTH_DNS_NAME=$( [ -n '' ] && echo '' || echo 'https://eml-test-1596170587.us-east-1.elb.amazonaws.com' )
+                - kubectl -n jupyter rollout status -w deployment.apps/hub
+                - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
+                - kubectl cp earthdata.py jupyter/$hub_name:/srv/jupyterhub/earthdata.py
+                - kubectl -n jupyter delete pod $hub_name
+                - helm repo update
+                - helm fetch stable/cluster-autoscaler
+                - tar -zxf cluster-autoscaler*
+                - helm upgrade --install jupyter stable/cluster-autoscaler --namespace jupyter --version 0.8.0 --values cluster-autoscaler*/values.yaml --timeout=120
+                      --set autoDiscovery.clusterName=eml-test,awsRegion=us-east-1,sslCertPath='/etc/kubernetes/pki/ca.crt'
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
