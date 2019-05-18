@@ -396,6 +396,7 @@ Resources:
                 - helm init --client-only
                 - helm plugin install https://github.com/rimusz/helm-tiller
                 - helm tiller start-ci
+                - export HELM_HOST=127.0.0.1:44134
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
                 - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml --timeout=120
