@@ -116,20 +116,7 @@ Resources:
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
       - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
-      Policies:
-      - PolicyName: "autoscaler"
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-          - Effect: "Allow"
-            Action:
-                - autoscaling:DescribeAutoScalingGroups
-                - autoscaling:DescribeAutoScalingInstances
-                - autoscaling:DescribeLaunchConfigurations
-                - autoscaling:DescribeTags
-                - autoscaling:SetDesiredCapacity
-                - autoscaling:TerminateInstanceInAutoScalingGroup
-            Resource: "*"
+      - arn:aws:iam::aws:policy/AutoScalingFullAccess
 
   ClusterSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -162,6 +149,7 @@ Resources:
       - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
       - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
       - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      - arn:aws:iam::aws:policy/AutoScalingFullAccess
 
   NodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -390,8 +378,8 @@ Resources:
                 - pip3 install awscli>=1.16.158 --upgrade
                 - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
                 - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
-                - aws eks update-kubeconfig --name eml-test
-                - sed -i "s|INSTANCE_ROLE_ARN|arn:aws:iam::553778890976:role/eml-test-instance|" aws-auth-cm.yaml
+                - aws eks update-kubeconfig --name ${Cluster}
+                - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" aws-auth-cm.yaml
                 - kubectl apply -f aws-auth-cm.yaml
                 - helm init --client-only
                 - helm plugin install https://github.com/rimusz/helm-tiller
@@ -413,7 +401,7 @@ Resources:
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
                 - helm upgrade --install jupyter stable/cluster-autoscaler --namespace jupyter --version 0.8.0 --values cluster-autoscaler*/values.yaml --timeout=120
-                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt'
+                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
