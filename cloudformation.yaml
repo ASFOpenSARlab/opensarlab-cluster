@@ -387,7 +387,7 @@ Resources:
                 - export HELM_HOST=127.0.0.1:44134
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
-                - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml --timeout=120
+                - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.8.0  --values helm_config.yaml --timeout=120
                     --set auth.admin.users[0]=${AdminUserName},auth.whitelist.users[0]=${AdminUserName}
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
                     --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}',singleuser.image.name='${ImageName}',singleuser.image.tag='${ImageTag}'
@@ -397,11 +397,10 @@ Resources:
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp earthdata.py jupyter/$hub_name:/srv/jupyterhub/earthdata.py
                 - kubectl -n jupyter delete pod $hub_name
-                - kubectl create namespace autoscaler
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
-                - helm upgrade --install autoscaler stable/cluster-autoscaler --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
+                - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
                     --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
       LogsConfig:
         CloudWatchLogs:
