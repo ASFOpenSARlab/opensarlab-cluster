@@ -397,10 +397,11 @@ Resources:
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp earthdata.py jupyter/$hub_name:/srv/jupyterhub/earthdata.py
                 - kubectl -n jupyter delete pod $hub_name
+                - kubectl create namespace autoscaler
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
-                - helm upgrade --install jupyter stable/cluster-autoscaler --namespace jupyter --version 0.8.0 --values cluster-autoscaler*/values.yaml --timeout=120
+                - helm upgrade --install autoscaler stable/cluster-autoscaler --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
                     --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
       LogsConfig:
         CloudWatchLogs:
