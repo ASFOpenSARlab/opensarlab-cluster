@@ -73,7 +73,7 @@ hub:
          print(e)
 
     myAnnouncement.py: |
-        c.JupyterHub.template_vars = {'announcement': 'custom.ANNOUNCEMENT'}
+        c.JupyterHub.template_vars = {'announcement': '{0}'.format(z2jh.get_config("custom.ANNOUNCEMENT"))}
 
 custom:
   OAUTH_DNS_NAME: OAUTH_DNS_NAME
