@@ -1,0 +1,2 @@
+name: jupyter
+description: Parent chart to container JupyterHub and Autoscaler

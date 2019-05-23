@@ -73,6 +73,7 @@ hub:
          print(e)
 
     myAnnouncement.py: |
+        import z2jh
         c.JupyterHub.template_vars = {'announcement': '{0}'.format(z2jh.get_config("custom.ANNOUNCEMENT"))}
 
 custom:
