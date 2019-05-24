@@ -88,13 +88,13 @@ cull:
 scheduling:
   userScheduler:
     enabled: true
-  podPriority:
-    enabled: true
-  userPlaceholder:
-    replicas: 1
-    globalDefault: true
-    defaultPriority: 10
-    userPlaceholderPriority: 0
-  userPods:
-    nodeAffinity:
-      matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
+  #podPriority:
+    #enabled: true
+  #userPlaceholder:
+    #replicas: 1
+    #globalDefault: true
+    #defaultPriority: 10
+    #userPlaceholderPriority: 0
+  #userPods:
+    #nodeAffinity:
+      #matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
