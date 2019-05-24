@@ -216,9 +216,9 @@ Now you can run `helm` commands.
 
 To exit the shell, `helm tiller stop`.
 
-### Troubleshooting
+## Troubleshooting
 
-# Out of Storage Space
+### Out of Storage Space
 
 Sometimes, an user will run out of device space in their notebook. This makes the notebook unresponsive.
 Other times, the user might request more storage space because the project they are working on takes more space than allocated by default.  
@@ -246,6 +246,6 @@ Four things will need to be done. This will require access to the cluster via `k
 
 1. Restart the notebook server. The user will now have the new expanded volume.
 
-### To delete the cluster
+## To delete the cluster
 
 Nothing special needs to take place. Just delete the cloudformation stack and then the pipeline. AWS will take care of the rest of the resources.

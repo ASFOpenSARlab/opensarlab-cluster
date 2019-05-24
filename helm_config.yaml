@@ -44,8 +44,6 @@ singleuser:
         - notebooks
   storage:
     capacity: 500Gi
-  cpu:
-    guarantee: 2
   memory:
     guarantee: 6G
 
@@ -82,19 +80,21 @@ custom:
   OAUTH_CLIENT_SECRET: OAUTH_CLIENT_SECRET
   ANNOUNCEMENT: ANNOUNCEMENT
 
+cull:
+  enabled: true
+  timeout: 3600
+  every: 300
+
 scheduling:
-    #userPods:
-    #    nodeAffinity:
-    #        matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
-    #corePods:
-    #    nodeAffinity:
-    #        matchNodePurpose: require  # hub.jupyter.org/node-purpose=core
-    userScheduler:
-        enabled: true
-    podPriority:
-        enabled: true
-    userPlaceholder:
-        replicas: 2
-        globalDefault: true
-        defaultPriority: 10
-        userPlaceholderPriority: 0
+  userScheduler:
+    enabled: true
+  podPriority:
+    enabled: true
+  userPlaceholder:
+    replicas: 1
+    globalDefault: true
+    defaultPriority: 10
+    userPlaceholderPriority: 0
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
