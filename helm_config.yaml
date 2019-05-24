@@ -43,7 +43,11 @@ singleuser:
         - master
         - notebooks
   storage:
-    capacity: 100Gi
+    capacity: 500Gi
+  cpu:
+    guarantee: 2
+  memory:
+    guarantee: 6G
 
 hub:
   extraConfig:
@@ -68,7 +72,29 @@ hub:
        except Exception as e:
          print(e)
 
+    myAnnouncement.py: |
+        import z2jh
+        c.JupyterHub.template_vars = {'announcement': '{0}'.format(z2jh.get_config("custom.ANNOUNCEMENT"))}
+
 custom:
   OAUTH_DNS_NAME: OAUTH_DNS_NAME
   OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
   OAUTH_CLIENT_SECRET: OAUTH_CLIENT_SECRET
+  ANNOUNCEMENT: ANNOUNCEMENT
+
+scheduling:
+    #userPods:
+    #    nodeAffinity:
+    #        matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
+    #corePods:
+    #    nodeAffinity:
+    #        matchNodePurpose: require  # hub.jupyter.org/node-purpose=core
+    userScheduler:
+        enabled: true
+    podPriority:
+        enabled: true
+    userPlaceholder:
+        replicas: 2
+        globalDefault: true
+        defaultPriority: 10
+        userPlaceholderPriority: 0
