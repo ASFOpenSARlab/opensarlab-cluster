@@ -1,0 +1,7 @@
+*
+!.gitignore
+!aws-auth-cm.yaml
+!cloudformation.yaml
+!earthdata.py
+!helm_config.yaml
+!README.md
