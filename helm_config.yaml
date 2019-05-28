@@ -43,6 +43,7 @@ singleuser:
         - master
         - notebooks
   storage:
+<<<<<<< HEAD
     capacity: 500Gi
   memory:
     guarantee: 6G
@@ -98,3 +99,11 @@ scheduling:
   #userPods:
     #nodeAffinity:
       #matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
+=======
+    capacity: 100Gi
+
+hub:
+  extraConfig:
+    myAnnouncement.py: |
+      c.JupyterHub.template_vars = {'announcement': 'This platform will be decommisioned on Mon, 27 May 2019 and replaced. Any user data will be forever gone. Please save and download any work before this time.'}
+>>>>>>> f035da8a126bae517ee154ac7ada5f0ce6c54bd6
