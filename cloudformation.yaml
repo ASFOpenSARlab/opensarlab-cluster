@@ -380,7 +380,6 @@ Resources:
           phases:
             build:
               commands:
-<<<<<<< HEAD
                 - pip3 install awscli>=1.16.158 --upgrade
                 - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
                 - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
@@ -409,23 +408,6 @@ Resources:
                 - tar -zxf cluster-autoscaler*
                 - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
                     --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
-=======
-              - pip3 install awscli --upgrade
-              - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
-              - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
-              - aws eks update-kubeconfig --name ${Cluster}
-              - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" aws-auth-cm.yaml
-              - kubectl apply -f aws-auth-cm.yaml
-              - kubectl --namespace kube-system create serviceaccount tiller || continue
-              - kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller || continue
-              - helm init --service-account tiller --wait
-              - "kubectl patch deployment tiller-deploy --namespace=kube-system --type=json --patch='[{\"op\": \"add\", \"path\": \"/spec/template/spec/containers/0/command\", \"value\": [\"/tiller\", \"--listen=localhost:44134\"]}]' || continue"
-              - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
-              - helm repo update
-              - sed -i -e "s/ADMIN_USER/${AdminUserName}/" -e "s/PASSWORD/${AppPassword}/" -e "s/SECRET_TOKEN/$(openssl rand -hex 32)/" -e "s/NODE_PORT/${NodeProxyPort}/" -e "s|IMAGE_NAME|${ImageName}|" -e "s/IMAGE_TAG/${ImageTag}/" -e "s/NODE_ACCESS_KEY_ID/${NodeAccessKeyId}/" -e "s|NODE_SECRET_KEY|${NodeSecretKey}|" helm_config.yaml
-              - kubectl wait --namespace kube-system --for=condition=Ready $(kubectl get pod --namespace kube-system -o name | grep tiller-deploy) --timeout 300s
-              - helm upgrade --install jupyter jupyterhub/jupyterhub --namespace jupyter  --version 0.8.0  --values helm_config.yaml
->>>>>>> f035da8a126bae517ee154ac7ada5f0ce6c54bd6
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
