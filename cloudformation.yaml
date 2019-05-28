@@ -398,7 +398,7 @@ Resources:
                     --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}',singleuser.image.name='${ImageName}',singleuser.image.tag='${ImageTag}'
                     --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
                     --set custom.OAUTH_DNS_NAME=$( [ -n '${OAuthDnsName}' ] && echo '${OAuthDnsName}' || echo 'https://${LoadBalancer.DNSName}' )
-                    --set custom.ANNOUNCEMENT="${Announcement}"
+                    --set custom.ANNOUNCEMENT='${Announcement}'
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp earthdata.py jupyter/$hub_name:/srv/jupyterhub/earthdata.py
