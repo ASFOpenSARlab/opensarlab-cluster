@@ -1,8 +1,7 @@
 *
 !.gitignore
-!software/download.sh
-!buildspec.yml
-!helm_config.yaml.example
+!aws-auth-cm.yaml
 !cloudformation.yaml
-!dockerfile
+!earthdata.py
+!helm_config.yaml
 !README.md
