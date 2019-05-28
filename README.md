@@ -226,13 +226,17 @@ In these cases, the user's storage will need to be increased.
 
 Four things will need to be done. This will require access to the cluster via `kubectl`. https://kubernetes.io/docs/concepts/storage/persistent-volumes/
 
+1. Stop the notebook server that the volume is attached to.
+
 1. Make sure that the cluster storage class can support increasing the volume size.
 
     `kubectl edit storageclass`
 
     If needed, append to the file the value: `allowVolumeExpansion: true`
 
-1. Find the Persistent Volume Claim (PVC) of the user. The volume claims are in the form `claim-username`.
+1. Within the AWS console, find the EBS volume attached to the user and increase the size to the desired amount.
+
+1. Find the Persistent Volume Claim (PVC) of the user within the cluster as follows. The volume claims are in the form `claim-username`.
 
     `kubectl get pvc -n jupyter`
 
@@ -241,8 +245,6 @@ Four things will need to be done. This will require access to the cluster via `k
     `kubectl edit claim-username -n jupyter`
 
     Update `spec.resource.requests.storage` to the proper size amount
-
-1. Though the PVC is updated, the volume will not expand automatically. Within the AWS console, find the volume attached to the user and increase the size to match.
 
 1. Restart the notebook server. The user will now have the new expanded volume.
 
