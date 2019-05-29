@@ -1,0 +1,16 @@
+{% extends "templates/login.html" %}
+
+{% block main %}
+{{ super() }}
+
+<p class="eula-text">By signing into the Jupyter Hub cluster operated by the Alaska Satellite Facilty (ASF), users agree to be responsible stewards of server resources and data.
+    While ASF will give reasonable effort to keep data safe and resources running, such data and resources are not guarenteed. It is recommemended that data be downloaded and backed up often.</p>
+
+<style>
+    .eula-text {
+        color: blue;
+        font-size: 8pt;
+    }
+</style>
+
+{% endblock %}

@@ -402,6 +402,7 @@ Resources:
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp earthdata.py jupyter/$hub_name:/srv/jupyterhub/earthdata.py
+                - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
                 - kubectl -n jupyter delete pod $hub_name
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler

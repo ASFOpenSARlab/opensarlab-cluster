@@ -74,6 +74,9 @@ hub:
         import z2jh
         c.JupyterHub.template_vars = {'announcement': '{0}'.format(z2jh.get_config("custom.ANNOUNCEMENT"))}
 
+    myCustomTemplatePaths.py: |
+        c.JupyterHub.template_paths = ["/srv/jupyterhub"]
+
 custom:
   OAUTH_DNS_NAME: OAUTH_DNS_NAME
   OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
