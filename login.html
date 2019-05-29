@@ -1,16 +1,25 @@
 {% extends "templates/login.html" %}
 
-{% block main %}
-{{ super() }}
+{% block login %}
+<div id="login-main" class="container">
+{% if login_service %}
+    <div class="service-login">
+      <a role="button" class='btn btn-jupyter btn-lg' href='{{authenticator_login_url}}'>
+        Sign in with {{login_service}}
+      </a>
+      <p class="eula-text">By signing into the Jupyter Hub cluster operated by the Alaska Satellite Facilty (ASF), Users agree to be responsible stewards of server resources and data. 
+            While ASF will give reasonable effort to keep data safe and resources running, such data and resources are not guarenteed. It is recommemended that data be downloaded and backed up often.</p>
 
-<p class="eula-text">By signing into the Jupyter Hub cluster operated by the Alaska Satellite Facilty (ASF), users agree to be responsible stewards of server resources and data.
-    While ASF will give reasonable effort to keep data safe and resources running, such data and resources are not guarenteed. It is recommemended that data be downloaded and backed up often.</p>
-
-<style>
-    .eula-text {
-        color: blue;
-        font-size: 8pt;
-    }
-</style>
-
-{% endblock %}
+      <style>
+          .eula-text {
+              color: grey;
+              font-size: 12pt;
+              margin: 30px 0;
+            }
+      </style>
+    </div>
+{% else %}
+    <div>Login service is unavailable</div>
+{% endif}
+</div>
+{% endblock login %}
