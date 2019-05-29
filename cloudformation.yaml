@@ -19,16 +19,16 @@ Parameters:
     Type: String
 
   OAuthDnsName:
-    Description: DNS name used for Earthdata authentication, e.g. https://example.com
+    Description: DNS name used for AWS Cognito authentication, e.g. https://example.com
     Type: String
     Default: ''
 
   OAuthClientId:
-    Description: Earthdata authentication client id.
+    Description: AWS Cognito authentication client id.
     Type: String
 
   OAuthClientSecret:
-    Description: Earthdata authentication client secret.
+    Description: AWS Cognito authentication client secret.
     Type: String
     NoEcho: True
 
@@ -396,14 +396,11 @@ Resources:
                     --set auth.admin.users[0]=${AdminUserName},auth.whitelist.users[0]=${AdminUserName}
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
                     --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}',singleuser.image.name='${ImageName}',singleuser.image.tag='${ImageTag}'
-                    --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
-                    --set custom.OAUTH_DNS_NAME=$( [ -n '${OAuthDnsName}' ] && echo '${OAuthDnsName}' || echo 'https://${LoadBalancer.DNSName}' )
+                    --set hub.auth.custom.config.client_id='${OAuthClientId}',hub.auth.custom.config.client_secret='${OAuthClientSecret}'
                     --set custom.ANNOUNCEMENT=''
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
-                - kubectl cp earthdata.py jupyter/$hub_name:/srv/jupyterhub/earthdata.py
                 - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
-                - kubectl -n jupyter delete pod $hub_name
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
