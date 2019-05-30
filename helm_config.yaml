@@ -12,6 +12,14 @@ auth:
     users:
     - ADMIN_USER
 
+  type: custom
+  custom:
+    className: oauthenticator.generic.GenericOAuthenticator
+    config:
+      login_service: "AWS Cognito"
+      client_id: OAUTH_CLIENT_ID
+      client_secret: OAUTH_CLIENT_SECRET
+
 prePuller:
   continuous:
     enabled: true
@@ -48,15 +56,6 @@ singleuser:
     guarantee: 6G
 
 hub:
-    auth:
-      type: custom
-      custom:
-        className: oauthenticator.generic.GenericOAuthenticator
-        config:
-          login_service: "AWS Cognito"
-          client_id: OAUTH_CLIENT_ID
-          client_secret: OAUTH_CLIENT_SECRET
-
     extraEnv:
       OAUTH_CALLBACK_URL: https://eml-test-757592920.us-east-1.elb.amazonaws.com/hub/oauth_callback
       OAUTH2_AUTHORIZE_URL: https://eml-test.auth.us-east-1.amazoncognito.com/oauth2/authorize

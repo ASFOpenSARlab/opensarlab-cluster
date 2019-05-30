@@ -396,7 +396,7 @@ Resources:
                     --set auth.admin.users[0]=${AdminUserName},auth.whitelist.users[0]=${AdminUserName}
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
                     --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}',singleuser.image.name='${ImageName}',singleuser.image.tag='${ImageTag}'
-                    --set hub.auth.custom.config.client_id='${OAuthClientId}',hub.auth.custom.config.client_secret='${OAuthClientSecret}'
+                    --set auth.custom.config.client_id='${OAuthClientId}',auth.custom.config.client_secret='${OAuthClientSecret}'
                     --set custom.ANNOUNCEMENT=''
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
