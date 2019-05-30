@@ -70,6 +70,9 @@ hub:
       myCustomTemplatePaths.py: |
         c.JupyterHub.template_paths = ["/srv/jupyterhub"]
 
+      myCustomLogoutURL.py: |
+        c.Authenticator.logout_url("https://eml-test.auth.us-east-1.amazoncognito.com/logout")
+
 custom:
   ANNOUNCEMENT: ANNOUNCEMENT
 
