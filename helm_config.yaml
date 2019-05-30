@@ -71,7 +71,9 @@ hub:
         c.JupyterHub.template_paths = ["/srv/jupyterhub"]
 
       myCustomLogoutURL.py: |
-        c.Authenticator.logout_url("https://eml-test.auth.us-east-1.amazoncognito.com/logout")
+        def logout_handler(base_url):
+            return "https://eml-test.auth.us-east-1.amazoncognito.com/logout"
+        c.Authenticator.logout_url = logout_handler
 
 custom:
   ANNOUNCEMENT: ANNOUNCEMENT
