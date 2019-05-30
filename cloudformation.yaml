@@ -399,6 +399,8 @@ Resources:
                     --set hub.auth.custom.config.client_id='${OAuthClientId}',hub.auth.custom.config.client_secret='${OAuthClientSecret}'
                     --set custom.ANNOUNCEMENT=''
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
+                - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
+                - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*

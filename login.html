@@ -2,7 +2,22 @@
 
 {% block login %}
 <div id="login-main" class="container">
-{% if login_service %}
+{% if custom_html %}
+{{ custom_html | safe }}
+<div>
+    <p> This is custom html </p>
+    <p class="eula-text">By signing into the Jupyter Hub cluster operated by the Alaska Satellite Facilty (ASF), Users agree to be responsible stewards of server resources and data.
+          While ASF will give reasonable effort to keep data safe and resources running, such data and resources are not guarenteed. It is recommemended that data be downloaded and backed up often.</p>
+    <style>
+        .eula-text {
+            color: grey;
+            font-size: 12pt;
+            margin: 30px 0;
+          }
+    </style>
+</div>
+{% elif login_service %}
+    <p> login service </p>
     <div class="service-login">
       <img style="float: left; max-height: 37px; margin-top: 7px; margin-left: 5px; z-index: 10;" src="https://vertex.daac.asf.alaska.edu/static/images/alaska_satellite_facility_1000.png">
       <a role="button" class='btn btn-jupyter btn-lg' href='{{authenticator_login_url}}'>
@@ -20,65 +35,7 @@
       </style>
     </div>
 {% else %}
-    <div>Login service is not valid!! However...</div>
-    <form action="{{login_url}}?next={{next}}" method="post" role="form">
-      <div class="auth-form-header">
-        Sign in
-      </div>
-      <div class='auth-form-body'>
-
-        <p id='insecure-login-warning' class='hidden'>
-        Warning: JupyterHub seems to be served over an unsecured HTTP connection.
-        We strongly recommend enabling HTTPS for JupyterHub.
-        </p>
-
-        {% if login_error %}
-        <p class="login_error">
-          {{login_error}}
-        </p>
-        {% endif %}
-        <label for="username_input">Username:</label>
-        <input
-          id="username_input"
-          type="text"
-          autocapitalize="off"
-          autocorrect="off"
-          class="form-control"
-          name="username"
-          val="{{username}}"
-          tabindex="1"
-          autofocus="autofocus"
-        />
-        <label for='password_input'>Password:</label>
-        <input
-          type="password"
-          class="form-control"
-          name="password"
-          id="password_input"
-          tabindex="2"
-        />
-
-        <input
-          type="submit"
-          id="login_submit"
-          class='btn btn-jupyter'
-          value='Sign In'
-          tabindex="3"
-        />
-      </div>
-      <div>
-          <p class="eula-text">By signing into the Jupyter Hub cluster operated by the Alaska Satellite Facilty (ASF), Users agree to be responsible stewards of server resources and data.
-                While ASF will give reasonable effort to keep data safe and resources running, such data and resources are not guarenteed. It is recommemended that data be downloaded and backed up often.</p>
-
-          <style>
-              .eula-text {
-                  color: grey;
-                  font-size: 12pt;
-                  margin: 30px 0;
-                }
-          </style>
-      </div>
-    </form>
+    <div>Login service is not valid!!</div>
 {% endif %}
 </div>
 {% endblock login %}
