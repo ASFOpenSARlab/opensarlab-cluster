@@ -19,6 +19,7 @@ auth:
       login_service: "AWS Cognito"
       client_id: OAUTH_CLIENT_ID
       client_secret: OAUTH_CLIENT_SECRET
+      logout_url: "https://eml-test.auth.us-east-1.amazoncognito.com/logout"
 
 prePuller:
   continuous:
@@ -69,11 +70,6 @@ hub:
 
       myCustomTemplatePaths.py: |
         c.JupyterHub.template_paths = ["/srv/jupyterhub"]
-
-      myCustomLogoutURL.py: |
-        def logout_handler(base_url):
-            return "https://eml-test.auth.us-east-1.amazoncognito.com/logout"
-        c.Authenticator.logout_url = logout_handler
 
 custom:
   ANNOUNCEMENT: ANNOUNCEMENT
