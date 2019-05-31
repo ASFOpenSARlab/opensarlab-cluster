@@ -19,7 +19,7 @@ from jupyterhub.auth import LocalAuthenticator
 
 from traitlets import Unicode, Dict, Bool
 
-from .oauth2 import OAuthLoginHandler, OAuthenticator
+from oauthenticator.oauth2 import OAuthLoginHandler, OAuthenticator
 
 
 class GenericEnvMixin(OAuth2Mixin):
