@@ -48,13 +48,6 @@ singleuser:
     guarantee: 6G
 
 hub:
-    extraEnv:
-      OAUTH_CALLBACK_URL: https://eml-test-757592920.us-east-1.elb.amazonaws.com/hub/oauth_callback
-      OAUTH2_AUTHORIZE_URL: https://eml-test.auth.us-east-1.amazoncognito.com/oauth2/authorize
-      OAUTH2_TOKEN_URL: https://eml-test.auth.us-east-1.amazoncognito.com/oauth2/token
-      OAUTH2_USERDATA_URL: https://eml-test.auth.us-east-1.amazoncognito.com/oauth2/userInfo
-      OAUTH2_LOGOUT_URL: https://eml-test.auth.us-east-1.amazoncognito.com/logout
-
     extraConfig:
       myAnnouncement.py: |
         import z2jh
@@ -70,9 +63,17 @@ hub:
            try:
              # The following three lines are a hack to make things work and will not be needed in the final product
              import sys
+             import os
+             import z2jh
+
+             os.environ["OAUTH_CALLBACK_URL"] = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+             os.environ["OAUTH2_AUTHORIZE_URL"] = "{0}/oauth2/authorize".format(z2jh.get_config("custom.OAUTH_COGNITO_URL"))
+             os.environ["OAUTH2_TOKEN_URL"] = "{0}/oauth2/token".format(z2jh.get_config("custom.OAUTH_COGNITO_URL"))
+             os.environ["OAUTH2_USERDATA_URL"] = "{0}/oauth2/userInfo".format(z2jh.get_config("custom.OAUTH_COGNITO_URL"))
+             os.environ["OAUTH2_LOGOUT_URL"] = "{0}/logout?client_id={1}&logout_uri={2}/logout".format(z2jh.get_config("custom.OAUTH_COGNITO_URL"), z2jh.get_config("custom.OAUTH_CLIENT_ID"), z2jh.get_config("custom.OAUTH_DNS_NAME"))
+
              sys.path.append("/srv/jupyterhub")
              from generic_with_logout import GenericOAuthenticator
-             import z2jh
              c.JupyterHub.authenticator_class = GenericOAuthenticator
              c.GenericOAuthenticator.oauth_callback_url = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
              c.GenericOAuthenticator.client_id = '{0}'.format(z2jh.get_config("custom.OAUTH_CLIENT_ID"))
@@ -87,6 +88,7 @@ custom:
   OAUTH_DNS_NAME: OAUTH_DNS_NAME
   OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
   OAUTH_CLIENT_SECRET: OAUTH_CLIENT_SECRET
+  OAUTH_COGNITO_URL: https://eml-test.auth.us-east-1.amazoncognito.com
 
 cull:
   enabled: true
