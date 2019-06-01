@@ -8,10 +8,6 @@ auth:
     users:
     - ADMIN_USER
 
-  whitelist:
-    users:
-    - ADMIN_USER
-
 prePuller:
   continuous:
     enabled: true
@@ -49,10 +45,6 @@ singleuser:
 
 hub:
     extraConfig:
-      myAnnouncement.py: |
-        import z2jh
-        c.JupyterHub.template_vars = {'announcement': '{0}'.format(z2jh.get_config("custom.ANNOUNCEMENT"))}
-
       myCustomTemplatePaths.py: |
         c.JupyterHub.template_paths = ["/srv/jupyterhub"]
 
@@ -66,11 +58,11 @@ hub:
              import os
              import z2jh
 
-             os.environ["OAUTH_CALLBACK_URL"] = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
-             os.environ["OAUTH2_AUTHORIZE_URL"] = "{0}/oauth2/authorize".format(z2jh.get_config("custom.OAUTH_COGNITO_URL"))
-             os.environ["OAUTH2_TOKEN_URL"] = "{0}/oauth2/token".format(z2jh.get_config("custom.OAUTH_COGNITO_URL"))
-             os.environ["OAUTH2_USERDATA_URL"] = "{0}/oauth2/userInfo".format(z2jh.get_config("custom.OAUTH_COGNITO_URL"))
-             os.environ["OAUTH2_LOGOUT_URL"] = "{0}/logout?client_id={1}&logout_uri={2}/hub/login".format(z2jh.get_config("custom.OAUTH_COGNITO_URL"), z2jh.get_config("custom.OAUTH_CLIENT_ID"), z2jh.get_config("custom.OAUTH_DNS_NAME"))
+             os.environ["OAUTH_CALLBACK_URL"] = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+             os.environ["OAUTH2_AUTHORIZE_URL"] = "{0}/oauth2/authorize".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+             os.environ["OAUTH2_TOKEN_URL"] = "{0}/oauth2/token".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+             os.environ["OAUTH2_USERDATA_URL"] = "{0}/oauth2/userInfo".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+             os.environ["OAUTH2_LOGOUT_URL"] = "{0}/logout?client_id={1}&redirect_uri={2}/hub/login".format(z2jh.get_config("custom.OAUTH_DNS_NAME"), z2jh.get_config("custom.OAUTH_CLIENT_ID"), z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
 
              sys.path.append("/srv/jupyterhub")
              from generic_with_logout import GenericOAuthenticator
@@ -84,11 +76,10 @@ hub:
 
 
 custom:
-  ANNOUNCEMENT: ANNOUNCEMENT
-  OAUTH_DNS_NAME: OAUTH_DNS_NAME
+  OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
   OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
   OAUTH_CLIENT_SECRET: OAUTH_CLIENT_SECRET
-  OAUTH_COGNITO_URL: https://eml-test.auth.us-east-1.amazoncognito.com
+  OAUTH_DNS_NAME: OAUTH_DNS_NAME # https://eml-test.auth.us-east-1.amazoncognito.com
 
 cull:
   enabled: true

@@ -18,8 +18,13 @@ Parameters:
     Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
     Type: String
 
+  JupyterHubURL:
+    Description: Jupyterhub URL used by AWS Cognito authentication. If not given, the default is the load balancer URL
+    Type: String
+    Default: ''
+
   OAuthDnsName:
-    Description: DNS name used for AWS Cognito authentication, e.g. https://example.com
+    Description: AWS Cognito authentication DNS name
     Type: String
     Default: ''
 
@@ -95,11 +100,6 @@ Parameters:
     Description: The port of the hub proxy service opened to the load balancer.
     Type: Number
     Default: 30052
-
-  Announcement:
-    Description: Announcement text to be displayed on the sign-in page.
-    Type: String
-    Default: ""
 
 Outputs:
 
@@ -397,8 +397,8 @@ Resources:
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
                     --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}',singleuser.image.name='${ImageName}',singleuser.image.tag='${ImageTag}'
                     --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
-                    --set custom.OAUTH_DNS_NAME=$( [ -n '${OAuthDnsName}' ] && echo '${OAuthDnsName}' || echo 'https://${LoadBalancer.DNSName}' )
-                    --set custom.ANNOUNCEMENT=''
+                    --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
+                    --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp generic_with_logout.py jupyter/$hub_name:/srv/jupyterhub/generic_with_logout.py
