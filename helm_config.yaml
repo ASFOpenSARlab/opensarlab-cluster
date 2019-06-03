@@ -67,7 +67,7 @@ hub:
              sys.path.append("/srv/jupyterhub")
              from generic_with_logout import GenericOAuthenticator
              c.JupyterHub.authenticator_class = GenericOAuthenticator
-             c.GenericOAuthenticator.oauth_callback_url = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+             c.GenericOAuthenticator.oauth_callback_url = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
              c.GenericOAuthenticator.client_id = '{0}'.format(z2jh.get_config("custom.OAUTH_CLIENT_ID"))
              c.GenericOAuthenticator.client_secret = '{0}'.format(z2jh.get_config("custom.OAUTH_CLIENT_SECRET"))
              c.GenericOAuthenticator.login_service = 'AWS Cognito'
