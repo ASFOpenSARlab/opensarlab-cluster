@@ -2,7 +2,7 @@
 !.gitignore
 !aws-auth-cm.yaml
 !cloudformation.yaml
-!earthdata.py
+!generic_with_logout.py
 !helm_config.yaml
 !README.md
 !login.html
