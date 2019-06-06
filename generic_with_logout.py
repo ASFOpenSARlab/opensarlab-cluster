@@ -25,7 +25,7 @@ from oauthenticator.oauth2 import OAuthLoginHandler, OAuthenticator
 class GenericEnvMixin(OAuth2Mixin):
     _OAUTH_ACCESS_TOKEN_URL = os.environ.get('OAUTH2_TOKEN_URL', '')
     _OAUTH_AUTHORIZE_URL = os.environ.get('OAUTH2_AUTHORIZE_URL', '')
-    _OAUTH_LOGOUT_URL = os.environ.get('OAUTH2_LOGOUT_URL', '')
+    _OAUTH_LOGOUT_URL = os.environ.get('OAUTH_LOGOUT_URL', '')
 
 
 class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
