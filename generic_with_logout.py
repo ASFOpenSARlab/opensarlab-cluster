@@ -40,9 +40,9 @@ class GenericLogoutHandler(LogoutHandler, GenericEnvMixin):
     """
     @gen.coroutine
     def get(self):
-        user = self.get_current_user()
-        if user:
-            self.clear_login_cookie()
+        #user = self.get_current_user()
+        #if user:
+        #    self.clear_login_cookie()
         self.redirect(self._OAUTH_LOGOUT_URL)
 
 class GenericOAuthenticator(OAuthenticator):
