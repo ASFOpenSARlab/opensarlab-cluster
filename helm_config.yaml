@@ -62,7 +62,7 @@ hub:
              os.environ["OAUTH2_AUTHORIZE_URL"] = "{0}/oauth2/authorize".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
              os.environ["OAUTH2_TOKEN_URL"] = "{0}/oauth2/token".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
              os.environ["OAUTH2_USERDATA_URL"] = "{0}/oauth2/userInfo".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
-             os.environ["OAUTH2_LOGOUT_URL"] = "{0}/logout?client_id={1}&redirect_uri={2}/hub/login".format(z2jh.get_config("custom.OAUTH_DNS_NAME"), z2jh.get_config("custom.OAUTH_CLIENT_ID"), z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+             os.environ["OAUTH2_LOGOUT_URL"] = "{0}/logout?response_type=code&client_id={1}&redirect_uri={2}/hub/login".format(z2jh.get_config("custom.OAUTH_DNS_NAME"), z2jh.get_config("custom.OAUTH_CLIENT_ID"), z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
 
              sys.path.append("/srv/jupyterhub")
              from generic_with_logout import GenericOAuthenticator
