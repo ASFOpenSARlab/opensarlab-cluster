@@ -1,9 +1,16 @@
-{% extends "templates/login.html" %}
+{% extends "templates/page.html" %}
 
-{% block login %}
+{% block main %}
 <div>
-    <img style="float: left; max-height: 37px; margin-top: 7px; margin-left: 5px; z-index: 10;" src="https://vertex.daac.asf.alaska.edu/static/images/alaska_satellite_facility_1000.png">
-    <p>You have successfully signed up to use Jupyter Hub. Access will be granted once an administrator confirms your account.</p>
-    <p>For help, please contact uso@asf.alaska.edu</p>
+    <img style="float: center; max-height: 37px; margin-top: 7px; margin-left: 5px; z-index: 10;" src="https://vertex.daac.asf.alaska.edu/static/images/alaska_satellite_facility_1000.png">
+    <p>If you are seeing this page then your account is disabled.</p>
+    <p>If you just signed up then access will be granted once an administrator confirms your account.</p>
+    <p>For help or questions, please contact uso@asf.alaska.edu</p>
 </div>
-{% endblock login %}
+<div>
+    <a role="button" class='btn btn-jupyter btn-lg' href='/'>
+        Go back to Login page.
+    </a>
+</div>
+
+{% endblock main %}

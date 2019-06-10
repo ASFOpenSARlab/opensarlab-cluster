@@ -85,7 +85,8 @@ hub:
                     #user = self.get_current_user()
                     #if user:
                     #    self.clear_login_cookie()
-                    self.render_template('pending.html')
+                    html = self.render_template('pending.html')
+                    self.finish(html)
 
             c.JupyterHub.extra_handlers = [("/pending", PendingHandler)]
 
