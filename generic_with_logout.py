@@ -101,6 +101,7 @@ class GenericOAuthenticator(OAuthenticator):
 
     @gen.coroutine
     def authenticate(self, handler, data=None):
+
         code = handler.get_argument("code")
         # TODO: Configure the curl_httpclient for tornado
         http_client = AsyncHTTPClient()
@@ -138,9 +139,15 @@ class GenericOAuthenticator(OAuthenticator):
                           body=urllib.parse.urlencode(params)  # Body is required for a POST...
                           )
 
-        resp = yield http_client.fetch(req)
+        resp = yield http_client.fetch(req, raise_error=False)
 
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
+
+        if resp_json['error']:
+            if resp_json['error'] == "invalid_grant":
+                print("Oops!! Look like you are not allowed access. Is your user disabled?")
+            else:
+                raise Exception(resp_json['error'])
 
         access_token = resp_json['access_token']
         refresh_token = resp_json.get('refresh_token', None)

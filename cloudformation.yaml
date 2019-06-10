@@ -403,6 +403,7 @@ Resources:
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp generic_with_logout.py jupyter/$hub_name:/srv/jupyterhub/generic_with_logout.py
                 - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
+                - kubectl cp pending.html jupyter/$hub_name:/srv/jupyterhub/pending.html
                 - kubectl -n jupyter delete pod $hub_name
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
