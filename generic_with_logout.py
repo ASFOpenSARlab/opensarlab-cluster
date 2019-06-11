@@ -110,6 +110,18 @@ class GenericOAuthenticator(OAuthenticator):
         help="Disable basic authentication for access token request"
     )
 
+    host_url = Unicode(
+        os.environ.get("HOST_URL", ''),
+        config=True,
+        help=""
+    )
+
+    cognito_url = Unicode(
+        os.environ.get("COGNITO_URL", ''),
+        config=True,
+        help=""
+    )
+
     @gen.coroutine
     def authenticate(self, handler, data=None):
 
@@ -157,7 +169,12 @@ class GenericOAuthenticator(OAuthenticator):
         if resp_json['error']:
             if resp_json['error'] == "invalid_grant":
                 print("Oops!! Look like you are not allowed access. Is your user disabled?")
-                urllib.request.urlopen('/pending')
+                handler.redirect("/pending")
+                #handler.redirect("{}?client_id={}&logout_uri={}/pending".format(self.cognito_url, self.client_id, self.host_url))
+                return {
+                    'name': resp_json.get(self.username_key),
+                    'auth_state': None
+                }
             else:
                 raise Exception(resp_json['error'])
 
