@@ -166,7 +166,7 @@ class GenericOAuthenticator(OAuthenticator):
 
         resp_json = json.loads(resp.body.decode('utf8', 'replace'))
 
-        if resp_json['error']:
+        if 'error' in resp_json:
             if resp_json['error'] == "invalid_grant":
                 print("Oops!! Look like you are not allowed access. Is your user disabled?")
                 handler.redirect("/pending")
