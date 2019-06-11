@@ -9,12 +9,13 @@ import base64
 import urllib
 
 from tornado.auth import OAuth2Mixin
-from tornado import gen, web
+from tornado import gen
 
 from tornado.httputil import url_concat
+from tornado.web import RequestHandler
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
 
-from jupyterhub.handlers import LogoutHandler
+from jupyterhub.handlers import LogoutHandler, BaseHandler
 from jupyterhub.auth import LocalAuthenticator
 
 from traitlets import Unicode, Dict, Bool
@@ -45,6 +46,15 @@ class GenericLogoutHandler(LogoutHandler, GenericEnvMixin):
             self.clear_login_cookie()
         self.redirect(self._OAUTH_LOGOUT_URL)
 
+class PendingHandler(BaseHandler):
+    @gen.coroutine
+    def get(self):
+        user = self.get_current_user()
+        if user:
+            self.clear_login_cookie()
+        html = self.render_template('pending.html')
+        self.finish(html)
+
 class GenericOAuthenticator(OAuthenticator):
 
     login_service = Unicode(
@@ -54,9 +64,10 @@ class GenericOAuthenticator(OAuthenticator):
 
     login_handler = GenericLoginHandler
     logout_handler = GenericLogoutHandler
+    pending_handler = PendingHandler
 
     def get_handlers(self, app):
-        return super().get_handlers(app) + [(r'/logout', self.logout_handler)]
+        return super().get_handlers(app) + [(r'/logout', self.logout_handler)] + [(r'/pending', self.pending_handler)]
 
     userdata_url = Unicode(
         os.environ.get('OAUTH2_USERDATA_URL', ''),
@@ -146,6 +157,7 @@ class GenericOAuthenticator(OAuthenticator):
         if resp_json['error']:
             if resp_json['error'] == "invalid_grant":
                 print("Oops!! Look like you are not allowed access. Is your user disabled?")
+                urllib.request.urlopen('/pending')
             else:
                 raise Exception(resp_json['error'])
 

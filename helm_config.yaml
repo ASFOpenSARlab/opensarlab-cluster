@@ -74,22 +74,6 @@ hub:
             except Exception as e:
                 print(e)
 
-        myExtraHandlers.py: |
-            # Add extra handlers for user disabled, etc.
-            from jupyterhub.handlers import BaseHandler
-            from tornado import gen
-
-            class PendingHandler(BaseHandler):
-                @gen.coroutine
-                def get(self):
-                    #user = self.get_current_user()
-                    #if user:
-                    #    self.clear_login_cookie()
-                    html = self.render_template('pending.html')
-                    self.finish(html)
-
-            c.JupyterHub.extra_handlers = [("/pending", PendingHandler)]
-
 custom:
   OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
   OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
