@@ -8,10 +8,6 @@ auth:
     users:
     - ADMIN_USER
 
-  whitelist:
-    users:
-    - ADMIN_USER
-
 prePuller:
   continuous:
     enabled: true
@@ -48,37 +44,41 @@ singleuser:
     guarantee: 6G
 
 hub:
-  extraConfig:
-    myAuthConfig.py: |
-       # The try/except is needed since the hub needs to be created before earthdata.py is copied over to /svc/jupyterhub/
-       # After copying, the hub will need to be forced to rebuild. However, the earthdata file will persist.
-       # The try/expect can be removed after the earthdata module is formally integrated into the official oauthenticator module repo.
-       try:
-         # The following three lines are a hack to make things work and will not be needed in the final product
-         import sys
-         sys.path.append("/srv/jupyterhub")
-         from earthdata import EarthdataOAuthenticator
+    extraConfig:
+        myCustomTemplatePaths.py: |
+            c.JupyterHub.template_paths = ["/srv/jupyterhub"]
 
-         # Uncomment this line after merging earthdata.py into the oauthenticator module
-         #from oauthenticator.earthdata import EarthdataOAuthenticator
-         import z2jh
-         c.JupyterHub.authenticator_class = EarthdataOAuthenticator
-         c.EarthdataOAuthenticator.oauth_callback_url = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
-         c.EarthdataOAuthenticator.client_id = '{0}'.format(z2jh.get_config("custom.OAUTH_CLIENT_ID"))
-         c.EarthdataOAuthenticator.client_secret = '{0}'.format(z2jh.get_config("custom.OAUTH_CLIENT_SECRET"))
-         c.EarthdataOAuthenticator.login_service = 'Earthdata Login'
-       except Exception as e:
-         print(e)
+        myAuthConfig.py: |
+            # The try/except is needed since the hub needs to be created before earthdata.py is copied over to /svc/jupyterhub/
+            # After copying, the hub will need to be forced to rebuild. However, the earthdata file will persist.
+            # The try/expect can be removed after the earthdata module is formally integrated into the official oauthenticator module repo.
+            try:
+                # The following three lines are a hack to make things work and will not be needed in the final product
+                import sys
+                import os
+                import z2jh
 
-    myAnnouncement.py: |
-        import z2jh
-        c.JupyterHub.template_vars = {'announcement': '{0}'.format(z2jh.get_config("custom.ANNOUNCEMENT"))}
+                os.environ["OAUTH_CALLBACK_URL"] = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+                os.environ["OAUTH2_AUTHORIZE_URL"] = "{0}/oauth2/authorize".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+                os.environ["OAUTH2_TOKEN_URL"] = "{0}/oauth2/token".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+                os.environ["OAUTH2_USERDATA_URL"] = "{0}/oauth2/userInfo".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+                os.environ["OAUTH_LOGOUT_URL"] = "{0}/logout?client_id={1}&logout_uri={2}".format(z2jh.get_config("custom.OAUTH_DNS_NAME"), z2jh.get_config("custom.OAUTH_CLIENT_ID"), z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+
+                sys.path.append("/srv/jupyterhub")
+                from generic_with_logout import GenericOAuthenticator
+                c.JupyterHub.authenticator_class = GenericOAuthenticator
+                c.GenericOAuthenticator.oauth_callback_url = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+                c.GenericOAuthenticator.client_id = '{0}'.format(z2jh.get_config("custom.OAUTH_CLIENT_ID"))
+                c.GenericOAuthenticator.client_secret = '{0}'.format(z2jh.get_config("custom.OAUTH_CLIENT_SECRET"))
+                c.GenericOAuthenticator.login_service = 'AWS Cognito'
+            except Exception as e:
+                print(e)
 
 custom:
-  OAUTH_DNS_NAME: OAUTH_DNS_NAME
+  OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
   OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
   OAUTH_CLIENT_SECRET: OAUTH_CLIENT_SECRET
-  ANNOUNCEMENT: ANNOUNCEMENT
+  OAUTH_DNS_NAME: OAUTH_DNS_NAME
 
 cull:
   enabled: true
