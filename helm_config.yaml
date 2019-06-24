@@ -74,6 +74,10 @@ hub:
             except Exception as e:
                 print(e)
 
+        mySubdomainConfig.py: |
+            import z2jh
+            c.JupyterHub.subdomain_host = '{0}'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+
 custom:
   OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
   OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
