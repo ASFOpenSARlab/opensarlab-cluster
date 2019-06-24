@@ -32,6 +32,7 @@ class GenericEnvMixin(OAuth2Mixin):
 class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
     pass
 
+
 class GenericLogoutHandler(LogoutHandler, GenericEnvMixin):
     """
     Handle custom logout URLs and token revocation. If a custom logout url
@@ -67,7 +68,8 @@ class GenericOAuthenticator(OAuthenticator):
     pending_handler = PendingHandler
 
     def get_handlers(self, app):
-        return super().get_handlers(app) + [(r'/logout', self.logout_handler)] + [(r'/pending', self.pending_handler)]
+        handlers = super().get_handlers(app) + [(r'/logout', self.logout_handler)] + [(r'/pending', self.pending_handler)]
+        return handlers
 
     userdata_url = Unicode(
         os.environ.get('OAUTH2_USERDATA_URL', ''),
