@@ -58,16 +58,16 @@ hub:
                 import os
                 import z2jh
 
-                os.environ["OAUTH_CALLBACK_URL"] = 'https://{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
-                os.environ["OAUTH2_AUTHORIZE_URL"] = "https://auth.{0}/oauth2/authorize".format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
-                os.environ["OAUTH2_TOKEN_URL"] = "https://auth.{0}/oauth2/token".format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
-                os.environ["OAUTH2_USERDATA_URL"] = "https://auth.{0}/oauth2/userInfo".format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
-                os.environ["OAUTH_LOGOUT_URL"] = "https://auth.{0}/logout?client_id={1}&logout_uri=https://{0}".format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"), z2jh.get_config("custom.OAUTH_CLIENT_ID"))
+                os.environ["OAUTH_CALLBACK_URL"] = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+                os.environ["OAUTH2_AUTHORIZE_URL"] = "{0}/oauth2/authorize".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+                os.environ["OAUTH2_TOKEN_URL"] = "{0}/oauth2/token".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+                os.environ["OAUTH2_USERDATA_URL"] = "{0}/oauth2/userInfo".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+                os.environ["OAUTH_LOGOUT_URL"] = "{0}/logout?client_id={1}&logout_uri={2}".format(z2jh.get_config("custom.OAUTH_DNS_NAME"), z2jh.get_config("custom.OAUTH_CLIENT_ID"), z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
 
                 sys.path.append("/srv/jupyterhub")
                 from generic_with_logout import GenericOAuthenticator
                 c.JupyterHub.authenticator_class = GenericOAuthenticator
-                c.GenericOAuthenticator.oauth_callback_url = 'https://{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+                c.GenericOAuthenticator.oauth_callback_url = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
                 c.GenericOAuthenticator.client_id = '{0}'.format(z2jh.get_config("custom.OAUTH_CLIENT_ID"))
                 c.GenericOAuthenticator.client_secret = '{0}'.format(z2jh.get_config("custom.OAUTH_CLIENT_SECRET"))
                 c.GenericOAuthenticator.login_service = 'AWS Cognito'
@@ -76,12 +76,13 @@ hub:
 
         mySubdomainConfig.py: |
             import z2jh
-            c.JupyterHub.subdomain_host = 'https://{0}'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+            c.JupyterHub.subdomain_host = '{0}'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
 
 custom:
   OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
   OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
   OAUTH_CLIENT_SECRET: OAUTH_CLIENT_SECRET
+  OAUTH_DNS_NAME: OAUTH_DNS_NAME
 
 cull:
   enabled: true
