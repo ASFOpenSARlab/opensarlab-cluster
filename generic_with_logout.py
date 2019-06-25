@@ -39,11 +39,8 @@ class GenericLogoutHandler(LogoutHandler, GenericEnvMixin):
     provider in addition to clearing the session with Jupyterhub, otherwise
     only the Jupyterhub session is cleared.
     """
-    @gen.coroutine
-    def get(self):
-        user = self.get_current_user()
-        if user:
-            self.clear_login_cookie()
+    async def handle_logout(self):
+        print("Within custom logout handler. Cleared possible cookie and now redirecting to auth logout.")
         self.redirect(self._OAUTH_LOGOUT_URL)
 
 class PendingHandler(BaseHandler):
@@ -67,6 +64,8 @@ class GenericOAuthenticator(OAuthenticator):
     pending_handler = PendingHandler
 
     def get_handlers(self, app):
+        print("get_handlers")
+        print(super().get_handlers(app))
         return super().get_handlers(app) + [(r'/logout', self.logout_handler)] + [(r'/pending', self.pending_handler)]
 
     userdata_url = Unicode(
