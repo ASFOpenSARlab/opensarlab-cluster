@@ -40,7 +40,8 @@ class GenericLogoutHandler(LogoutHandler, GenericEnvMixin):
     provider in addition to clearing the session with Jupyterhub, otherwise
     only the Jupyterhub session is cleared.
     """
-    async def get(self):
+    @gen.coroutine
+    def get(self):
         user = self.get_current_user()
         if user:
             self.clear_login_cookie()
