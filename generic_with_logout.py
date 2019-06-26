@@ -40,9 +40,6 @@ class GenericLogoutHandler(LogoutHandler, GenericEnvMixin):
     provider in addition to clearing the session with Jupyterhub, otherwise
     only the Jupyterhub session is cleared.
     """
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     async def get(self):
         user = self.get_current_user()
         if user:
@@ -71,8 +68,6 @@ class GenericOAuthenticator(OAuthenticator):
 
     def get_handlers(self, app):
         handlers = super().get_handlers(app) + [(r'/logout', self.logout_handler)] + [(r'/pending', self.pending_handler)]
-        print("get_handlers")
-        print(handlers)
         return handlers
 
     userdata_url = Unicode(
