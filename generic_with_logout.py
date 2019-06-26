@@ -32,6 +32,7 @@ class GenericEnvMixin(OAuth2Mixin):
 class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
     pass
 
+
 class GenericLogoutHandler(LogoutHandler, GenericEnvMixin):
     """
     Handle custom logout URLs and token revocation. If a custom logout url
@@ -39,8 +40,13 @@ class GenericLogoutHandler(LogoutHandler, GenericEnvMixin):
     provider in addition to clearing the session with Jupyterhub, otherwise
     only the Jupyterhub session is cleared.
     """
-    async def handle_logout(self):
-        print("Within custom logout handler. Cleared possible cookie and now redirecting to auth logout.")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def get(self):
+        user = self.get_current_user()
+        if user:
+            self.clear_login_cookie()
         self.redirect(self._OAUTH_LOGOUT_URL)
 
 class PendingHandler(BaseHandler):
@@ -64,9 +70,10 @@ class GenericOAuthenticator(OAuthenticator):
     pending_handler = PendingHandler
 
     def get_handlers(self, app):
+        handlers = super().get_handlers(app) + [(r'/logout', self.logout_handler)] + [(r'/pending', self.pending_handler)]
         print("get_handlers")
-        print(super().get_handlers(app))
-        return super().get_handlers(app) + [(r'/logout', self.logout_handler)] + [(r'/pending', self.pending_handler)]
+        print(handlers)
+        return handlers
 
     userdata_url = Unicode(
         os.environ.get('OAUTH2_USERDATA_URL', ''),

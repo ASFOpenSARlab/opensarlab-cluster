@@ -72,7 +72,6 @@ hub:
                 os.environ["OAUTH_CLIENT_SECRET"] = f"{oauth_client_secret}"
 
                 sys.path.append("/srv/jupyterhub")
-                c.Authenticator.auto_login = False
                 from generic_with_logout import GenericOAuthenticator
                 c.JupyterHub.authenticator_class = GenericOAuthenticator
                 c.GenericOAuthenticator.login_service = 'AWS Cognito'
