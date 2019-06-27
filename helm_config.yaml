@@ -79,8 +79,9 @@ hub:
                 print(e)
 
         mySubdomainConfig.py: |
-            import z2jh
-            c.JupyterHub.subdomain_host = f"{z2jh.get_config('custom.OAUTH_JUPYTER_URL')}"
+            pass
+            #import z2jh
+            #c.JupyterHub.subdomain_host = f"{z2jh.get_config('custom.OAUTH_JUPYTER_URL')}"
 
 custom:
   OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
