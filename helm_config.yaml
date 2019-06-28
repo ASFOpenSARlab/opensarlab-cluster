@@ -89,21 +89,17 @@ hub:
             from subprocess import check_output
 
             def my_pre_hook(spawner):
-                print("pre")
-                print(vars(spawner))
-                print("env", os.environ)
-                out = check_output(['pwd'])
+                out = check_output(['echo', 'Inside pre-hook'])
                 print(out)
-                print(check_output("ls /home/jovyan".split()))
-                #out = check_output("gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master notebooks".split())
-                #print(out)
+                out = check_output(['date'])
+                print(out)
 
             c.Spawner.pre_spawn_hook = my_pre_hook
 
             def my_post_hook(spawner):
-                username = spawner.user.name
-                print("post", username)
-                out = check_output(['pwd'])
+                out = check_output(['echo', 'Inside post-hook'])
+                print(out)
+                out = check_output(['date'])
                 print(out)
 
             c.Spawner.post_stop_hook = my_post_hook
@@ -112,12 +108,12 @@ hub:
             c.KubeSpawner.lifecycle_hooks = {
                 "postStart": {
                     "exec": {
-                        "command": ["env"]
+                        "command": ["date"]
                     }
                 },
                 "preStop": {
                     "exec": {
-                        "command": ["ls"]
+                        "command": ["date"]
                     }
                 }
             }
