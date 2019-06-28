@@ -102,8 +102,6 @@ hub:
                 print("post", username)
                 out = check_output(['pwd'])
                 print(out)
-                out = check_output(['ls', '$HOME'])
-                print(out)
 
             c.Spawner.post_stop_hook = my_post_hook
 
