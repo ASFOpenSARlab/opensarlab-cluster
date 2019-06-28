@@ -30,14 +30,15 @@ singleuser:
   image:
     name: IMAGE_NAME
     tag: IMAGE_TAG
-  lifecycleHooks:
-    postStart:
-      exec:
-        command:
-        - gitpuller
-        - https://github.com/asfadmin/asf-jupyter-notebooks.git
-        - master
-        - notebooks
+  #lifecycleHooks:
+    #postStart:
+      #exec:
+        #command:
+        #- env
+        #- gitpuller
+        #- https://github.com/asfadmin/asf-jupyter-notebooks.git
+        #- master
+        #- notebooks
   storage:
     capacity: 500Gi
   memory:
@@ -93,8 +94,9 @@ hub:
                 print("env", os.environ)
                 out = check_output(['pwd'])
                 print(out)
-                out = check_output("gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master notebooks".split())
-                print(out)
+                print(check_output("ls /home/joyvan".split()))
+                #out = check_output("gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master notebooks".split())
+                #print(out)
 
             c.Spawner.pre_spawn_hook = my_pre_hook
 
@@ -105,6 +107,20 @@ hub:
                 print(out)
 
             c.Spawner.post_stop_hook = my_post_hook
+            c.Spawner.delete_grace_period = 10
+
+            c.KubeSpawner.lifecycle_hooks = {
+                "postStart": {
+                    "exec": {
+                        "command": ["env"]
+                    }
+                },
+                "preStop": {
+                    "exec": {
+                        "command": ["ls"]
+                    }
+                }
+            }
 
 custom:
   OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
