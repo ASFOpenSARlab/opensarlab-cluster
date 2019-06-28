@@ -91,7 +91,7 @@ hub:
             def my_pre_hook(spawner):
                 out = check_output(['echo', 'Inside pre-hook'])
                 print(out)
-                out = check_output(['date'])
+                out = check_output(['touch', '$HOME/Hello_pre_hook.txt'])
                 print(out)
 
             c.Spawner.pre_spawn_hook = my_pre_hook
@@ -108,7 +108,7 @@ hub:
             c.KubeSpawner.lifecycle_hooks = {
                 "postStart": {
                     "exec": {
-                        "command": ["date"]
+                        "command": ["touch", "Hello_pre_life.txt"]
                     }
                 },
                 "preStop": {
