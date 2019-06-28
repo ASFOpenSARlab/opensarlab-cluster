@@ -86,20 +86,25 @@ hub:
 
         myHooksConfig.py: |
             import os
+            from pathlib import Path
             from subprocess import check_output
 
             def my_pre_hook(spawner):
                 out = check_output(['echo', 'Inside pre-hook'])
                 print(out)
-                out = check_output(['touch', '$HOME/Hello_pre_hook.txt'])
-                print(out)
+
+                home = str(Path.home())
+                print(os.listdir(home))
+
+                try:
+                    print(os.listdir("/home/jovyan"))
+                except Exception as e:
+                    print(e)
 
             c.Spawner.pre_spawn_hook = my_pre_hook
 
             def my_post_hook(spawner):
                 out = check_output(['echo', 'Inside post-hook'])
-                print(out)
-                out = check_output(['date'])
                 print(out)
 
             c.Spawner.post_stop_hook = my_post_hook
