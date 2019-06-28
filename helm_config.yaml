@@ -94,7 +94,7 @@ hub:
                 print("env", os.environ)
                 out = check_output(['pwd'])
                 print(out)
-                print(check_output("ls /home/joyvan".split()))
+                print(check_output("ls /home/jovyan".split()))
                 #out = check_output("gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master notebooks".split())
                 #print(out)
 
