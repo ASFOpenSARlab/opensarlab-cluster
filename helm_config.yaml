@@ -93,7 +93,8 @@ hub:
                 print("env", os.environ)
                 out = check_output(['pwd'])
                 print(out)
-                gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master notebooks
+                out = check_output("gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master notebooks".split())
+                print(out)
 
             c.Spawner.pre_spawn_hook = my_pre_hook
 
