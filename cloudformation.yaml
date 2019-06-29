@@ -401,6 +401,7 @@ Resources:
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
+                - kubectl -n jupyter delete -f test_efs_claim.yaml
                 - kubectl -n jupyter apply -f test_efs.yaml
                 - kubectl -n jupyter apply -f test_efs_claim.yaml
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
