@@ -27,22 +27,20 @@ singleuser:
   extraEnv:
     AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
+    CHOWN_HOME: 'yes'
+  storage:
+    type: "static"
+    static:
+      pvcName: "efs-persist"
+      subPath: 'home/{username}'
+  memory:
+    guarantee: 6G
   image:
     name: IMAGE_NAME
     tag: IMAGE_TAG
-  #lifecycleHooks:
-    #postStart:
-      #exec:
-        #command:
-        #- env
-        #- gitpuller
-        #- https://github.com/asfadmin/asf-jupyter-notebooks.git
-        #- master
-        #- notebooks
-  storage:
-    capacity: 500Gi
-  memory:
-    guarantee: 6G
+  uid: 0
+  fsGid: 0
+  cmd: "start-singleuser.sh"
 
 hub:
     extraConfig:
