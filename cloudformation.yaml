@@ -419,7 +419,7 @@ Resources:
                 - curl -O https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cwagent-daemonset.yaml
                 - kubectl apply -f cwagent-daemonset.yaml
                 - curl -O https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/fluentd/fluentd.yml
-                - kubectl create configmap cluster-info --from-literal=cluster.name=${Cluster} --from-literal=logs.region=${AWS::Region} -n amazon-cloudwatch
+                - kubectl create configmap cluster-info --from-literal=cluster.name=${Cluster} --from-literal=logs.region=${AWS::Region} -n amazon-cloudwatch --dry-run -o yaml | kubectl apply -f -
                 - kubectl apply -f fluentd.yml
       LogsConfig:
         CloudWatchLogs:
