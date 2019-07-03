@@ -32,15 +32,12 @@ singleuser:
     type: "static"
     static:
       pvcName: "efs-persist"
-      subPath: 'home/{username}'
+      subPath: 'home/jovyan/'
   memory:
     guarantee: 6G
   image:
     name: IMAGE_NAME
     tag: IMAGE_TAG
-  uid: 0
-  fsGid: 0
-  #cmd: "start-singleuser.sh"
 
 hub:
     extraConfig:
