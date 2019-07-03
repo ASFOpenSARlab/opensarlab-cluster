@@ -38,9 +38,9 @@ singleuser:
   image:
     name: IMAGE_NAME
     tag: IMAGE_TAG
-  uid: 0
-  fsGid: 0
-  cmd: "start-singleuser.sh"
+  #uid: 0
+  #fsGid: 0
+  #cmd: "start-singleuser.sh"
 
 hub:
     extraConfig:
