@@ -3,7 +3,7 @@ apiVersion: v1
 metadata:
   name: efs-persist
 spec:
-  storageClassName: ""
+  storageClassName: "nfs"
   accessModes:
     - ReadWriteMany
   resources:
