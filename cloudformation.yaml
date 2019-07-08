@@ -402,7 +402,7 @@ Resources:
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - helm upgrade efs-provisioner stable/efs-provisioner --install --namespace efs-provisioner --set efsProvisioner.efsFileSystemId=fs-c0386723 --set efsProvisioner.awsRegion=us-east-1
-                    --set efsProvisioner.path=/ --set efsProvisioner.storageClass.reclaimPolicy=Retain --name efs-provisioner
+                    --set efsProvisioner.path=/ --set efsProvisioner.storageClass.reclaimPolicy=Retain
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp generic_with_logout.py jupyter/$hub_name:/srv/jupyterhub/generic_with_logout.py
                 - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
