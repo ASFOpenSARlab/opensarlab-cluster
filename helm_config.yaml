@@ -29,12 +29,12 @@ singleuser:
     AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
     #CHOWN_HOME: 'yes'
   storage:
-    #dynamic:
-    #    storageClass: aws-efs
-    type: "static"
-    static:
-      pvcName: "efs"
-      subPath: 'home/{username}'
+    dynamic:
+        storageClass: efs
+    #type: "static"
+    #static:
+    #  pvcName: "efs"
+    #  subPath: 'home/{username}'
   memory:
     guarantee: 6G
   image:
