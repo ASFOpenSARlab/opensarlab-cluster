@@ -1,0 +1,12 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: hub-efs
+spec:
+  capacity:
+    storage: 42Gi
+  accessModes:
+    - ReadWriteMany
+  nfs:
+    server: fs-c0386723.efs.us-east-1.amazonaws.com
+    path: "/"
