@@ -3,7 +3,7 @@ apiVersion: v1
 metadata:
   name: hub-efs
 spec:
-  storageClassName: "nfs"
+  storageClassName: efs
   accessModes:
     - ReadWriteMany
   resources:
