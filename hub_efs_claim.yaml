@@ -2,8 +2,6 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: hub-efs
-  annotations:
-    volume.beta.kubernetes.io/storage-class: hub-efs
 spec:
   storageClassName: hub-efs
   accessModes:

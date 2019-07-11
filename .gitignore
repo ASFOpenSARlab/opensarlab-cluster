@@ -12,3 +12,5 @@
 !test_efs.yaml
 !hub_efs_claim.yaml
 !hub_efs_vol.yaml
+!hub_efs_sc.yaml
+!hub_efs.yaml
