@@ -84,7 +84,8 @@ hub:
         myHubMountConfig.py: |
             import subprocess
 
-            cmd = 'mount -t nsf -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-c0386723.efs.us-east-1.amazonaws.com:/ /tmp'
+            #cmd = 'mount -t nsf -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-c0386723.efs.us-east-1.amazonaws.com:/ /tmp'
+            cmd = ''
             try:
                 output = subprocess.check_output(cmd.split(), shell=False)
                 print(output)
@@ -92,11 +93,17 @@ hub:
                 print(e)
 
         myHooksConfig.py: |
+
             import os
             from pathlib import Path
             from subprocess import check_output
 
+            os.environ["THE_HIDDEN_SECRET_AWS_KEY"] = "qwerty"
+
             def my_pre_hook(spawner):
+                out = check_output(['hostname'])
+                print(out)
+
                 out = check_output(['echo', 'Inside pre-hook'])
                 print(out)
 
@@ -110,12 +117,16 @@ hub:
 
             c.Spawner.pre_spawn_hook = my_pre_hook
 
+
             def my_post_hook(spawner):
+                out = check_output(['hostname'])
+                print(out)
+
                 out = check_output(['echo', 'Inside post-hook'])
                 print(out)
 
             c.Spawner.post_stop_hook = my_post_hook
-            c.Spawner.delete_grace_period = 10
+
 
             c.KubeSpawner.lifecycle_hooks = {
                 "postStart": {
