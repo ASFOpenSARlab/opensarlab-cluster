@@ -42,14 +42,6 @@ singleuser:
     tag: IMAGE_TAG
 
 hub:
-    extraVolumes:
-      - name: hub-efs
-        persistentVolumeClaim:
-          claimName: hub-efs
-    extraVolumeMounts:
-      - name: hub-efs
-        mountPath: '/home/jovyan/efs'
-
     extraConfig:
         mySubdomainConfig.py: |
             print("Subdomain not implemented...")
