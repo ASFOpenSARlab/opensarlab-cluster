@@ -89,6 +89,15 @@ hub:
             except Exception as e:
                 print(e)
 
+        myHubMountConfig.py: |
+            import subprocess
+
+            try:
+                ret = subprocess.check_output(['sudo', 'mount', '-t', 'nsf', '-o', 'nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport', 'fs-c0386723.efs.us-east-1.amazonaws.com:/', '/tmp'])
+                print("EFS mounted...", ret)
+            except Exception as e:
+                print("Could not mount efs...", e)
+
         myHooksConfig.py: |
             import os
             from pathlib import Path
