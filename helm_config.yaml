@@ -84,15 +84,12 @@ hub:
         myHubMountConfig.py: |
             import subprocess
 
-            cmd = 'sudo mount -t nsf -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-c0386723.efs.us-east-1.amazonaws.com:/ /tmp'
-            proc = subprocess.Popen(cmd.split(), shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            cmd = 'mount -t nsf -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-c0386723.efs.us-east-1.amazonaws.com:/ /tmp'
             try:
-                outs, errs = proc.communicate(timeout=15)
-            except TimeoutExpired:
-                proc.kill()
-                outs, errs = proc.communicate()
-
-            print(outs, errs)
+                output = subprocess.check_output(cmd.split(), shell=False)
+                print(output)
+            except Exception as e:
+                print(e)
 
         myHooksConfig.py: |
             import os
