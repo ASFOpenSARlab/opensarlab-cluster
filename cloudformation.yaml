@@ -391,7 +391,7 @@ Resources:
                 - helm plugin install https://github.com/rimusz/helm-tiller
                 - helm tiller start-ci
                 - export HELM_HOST=127.0.0.1:44134
-                - helm upgrade hub-efs stable/efs-provisioner --install --namespace efs --set efsProvisioner.efsFileSystemId=fs-c0386723 --set efsProvisioner.awsRegion=${AWS::Region}
+                - helm upgrade hub-efs stable/efs-provisioner --install --namespace hub-efs --set efsProvisioner.efsFileSystemId=fs-c0386723 --set efsProvisioner.awsRegion=${AWS::Region}
                     --set efsProvisioner.path=/home --set efsProvisioner.storageClass.reclaimPolicy=Retain --set efsProvisioner.storageClass.name=hub-efs
                 - kubectl -n jupyter apply -f hub_efs_claim.yaml
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
@@ -405,7 +405,7 @@ Resources:
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - helm upgrade efs stable/efs-provisioner --install --namespace efs --set efsProvisioner.efsFileSystemId=fs-c0386723 --set efsProvisioner.awsRegion=${AWS::Region}
-                    --set efsProvisioner.path=/home/pods --set efsProvisioner.storageClass.reclaimPolicy=Retain
+                    --set efsProvisioner.path=/home/pods/ --set efsProvisioner.storageClass.reclaimPolicy=Retain
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp generic_with_logout.py jupyter/$hub_name:/srv/jupyterhub/generic_with_logout.py
                 - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
