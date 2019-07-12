@@ -28,12 +28,9 @@ singleuser:
     AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
   storage:
-    #dynamic:
-    #    storageClass: efs
-    type: static
-    static:
-        pvcName: efs
-        subPath: "pods/{username}"
+    dynamic:
+        storageClass: efs
+        pvcNameTemplate: claim-{username}
   memory:
     guarantee: 6G
   image:
