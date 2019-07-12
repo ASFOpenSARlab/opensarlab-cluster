@@ -27,14 +27,9 @@ singleuser:
   extraEnv:
     AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
-    #CHOWN_HOME: 'yes'
   storage:
     dynamic:
         storageClass: efs
-    #type: "static"
-    #static:
-    #  pvcName: "efs"
-    #  subPath: 'home/{username}'
   memory:
     guarantee: 6G
   image:
@@ -49,7 +44,7 @@ hub:
           claimName: hub-efs
     extraVolumeMounts:
       - name: hub-efs
-        mountPath: '/home/jovyan/efs'
+        mountPath: '/home/jovyan/'
 
     extraConfig:
         mySubdomainConfig.py: |
@@ -87,17 +82,6 @@ hub:
                 from generic_with_logout import GenericOAuthenticator
                 c.JupyterHub.authenticator_class = GenericOAuthenticator
                 c.GenericOAuthenticator.login_service = 'AWS Cognito'
-            except Exception as e:
-                print(e)
-
-        myHubMountConfig.py: |
-            import subprocess
-
-            #cmd = 'mount -t nsf -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport fs-c0386723.efs.us-east-1.amazonaws.com:/ /tmp'
-            cmd = 'ls'
-            try:
-                output = subprocess.check_output(cmd.split(), shell=False)
-                print(output)
             except Exception as e:
                 print(e)
 
