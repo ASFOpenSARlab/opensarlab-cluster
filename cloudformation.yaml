@@ -6,9 +6,13 @@ Parameters:
     Description: The VPC of the worker instances
     Type: AWS::EC2::VPC::Id
 
-  Subnets:
-    Description: The subnets where workers can be created.
-    Type: List<AWS::EC2::Subnet::Id>
+  Subnet1:
+    Description: A subnet where workers can be created.
+    Type: AWS::EC2::Subnet::Id
+
+  Subnet2:
+    Description: A subnet where workers can be created.
+    Type: AWS::EC2::Subnet::Id
 
   CodeBuildServiceRoleArn:
     Description: Role externally created to give Code Build permission to use AWS resources.
@@ -136,7 +140,9 @@ Resources:
       Name: !Ref AWS::StackName
       RoleArn: !GetAtt ClusterRole.Arn
       ResourcesVpcConfig:
-        SubnetIds: !Ref Subnets
+        SubnetIds:
+        - !Ref Subnet1
+        - !Ref Subnet2
         SecurityGroupIds:
         - !GetAtt ClusterSecurityGroup.GroupId
 
@@ -256,7 +262,9 @@ Resources:
       LaunchConfigurationName: !Ref LaunchConfiguration
       MinSize: !Ref NodeAutoScalingGroupMinSize
       MaxSize: !Ref NodeAutoScalingGroupMaxSize
-      VPCZoneIdentifier: !Ref Subnets
+      VPCZoneIdentifier:
+      - !Ref Subnet1
+      - !Ref Subnet2
       TargetGroupARNs:
       - !Ref TargetGroup
       Tags:
@@ -329,7 +337,9 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Ref AWS::StackName
-      Subnets: !Ref Subnets
+      Subnets:
+      - !Ref Subnet1
+      - !Ref Subnet2
       SecurityGroups:
       - !GetAtt LoadBalancerSecurityGroup.GroupId
 
@@ -377,11 +387,19 @@ Resources:
         ToPort: '2049'
         CidrIp: 0.0.0.0/0
 
-  MountTarget:
+  MountTarget1:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref FileSystem
-      SubnetId: !Ref Subnets
+      SubnetId: !Ref Subnet1
+      SecurityGroups:
+      - !Ref MountTargetSecurityGroup
+
+  MountTarget2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystem
+      SubnetId: !Ref Subnet2
       SecurityGroups:
       - !Ref MountTargetSecurityGroup
 
