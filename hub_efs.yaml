@@ -6,15 +6,7 @@ metadata:
 
 ---
 
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: hub-efs
-
----
-
 apiVersion: storage.k8s.io/v1
-namespace: hub-efs
 kind: StorageClass
 provisioner: www.example.com/hub
 metadata:
@@ -26,7 +18,6 @@ allowVolumeExpansion: true
 ---
 
 kind: PersistentVolume
-namespace: efs-hub
 apiVersion: v1
 metadata:
   name: hub-efs
