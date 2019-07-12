@@ -156,6 +156,7 @@ Resources:
       - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
       - arn:aws:iam::aws:policy/AutoScalingFullAccess
       - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      - arn:aws:iam::aws:policy/AmazonElasticFileSystemFullAccess
 
   NodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -357,6 +358,32 @@ Resources:
       - Type: forward
         TargetGroupArn: !Ref TargetGroup
 
+  FileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      PerformanceMode: generalPurpose
+      FileSystemTags:
+      - Key: Name
+        Value: !Ref AWS::StackName
+
+  MountTargetSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VpcId
+      GroupDescription: Security group for mount target
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '2049'
+        ToPort: '2049'
+        CidrIp: 0.0.0.0/0
+
+  MountTarget:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystem
+      SubnetId: !Ref Subnets
+      SecurityGroups: !Ref MountTargetSecurityGroup
+
   ProjectLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -393,6 +420,7 @@ Resources:
                 - export HELM_HOST=127.0.0.1:44134
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
+                - sed -i "s|FILESYSTEM_ID|${FileSystem}" hub_efs.yaml
                 - kubectl apply -f hub_efs.yaml
                 - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter --version 0.8.2 --values helm_config.yaml --timeout=300
                     --set auth.admin.users[0]=${AdminUserName}
@@ -402,7 +430,7 @@ Resources:
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
-                - helm upgrade efs stable/efs-provisioner --install --namespace efs --set efsProvisioner.efsFileSystemId=fs-c0386723 --set efsProvisioner.awsRegion=${AWS::Region}
+                - helm upgrade efs stable/efs-provisioner --install --namespace efs --set efsProvisioner.efsFileSystemId=${FileSystem} --set efsProvisioner.awsRegion=${AWS::Region}
                     --set efsProvisioner.path=/pods/ --set efsProvisioner.storageClass.reclaimPolicy=Retain --set efsProvisioner.storageClass.gidAllocate.enabled=false
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp generic_with_logout.py jupyter/$hub_name:/srv/jupyterhub/generic_with_logout.py

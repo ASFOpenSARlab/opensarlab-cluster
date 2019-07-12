@@ -28,7 +28,7 @@ spec:
     - ReadWriteOnce
   storageClassName: hub-efs
   nfs:
-    server: fs-c0386723.efs.us-east-1.amazonaws.com
+    server: FILESYSTEM_ID.efs.us-east-1.amazonaws.com
     path: "/pods"
 
 ---
