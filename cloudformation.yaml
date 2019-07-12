@@ -382,7 +382,8 @@ Resources:
     Properties:
       FileSystemId: !Ref FileSystem
       SubnetId: !Ref Subnets
-      SecurityGroups: !Ref MountTargetSecurityGroup
+      SecurityGroups:
+      - !Ref MountTargetSecurityGroup
 
   ProjectLogGroup:
     Type: AWS::Logs::LogGroup
