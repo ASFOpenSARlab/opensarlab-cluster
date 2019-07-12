@@ -38,7 +38,7 @@ singleuser:
     tag: IMAGE_TAG
 
 hub:
-    fsGid: 40000
+    fsGid: 100
     extraVolumes:
       - name: hub-efs
         persistentVolumeClaim:
