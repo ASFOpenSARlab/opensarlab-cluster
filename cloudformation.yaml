@@ -439,8 +439,6 @@ Resources:
                 - export HELM_HOST=127.0.0.1:44134
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
-                - sed -i "s|FILESYSTEM_ID|${FileSystem}|" hub_efs.yaml
-                - kubectl apply -f hub_efs.yaml
                 - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter --version 0.8.2 --values helm_config.yaml --timeout=300
                     --set auth.admin.users[0]=${AdminUserName}
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
@@ -451,6 +449,8 @@ Resources:
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - helm upgrade efs stable/efs-provisioner --install --namespace efs --set efsProvisioner.efsFileSystemId=${FileSystem} --set efsProvisioner.awsRegion=${AWS::Region}
                     --set efsProvisioner.path=/pods/ --set efsProvisioner.storageClass.reclaimPolicy=Retain --set efsProvisioner.storageClass.gidAllocate.enabled=false
+                - sed -i "s|FILESYSTEM_ID|${FileSystem}|" hub_efs.yaml
+                - kubectl apply -f hub_efs.yaml
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp generic_with_logout.py jupyter/$hub_name:/srv/jupyterhub/generic_with_logout.py
                 - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
