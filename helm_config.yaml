@@ -89,23 +89,15 @@ hub:
         myHooksConfig.py: |
 
             import os
-            from pathlib import Path
             from subprocess import check_output
 
-            os.environ["THE_HIDDEN_SECRET_AWS_KEY"] = "qwerty"
-
             def my_pre_hook(spawner):
-                out = check_output(['hostname'])
-                print(out)
-
-                out = check_output(['df'])
-                print(out)
 
                 out = check_output(['echo', 'Inside pre-hook'])
                 print(out)
 
-                home = str(Path.home())
-                print(os.listdir(home))
+                out = check_output(['df'])
+                print(out)
 
                 try:
                     print(os.listdir("/home/jovyan"))
@@ -116,9 +108,6 @@ hub:
 
 
             def my_post_hook(spawner):
-                out = check_output(['hostname'])
-                print(out)
-
                 out = check_output(['echo', 'Inside post-hook'])
                 print(out)
 
@@ -128,12 +117,7 @@ hub:
             c.KubeSpawner.lifecycle_hooks = {
                 "postStart": {
                     "exec": {
-                        "command": ["touch", "Hello_pre_life.txt"]
-                    }
-                },
-                "preStop": {
-                    "exec": {
-                        "command": ["date"]
+                        "command": ["gitpuller", "https://github.com/asfadmin/asf-jupyter-notebooks.git", "master", "notebooks"]
                     }
                 }
             }
