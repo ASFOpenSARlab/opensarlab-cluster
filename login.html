@@ -4,6 +4,10 @@
 <div id="login-main" class="container">
 {% if login_service %}
     <div class="service-login">
+      <div class="announcement">
+        <h4>ANNOUNCMENT</h4>
+        <p>OpenSARLabs will be offline Friday 19 Jul 2019 at 10am AKDT for system upgrades. Anticipated downtime will be two hours. Any notebook servers still running will be shut down. Please save and download any critical work.</p>
+      </div>
       <img style="float: left; max-height: 37px; margin-top: 7px; margin-left: 5px; z-index: 10;" src="https://vertex.daac.asf.alaska.edu/static/images/alaska_satellite_facility_1000.png">
       <a role="button" class='btn btn-jupyter btn-lg' href='{{authenticator_login_url}}'>
         Sign in with {{login_service}}
@@ -13,6 +17,13 @@
       <p class="beta-testers">OpenSARLabs is currently only available to a small group of beta testers that have been authorized by NASA.
             We hope in the near future that we will be able to open up access to the notebooks to a broader audience.</p>
       <style>
+        .announcement {
+            padding: 10pt 10pt 10pt 10pt;
+            border: 3px solid #81dd0f;
+            margin: 70px 0px;
+            /*display: none;*/
+        }
+
         .eula-text {
             color: grey;
             font-size: 12pt;
@@ -26,6 +37,7 @@
             border: 2px solid #a22f17;
             padding: 20px;
         }
+
       </style>
     </div>
 {% else %}
