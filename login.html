@@ -5,7 +5,7 @@
 {% if login_service %}
     <div class="service-login">
       <div class="announcement">
-        <h4>ANNOUNCMENT</h4>
+        <h4>Notice</h4>
         <p>OpenSARLabs is now offline for system upgrades. Users will not be able to signin. Expected time to be back online is Noon AKDT, 19 Jul 2019.</p>
       </div>
       <img style="float: left; max-height: 37px; margin-top: 7px; margin-left: 5px; z-index: 10;" src="https://vertex.daac.asf.alaska.edu/static/images/alaska_satellite_facility_1000.png">
@@ -21,7 +21,11 @@
             padding: 10pt 10pt 10pt 10pt;
             border: 3px solid #81dd0f;
             margin: 70px 0px;
-            /*display: none;*/
+            display: none;
+        }
+
+        .announcement > h4 {
+            color: red;
         }
 
         .eula-text {
