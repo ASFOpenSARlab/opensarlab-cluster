@@ -59,12 +59,12 @@ Parameters:
   NodeAutoScalingGroupMinSize:
     Description: Minimum size of Node Group ASG.
     Type: Number
-    Default: 1
+    Default: 2
 
   NodeAutoScalingGroupMaxSize:
     Description: Maximum size of Node Group ASG. Set to at least 1 greater than NodeAutoScalingGroupDesiredCapacity.
     Type: Number
-    Default: 4
+    Default: 8
 
   NodeAutoScalingGroupDesiredCapacity:
     Description: Desired capacity of Node Group ASG.
@@ -74,7 +74,7 @@ Parameters:
   NodeVolumeSize:
     Description: Node volume size (GB)
     Type: Number
-    Default: 100
+    Default: 500
 
   NodeAccessKeyId:
     Description: The access key to allow aws cli usage. Specific AWS resource access is handled by the user attached to the key.
@@ -391,6 +391,11 @@ Resources:
                 - helm plugin install https://github.com/rimusz/helm-tiller
                 - helm tiller start-ci
                 - export HELM_HOST=127.0.0.1:44134
+                - helm repo update
+                - helm fetch stable/cluster-autoscaler
+                - tar -zxf cluster-autoscaler*
+                - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
+                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
                 - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.8.2  --values helm_config.yaml --timeout=300
@@ -406,11 +411,6 @@ Resources:
                 - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
                 - kubectl cp pending.html jupyter/$hub_name:/srv/jupyterhub/pending.html
                 - kubectl -n jupyter delete pod $hub_name
-                - helm repo update
-                - helm fetch stable/cluster-autoscaler
-                - tar -zxf cluster-autoscaler*
-                - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
-                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
                 - curl -O https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cloudwatch-namespace.yaml
                 - kubectl apply -f cloudwatch-namespace.yaml
                 - curl -O https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cwagent-serviceaccount.yaml
