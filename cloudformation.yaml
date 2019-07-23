@@ -410,6 +410,7 @@ Resources:
                 - kubectl cp generic_with_logout.py jupyter/$hub_name:/srv/jupyterhub/generic_with_logout.py
                 - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
                 - kubectl cp pending.html jupyter/$hub_name:/srv/jupyterhub/pending.html
+                - kubectl cp alaska_satellite_facility_1000.png jupyter/$hub_name:/srv/jupyterhub/alaska_satellite_facility_1000.png
                 - kubectl -n jupyter delete pod $hub_name
                 - curl -O https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cloudwatch-namespace.yaml
                 - kubectl apply -f cloudwatch-namespace.yaml
