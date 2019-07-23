@@ -41,6 +41,7 @@ singleuser:
   storage:
     capacity: 500Gi
   memory:
+    limit: 16G
     guarantee: 6G
 
 hub:
