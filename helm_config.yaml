@@ -45,6 +45,14 @@ singleuser:
     guarantee: 6G
 
 hub:
+    extraVolumes:
+        - name: web
+          hostPath:
+            path: /srv/jupyterhub/static/
+    extraVolumeMounts:
+        - name: web
+          mountPath: /usr/local/share/jupyterhub/static/custom/
+
     extraConfig:
         mySubdomainConfig.py: |
             print("Subdomain not implemented...")
@@ -53,10 +61,6 @@ hub:
 
         myCustomTemplatePaths.py: |
             c.JupyterHub.template_paths = ["/srv/jupyterhub"]
-
-            c.DockerSpawner.volumes = {
-                '/srv/jupyterhub/static/':'/usr/local/share/jupyterhub/static/custom/'
-            }
 
         myAuthConfig.py: |
             # The try/except is needed since the hub needs to be created before earthdata.py is copied over to /svc/jupyterhub/
