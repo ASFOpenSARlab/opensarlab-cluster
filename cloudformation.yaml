@@ -262,7 +262,7 @@ Resources:
       - Key: Name
         Value: !Sub ${AWS::StackName}-instance
         PropagateAtLaunch: true
-      - Key: !Sub kubernetes.io/cluster/${Cluster}
+      - Key: !Sub k8s.io/cluster/${Cluster}
         Value: owned
         PropagateAtLaunch: true
       - Key: k8s.io/cluster-autoscaler/enabled
