@@ -393,12 +393,6 @@ Resources:
                 - export HELM_HOST=127.0.0.1:44134
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
-                - helm fetch stable/cluster-autoscaler
-                - tar -zxf cluster-autoscaler*
-                - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --version=3.0.0 --values cluster-autoscaler*/values.yaml --timeout=120
-                    --set awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
-                    --set autoscalingGroups[0].name=${AWS::StackName}-instance,autoscalingGroups[0].maxSize=${NodeAutoScalingGroupMaxSize},autoscalingGroups[0].minSize=${NodeAutoScalingGroupMinSize}
-                - helm repo update
                 - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.8.2  --values helm_config.yaml --timeout=300
                     --set auth.admin.users[0]=${AdminUserName}
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
@@ -407,6 +401,12 @@ Resources:
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
+                - helm repo update
+                - helm fetch stable/cluster-autoscaler
+                - tar -zxf cluster-autoscaler*
+                - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --version=3.0.0 --values cluster-autoscaler*/values.yaml --timeout=120
+                    --set awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
+                    --set autoscalingGroups[0].name=${AWS::StackName}-instance,autoscalingGroups[0].maxSize=${NodeAutoScalingGroupMaxSize},autoscalingGroups[0].minSize=${NodeAutoScalingGroupMinSize}
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp generic_with_logout.py jupyter/$hub_name:/srv/jupyterhub/generic_with_logout.py
                 - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
