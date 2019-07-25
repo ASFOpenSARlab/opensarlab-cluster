@@ -395,7 +395,7 @@ Resources:
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
-                - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
+                - helm upgrade autoscaler stable/cluster-autoscaler --force --install --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
                     --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
                 - helm repo update
                 - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.8.2  --values helm_config.yaml --timeout=300
