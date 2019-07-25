@@ -41,17 +41,13 @@ singleuser:
   storage:
     capacity: 500Gi
   memory:
-    limit: 16G
-    guarantee: 6G
+    limit: 15G
+    guarantee: 12G
 
 hub:
-    extraVolumes:
-        - name: web
-          hostPath:
-            path: /srv/jupyterhub/static/
-    extraVolumeMounts:
-        - name: web
-          mountPath: /usr/local/share/jupyterhub/static/custom/
+    #image:
+    #  name: IMAGE_NAME
+    #  tag: IMAGE_TAG
 
     extraConfig:
         mySubdomainConfig.py: |
