@@ -405,8 +405,7 @@ Resources:
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
                 - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --version=3.0.0 --values cluster-autoscaler*/values.yaml --timeout=120
-                    --set awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
-                    --set autoscalingGroups[0].name=${AWS::StackName}-instance,autoscalingGroups[0].maxSize=${NodeAutoScalingGroupMaxSize},autoscalingGroups[0].minSize=${NodeAutoScalingGroupMinSize}
+                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
                 - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
                 - kubectl cp generic_with_logout.py jupyter/$hub_name:/srv/jupyterhub/generic_with_logout.py
                 - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
