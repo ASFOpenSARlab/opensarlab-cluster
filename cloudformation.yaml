@@ -47,9 +47,9 @@ Parameters:
     Type: String
 
   NodeImageId:
-    Description: AMI id for the node instances.
+    Description: AMI id for the node instances of K8s 1.13.7
     Type: AWS::EC2::Image::Id
-    Default: ami-0eeeef929db40543c
+    Default: ami-0f2e8e5663e16b436
 
   NodeInstanceType:
     Description: EC2 instance type for the node instances.
