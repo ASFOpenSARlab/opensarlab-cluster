@@ -335,7 +335,6 @@ Resources:
 
   HttpListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
-    DeletionPolicy: Retain
     Properties:
       LoadBalancerArn: !Ref LoadBalancer
       Protocol: HTTP
@@ -349,7 +348,6 @@ Resources:
 
   HttpsListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
-    DeletionPolicy: Retain
     Properties:
       LoadBalancerArn: !Ref LoadBalancer
       Protocol: HTTPS
