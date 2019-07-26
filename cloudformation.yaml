@@ -326,7 +326,6 @@ Resources:
 
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    DeletionPolicy: Retain
     Properties:
       Name: !Ref AWS::StackName
       Subnets: !Ref Subnets
