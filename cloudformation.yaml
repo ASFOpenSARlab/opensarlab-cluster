@@ -248,54 +248,54 @@ Resources:
       ToPort: 443
       FromPort: 443
 
-#  AutoScalingGroup:
-#    Type: AWS::AutoScaling::AutoScalingGroup
-#    Properties:
-#      DesiredCapacity: !Ref NodeAutoScalingGroupDesiredCapacity
-#      LaunchConfigurationName: !Ref LaunchConfiguration
-#      MinSize: !Ref NodeAutoScalingGroupMinSize
-#      MaxSize: !Ref NodeAutoScalingGroupMaxSize
-#      VPCZoneIdentifier: !Ref Subnets
-#      TargetGroupARNs:
-#      - !Ref TargetGroup
-#      Tags:
-#      - Key: Name
-#        Value: !Sub ${AWS::StackName}-instance
-#        PropagateAtLaunch: true
-#      - Key: !Sub k8s.io/cluster/${Cluster}
-#        Value: owned
-#        PropagateAtLaunch: true
-#      - Key: k8s.io/cluster-autoscaler/enabled
-#        Value: true
-#        PropagateAtLaunch: true
-#      - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-#        Value: true
-#        PropagateAtLaunch: true
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: !Ref NodeAutoScalingGroupDesiredCapacity
+      LaunchConfigurationName: !Ref LaunchConfiguration
+      MinSize: !Ref NodeAutoScalingGroupMinSize
+      MaxSize: !Ref NodeAutoScalingGroupMaxSize
+      VPCZoneIdentifier: !Ref Subnets
+      TargetGroupARNs:
+      - !Ref TargetGroup
+      Tags:
+      - Key: Name
+        Value: !Sub ${AWS::StackName}-instance
+        PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster/${Cluster}
+        Value: owned
+        PropagateAtLaunch: true
+      - Key: k8s.io/cluster-autoscaler/enabled
+        Value: true
+        PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+        Value: true
+        PropagateAtLaunch: true
 
-#  LaunchConfiguration:
-#    Type: AWS::AutoScaling::LaunchConfiguration
-#    Properties:
-#      AssociatePublicIpAddress: true
-#      IamInstanceProfile: !Ref NodeInstanceProfile
-#      ImageId: !Ref NodeImageId
-#      InstanceType: !Ref NodeInstanceType
-#      SecurityGroups:
-#      - !Ref NodeSecurityGroup
-#      BlockDeviceMappings:
-#      - DeviceName: /dev/xvda
-#        Ebs:
-#          VolumeSize: !Ref NodeVolumeSize
-#          VolumeType: gp2
-#          DeleteOnTermination: true
-#      UserData:
-#        Fn::Base64: !Sub |
-#          #!/bin/bash
-#          set -o xtrace
-#          /etc/eks/bootstrap.sh ${Cluster}
-#          /opt/aws/bin/cfn-signal --exit-code $? \
-#          --stack  ${AWS::StackName} \
-#          --resource NodeGroup  \
-#          --region ${AWS::Region}
+  LaunchConfiguration:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref NodeInstanceProfile
+      ImageId: !Ref NodeImageId
+      InstanceType: !Ref NodeInstanceType
+      SecurityGroups:
+      - !Ref NodeSecurityGroup
+      BlockDeviceMappings:
+      - DeviceName: /dev/xvda
+        Ebs:
+          VolumeSize: !Ref NodeVolumeSize
+          VolumeType: gp2
+          DeleteOnTermination: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+          /etc/eks/bootstrap.sh ${Cluster}
+          /opt/aws/bin/cfn-signal --exit-code $? \
+          --stack  ${AWS::StackName} \
+          --resource NodeGroup  \
+          --region ${AWS::Region}
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
