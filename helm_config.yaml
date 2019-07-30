@@ -46,7 +46,7 @@ singleuser:
 
 hub:
     image:
-      name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:latest
+      name: https://553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:latest
       tag: latest
 
     extraConfig:
