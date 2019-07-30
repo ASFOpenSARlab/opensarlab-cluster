@@ -1,4 +1,12 @@
-{% extends "templates/login.html" %}
+{% extends "page.html" %}
+{% if announcement_login %}
+  {% set announcement = announcement_login %}
+{% endif %}
+
+{% block login_widget %}
+{% endblock %}
+
+{% block main %}
 
 {% block login %}
 <div id="login-main" class="container">
@@ -49,3 +57,17 @@
 {% endif %}
 </div>
 {% endblock login %}
+
+{% endblock %}
+
+{% block script %}
+{{ super() }}
+<script>
+if (window.location.protocol === "http:") {
+  // unhide http warning
+  var warning = document.getElementById('insecure-login-warning');
+  warning.className = warning.className.replace(/\bhidden\b/, '');
+}
+</script>
+
+{% endblock %}
