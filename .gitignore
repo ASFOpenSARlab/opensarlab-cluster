@@ -3,9 +3,7 @@
 !aws-auth-cm.yaml
 !cwagent-configmap.yaml
 !cloudformation.yaml
-!generic_with_logout.py
 !helm_config.yaml
 !README.md
-!login.html
-!pending.html
-!alaska_satellite_facility_1000.png
+!hub/
+!hub/*
