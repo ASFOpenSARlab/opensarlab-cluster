@@ -382,9 +382,15 @@ Resources:
         BuildSpec: !Sub |-
           version: 0.2
           phases:
-            build:
+            pre_build:
               commands:
                 - pip3 install awscli>=1.16.158 --upgrade
+                - echo logging in to AWS ECR...
+                - $(aws ecr get-login --no-include-email --region us-east-1)
+            build:
+              commands:
+                - docker build -t 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:latest -f hub/dockerfile hub/
+                - docker push 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:latest
                 - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
                 - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
                 - aws eks update-kubeconfig --name ${Cluster}
