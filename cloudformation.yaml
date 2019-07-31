@@ -373,7 +373,8 @@ Resources:
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
-        Image: aws/codebuild/standard:1.0
+        Image: aws/codebuild/standard:2.0
+        PrivilegedMode: True
       Artifacts:
         Type: CODEPIPELINE
       ServiceRole: !Ref CodeBuildServiceRoleArn
