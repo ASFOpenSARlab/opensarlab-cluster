@@ -114,7 +114,7 @@ hub:
 
                     s3 = boto3.client('s3',
                         aws_access_key_id=assumed['Credentials']['AccessKeyId'],
-                        aws_secret_access_key=assumed['Credentials'][SecretAccessKey'],
+                        aws_secret_access_key=assumed['Credentials']['SecretAccessKey'],
                         aws_session_token=assumed['Credentials']['SessionToken']
                         )
                     response = s3.list_buckets()
@@ -122,7 +122,7 @@ hub:
 
                     ec2 = boto3.client('ec2',
                         aws_access_key_id=assumed['Credentials']['AccessKeyId'],
-                        aws_secret_access_key=assumed['Credentials'][SecretAccessKey'],
+                        aws_secret_access_key=assumed['Credentials']['SecretAccessKey'],
                         aws_session_token=assumed['Credentials']['SessionToken']
                         )
                     response = ec2.describe_snapshots(DryRun=True)
