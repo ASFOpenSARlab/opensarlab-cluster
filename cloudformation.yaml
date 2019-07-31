@@ -95,11 +95,23 @@ Parameters:
   CertificateArn:
     Description: The ARN of the SSL certificate attached to the load balancer.
     Type: String
+    Default: arn:aws:acm:us-east-1:553778890976:certificate/10791780-75d2-4ef0-bfbc-2c074e94b92b
 
   NodeProxyPort:
     Description: The port of the hub proxy service opened to the load balancer.
     Type: Number
     Default: 30052
+
+  HubAWSId:
+    Description: The access key to allow the hub to create temp keys. Specific AWS resource access is handled by the user attached to the key.
+    Type: String
+    Default: ""
+
+  HubAWSSecret:
+    Description: The secret key to allow the hub to create temp keys. Specific AWS resource access is handled by the user attached to the key.
+    Type: String
+    Default: ""
+    NoEcho: true
 
 Outputs:
 
@@ -415,6 +427,7 @@ Resources:
                     --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
+                    --set custom.HUB_AWS_ID='${HubAWSId}',custom.HUB_AWS_SECRET='${HubAWSSecret}'
                     --set hub.image.tag=$HUB_IMAGE_TAG
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - helm repo update
