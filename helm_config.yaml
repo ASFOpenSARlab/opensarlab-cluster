@@ -87,7 +87,12 @@ hub:
 
             def my_pre_hook(spawner):
                 try:
-                    print(spawner)
+                    try:
+                        print(spawner)
+                        print(dir(spawner))
+                        print(vars(spwaner))
+                    except Exception as e:
+                        print(e)
 
                     import boto3
 
@@ -101,7 +106,7 @@ hub:
                     ec2 = boto3.client('ec2',
                         aws_access_key_id=z2jh.get_config("custom.HUB_AWS_ID"),
                         aws_secret_access_key=z2jh.get_config("custom.HUB_AWS_SECRET"),
-                        region='us-east-1'
+                        region_name=='us-east-1'
                         )
                     response = ec2.describe_snapshots()
                     tags = [s['Tags'] for s in response['Snapshots']]
