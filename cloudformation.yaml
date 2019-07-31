@@ -394,8 +394,9 @@ Resources:
                 - $(aws ecr get-login --no-include-email --region us-east-1)
             build:
               commands:
-                - docker build -t 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:latest -f hub/dockerfile hub/
-                - docker push 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:latest
+                - HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
+                - docker build -t 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG -f hub/dockerfile hub/
+                - docker push 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG
                 - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
                 - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
                 - aws eks update-kubeconfig --name ${Cluster}
@@ -414,6 +415,7 @@ Resources:
                     --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
+                    --set hub.image.tag=$HUB_IMAGE_TAG
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler

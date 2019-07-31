@@ -48,7 +48,7 @@ hub:
     image:
       imagePullPolicy: Always
       name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub
-      tag: latest
+      tag: HUB_IMAGE_TAG
 
     extraConfig:
         mySubdomainConfig.py: |
