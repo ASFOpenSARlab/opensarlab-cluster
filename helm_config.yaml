@@ -87,7 +87,7 @@ hub:
 
             def my_pre_hook(spawner):
                 try:
-                    print("Hello")
+                    import boto3
 
                     s3 = boto3.client('s3',
                         aws_access_key_id=z2jh.get_config("custom.HUB_AWS_ID"),
@@ -102,6 +102,9 @@ hub:
                         )
                     response = ec2.describe_snapshots(DryRun=True)
                     print("snapshot: ", response)
+
+                    print(spawner)
+                    
                 except Exception as e:
                     print(e)
 
