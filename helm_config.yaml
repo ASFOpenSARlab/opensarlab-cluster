@@ -83,47 +83,22 @@ hub:
             except Exception as e:
                 print(e)
 
-        myAWSCreds.py: |
-            # Add credentials to AWS config.
-            try:
-                import os
-                import z2jh
-
-                os.environ["AWS_ACCESS_KEY_ID"] = z2jh.get_config("custom.HUB_AWS_ID")
-                os.environ["AWS_SECRET_ACCESS_KEY"] = z2jh.get_config("custom.HUB_AWS_SECRET")
-            except Exception as e:
-                print(e)
-
         myHooksConfig.py: |
-            try:
-                import os
-                import boto3
-
-                sts = boto3.client('sts')
-                assumed = sts.assume_role(
-                    RoleArn='arn:aws:iam::553778890976:role/jupyter-hub-sts-test',
-                    RoleSessionName='jupyter-hub-sts-test',
-                    DurationSeconds=120
-                )
-            except Exception as e:
-                print(e)
 
             def my_pre_hook(spawner):
                 try:
                     print("Hello")
 
                     s3 = boto3.client('s3',
-                        aws_access_key_id=assumed['Credentials']['AccessKeyId'],
-                        aws_secret_access_key=assumed['Credentials']['SecretAccessKey'],
-                        aws_session_token=assumed['Credentials']['SessionToken']
+                        aws_access_key_id=z2jh.get_config("custom.HUB_AWS_ID"),
+                        aws_secret_access_key=z2jh.get_config("custom.HUB_AWS_SECRET")
                         )
                     response = s3.list_buckets()
                     print("s3: ", response)
 
                     ec2 = boto3.client('ec2',
-                        aws_access_key_id=assumed['Credentials']['AccessKeyId'],
-                        aws_secret_access_key=assumed['Credentials']['SecretAccessKey'],
-                        aws_session_token=assumed['Credentials']['SessionToken']
+                        aws_access_key_id=z2jh.get_config("custom.HUB_AWS_ID"),
+                        aws_secret_access_key=z2jh.get_config("custom.HUB_AWS_SECRET")
                         )
                     response = ec2.describe_snapshots(DryRun=True)
                     print("snapshot: ", response)
