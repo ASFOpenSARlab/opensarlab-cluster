@@ -16,7 +16,7 @@ RUN apt install --no-install-recommends -y \
     python3-boto3
 
 COPY alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
-COPY generic_with_logout.py /usr/local/lib/python3.6/dist-packages/oauthenticator/generic_with_logout.py
+COPY generic_with_logout.py /usr/local/lib/python3.6/dist-packages/generic_with_logout.py
 COPY login.html /usr/local/share/jupyterhub/templates/login.html
 COPY pending.html /usr/local/share/jupyterhub/templates/pending.html
 
