@@ -30,14 +30,6 @@ singleuser:
   image:
     name: IMAGE_NAME
     tag: IMAGE_TAG
-  lifecycleHooks:
-    postStart:
-      exec:
-        command:
-        - gitpuller
-        - https://github.com/asfadmin/asf-jupyter-notebooks.git
-        - master
-        - notebooks
   storage:
     capacity: 500Gi
   memory:
@@ -84,44 +76,130 @@ hub:
                 print(e)
 
         myHooksConfig.py: |
+            import boto3
+            from botocore.exceptions import ClientError
 
-            def my_pre_hook(spawner):
+            try:
+                print(c)
+                print(vars(c))
+            except Exception as e:
+                print(e)
+
+            try:
+                import os
+                print(os.environ)
+            except Exception as e:
+                print(e)
+
+            username = "emlundell"
+            timeout_in = 900  # seconds (900 minimum)
+            bucket = "asf-jupyter-user-data-{cluster}".format(cluster='opensarlab-test')
+            s3_role_arn = "arn:aws:iam::553778890976:role/jupyter-hub-sts-test"
+
+            session = boto3.Session(region_name='us-east-1')
+
+            s3_client = session.client('s3')
+            try:
+                s3_client.head_object(Bucket=bucket, Key=f'{username}/')
+            except ClientError:
+                print("User bucket path not found. Creating...")
                 try:
-                    import boto3
-
-                    s3 = boto3.client('s3',
-                        aws_access_key_id=z2jh.get_config("custom.HUB_AWS_ID"),
-                        aws_secret_access_key=z2jh.get_config("custom.HUB_AWS_SECRET")
-                        )
-                    response = s3.list_buckets()
-                    print("s3: ", response)
-
-                    ec2 = boto3.client('ec2',
-                        aws_access_key_id=z2jh.get_config("custom.HUB_AWS_ID"),
-                        aws_secret_access_key=z2jh.get_config("custom.HUB_AWS_SECRET"),
-                        region_name='us-east-1'
-                        )
-                    response = ec2.describe_snapshots()
-                    snap = [s for s in response['Snapshots']]
-                    print(snap)
-
+                    s3_client.put_object(Bucket=bucket, Key=f'{username}/')
                 except Exception as e:
-                    print(e)
+                    print("Something went wrong during creation of user bucket path. Aborting saving.")
+                    raise
 
-            c.Spawner.pre_spawn_hook = my_pre_hook
+            pulling_from_s3 = True
+            pushing_to_s3 = True
 
-            #def my_post_hook(spawner):
-            #    out = check_output(['echo', 'Inside post-hook'])
-            #    print(out)
-            #c.Spawner.post_stop_hook = my_post_hook
+            sts_client = session.client('sts')
 
-            #c.KubeSpawner.lifecycle_hooks = {
-            #    "postStart": {
-            #        "exec": {
-            #            "command": ["gitpuller", "https://github.com/asfadmin/asf-jupyter-notebooks.git", "master", "notebooks"]
-            #        }
-            #    }
-            #}
+            if pulling_from_s3:
+                s3_policy = """{
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": "s3:GetObject",
+                            "Resource": "arn:aws:s3:::BUCKET/USERNAME/*"
+                        },
+                        {
+                            "Effect":"Allow",
+                            "Action":[
+                                "s3:ListBucketVersions",
+                                "s3:ListBucket"
+                            ],
+                            "Resource":"arn:aws:s3:::BUCKET",
+                            "Condition":{
+                                "StringLike": {
+                                    "s3:prefix": [
+                                        "USERNAME/",
+                                        "USERNAME/*"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }""".replace('BUCKET', bucket).replace('USERNAME', username)
+
+                s3_temp_role = sts_client.assume_role(RoleArn=s3_role_arn, RoleSessionName="AssumeS3Temp", DurationSeconds=timeout_in, Policy=s3_policy)
+
+                s3_key = s3_temp_role['Credentials']['AccessKeyId']
+                s3_secret = s3_temp_role['Credentials']['SecretAccessKey']
+                s3_session = s3_temp_role['Credentials']['SessionToken']
+                command_start = f"AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync s3://{bucket}/{username}/ /home/jovyan/ ; gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /tmp/home/jovyan/notebooks;"
+            else:
+                command_start = "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"
+
+            if pushing_to_s3:
+                s3_policy = """{
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": "s3:PutObject",
+                            "Resource": "arn:aws:s3:::BUCKET/USERNAME/*"
+                        },
+                        {
+                            "Effect":"Allow",
+                            "Action":[
+                                "s3:ListBucketVersions",
+                                "s3:ListBucket"
+                            ],
+                            "Resource":"arn:aws:s3:::BUCKET",
+                            "Condition":{
+                                "StringLike": {
+                                    "s3:prefix": [
+                                        "USERNAME/",
+                                        "USERNAME/*"
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }""".replace('BUCKET', bucket).replace('USERNAME', username)
+
+                s3_temp_role = sts_client.assume_role(RoleArn=s3_role_arn, RoleSessionName="AssumeS3Temp", DurationSeconds=timeout_in, Policy=s3_policy)
+
+                s3_key = s3_temp_role['Credentials']['AccessKeyId']
+                s3_secret = s3_temp_role['Credentials']['SecretAccessKey']
+                s3_session = s3_temp_role['Credentials']['SessionToken']
+                command_stop = f"AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync /home/jovyan/ s3://{bucket}/{username}/ ;"
+            else:
+                command_stop = "echo"
+
+            c.KubeSpawner.lifecycle_hooks = {
+                "postStart": {
+                    "exec": {
+                        "command": ["bash", "-c", command_start]
+                    }
+                },
+                "postStop": {
+                    "exec": {
+                        "command": ["bash", "-c", command_stop]
+                    }
+                }
+            }
 
         mySubdomainConfig.py: |
             print("Subdomain not implemented...")
@@ -135,6 +213,8 @@ custom:
   OAUTH_DNS_NAME: OAUTH_DNS_NAME
   HUB_AWS_ID: HUB_AWS_ID
   HUB_AWS_SECRET: HUB_AWS_SECRET
+  AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
+  AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
 
 cull:
   enabled: true
