@@ -159,28 +159,26 @@ hub:
                         command_stop = 'echo "Hello There"'
                         print("preStop hook command not set")
 
-                    c.KubeSpawner.lifecycle_hooks = {
-                        "postStart": {
-                            "exec": {
-                                "command": ["/bin/sh", "-c", command_start]
-                            }
-                        },
-                        "preStop": {
-                            "exec": {
-                                "command": ["/bin/sh", "-c", command_stop]
-                            }
-                        }
-                    }
+                    with open("/tmp/my_post_start.sh", 'w') as f:
+                        f.write(command_start)
 
-                    try:
-                        print("c")
-                        print(c)
-                        print("c.KubeSpawner")
-                        print(c.KubeSpawner)
-                    except Exception as e:
-                        print(e)
+                    with open("/tmp/my_pre_stop.sh", 'w') as f:
+                        f.write(command_start)
 
                 c.Spawner.pre_spawn_hook = my_pre_hook
+
+                c.KubeSpawner.lifecycle_hooks = {
+                    "postStart": {
+                        "exec": {
+                            "command": ["/bin/sh", "-c", "/tmp/my_post_start.sh"]
+                        }
+                    },
+                    "preStop": {
+                        "exec": {
+                            "command": ["/bin/sh", "-c", "/tmp/my_pre_stop.sh"]
+                        }
+                    }
+                }
 
             except Exception as e:
                 print(e)
