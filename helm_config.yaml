@@ -87,7 +87,7 @@ hub:
                     username = spawner.user.name
                     bucket = "asf-jupyter-user-data-{cluster}".format(cluster='opensarlab-test')
                     s3_role_arn = "arn:aws:iam::553778890976:role/jupyter-hub-sts-test"  # This role needs to trust the AWS subaccount and also trust the AWS User which contains the hub's creds.
-                    timeout_in = 43200  # seconds. Range from 900 seconds (15 minutes) to 43200 seconds (12 hours)
+                    timeout_in = 43200  # seconds. Range from 900 seconds (15 minutes) to 43200 seconds (12 hours)  # The accompying role needs to have the max duration set
 
                     s3_policy = """{
                         "Version": "2012-10-17",
@@ -148,11 +148,9 @@ hub:
                 pulling_from_s3 = True
                 pushing_to_s3 = True
 
+                command_start = "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"
                 if pulling_from_s3:
-                    command_start = f"AWS_ACCESS_KEY_ID=$JUPYTER_S3_KEY AWS_SECRET_ACCESS_KEY=$JUPYTER_S3_SECRET AWS_SESSION_TOKEN=$JUPYTER_S3_SESSION aws s3 sync $JUPYTER_S3_PATH /home/jovyan/;"
-                else:
-                    command_start = ""
-                command_start += "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"
+                    command_start += f"AWS_ACCESS_KEY_ID=$JUPYTER_S3_KEY AWS_SECRET_ACCESS_KEY=$JUPYTER_S3_SECRET AWS_SESSION_TOKEN=$JUPYTER_S3_SESSION aws s3 sync $JUPYTER_S3_PATH /home/jovyan/;"
 
                 if pushing_to_s3:
                     command_stop = f"AWS_ACCESS_KEY_ID=$JUPYTER_S3_KEY AWS_SECRET_ACCESS_KEY=$JUPYTER_S3_SECRET AWS_SESSION_TOKEN=$JUPYTER_S3_SESSION aws s3 sync --delete /home/jovyan/ $JUPYTER_S3_PATH;"
