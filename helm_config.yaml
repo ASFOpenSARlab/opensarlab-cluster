@@ -81,121 +81,81 @@ hub:
                 import boto3
                 from botocore.exceptions import ClientError
 
-                timeout_in = 900  # seconds (900 minimum)
                 bucket = "asf-jupyter-user-data-{cluster}".format(cluster='opensarlab-test')
 
                 # This role needs to trust the AWS subaccount and also trust the AWS User which contains the hub's creds.
                 s3_role_arn = "arn:aws:iam::553778890976:role/jupyter-hub-sts-test"
 
                 def my_pre_hook(spawner):
+                    username = spawner.user.name
+
+                    timeout_in = 43200  # seconds. Range from 900 seconds (15 minutes) to 43200 seconds (12 hours)
+                    s3_policy = """{
+                        "Version": "2012-10-17",
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Action": [
+                                    "s3:*"
+                                ],
+                                "Resource": "arn:aws:s3:::BUCKET/USERNAME/*"
+                            },
+                            {
+                                "Effect":"Allow",
+                                "Action":[
+                                    "s3:ListBucketVersions",
+                                    "s3:ListBucket"
+                                ],
+                                "Resource":"arn:aws:s3:::BUCKET",
+                                "Condition":{
+                                    "StringLike": {
+                                        "s3:prefix": [
+                                            "USERNAME/",
+                                            "USERNAME/*"
+                                        ]
+                                    }
+                                }
+                            }
+                        ]
+                    }""".replace('BUCKET', bucket).replace('USERNAME', username)
+
+                    s3_client = boto3.client('s3', region_name='us-east-1', aws_secret_access_key=z2jh.get_config("custom.HUB_SECRET_ACCESS_KEY"), aws_access_key_id=z2jh.get_config("custom.HUB_ACCESS_KEY_ID"))
+                    try:
+                        s3_client.head_object(Bucket=bucket, Key=f'{username}/')
+                        print(f"User '{username}' S3 bucket path found at 's3://{bucket}/{username}'")
+                    except ClientError:
+                        print("User bucket path not found. Creating...")
+                        try:
+                            s3_client.put_object(Bucket=bucket, Key=f'{username}/')
+                        except Exception as e:
+                            print("Something went wrong during creation of user bucket path. Aborting...")
+                            raise
+
+                    sts_client = boto3.client('sts', region_name='us-east-1', aws_secret_access_key=z2jh.get_config("custom.HUB_SECRET_ACCESS_KEY"), aws_access_key_id=z2jh.get_config("custom.HUB_ACCESS_KEY_ID"))
+                    s3_temp_role = sts_client.assume_role(RoleArn=s3_role_arn, RoleSessionName="AssumeS3Temp", DurationSeconds=timeout_in, Policy=s3_policy)
+
+                    s3_key = s3_temp_role['Credentials']['AccessKeyId']
+                    s3_secret = s3_temp_role['Credentials']['SecretAccessKey']
+                    s3_session = s3_temp_role['Credentials']['SessionToken']
 
                     pulling_from_s3 = True
                     pushing_to_s3 = True
 
                     if pulling_from_s3:
-                        username = spawner.user.name
-
-                        s3_client = boto3.client('s3', region_name='us-east-1', aws_secret_access_key=z2jh.get_config("custom.HUB_SECRET_ACCESS_KEY"), aws_access_key_id=z2jh.get_config("custom.HUB_ACCESS_KEY_ID"))
-                        try:
-                            s3_client.head_object(Bucket=bucket, Key=f'{username}/')
-                            print(f"User '{username}' S3 bucket path found at 's3://{bucket}/{username}'")
-                        except ClientError:
-                            print("User bucket path not found. Creating...")
-                            try:
-                                s3_client.put_object(Bucket=bucket, Key=f'{username}/')
-                            except Exception as e:
-                                print("Something went wrong during creation of user bucket path. Aborting saving.")
-                                raise
-
-                        s3_policy = """{
-                            "Version": "2012-10-17",
-                            "Statement": [
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "s3:*"
-                                    ],
-                                    "Resource": "arn:aws:s3:::BUCKET/USERNAME/*"
-                                },
-                                {
-                                    "Effect":"Allow",
-                                    "Action":[
-                                        "s3:ListBucketVersions",
-                                        "s3:ListBucket"
-                                    ],
-                                    "Resource":"arn:aws:s3:::BUCKET",
-                                    "Condition":{
-                                        "StringLike": {
-                                            "s3:prefix": [
-                                                "USERNAME/",
-                                                "USERNAME/*"
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }""".replace('BUCKET', bucket).replace('USERNAME', username)
-
-                        print(f"Prehook policy: {s3_policy}")
-
-                        sts_client = boto3.client('sts', region_name='us-east-1', aws_secret_access_key=z2jh.get_config("custom.HUB_SECRET_ACCESS_KEY"), aws_access_key_id=z2jh.get_config("custom.HUB_ACCESS_KEY_ID"))
-                        s3_temp_role = sts_client.assume_role(RoleArn=s3_role_arn, RoleSessionName="AssumeS3Temp", DurationSeconds=timeout_in, Policy=s3_policy)
-
-                        s3_key = s3_temp_role['Credentials']['AccessKeyId']
-                        s3_secret = s3_temp_role['Credentials']['SecretAccessKey']
-                        s3_session = s3_temp_role['Credentials']['SessionToken']
                         command_start = f"echo 'Starting postStart...'; AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync s3://{bucket}/{username}/ /home/jovyan/ ; gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"
                         print(f"postStart hook command set to use 'aws s3 sync s3://{bucket}/{username}/ /home/jovyan/' and 'gitpuller'.")
                     else:
-                        command_start = "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"
+                        command_start = "echo 'Starting postStart...'; gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"
                         print("postStart hook command set to use 'gitpuller'.")
 
                     if pushing_to_s3:
-                        s3_policy = """{
-                            "Version": "2012-10-17",
-                            "Statement": [
-                                {
-                                    "Effect": "Allow",
-                                    "Action": [
-                                        "s3:*"
-                                    ],
-                                    "Resource": "arn:aws:s3:::BUCKET/USERNAME/*"
-                                },
-                                {
-                                    "Effect":"Allow",
-                                    "Action":[
-                                        "s3:ListBucketVersions",
-                                        "s3:ListBucket"
-                                    ],
-                                    "Resource":"arn:aws:s3:::BUCKET",
-                                    "Condition":{
-                                        "StringLike": {
-                                            "s3:prefix": [
-                                                "USERNAME/",
-                                                "USERNAME/*"
-                                            ]
-                                        }
-                                    }
-                                }
-                            ]
-                        }""".replace('BUCKET', bucket).replace('USERNAME', username)
-
-                        print(f"Posthook policy: {s3_policy}")
-
-                        session = boto3.Session(region_name='us-east-1', aws_secret_access_key=z2jh.get_config("custom.HUB_SECRET_ACCESS_KEY"), aws_access_key_id=z2jh.get_config("custom.HUB_ACCESS_KEY_ID"))
-                        sts_client = session.client('sts')
-                        s3_temp_role = sts_client.assume_role(RoleArn=s3_role_arn, RoleSessionName="AssumeS3Temp", DurationSeconds=timeout_in, Policy=s3_policy)
-
-                        s3_key = s3_temp_role['Credentials']['AccessKeyId']
-                        s3_secret = s3_temp_role['Credentials']['SecretAccessKey']
-                        s3_session = s3_temp_role['Credentials']['SessionToken']
                         command_stop = f"echo 'Starting preStop...'; AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync --delete /home/jovyan/ s3://{bucket}/{username}/ ;"
                         print(f"preStop hook command set to use 'aws s3 sync /home/jovyan/ s3://{bucket}/{username}/'.")
                     else:
                         command_stop = 'echo "Hello There"'
                         print("preStop hook command not set")
 
-                    hooks = {
+                    c.KubeSpawner.lifecycle_hooks = {
                         "postStart": {
                             "exec": {
                                 "command": ["/bin/sh", "-c", command_start]
@@ -207,10 +167,6 @@ hub:
                             }
                         }
                     }
-
-                    print("Hooks: ", hooks)
-
-                    c.KubeSpawner.lifecycle_hooks = hooks
 
                 c.Spawner.pre_spawn_hook = my_pre_hook
 
