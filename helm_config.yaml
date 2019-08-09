@@ -91,11 +91,11 @@ hub:
 
                 session = boto3.Session(region_name='us-east-1', aws_secret_access_key=z2jh.get_config("custom.HUB_SECRET_ACCESS_KEY"), aws_access_key_id=z2jh.get_config("custom.HUB_ACCESS_KEY_ID"))
 
-                def check_and_create_key(username):
+                def check_and_create_key(username, session):
                     s3_client = session.client('s3')
                     try:
                         s3_client.head_object(Bucket=bucket, Key=f'{username}/')
-                        print(f"User '{username}' S3 bucket path found at '{bucket}/{username}'")
+                        print(f"User '{username}' S3 bucket path found at 's3://{bucket}/{username}'")
                     except ClientError:
                         print("User bucket path not found. Creating...")
                         try:
@@ -146,8 +146,8 @@ hub:
                         s3_key = s3_temp_role['Credentials']['AccessKeyId']
                         s3_secret = s3_temp_role['Credentials']['SecretAccessKey']
                         s3_session = s3_temp_role['Credentials']['SessionToken']
-                        command_start = f"AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync s3://{bucket}/{username}/ /home/jovyan/ ; gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /tmp/home/jovyan/notebooks;"
-                        print("Prespawn hook command set to use 'aws sync' and 'gitpuller'.")
+                        command_start = f"echo 'Starting prespawn...'; AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync s3://{bucket}/{username}/ /home/jovyan/ ; gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /tmp/home/jovyan/notebooks;"
+                        print(f"Prespawn hook command set to use 'aws s3 sync s3://{bucket}/{username}/ /home/jovyan/' and 'gitpuller'.")
                     else:
                         command_start = "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"
                         print("Prespawn hook command set to use 'gitpuller'.")
@@ -191,8 +191,8 @@ hub:
                         s3_key = s3_temp_role['Credentials']['AccessKeyId']
                         s3_secret = s3_temp_role['Credentials']['SecretAccessKey']
                         s3_session = s3_temp_role['Credentials']['SessionToken']
-                        command_stop = f"AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync /home/jovyan/ s3://{bucket}/{username}/ ;"
-                        print("Postspawn hook command set to use 'aws sync'.")
+                        command_stop = f"echo 'Starting postspawn...'; AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync --delete /home/jovyan/ s3://{bucket}/{username}/ ;"
+                        print(f"Postspawn hook command set to use 'aws s3 sync /home/jovyan/ s3://{bucket}/{username}/'.")
                     else:
                         command_stop = 'echo'
                         print("Postspawn hook command not set")
