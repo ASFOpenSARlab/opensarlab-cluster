@@ -81,6 +81,8 @@ hub:
                 import boto3
                 from botocore.exceptions import ClientError
 
+                print("Initializing pre and post hooks...")
+
                 timeout_in = 900  # seconds (900 minimum)
                 bucket = "asf-jupyter-user-data-{cluster}".format(cluster='opensarlab-test')
 
@@ -93,6 +95,7 @@ hub:
                     s3_client = session.client('s3')
                     try:
                         s3_client.head_object(Bucket=bucket, Key=f'{username}/')
+                        print(f"User '{username}' S3 bucket path found at '{bucket}/{username}'")
                     except ClientError:
                         print("User bucket path not found. Creating...")
                         try:
@@ -144,8 +147,10 @@ hub:
                         s3_secret = s3_temp_role['Credentials']['SecretAccessKey']
                         s3_session = s3_temp_role['Credentials']['SessionToken']
                         command_start = f"AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync s3://{bucket}/{username}/ /home/jovyan/ ; gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /tmp/home/jovyan/notebooks;"
+                        print("Prespawn hook command set to use 'aws sync' and 'gitpuller'.")
                     else:
                         command_start = "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"
+                        print("Prespawn hook command set to use 'gitpuller'.")
 
                 c.Spawner.pre_spawn_hook = my_pre_hook
 
@@ -187,8 +192,10 @@ hub:
                         s3_secret = s3_temp_role['Credentials']['SecretAccessKey']
                         s3_session = s3_temp_role['Credentials']['SessionToken']
                         command_stop = f"AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync /home/jovyan/ s3://{bucket}/{username}/ ;"
+                        print("Postspawn hook command set to use 'aws sync'.")
                     else:
                         command_stop = 'echo'
+                        print("Postspawn hook command not set")
 
                 c.Spawner.post_stop_hook = my_stop_hook
 
