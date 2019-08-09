@@ -112,7 +112,9 @@ hub:
                             "Statement": [
                                 {
                                     "Effect": "Allow",
-                                    "Action": "s3:GetObject",
+                                    "Action": [
+                                        "s3:*"
+                                    ],
                                     "Resource": "arn:aws:s3:::BUCKET/USERNAME/*"
                                 },
                                 {
@@ -152,7 +154,7 @@ hub:
                             "Statement": [
                                 {
                                     "Effect": "Allow",
-                                    "Action": "s3:PutObject",
+                                    "Action": "s3:*"
                                     "Resource": "arn:aws:s3:::BUCKET/USERNAME/*"
                                 },
                                 {
