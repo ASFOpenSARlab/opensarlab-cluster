@@ -77,19 +77,16 @@ hub:
 
         myHooksConfig.py: |
             try:
+                import os
                 import z2jh
                 import boto3
                 from botocore.exceptions import ClientError
 
                 def my_pre_hook(spawner):
 
-                    bucket = "asf-jupyter-user-data-{cluster}".format(cluster='opensarlab-test')
-
-                    # This role needs to trust the AWS subaccount and also trust the AWS User which contains the hub's creds.
-                    s3_role_arn = "arn:aws:iam::553778890976:role/jupyter-hub-sts-test"
-
                     username = spawner.user.name
-
+                    bucket = "asf-jupyter-user-data-{cluster}".format(cluster='opensarlab-test')
+                    s3_role_arn = "arn:aws:iam::553778890976:role/jupyter-hub-sts-test"  # This role needs to trust the AWS subaccount and also trust the AWS User which contains the hub's creds.
                     timeout_in = 43200  # seconds. Range from 900 seconds (15 minutes) to 43200 seconds (12 hours)
 
                     s3_policy = """{
@@ -121,8 +118,6 @@ hub:
                         ]
                     }""".replace('BUCKET', bucket).replace('USERNAME', username)
 
-                    print(s3_policy)
-
                     s3_client = boto3.client('s3', region_name='us-east-1', aws_secret_access_key=z2jh.get_config("custom.HUB_SECRET_ACCESS_KEY"), aws_access_key_id=z2jh.get_config("custom.HUB_ACCESS_KEY_ID"))
                     try:
                         s3_client.head_object(Bucket=bucket, Key=f'{username}/')
@@ -138,44 +133,41 @@ hub:
                     sts_client = boto3.client('sts', region_name='us-east-1', aws_secret_access_key=z2jh.get_config("custom.HUB_SECRET_ACCESS_KEY"), aws_access_key_id=z2jh.get_config("custom.HUB_ACCESS_KEY_ID"))
                     s3_temp_role = sts_client.assume_role(RoleArn=s3_role_arn, RoleSessionName="AssumeS3Temp", DurationSeconds=timeout_in, Policy=s3_policy)
 
-                    s3_key = s3_temp_role['Credentials']['AccessKeyId']
-                    s3_secret = s3_temp_role['Credentials']['SecretAccessKey']
-                    s3_session = s3_temp_role['Credentials']['SessionToken']
-
-                    pulling_from_s3 = True
-                    pushing_to_s3 = True
-
-                    if pulling_from_s3:
-                        command_start = f"echo 'Starting postStart...'; AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync s3://{bucket}/{username}/ /home/jovyan/ ; gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"
-                        print(f"postStart hook command set to use 'aws s3 sync s3://{bucket}/{username}/ /home/jovyan/' and 'gitpuller'.")
-                    else:
-                        command_start = "echo 'Starting postStart...'; gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"
-                        print("postStart hook command set to use 'gitpuller'.")
-
-                    if pushing_to_s3:
-                        command_stop = f"echo 'Starting preStop...'; AWS_ACCESS_KEY_ID={s3_key} AWS_SECRET_ACCESS_KEY={s3_secret} AWS_SESSION_TOKEN={s3_session} aws s3 sync --delete /home/jovyan/ s3://{bucket}/{username}/ ;"
-                        print(f"preStop hook command set to use 'aws s3 sync /home/jovyan/ s3://{bucket}/{username}/'.")
-                    else:
-                        command_stop = 'echo "Hello There"'
-                        print("preStop hook command not set")
-
-                    with open("/tmp/my_post_start.sh", 'w') as f:
-                        f.write(command_start)
-
-                    with open("/tmp/my_pre_stop.sh", 'w') as f:
-                        f.write(command_start)
+                    os.environ['JUPYTER_S3_KEY'] = s3_temp_role['Credentials']['AccessKeyId']
+                    os.environ['JUPYTER_S3_SECRET'] = s3_temp_role['Credentials']['SecretAccessKey']
+                    os.environ['JUPYTER_S3_SESSION'] = s3_temp_role['Credentials']['SessionToken']
+                    os.environ['JUPYTER_S3_PATH'] = f"s3://{bucket}/{username}/"
 
                 c.Spawner.pre_spawn_hook = my_pre_hook
+
+                c.Spawner.env_keep.append('JUPYTER_S3_KEY')
+                c.Spawner.env_keep.append('JUPYTER_S3_SECRET')
+                c.Spawner.env_keep.append('JUPYTER_S3_SESSION')
+                c.Spawner.env_keep.append('JUPYTER_S3_PATH')
+
+                pulling_from_s3 = True
+                pushing_to_s3 = True
+
+                if pulling_from_s3:
+                    command_start = f"AWS_ACCESS_KEY_ID=$JUPYTER_S3_KEY AWS_SECRET_ACCESS_KEY=$JUPYTER_S3_SECRET AWS_SESSION_TOKEN=$JUPYTER_S3_SESSION aws s3 sync $JUPYTER_S3_PATH /home/jovyan/;"
+                else:
+                    command_start = ""
+                command_start += "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"
+
+                if pushing_to_s3:
+                    command_stop = f"AWS_ACCESS_KEY_ID=$JUPYTER_S3_KEY AWS_SECRET_ACCESS_KEY=$JUPYTER_S3_SECRET AWS_SESSION_TOKEN=$JUPYTER_S3_SESSION aws s3 sync --delete /home/jovyan/ $JUPYTER_S3_PATH;"
+                else:
+                    command_stop = ""
 
                 c.KubeSpawner.lifecycle_hooks = {
                     "postStart": {
                         "exec": {
-                            "command": ["/bin/sh", "-c", "/tmp/my_post_start.sh"]
+                            "command": ["/bin/sh", "-c", command_start]
                         }
                     },
                     "preStop": {
                         "exec": {
-                            "command": ["/bin/sh", "-c", "/tmp/my_pre_stop.sh"]
+                            "command": ["/bin/sh", "-c", command_stop]
                         }
                     }
                 }
