@@ -427,7 +427,7 @@ Resources:
                     --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
-                    --set custom.HUB_AWS_ID='${HubAWSId}',custom.HUB_AWS_SECRET='${HubAWSSecret}'
+                    --set custom.HUB_ACCESS_KEY_ID='${HubAWSId}',custom.HUB_SECRET_ACCESS_KEY='${HubAWSSecret}'
                     --set hub.image.tag=$HUB_IMAGE_TAG
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - helm repo update
