@@ -1,0 +1,24 @@
+FROM jupyterhub/k8s-hub:0.8.2
+LABEL MAINTAINER="Alaska Satellite Facility"
+
+# By default, the notebook base image is set to non-sudo user joyvan. This makes root-ful actions difficult.
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt update && \
+    apt install --no-install-recommends -y \
+    tzdata
+RUN ln -fs /usr/share/zoneinfo/America/Alaska /etc/localtime
+RUN dpkg-reconfigure --frontend noninteractive tzdata
+RUN apt install --no-install-recommends -y \
+    python3 \
+    python3-pip \
+    python3-boto3
+RUN pip3 install --upgrade awscli
+
+COPY alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
+COPY generic_with_logout.py /usr/local/lib/python3.6/dist-packages/generic_with_logout.py
+COPY login.html /usr/local/share/jupyterhub/templates/login.html
+COPY pending.html /usr/local/share/jupyterhub/templates/pending.html
+
+USER jovyan
