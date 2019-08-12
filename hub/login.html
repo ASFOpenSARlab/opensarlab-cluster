@@ -13,8 +13,8 @@
 {% if login_service %}
     <div class="service-login">
       <div class="announcement">
-        <h4>Notice</h4>
-        <p>OpenSARLabs is now offline for system upgrades. Users will not be able to signin. Expected time to be back online is Noon AKDT, 19 Jul 2019.</p>
+        <div class="blinking attention">Attention!</div>
+        <p style="color:black;">OpenSARLabs will undergo a system upgrade on Tuesday, 3 Sep 2019. Users should expect disruptions. Any critical data should be downloaded.</p>
       </div>
       <img style="float: left; max-height: 37px; margin-top: 7px; margin-left: 5px; z-index: 10;" src="{{static_url('images/alaska_satellite_facility_1000.png')}}">
       <a role="button" class='btn btn-jupyter btn-lg' href='{{authenticator_login_url}}'>
@@ -22,32 +22,37 @@
       </a>
       <p class="eula-text">By signing into the Jupyter Hub cluster operated by the Alaska Satellite Facilty (ASF), Users agree to be responsible stewards of server resources and data.
             While ASF will give reasonable effort to keep data safe and resources running, such data and resources are not guaranteed. It is recommended that data be downloaded and backed up often.</p>
-      <p class="beta-testers">OpenSARLabs is currently only available to a small group of beta testers that have been authorized by NASA.
+      <p>OpenSARLabs is currently only available to a small group of beta testers that have been authorized by NASA.
             We hope in the near future that we will be able to open up access to the notebooks to a broader audience.</p>
       <style>
-        .announcement {
-            padding: 10pt 10pt 10pt 10pt;
-            border: 3px solid #81dd0f;
-            margin: 70px 0px;
-            display: none;
+        p {
+            color: grey;
         }
 
-        .announcement > h4 {
-            color: red;
+        .announcement {
+            padding: 10pt 10pt 10pt 10pt;
+            border: 3px solid #ff0000;
+            margin: 70px 0px;
+
+            display: block;
+        }
+
+        .blinking{
+            animation:blinking-red 4.0s infinite;
+        }
+
+        @keyframes blinking-red {
+            0%{     color: #ff0000; }
+            50%{    color: #ff000000; }
+            100%{   color: #ff0000; }
+        }
+
+        .attention {
+            font-size: 20pt;
         }
 
         .eula-text {
-            color: grey;
-            font-size: 12pt;
             margin: 30px 0;
-        }
-
-        .beta-testers {
-            color: #a22f17;
-            font-size: 12pt;
-            margin: 30px 0;
-            border: 2px solid #a22f17;
-            padding: 20px;
         }
 
       </style>
