@@ -47,7 +47,7 @@ Parameters:
     Type: String
 
   NodeImageId:
-    Description: AMI id for the node instances.
+    Description: AMI id for the node instances of K8s
     Type: AWS::EC2::Image::Id
     Default: ami-0eeeef929db40543c
 
@@ -95,6 +95,7 @@ Parameters:
   CertificateArn:
     Description: The ARN of the SSL certificate attached to the load balancer.
     Type: String
+    Default: arn:aws:acm:us-east-1:553778890976:certificate/10791780-75d2-4ef0-bfbc-2c074e94b92b
 
   NodeProxyPort:
     Description: The port of the hub proxy service opened to the load balancer.
@@ -262,6 +263,9 @@ Resources:
       - Key: Name
         Value: !Sub ${AWS::StackName}-instance
         PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster/${Cluster}
+        Value: owned
+        PropagateAtLaunch: true
       - Key: !Sub kubernetes.io/cluster/${Cluster}
         Value: owned
         PropagateAtLaunch: true
@@ -370,7 +374,8 @@ Resources:
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
-        Image: aws/codebuild/standard:1.0
+        Image: aws/codebuild/standard:2.0
+        PrivilegedMode: True
       Artifacts:
         Type: CODEPIPELINE
       ServiceRole: !Ref CodeBuildServiceRoleArn
@@ -379,9 +384,20 @@ Resources:
         BuildSpec: !Sub |-
           version: 0.2
           phases:
-            build:
+            install:
+              runtime-versions:
+                docker: 18
+                python: 3.7
+            pre_build:
               commands:
                 - pip3 install awscli>=1.16.158 --upgrade
+                - echo logging in to AWS ECR...
+                - $(aws ecr get-login --no-include-email --region us-east-1)
+            build:
+              commands:
+                - HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
+                - docker build -t 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG -f hub/dockerfile hub/
+                - docker push 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG
                 - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
                 - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
                 - aws eks update-kubeconfig --name ${Cluster}
@@ -391,11 +407,6 @@ Resources:
                 - helm plugin install https://github.com/rimusz/helm-tiller
                 - helm tiller start-ci
                 - export HELM_HOST=127.0.0.1:44134
-                - helm repo update
-                - helm fetch stable/cluster-autoscaler
-                - tar -zxf cluster-autoscaler*
-                - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
-                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
                 - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.8.2  --values helm_config.yaml --timeout=300
@@ -405,12 +416,13 @@ Resources:
                     --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
+                    --set hub.image.tag=$HUB_IMAGE_TAG
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
-                - hub_name=$(kubectl get pod -n jupyter -l app=jupyterhub,component=hub --output=jsonpath={.items..metadata.name})
-                - kubectl cp generic_with_logout.py jupyter/$hub_name:/srv/jupyterhub/generic_with_logout.py
-                - kubectl cp login.html jupyter/$hub_name:/srv/jupyterhub/login.html
-                - kubectl cp pending.html jupyter/$hub_name:/srv/jupyterhub/pending.html
-                - kubectl -n jupyter delete pod $hub_name
+                - helm repo update
+                - helm fetch stable/cluster-autoscaler
+                - tar -zxf cluster-autoscaler*
+                - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --version=3.0.0 --values cluster-autoscaler*/values.yaml --timeout=120
+                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
                 - curl -O https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cloudwatch-namespace.yaml
                 - kubectl apply -f cloudwatch-namespace.yaml
                 - curl -O https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cwagent-serviceaccount.yaml

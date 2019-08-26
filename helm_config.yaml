@@ -30,14 +30,6 @@ singleuser:
   image:
     name: IMAGE_NAME
     tag: IMAGE_TAG
-  lifecycleHooks:
-    postStart:
-      exec:
-        command:
-        - gitpuller
-        - https://github.com/asfadmin/asf-jupyter-notebooks.git
-        - master
-        - notebooks
   storage:
     capacity: 500Gi
   memory:
@@ -45,27 +37,35 @@ singleuser:
     guarantee: 6G
 
 hub:
-    extraConfig:
-        myCustomTemplatePaths.py: |
-            c.JupyterHub.template_paths = ["/srv/jupyterhub"]
+    image:
+      imagePullPolicy: Always
+      name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub
+      tag: HUB_IMAGE_TAG
 
+    extraConfig:
         myAuthConfig.py: |
-            # The try/except is needed since the hub needs to be created before earthdata.py is copied over to /svc/jupyterhub/
-            # After copying, the hub will need to be forced to rebuild. However, the earthdata file will persist.
-            # The try/expect can be removed after the earthdata module is formally integrated into the official oauthenticator module repo.
             try:
-                # The following three lines are a hack to make things work and will not be needed in the final product
                 import sys
                 import os
                 import z2jh
 
-                os.environ["OAUTH_CALLBACK_URL"] = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+                oauth_dns_name = z2jh.get_config("custom.OAUTH_DNS_NAME")
                 os.environ["OAUTH2_AUTHORIZE_URL"] = "{0}/oauth2/authorize".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+                oauth_jupyter_url = z2jh.get_config("custom.OAUTH_JUPYTER_URL")
                 os.environ["OAUTH2_TOKEN_URL"] = "{0}/oauth2/token".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
+                oauth_client_id = z2jh.get_config("custom.OAUTH_CLIENT_ID")
                 os.environ["OAUTH2_USERDATA_URL"] = "{0}/oauth2/userInfo".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
-                os.environ["OAUTH_LOGOUT_URL"] = "{0}/logout?client_id={1}&logout_uri={2}".format(z2jh.get_config("custom.OAUTH_DNS_NAME"), z2jh.get_config("custom.OAUTH_CLIENT_ID"), z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+                oauth_client_secret = z2jh.get_config("custom.OAUTH_CLIENT_SECRET")
 
-                sys.path.append("/srv/jupyterhub")
+                os.environ["OAUTH_LOGOUT_URL"] = "{0}/logout?client_id={1}&logout_uri={2}".format(z2jh.get_config("custom.OAUTH_DNS_NAME"), z2jh.get_config("custom.OAUTH_CLIENT_ID"), z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
+                os.environ["OAUTH2_AUTHORIZE_URL"] = f"{oauth_dns_name}/oauth2/authorize"
+                os.environ["OAUTH2_TOKEN_URL"] = f"{oauth_dns_name}/oauth2/token"
+                os.environ["OAUTH2_USERDATA_URL"] = f"{oauth_dns_name}/oauth2/userInfo"
+                os.environ["OAUTH_CALLBACK_URL"] = f"{oauth_jupyter_url}/hub/oauth_callback"
+                os.environ["OAUTH_LOGOUT_URL"] = f"{oauth_dns_name}/logout?client_id={oauth_client_id}&logout_uri={oauth_jupyter_url}"
+                os.environ["OAUTH_CLIENT_ID"] = f"{oauth_client_id}"
+                os.environ["OAUTH_CLIENT_SECRET"] = f"{oauth_client_secret}"
+
                 from generic_with_logout import GenericOAuthenticator
                 c.JupyterHub.authenticator_class = GenericOAuthenticator
                 c.GenericOAuthenticator.oauth_callback_url = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
@@ -75,11 +75,18 @@ hub:
             except Exception as e:
                 print(e)
 
+        mySubdomainConfig.py: |
+            print("Subdomain not implemented...")
+            #import z2jh
+            #c.JupyterHub.subdomain_host = f"{z2jh.get_config('custom.OAUTH_JUPYTER_URL')}"
+
 custom:
   OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
   OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
   OAUTH_CLIENT_SECRET: OAUTH_CLIENT_SECRET
   OAUTH_DNS_NAME: OAUTH_DNS_NAME
+  AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
+  AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
 
 cull:
   enabled: true
