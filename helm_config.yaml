@@ -30,6 +30,14 @@ singleuser:
   image:
     name: IMAGE_NAME
     tag: IMAGE_TAG
+  lifecycleHooks:
+    postStart:
+      exec:
+        command:
+        - gitpuller
+        - https://github.com/asfadmin/asf-jupyter-notebooks.git
+        - master
+        - notebooks
   storage:
     capacity: 500Gi
   memory:
