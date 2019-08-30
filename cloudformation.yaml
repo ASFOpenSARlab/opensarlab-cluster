@@ -102,6 +102,17 @@ Parameters:
     Type: Number
     Default: 30052
 
+  HubAWSId:
+    Description: The access key to allow the hub to work with Boto3.
+    Type: String
+    Default: ""
+
+  HubAWSSecret:
+    Description: The secret key to allow the hub to work with Boto3.
+    Type: String
+    Default: ""
+    NoEcho: true
+
 Outputs:
 
   AppUrl:
@@ -361,6 +372,31 @@ Resources:
       - Type: forward
         TargetGroupArn: !Ref TargetGroup
 
+  BasicLifecyclePolicy:
+    Type: "AWS::DLM::LifecyclePolicy"
+    Properties:
+      Description: !Sub "Lifecycle Policy for ${Cluster}"
+      State: "ENABLED"
+      ExecutionRoleArn: "arn:aws:iam::553778890976:role/service-role/AWSDataLifecycleManagerDefaultRole"
+      PolicyDetails:
+        ResourceTypes:
+          - "VOLUME"
+        TargetTags:
+          -
+            Key: !Sub "kubernetes.io/cluster/${Cluster}"
+            Value: "owned"
+        Schedules:
+          -
+            Name: "Daily Snapshots"
+            CreateRule:
+              Interval: 24
+              IntervalUnit: "HOURS"
+              Times:
+                - "12:00"
+            RetainRule:
+              Count: 1
+            CopyTags: true
+
   ProjectLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -403,6 +439,7 @@ Resources:
                 - aws eks update-kubeconfig --name ${Cluster}
                 - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" aws-auth-cm.yaml
                 - kubectl apply -f aws-auth-cm.yaml
+                - kubectl apply -f ebs-sc.yaml
                 - helm init --client-only
                 - helm plugin install https://github.com/rimusz/helm-tiller
                 - helm tiller start-ci
@@ -416,20 +453,22 @@ Resources:
                     --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
+                    --set custom.HUB_ACCESS_KEY_ID='${HubAWSId}',custom.HUB_SECRET_ACCESS_KEY='${HubAWSSecret}'
+                    --set custom.CLUSTER_NAME=${Cluster},custom.AZ_NAME=${AWS::Region}d
+                    --set custom.VOLUME_SIZE='${NodeVolumeSize}'
                     --set hub.image.tag=$HUB_IMAGE_TAG
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
+                - kubectl --logtostderr=true -n jupyter patch deployment hub -p '{"spec":{"template":{"spec":{"containers":[{"name":"hub","command":["sh","-c","sudo /usr/sbin/service cron start && jupyterhub --config /srv/jupyterhub_config.py"]}]}}}}' || true
+                - kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
                 - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --version=3.0.0 --values cluster-autoscaler*/values.yaml --timeout=120
                     --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
-                - curl -O https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cloudwatch-namespace.yaml
-                - kubectl apply -f cloudwatch-namespace.yaml
-                - curl -O https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cwagent-serviceaccount.yaml
-                - kubectl apply -f cwagent-serviceaccount.yaml
-                - kubectl apply -f cwagent-configmap.yaml
-                - curl -O https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cwagent-daemonset.yaml
-                - kubectl apply -f cwagent-daemonset.yaml
+                - kubectl apply -f https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cloudwatch-namespace.yaml
+                - kubectl apply -f https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cwagent-serviceaccount.yaml
+                - kubectl apply -f https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cwagent-configmap.yaml
+                - kubectl apply -f https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/kubernetes-monitoring/cwagent-daemonset.yaml
                 - curl -O https://s3.amazonaws.com/cloudwatch-agent-k8s-yamls/fluentd/fluentd.yml
                 - kubectl create configmap cluster-info --from-literal=cluster.name=${Cluster} --from-literal=logs.region=${AWS::Region} -n amazon-cloudwatch --dry-run -o yaml | kubectl apply -f -
                 - kubectl apply -f fluentd.yml

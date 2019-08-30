@@ -13,12 +13,28 @@ RUN dpkg-reconfigure --frontend noninteractive tzdata
 RUN apt install --no-install-recommends -y \
     python3 \
     python3-pip \
-    python3-boto3
-RUN pip3 install --upgrade awscli
+    python3-boto3 \
+    cron \
+    less \
+    vim \
+    sudo
+RUN pip3 install --upgrade awscli pyyaml python-crontab
 
 COPY alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
 COPY generic_with_logout.py /usr/local/lib/python3.6/dist-packages/generic_with_logout.py
 COPY login.html /usr/local/share/jupyterhub/templates/login.html
 COPY pending.html /usr/local/share/jupyterhub/templates/pending.html
+
+COPY pv.yaml /srv/etc/pv.yaml
+COPY pvc.yaml /srv/etc/pvc.yaml
+COPY volume_stopping_tags.py /srv/etc/volume_stopping_tags.py
+COPY volume_from_snapshot.py /srv/etc/volume_from_snapshot.py
+COPY delete_volumes.py /srv/etc/delete_volumes.py
+COPY delete_snapshot.py /srv/etc/delete_snapshot.py
+
+RUN chown -R 1000:0 /srv/etc/
+ENV PYTHONPATH "${PYTHONPATH}:/srv/etc/"
+
+RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
 
 USER jovyan

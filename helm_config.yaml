@@ -24,6 +24,10 @@ proxy:
     type: NodePort
 
 singleuser:
+  storage:
+    dynamic:
+      storageClass: ebs_sc
+      pvcNameTemplate: claim-{username}
   extraEnv:
     AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
@@ -83,6 +87,125 @@ hub:
             except Exception as e:
                 print(e)
 
+        myHooks.py: |
+            import z2jh
+
+            # Before mounting the home directory, check to see if a volume exists.
+            # If it doesn't, check for any EBS snapshots.
+            # If a snapshot exists, create a volume from the snapshot.
+            # Let JupyertHub do the mounting and other volume handling.
+            def my_pre_hook(spawner):
+                try:
+                    from volume_from_snapshot import volume_from_snapshot
+
+                    meta = {
+                        'username': spawner.user.name,
+                        'pvc_name': spawner.pvc_name,
+                        'namespace': 'jupyter',
+                        'cluster_name': z2jh.get_config('custom.CLUSTER_NAME'),
+                        'az_name': z2jh.get_config('custom.AZ_NAME'),
+                        'aws_secret_access_key': z2jh.get_config('custom.HUB_SECRET_ACCESS_KEY'),
+                        'aws_access_key_id': z2jh.get_config('custom.HUB_ACCESS_KEY_ID'),
+                        'spawn_pvc': spawner.get_pvc_manifest()
+                    }
+
+                    try:
+                        meta['vol_size'] = int(z2jh.get_config('VOLUME_SIZE'))
+                    except:
+                        meta['vol_size'] = 500
+
+                    volume_from_snapshot(meta)
+
+                except Exception as e:
+                    print(e)
+                    raise
+
+            c.Spawner.pre_spawn_hook = my_pre_hook
+
+
+            # After stopping the notebook server, tag the volume with the current "stopping" time. This will help determine which volumes are active.
+            def my_post_hook(spawner):
+                try:
+                    from volume_stopping_tags import volume_stopping_tags
+
+                    meta = {
+                        'pvc_name': spawner.pvc_name,
+                        'cluster_name': z2jh.get_config('custom.CLUSTER_NAME'),
+                        'az_name': z2jh.get_config('custom.AZ_NAME'),
+                        'aws_secret_access_key': z2jh.get_config('custom.HUB_SECRET_ACCESS_KEY'),
+                        'aws_access_key_id': z2jh.get_config('custom.HUB_ACCESS_KEY_ID')
+                    }
+
+                    volume_stopping_tags(meta)
+
+                except Exception as e:
+                    print(e)
+                    raise
+
+            c.Spawner.post_stop_hook = my_post_hook
+
+
+            # Run gitpuller after mounting volume
+            c.KubeSpawner.lifecycle_hooks = {
+                "postStart": {
+                    "exec": {
+                        "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
+                    }
+                }
+            }
+
+        myHubCron.py: |
+            import os
+            import z2jh
+            try:
+                from crontab import CronTab
+
+                days_inactive_till_termination = 5
+
+                # Set metadata for use by cron scripts
+                meta = [
+                    "---",
+                    "days_inactive_till_termination: {days_inactive_till_termination}",
+                    "namespace: jupyter",
+                    "cluster_name: {cluster_name}",
+                    "region_name: {region_name}",
+                    "aws_secret_access_key: {aws_secret_access_key}",
+                    "aws_access_key_id: {aws_access_key_id}",
+                    "kubernetes_service_port: '{kubernetes_service_port}'",
+                    "kubernetes_service_host: {kubernetes_service_host}"
+                ]
+                meta = "\n".join(meta).format(
+                    days_inactive_till_termination=days_inactive_till_termination,
+                    region_name=z2jh.get_config('custom.AZ_NAME')[:-1],
+                    cluster_name=z2jh.get_config('custom.CLUSTER_NAME'),
+                    aws_secret_access_key=z2jh.get_config('custom.HUB_SECRET_ACCESS_KEY'),
+                    aws_access_key_id=z2jh.get_config('custom.HUB_ACCESS_KEY_ID'),
+                    kubernetes_service_port=os.environ['KUBERNETES_SERVICE_PORT'],
+                    kubernetes_service_host=os.environ['KUBERNETES_SERVICE_HOST']
+                )
+                with open("/srv/etc/meta.yaml", mode='w') as f:
+                    f.write(meta)
+
+                # Make file executable
+                os.chmod('/srv/etc/meta.yaml', 0o755)
+
+                # Setup crontab for volume killer
+                cron = CronTab(user='jovyan')
+
+                job1 = cron.new(command='python3 /srv/etc/delete_volumes.py > /srv/etc/delete_volumes.log')
+                job1.hour.on(12)  # 12 UTC, 3am AKDT
+                job1.enable()
+
+                # Setup crontab for snapshot killer
+                job2 = cron.new(command='python3 /srv/etc/delete_snapshot.py > /srv/etc/delete_snapshot.log')
+                job2.hour.on(13)  # 13 UTC, 4am AKDT
+                job2.enable()
+
+                cron.write()
+
+            except Exception as e:
+                print(e)
+
         mySubdomainConfig.py: |
             print("Subdomain not implemented...")
             #import z2jh
@@ -95,6 +218,11 @@ custom:
   OAUTH_DNS_NAME: OAUTH_DNS_NAME
   AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
   AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
+  HUB_ACCESS_KEY_ID: HUB_ACCESS_KEY_ID
+  HUB_SECRET_ACCESS_KEY: HUB_SECRET_ACCESS_KEY
+  CLUSTER_NAME: CLUSTER_NAME
+  AZ_NAME: AZ_NAME
+  VOLUME_SIZE: VOLUME_SIZE
 
 cull:
   enabled: true
