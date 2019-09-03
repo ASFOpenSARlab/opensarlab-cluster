@@ -11,3 +11,5 @@ export AWS_SESSION_TOKEN=$(python -c "print($STS_DICT['Credentials']['SessionTok
 rm ~/.kube/config
 aws eks update-kubeconfig --name $1 --region=$AWS_REGION --profile=jupyterhub
 
+# Set namespace to default to jupyter
+kubectl config set-context --current --namespace=jupyter
