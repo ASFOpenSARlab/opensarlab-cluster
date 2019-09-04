@@ -105,11 +105,26 @@ def delete_volumes():
             )
             snap = snap['Snapshots']
 
+            has_snapshot = False
+            if len(snap) == 0:
+                print("WARNING: No snapshots have been found.")
+            else:
+                cutoff_days = 2
+                for s in snap:
+                    since_snapshot = datetime.datetime.now() - datetime.datetime.strptime(s['StartTime'], '%Y-%m-%d %H:%M:%S.%f')
+                    time_diff = since_snapshot - datetime.timedelta(days=cutoff_days)
+                    if time_diff > 0:
+                        print(f"Warning: Snapshot {s['SnapshotId']} is {since_snapshot} old.")
+                    else:
+                        has_snapshot = True
+
+                if has_snapshot is False:
+                    print(f"No snapshots found newer than {cutoff_days} old. Will not delete volume '{vol_id}'.")
+
             # Get time difference between now and when the volume was last used.
             time_diff = datetime.datetime.now() - datetime.datetime.strptime(last_stopped, '%Y-%m-%d %H:%M:%S.%f') - datetime.timedelta(days=days_inactive_till_termination)
             print("time diff: ", time_diff)
             do_deactivate = time_diff.total_seconds() > 0
-            has_snapshot = len(snap) > 0
             is_available = vol['State'] == 'available'
 
             print(f"do_deactivate: {do_deactivate}, has_snapshot: {has_snapshot}, is_available: {is_available}")
