@@ -347,7 +347,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Ref AWS::StackName
-      Subnets: !Ref ActiveSubnets
+      Subnets: !Ref Subnets
       SecurityGroups:
       - !GetAtt LoadBalancerSecurityGroup.GroupId
 
