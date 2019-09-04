@@ -112,7 +112,7 @@ def delete_volumes():
                 # If the snapshot lifecycle policy fails, snapshots will slowly age out and get out of sync with the volumes.
                 # If someone stops their volumes for more than the delete threshold, then that volume will be deleted.
                 # Since the snapshot is out of sync, restoring from the snapshot will give bad data.
-                # To avoid this, don't delete volumes when the corresponding snapshot is older than 2 days. 
+                # To avoid this, don't delete volumes when the corresponding snapshot is older than 2 days.
                 cutoff_days = 2
                 for s in snap:
                     since_snapshot = datetime.datetime.now(datetime.timezone.utc) - s['StartTime']
