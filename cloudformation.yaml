@@ -10,6 +10,10 @@ Parameters:
     Description: The subnets where workers can be created.
     Type: List<AWS::EC2::Subnet::Id>
 
+  ActiveSubnets:
+    Description: The subnets actually used by resources in the cluster. Typically only one (e.g., AZ -d).
+    Type: List<AWS::EC2::Subnet::Id>
+
   CodeBuildServiceRoleArn:
     Description: Role externally created to give Code Build permission to use AWS resources.
     Type: String
@@ -267,7 +271,7 @@ Resources:
       LaunchConfigurationName: !Ref LaunchConfiguration
       MinSize: !Ref NodeAutoScalingGroupMinSize
       MaxSize: !Ref NodeAutoScalingGroupMaxSize
-      VPCZoneIdentifier: !Ref Subnets
+      VPCZoneIdentifier: !Ref ActiveSubnets
       TargetGroupARNs:
       - !Ref TargetGroup
       Tags:
