@@ -109,11 +109,16 @@ def delete_volumes():
             if len(snap) == 0:
                 print("WARNING: No snapshots have been found.")
             else:
+                # If the snapshot lifecycle policy fails, snapshots will slowly age out and get out of sync with the volumes.
+                # If someone stops their volumes for more than the delete threshold, then that volume will be deleted.
+                # Since the snapshot is out of sync, restoring from the snapshot will give bad data.
+                # To avoid this, don't delete volumes when the corresponding snapshot is older than 2 days. 
                 cutoff_days = 2
                 for s in snap:
-                    since_snapshot = datetime.datetime.now() - datetime.datetime.strptime(s['StartTime'], '%Y-%m-%d %H:%M:%S.%f')
+                    since_snapshot = datetime.datetime.now(datetime.timezone.utc) - s['StartTime']
                     time_diff = since_snapshot - datetime.timedelta(days=cutoff_days)
-                    if time_diff > 0:
+                    print("Snapshot time diff till threshold: ", time_diff)
+                    if time_diff.total_seconds() > 0:
                         print(f"Warning: Snapshot {s['SnapshotId']} is {since_snapshot} old.")
                     else:
                         has_snapshot = True
@@ -123,7 +128,7 @@ def delete_volumes():
 
             # Get time difference between now and when the volume was last used.
             time_diff = datetime.datetime.now() - datetime.datetime.strptime(last_stopped, '%Y-%m-%d %H:%M:%S.%f') - datetime.timedelta(days=days_inactive_till_termination)
-            print("time diff: ", time_diff)
+            print("Volume time diff till threshold: ", time_diff)
             do_deactivate = time_diff.total_seconds() > 0
             is_available = vol['State'] == 'available'
 
