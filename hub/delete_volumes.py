@@ -117,7 +117,7 @@ def delete_volumes():
                 days_till_too_old = 2
 
                 snapshots_too_old = [True for s in snap if s['StartTime'] < datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days_till_too_old)]
-                if len(snapshots_too_old) > 0:
+                if len(snapshots_too_old) == len(snap):
                     print(f"No snapshots found newer than {days_till_too_old} days old. Will not delete volume '{vol_id}'.")
                 else:
                     has_valid_snapshot = True
