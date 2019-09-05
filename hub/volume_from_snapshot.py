@@ -66,7 +66,7 @@ def volume_from_snapshot(meta):
                 print(f"\nWARNING ***** More than one snapshot found for pvc: {pvc_name}. Claiming the latest one: \n{snap[0]}.")
             elif len(snap) == 0:
                 print(f"No snapshot found that matched pvc '{pvc_name}'")
-                snap[0] = None
+                snap = [None]
 
             snapshot = snap[0]
 
