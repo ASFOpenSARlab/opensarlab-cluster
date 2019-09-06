@@ -105,15 +105,31 @@ def delete_volumes():
             )
             snap = snap['Snapshots']
 
+            has_valid_snapshot = False
+            if len(snap) == 0:
+                print("WARNING: No snapshots have been found.")
+            else:
+                # If the snapshot lifecycle policy fails, daily snapshots will stop and snapshots will slowly age out and get out of sync with the volumes.
+                # If someone later stops their volumes for more than the delete threshold, then that volume will be deleted.
+                # Since the snapshot is out of sync, restoring from the snapshot will give bad data.
+                # To avoid this, don't delete volumes when all the corresponding snapshots are too old.
+
+                days_till_too_old = 2
+
+                snapshots_too_old = [True for s in snap if s['StartTime'] < datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=days_till_too_old)]
+                if len(snapshots_too_old) == len(snap):
+                    print(f"No snapshots found newer than {days_till_too_old} days old. Will not delete volume '{vol_id}'.")
+                else:
+                    has_valid_snapshot = True
+
             # Get time difference between now and when the volume was last used.
-            time_diff = datetime.datetime.now() - datetime.datetime.strptime(last_stopped, '%Y-%m-%d %H:%M:%S.%f') - datetime.timedelta(days=days_inactive_till_termination)
-            print("time diff: ", time_diff)
-            do_deactivate = time_diff.total_seconds() > 0
-            has_snapshot = len(snap) > 0
+            time_diff = datetime.datetime.strptime(last_stopped, '%Y-%m-%d %H:%M:%S.%f') + datetime.timedelta(days=days_inactive_till_termination) - datetime.datetime.now()
+            print("Days till volume is too old: ", time_diff)
+            do_deactivate = time_diff.total_seconds() < 0
             is_available = vol['State'] == 'available'
 
-            print(f"do_deactivate: {do_deactivate}, has_snapshot: {has_snapshot}, is_available: {is_available}")
-            if is_available and has_snapshot and do_deactivate:
+            print(f"do_deactivate: {do_deactivate}, has_valid_snapshots: {has_valid_snapshot}, is_available: {is_available}")
+            if is_available and has_valid_snapshot and do_deactivate:
                 # Delete PVC
                 print(f"Delete pvc '{pvc_name}'")
                 try:
