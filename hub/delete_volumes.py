@@ -123,9 +123,9 @@ def delete_volumes():
                     has_valid_snapshot = True
 
             # Get time difference between now and when the volume was last used.
-            time_diff = datetime.datetime.now() - datetime.datetime.strptime(last_stopped, '%Y-%m-%d %H:%M:%S.%f') - datetime.timedelta(days=days_inactive_till_termination)
-            print("Volume time diff till threshold: ", time_diff)
-            do_deactivate = time_diff.total_seconds() > 0
+            time_diff = datetime.datetime.strptime(last_stopped, '%Y-%m-%d %H:%M:%S.%f') + datetime.timedelta(days=days_inactive_till_termination) - datetime.datetime.now()
+            print("Days till volume is too old: ", time_diff)
+            do_deactivate = time_diff.total_seconds() < 0
             is_available = vol['State'] == 'available'
 
             print(f"do_deactivate: {do_deactivate}, has_valid_snapshots: {has_valid_snapshot}, is_available: {is_available}")
