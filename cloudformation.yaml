@@ -11,7 +11,7 @@ Parameters:
     Type: List<AWS::EC2::Subnet::Id>
 
   ActiveSubnets:
-    Description: The subnets actually used by resources in the cluster. Typically only one (e.g., AZ -d).
+    Description: The subnets actually used by resources in the cluster. Typically only one (e.g., subnet for AZ -d).
     Type: List<AWS::EC2::Subnet::Id>
 
   CodeBuildServiceRoleArn:
