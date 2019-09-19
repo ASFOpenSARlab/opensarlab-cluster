@@ -49,9 +49,6 @@ singleuser:
     guarantee: 6G
 
 hub:
-    db:
-      upgrade: true
-
     image:
       imagePullPolicy: Always
       name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub

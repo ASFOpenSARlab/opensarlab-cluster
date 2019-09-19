@@ -456,7 +456,7 @@ Resources:
                     --set custom.VOLUME_SIZE='${NodeVolumeSize}'
                     --set hub.image.tag=$HUB_IMAGE_TAG
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
-                - kubectl --logtostderr=true -n jupyter patch deployment hub -p '{"spec":{"template":{"spec":{"containers":[{"name":"hub","command":["sh","-c","sudo /usr/sbin/service cron start && jupyterhub --config /srv/jupyterhub_config.py"]}]}}}}' || true
+                - kubectl --logtostderr=true -n jupyter patch deployment hub -p '{"spec":{"template":{"spec":{"containers":[{"name":"hub","command":["sh","-c","sudo /usr/sbin/service cron start && jupyterhub --config /srv/jupyterhub_config.py --upgrade-db"]}]}}}}' || true
                 - kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
