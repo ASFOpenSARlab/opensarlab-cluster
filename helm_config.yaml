@@ -211,6 +211,8 @@ hub:
             #import z2jh
             #c.JupyterHub.subdomain_host = f"{z2jh.get_config('custom.OAUTH_JUPYTER_URL')}"
 
+        myZZZ.py: |
+            c.JupyterHub.internal_ssl = True
 custom:
   OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
   OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
