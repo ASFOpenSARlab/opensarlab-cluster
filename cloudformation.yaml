@@ -390,7 +390,7 @@ Resources:
               Interval: 24
               IntervalUnit: "HOURS"
               Times:
-                - "12:00"
+                - "10:00"
             RetainRule:
               Count: 1
             CopyTags: true
