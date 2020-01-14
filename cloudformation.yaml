@@ -427,7 +427,8 @@ Resources:
                 - pip3 install docker-squash
                 - pip3 install awscli>=1.16.158 --upgrade
             pre_build:
-                - echo logging in to AWS ECR...
+              commands:
+                - echo "logging in to AWS ECR..."
                 - $(aws ecr get-login --no-include-email --region us-east-1)
             build:
               commands:
