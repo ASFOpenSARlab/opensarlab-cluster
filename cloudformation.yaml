@@ -408,11 +408,12 @@ Resources:
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
-        Image: aws/codebuild/standard:2.0
+        Image: aws/codebuild/standard:3.0
         PrivilegedMode: True
       Artifacts:
         Type: CODEPIPELINE
       ServiceRole: !Ref CodeBuildServiceRoleArn
+      TimeoutInMinutes: 45
       Source:
         Type: CODEPIPELINE
         BuildSpec: !Sub |-
@@ -420,17 +421,19 @@ Resources:
           phases:
             install:
               runtime-versions:
-                docker: 18
-                python: 3.7
-            pre_build:
+                docker: 19
+                python: 3.8
               commands:
+                - pip3 install docker-squash
                 - pip3 install awscli>=1.16.158 --upgrade
+            pre_build:
                 - echo logging in to AWS ECR...
                 - $(aws ecr get-login --no-include-email --region us-east-1)
             build:
               commands:
                 - HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
                 - docker build -t 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG -f hub/dockerfile hub/
+                - docker-squash 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG
                 - docker push 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG
                 - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
                 - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
@@ -444,7 +447,7 @@ Resources:
                 - export HELM_HOST=127.0.0.1:44134
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
-                - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.8.2  --values helm_config.yaml --timeout=600
+                - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.8.2  --values helm_config.yaml --timeout=1800
                     --set auth.admin.users[0]=${AdminUserName}
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
                     --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}',singleuser.image.name='${ImageName}',singleuser.image.tag='${ImageTag}'
@@ -468,4 +471,3 @@ Resources:
         CloudWatchLogs:
           Status: ENABLED
           GroupName: !Ref ProjectLogGroup
-      TimeoutInMinutes: 10
