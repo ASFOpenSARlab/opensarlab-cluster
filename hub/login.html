@@ -13,14 +13,14 @@
 {% if login_service %}
     <div class="service-login">
       <div class="announcement">
-        <p style="color:black;">The last Wednesday of every month scheduled maintenance will occur and OpenSARlab may be unavailable. </p>
+        The last Wednesday of every month scheduled maintenance will occur and OpenSARlab may be unavailable.
       </div>
       <img style="float: left; max-height: 37px; margin-top: 7px; margin-left: 5px; z-index: 10;" src="{{static_url('images/alaska_satellite_facility_1000.png')}}">
       <a role="button" class='btn btn-jupyter btn-lg' href='{{authenticator_login_url}}'>
         Sign in with {{login_service}}
       </a>
       <div class="general">
-        <div style="color:black;">The Alaska Satellite Facility tries its best to create an excellent user experience. You can help in this endeavor by reporting bugs or other issues to <a href="mailto:uaf-jupyterhub-asf@alaska.edu">OpenSARLabs.</> </div>
+        The Alaska Satellite Facility tries its best to create an excellent user experience. You can help in this endeavor by reporting bugs or other issues to <a href="mailto:uaf-jupyterhub-asf@alaska.edu">OpenSARLabs</a>.
       </div>
       <p class="eula-text">By signing into the Jupyter Hub cluster operated by the Alaska Satellite Facilty (ASF), Users agree to be responsible stewards of server resources and data.
             While ASF will give reasonable effort to keep data safe and resources running, such data and resources are not guaranteed. It is recommended that data be downloaded and backed up often.</p>
@@ -35,6 +35,7 @@
             padding: 10pt 10pt 10pt 10pt;
             border: 3px solid #ff0000;
             margin: 70px 0px;
+            color: black;
         }
 
         .general {
@@ -42,8 +43,6 @@
             border: 3px solid #27ff007d;
             margin: 70px 0px;
             color: black;
-
-            display: block;
         }
 
         .eula-text {
