@@ -52,8 +52,8 @@ Parameters:
 
   NodeImageId:
     Description: AMI id for the node instances of K8s
-    Type: AWS::EC2::Image::Id
-    Default: ami-087a82f6b78a07557
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/eks/optimized-ami/1.14/amazon-linux-2/recommended/image_id
 
   NodeInstanceType:
     Description: EC2 instance type for the node instances.
@@ -424,7 +424,6 @@ Resources:
                 docker: 18
                 python: 3.8
               commands:
-                - pip3 install docker-squash
                 - pip3 install awscli>=1.16.158 --upgrade
             pre_build:
               commands:
@@ -434,7 +433,6 @@ Resources:
               commands:
                 - HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
                 - docker build -t 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG -f hub/dockerfile hub/
-                - docker-squash 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG
                 - docker push 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG
                 - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
                 - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
