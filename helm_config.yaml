@@ -224,6 +224,7 @@ cull:
 scheduling:
   userScheduler:
     enabled: true
+    replicas: 1
   #podPriority:
     #enabled: true
   #userPlaceholder:
