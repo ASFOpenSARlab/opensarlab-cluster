@@ -446,7 +446,7 @@ Resources:
                 - export HELM_HOST=127.0.0.1:44134
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
-                - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.8.2  --values helm_config.yaml --timeout=1800
+                - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.9.0-beta.4  --values helm_config.yaml --timeout=1800
                     --set auth.admin.users[0]=${AdminUserName}
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
                     --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}',singleuser.image.name='${ImageName}',singleuser.image.tag='${ImageTag}'
@@ -458,12 +458,12 @@ Resources:
                     --set custom.VOLUME_SIZE='${NodeVolumeSize}'
                     --set hub.image.tag=$HUB_IMAGE_TAG
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
-                - kubectl --logtostderr=true -n jupyter patch deployment hub -p '{"spec":{"template":{"spec":{"containers":[{"name":"hub","command":["sh","-c","sudo /usr/sbin/service cron start && jupyterhub --config /srv/jupyterhub_config.py --upgrade-db"]}]}}}}' || true
+                - kubectl --logtostderr=true -n jupyter patch deployment hub -p '{"spec":{"template":{"spec":{"containers":[{"name":"hub","command":["sh","-c","sudo /usr/sbin/service cron start && jupyterhub --config /etc/jupyterhub/jupyterhub_config.py --upgrade-db"],"securityContext":{"allowPrivilegeEscalation":"true"}}]}}}}' || true
                 - kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
-                - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --version=3.0.0 --values cluster-autoscaler*/values.yaml --timeout=120
+                - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
                     --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
                 - curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/master/k8s-yaml-templates/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/" | kubectl apply -f -
       LogsConfig:
