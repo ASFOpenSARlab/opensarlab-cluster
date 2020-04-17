@@ -34,6 +34,16 @@ singleuser:
   image:
     name: IMAGE_NAME
     tag: IMAGE_TAG
+  profileList:
+    - display_name: "CPU (Preferred)"
+      description: "CPU-only processing"
+      default: true
+    - display_name: "GPU"
+      description: "Includes GPU processor"
+      kubespawner_override:
+        extra_labels:
+          - EC2hasGPU: true
+      default: false
   storage:
     capacity: 500Gi
   memory:
@@ -175,21 +185,21 @@ hub:
                     kubernetes_service_port=os.environ['KUBERNETES_SERVICE_PORT'],
                     kubernetes_service_host=os.environ['KUBERNETES_SERVICE_HOST']
                 )
-                with open("/srv/etc/meta.yaml", mode='w') as f:
+                with open("/etc/jupyter/meta.yaml", mode='w') as f:
                     f.write(meta)
 
                 # Make file executable
-                os.chmod('/srv/etc/meta.yaml', 0o755)
+                os.chmod('/etc/jupyter/meta.yaml', 0o755)
 
                 # Setup crontab for volume killer
                 cron = CronTab(user='jovyan')
 
-                job1 = cron.new(command='python3 /srv/etc/delete_volumes.py > /srv/etc/delete_volumes.log')
+                job1 = cron.new(command='python3 /etc/jupyter/delete_volumes.py > /etc/jupyter/delete_volumes.log')
                 job1.hour.on(12)  # 12 UTC, 3am AKDT
                 job1.enable()
 
                 # Setup crontab for snapshot killer
-                job2 = cron.new(command='python3 /srv/etc/delete_snapshot.py > /srv/etc/delete_snapshot.log')
+                job2 = cron.new(command='python3 /etc/jupyter/delete_snapshot.py > /etc/jupyter/delete_snapshot.log')
                 job2.hour.on(13)  # 13 UTC, 4am AKDT
                 job2.enable()
 
@@ -225,13 +235,9 @@ scheduling:
   userScheduler:
     enabled: true
     replicas: 1
-  #podPriority:
-    #enabled: true
-  #userPlaceholder:
-    #replicas: 1
-    #globalDefault: true
-    #defaultPriority: 10
-    #userPlaceholderPriority: 0
-  #userPods:
-    #nodeAffinity:
-      #matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
+  corePods:
+    nodeAffinity:
+      matchNodePurpose: require  # hub.jupyter.org/node-purpose=core
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
