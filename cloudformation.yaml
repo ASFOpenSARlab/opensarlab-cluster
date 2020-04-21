@@ -50,11 +50,6 @@ Parameters:
     Description: Tag of ECR docker image.
     Type: String
 
-  NodeImageId:
-    Description: AMI id for the node instances of K8s
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/eks/optimized-ami/1.14/amazon-linux-2/recommended/image_id
-
   NodeInstanceTypeGPU:
     Description: EC2 instance type for the node instances.
     Type: String
@@ -303,7 +298,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageId
+      ImageId: /aws/service/eks/optimized-ami/1.14/amazon-linux-2/recommended/image_id
       InstanceType: !Ref NodeInstanceTypeCPU
       SecurityGroups:
       - !Ref NodeSecurityGroup
@@ -349,7 +344,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageId
+      ImageId: /aws/service/eks/optimized-ami/1.14/amazon-linux-2-gpu/recommended/image_id
       InstanceType: !Ref NodeInstanceTypeGPU
       SecurityGroups:
       - !Ref NodeSecurityGroup
@@ -395,7 +390,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageId
+      ImageId: /aws/service/eks/optimized-ami/1.14/amazon-linux-2/recommended/image_id
       InstanceType: !Ref NodeInstanceTypeCPU
       SecurityGroups:
       - !Ref NodeSecurityGroup
