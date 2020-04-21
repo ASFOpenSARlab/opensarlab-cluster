@@ -42,7 +42,7 @@ singleuser:
       description: "Includes GPU processor"
       kubespawner_override:
         extra_labels:
-          EC2hasGPU: true
+          EC2hasGPU: "true"
       default: false
   storage:
     capacity: 500Gi
