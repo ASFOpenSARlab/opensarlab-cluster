@@ -37,12 +37,15 @@ singleuser:
   profileList:
     - display_name: "CPU (Preferred)"
       description: "CPU-only processing"
+      kubespawner_override:
+        extra_labels:
+          instance_type: "cpu"
       default: true
     - display_name: "GPU"
       description: "Includes GPU processor"
       kubespawner_override:
         extra_labels:
-          EC2hasGPU: "true"
+          instance_type: "gpu"
       default: false
   storage:
     capacity: 500Gi

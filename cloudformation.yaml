@@ -311,7 +311,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -o xtrace
-          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=core,EC2hasGPU=false'
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=core,instance_type=none'
           /opt/aws/bin/cfn-signal --exit-code $? \
           --stack  ${AWS::StackName} \
           --resource NodeGroup  \
@@ -357,7 +357,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -o xtrace
-          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,k8s.amazonaws.com/accelerator=nvidia-tesla-k80,EC2hasGPU=trueEC2hasGPU=true'
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,k8s.amazonaws.com/accelerator=nvidia-tesla-k80,instance_type=gpu'
           /opt/aws/bin/cfn-signal --exit-code $? \
           --stack  ${AWS::StackName} \
           --resource NodeGroup  \
@@ -403,7 +403,7 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -o xtrace
-          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,EC2hasGPU=false'
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,instance_type=cpu'
           /opt/aws/bin/cfn-signal --exit-code $? \
           --stack  ${AWS::StackName} \
           --resource NodeGroup  \
