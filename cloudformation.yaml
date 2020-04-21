@@ -304,7 +304,7 @@ Resources:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
       ImageId: !Ref NodeImageId
-      InstanceType: "t3.medium"
+      InstanceType: !Ref NodeInstanceTypeCPU
       SecurityGroups:
       - !Ref NodeSecurityGroup
       UserData:
