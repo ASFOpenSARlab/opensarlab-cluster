@@ -68,7 +68,7 @@ Parameters:
   NodeInstanceTypeCore:
     Description: EC2 instance type for the node Core instances.
     Type: String
-    Default: t3.large
+    Default: t3.medium
 
   NodeInstanceTypeGPU:
     Description: EC2 instance type for the node GPU instances.
