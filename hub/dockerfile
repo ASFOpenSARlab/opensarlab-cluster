@@ -32,7 +32,7 @@ COPY volume_stopping_tags.py /etc/jupyterhub/custom/volume_stopping_tags.py
 COPY volume_from_snapshot.py /etc/jupyterhub/custom/volume_from_snapshot.py
 COPY delete_volumes.py /etc/jupyterhub/custom/delete_volumes.py
 COPY delete_snapshot.py /etc/jupyterhub/custom/delete_snapshot.py
-RUN chown -R 0:1000 /etc/jupyterhub/custom/
+RUN chown -R 1000:0 /etc/jupyterhub/custom/
 ENV PYTHONPATH "${PYTHONPATH}:/etc/jupyterhub/custom/"
 
 RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
