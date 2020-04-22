@@ -25,7 +25,7 @@ COPY generic_with_logout.py /usr/local/lib/python3.6/dist-packages/generic_with_
 COPY login.html /usr/local/share/jupyterhub/templates/login.html
 COPY pending.html /usr/local/share/jupyterhub/templates/pending.html
 
-RUN -p /etc/jupyterhub/custom
+RUN mkdir -p /etc/jupyterhub/custom
 COPY pv.yaml /etc/jupyterhub/custom/pv.yaml
 COPY pvc.yaml /etc/jupyterhub/custom/pvc.yaml
 COPY volume_stopping_tags.py /etc/jupyterhub/custom/volume_stopping_tags.py
