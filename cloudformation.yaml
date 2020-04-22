@@ -65,13 +65,18 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/eks/optimized-ami/1.14/amazon-linux-2/recommended/image_id
 
+  NodeInstanceTypeCore:
+    Description: EC2 instance type for the node Core instances.
+    Type: String
+    Default: t3.large
+
   NodeInstanceTypeGPU:
-    Description: EC2 instance type for the node instances.
+    Description: EC2 instance type for the node GPU instances.
     Type: String
     Default: g4dn.2xlarge
 
   NodeInstanceTypeCPU:
-    Description: EC2 instance type for the node instances.
+    Description: EC2 instance type for the node CPU instances.
     Type: String
     Default: m5.2xlarge
 
@@ -314,7 +319,7 @@ Resources:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
       ImageId: !Ref NodeImageIdCore
-      InstanceType: !Ref NodeInstanceTypeCPU
+      InstanceType: !Ref NodeInstanceTypeCore
       SecurityGroups:
       - !Ref NodeSecurityGroup
       UserData:
