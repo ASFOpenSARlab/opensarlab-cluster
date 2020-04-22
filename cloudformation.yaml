@@ -579,7 +579,7 @@ Resources:
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
                 - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
-                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
+                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True,nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
                 - curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/master/k8s-yaml-templates/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/" | kubectl apply -f -
       LogsConfig:
         CloudWatchLogs:
