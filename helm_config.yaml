@@ -192,21 +192,21 @@ hub:
                     kubernetes_service_port=os.environ['KUBERNETES_SERVICE_PORT'],
                     kubernetes_service_host=os.environ['KUBERNETES_SERVICE_HOST']
                 )
-                with open("/etc/jupyter/meta.yaml", mode='w') as f:
+                with open("/etc/jupyterhub/custom/meta.yaml", mode='w') as f:
                     f.write(meta)
 
                 # Make file executable
-                os.chmod('/etc/jupyter/meta.yaml', 0o755)
+                os.chmod('/etc/jupyterhub/custom/meta.yaml', 0o755)
 
                 # Setup crontab for volume killer
                 cron = CronTab(user='jovyan')
 
-                job1 = cron.new(command='python3 /etc/jupyter/delete_volumes.py > /etc/jupyter/delete_volumes.log')
+                job1 = cron.new(command='python3 /etc/jupyterhub/custom/delete_volumes.py > /etc/jupyterhub/custom/delete_volumes.log')
                 job1.hour.on(12)  # 12 UTC, 3am AKDT
                 job1.enable()
 
                 # Setup crontab for snapshot killer
-                job2 = cron.new(command='python3 /etc/jupyter/delete_snapshot.py > /etc/jupyter/delete_snapshot.log')
+                job2 = cron.new(command='python3 /etc/jupyterhub/custom/delete_snapshot.py > /etc/jupyterhub/custom/delete_snapshot.log')
                 job2.hour.on(13)  # 13 UTC, 4am AKDT
                 job2.enable()
 
