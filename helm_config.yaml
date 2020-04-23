@@ -43,14 +43,14 @@ singleuser:
         node_selector:
           instance_type: "cpu"
       default: true
-    - display_name: "GPU"
-      description: "Includes GPU processor"
-      kubespawner_override:
-        extra_labels:
-          instance_type: "gpu"
-        node_selector:
-          instance_type: "gpu"
-      default: false
+    #- display_name: "GPU"
+    #  description: "Includes GPU processor"
+    #  kubespawner_override:
+    #    extra_labels:
+    #      instance_type: "gpu"
+    #    node_selector:
+    #      instance_type: "gpu"
+    #  default: false
   storage:
     capacity: 500Gi
   memory:
