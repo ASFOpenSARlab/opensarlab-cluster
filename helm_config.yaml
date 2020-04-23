@@ -35,22 +35,22 @@ singleuser:
     name: IMAGE_NAME
     tag: IMAGE_TAG
   profileList:
-    - display_name: "CPU (Preferred)"
-      description: "CPU-only processing"
+    - display_name: "General SAR processing"
+      description: ""
       kubespawner_override:
         extra_labels:
           instance_type: "cpu"
         node_selector:
           instance_type: "cpu"
       default: true
-    - display_name: "GPU"
-      description: "Includes GPU processor"
-      kubespawner_override:
-        extra_labels:
-          instance_type: "gpu"
-        node_selector:
-          instance_type: "gpu"
-      default: false
+    #- display_name: "General SAR processing including GPU support"
+    #  description: ""
+    #  kubespawner_override:
+    #    extra_labels:
+    #      instance_type: "gpu"
+    #    node_selector:
+    #      instance_type: "gpu"
+    #  default: false
   storage:
     capacity: 500Gi
   memory:
@@ -65,7 +65,8 @@ hub:
 
     extraConfig:
         myAdminAccess.py: |
-            c.JupyterHub.admin_access = True
+            print("Admin user access not implemented...")
+            # c.JupyterHub.admin_access = True
 
         myAuthConfig.py: |
             try:
