@@ -64,6 +64,9 @@ hub:
       tag: HUB_IMAGE_TAG
 
     extraConfig:
+        myAdminAccess.py: |
+            c.JupyterHub.admin_access = True
+
         myAuthConfig.py: |
             try:
                 import sys
