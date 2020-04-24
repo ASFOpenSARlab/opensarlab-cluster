@@ -161,7 +161,7 @@ hub:
                             'server_type': 'general_cpu'
                         },
                         'node_selector': {
-                            'server_type': general_cpu'
+                            'server_type': 'general_cpu'
                         },
                         'image': "{IMAGE_NAME}:{IMAGE_TAG}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
                     }
@@ -174,7 +174,7 @@ hub:
                             'server_type': 'general_gpu'
                         },
                         'node_selector': {
-                            'server_type': general_gpu'
+                            'server_type': 'general_gpu'
                         },
                         'image': "{IMAGE_NAME}:{IMAGE_TAG}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
                     }
