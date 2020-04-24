@@ -50,30 +50,52 @@ Parameters:
     Description: Tag of ECR docker image.
     Type: String
 
-  NodeImageId:
+  NodeImageIdGPU:
+    Description: AMI id for the node instances of K8s
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/eks/optimized-ami/1.14/amazon-linux-2-gpu/recommended/image_id
+
+  NodeImageIdCPU:
     Description: AMI id for the node instances of K8s
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/eks/optimized-ami/1.14/amazon-linux-2/recommended/image_id
 
-  NodeInstanceType:
-    Description: EC2 instance type for the node instances.
+  NodeImageIdCore:
+    Description: AMI id for the node instances of K8s
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/eks/optimized-ami/1.14/amazon-linux-2/recommended/image_id
+
+  NodeInstanceTypeCore:
+    Description: EC2 instance type for the node Core instances.
+    Type: String
+    Default: t3a.medium
+
+  NodeInstanceTypeGPU:
+    Description: EC2 instance type for the node GPU instances.
+    Type: String
+    Default: g4dn.2xlarge
+
+  NodeInstanceTypeCPU:
+    Description: EC2 instance type for the node CPU instances.
     Type: String
     Default: m5.2xlarge
 
-  NodeAutoScalingGroupMinSize:
+  NodeAutoScalingGroupMinSizeCPU:
     Description: Minimum size of Node Group ASG.
     Type: Number
     Default: 2
 
-  NodeAutoScalingGroupMaxSize:
-    Description: Maximum size of Node Group ASG. Set to at least 1 greater than NodeAutoScalingGroupDesiredCapacity.
+  NodeAutoScalingGroupMaxSizeCPU:
+    Description: Maximum size of Node Group ASG. Set to at least 1 greater than NodeAutoScalingGroupDesiredCapacityCPU.
     Type: Number
     Default: 8
 
-  NodeAutoScalingGroupDesiredCapacity:
+  NodeAutoScalingGroupDesiredCapacityCPU:
     Description: Desired capacity of Node Group ASG.
     Type: Number
     Default: 2
+
+
 
   NodeVolumeSize:
     Description: Node volume size (GB)
@@ -264,13 +286,13 @@ Resources:
       ToPort: 443
       FromPort: 443
 
-  AutoScalingGroup:
+  AutoScalingGroupCore:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      DesiredCapacity: !Ref NodeAutoScalingGroupDesiredCapacity
-      LaunchConfigurationName: !Ref LaunchConfiguration
-      MinSize: !Ref NodeAutoScalingGroupMinSize
-      MaxSize: !Ref NodeAutoScalingGroupMaxSize
+      DesiredCapacity: 1
+      LaunchConfigurationName: !Ref LaunchConfigurationCore
+      MinSize: 1
+      MaxSize: 2
       VPCZoneIdentifier: !Ref ActiveSubnets
       TargetGroupARNs:
       - !Ref TargetGroup
@@ -291,20 +313,112 @@ Resources:
         Value: true
         PropagateAtLaunch: true
 
-  LaunchConfiguration:
+  LaunchConfigurationCore:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageId
-      InstanceType: !Ref NodeInstanceType
+      ImageId: !Ref NodeImageIdCore
+      InstanceType: !Ref NodeInstanceTypeCore
       SecurityGroups:
       - !Ref NodeSecurityGroup
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -o xtrace
-          /etc/eks/bootstrap.sh ${Cluster}
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=core,server_type=core'
+          /opt/aws/bin/cfn-signal --exit-code $? \
+          --stack  ${AWS::StackName} \
+          --resource NodeGroup  \
+          --region ${AWS::Region}
+
+  AutoScalingGroupGPU:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: 0
+      LaunchConfigurationName: !Ref LaunchConfigurationGPU
+      MinSize: 0
+      MaxSize: 5
+      VPCZoneIdentifier: !Ref ActiveSubnets
+      TargetGroupARNs:
+      - !Ref TargetGroup
+      Tags:
+      - Key: Name
+        Value: !Sub ${AWS::StackName}-instance
+        PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster/${Cluster}
+        Value: owned
+        PropagateAtLaunch: true
+      - Key: !Sub kubernetes.io/cluster/${Cluster}
+        Value: owned
+        PropagateAtLaunch: true
+      - Key: k8s.io/cluster-autoscaler/enabled
+        Value: true
+        PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+        Value: true
+        PropagateAtLaunch: true
+
+  LaunchConfigurationGPU:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref NodeInstanceProfile
+      ImageId: !Ref NodeImageIdGPU
+      InstanceType: !Ref NodeInstanceTypeGPU
+      SecurityGroups:
+      - !Ref NodeSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,k8s.amazonaws.com/accelerator=nvidia-tesla-k80,server_type=general_gpu'
+          /opt/aws/bin/cfn-signal --exit-code $? \
+          --stack  ${AWS::StackName} \
+          --resource NodeGroup  \
+          --region ${AWS::Region}
+
+  AutoScalingGroupCPU:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: !Ref NodeAutoScalingGroupDesiredCapacityCPU
+      LaunchConfigurationName: !Ref LaunchConfigurationCPU
+      MinSize: !Ref NodeAutoScalingGroupMinSizeCPU
+      MaxSize: !Ref NodeAutoScalingGroupMaxSizeCPU
+      VPCZoneIdentifier: !Ref ActiveSubnets
+      TargetGroupARNs:
+      - !Ref TargetGroup
+      Tags:
+      - Key: Name
+        Value: !Sub ${AWS::StackName}-instance
+        PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster/${Cluster}
+        Value: owned
+        PropagateAtLaunch: true
+      - Key: !Sub kubernetes.io/cluster/${Cluster}
+        Value: owned
+        PropagateAtLaunch: true
+      - Key: k8s.io/cluster-autoscaler/enabled
+        Value: true
+        PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+        Value: true
+        PropagateAtLaunch: true
+
+  LaunchConfigurationCPU:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref NodeInstanceProfile
+      ImageId: !Ref NodeImageIdCPU
+      InstanceType: !Ref NodeInstanceTypeCPU
+      SecurityGroups:
+      - !Ref NodeSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=general_cpu'
           /opt/aws/bin/cfn-signal --exit-code $? \
           --stack  ${AWS::StackName} \
           --resource NodeGroup  \
@@ -449,7 +563,8 @@ Resources:
                 - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.9.0-beta.4  --values helm_config.yaml --timeout=1800
                     --set auth.admin.users[0]=${AdminUserName}
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
-                    --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}',singleuser.image.name='${ImageName}',singleuser.image.tag='${ImageTag}'
+                    --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}'
+                    --set custom.IMAGE_NAME='${ImageName}',custom.IMAGE_TAG='${ImageTag}'
                     --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
@@ -460,11 +575,12 @@ Resources:
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - kubectl --logtostderr=true -n jupyter patch deployment hub -p '{"spec":{"template":{"spec":{"containers":[{"name":"hub","command":["sh","-c","sudo /usr/sbin/service cron start && jupyterhub --config /etc/jupyterhub/jupyterhub_config.py --upgrade-db"],"securityContext":{"allowPrivilegeEscalation":"true"}}]}}}}' || true
                 - kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
+                - kubectl apply -f https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.5/config/v1.5/aws-k8s-cni.yaml
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
                 - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
-                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True
+                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True,nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
                 - curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/master/k8s-yaml-templates/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/" | kubectl apply -f -
       LogsConfig:
         CloudWatchLogs:

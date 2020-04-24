@@ -25,15 +25,15 @@ COPY generic_with_logout.py /usr/local/lib/python3.6/dist-packages/generic_with_
 COPY login.html /usr/local/share/jupyterhub/templates/login.html
 COPY pending.html /usr/local/share/jupyterhub/templates/pending.html
 
-COPY pv.yaml /srv/etc/pv.yaml
-COPY pvc.yaml /srv/etc/pvc.yaml
-COPY volume_stopping_tags.py /srv/etc/volume_stopping_tags.py
-COPY volume_from_snapshot.py /srv/etc/volume_from_snapshot.py
-COPY delete_volumes.py /srv/etc/delete_volumes.py
-COPY delete_snapshot.py /srv/etc/delete_snapshot.py
-
-RUN chown -R 1000:0 /srv/etc/
-ENV PYTHONPATH "${PYTHONPATH}:/srv/etc/"
+RUN mkdir -p /etc/jupyterhub/custom
+COPY pv.yaml /etc/jupyterhub/custom/pv.yaml
+COPY pvc.yaml /etc/jupyterhub/custom/pvc.yaml
+COPY volume_stopping_tags.py /etc/jupyterhub/custom/volume_stopping_tags.py
+COPY volume_from_snapshot.py /etc/jupyterhub/custom/volume_from_snapshot.py
+COPY delete_volumes.py /etc/jupyterhub/custom/delete_volumes.py
+COPY delete_snapshot.py /etc/jupyterhub/custom/delete_snapshot.py
+RUN chown -R 1000:0 /etc/jupyterhub/custom/
+ENV PYTHONPATH "${PYTHONPATH}:/etc/jupyterhub/custom/"
 
 RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
 

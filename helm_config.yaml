@@ -31,9 +31,6 @@ singleuser:
   extraEnv:
     AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
-  image:
-    name: IMAGE_NAME
-    tag: IMAGE_TAG
   storage:
     capacity: 500Gi
   memory:
@@ -47,6 +44,10 @@ hub:
       tag: HUB_IMAGE_TAG
 
     extraConfig:
+        myAdminAccess.py: |
+            print("Admin user access not implemented...")
+            # c.JupyterHub.admin_access = True
+
         myAuthConfig.py: |
             try:
                 import sys
@@ -102,7 +103,7 @@ hub:
                     }
 
                     try:
-                        meta['vol_size'] = int(z2jh.get_config('VOLUME_SIZE'))
+                        meta['vol_size'] = int(z2jh.get_config('custom.VOLUME_SIZE'))
                     except:
                         meta['vol_size'] = 500
 
@@ -175,21 +176,21 @@ hub:
                     kubernetes_service_port=os.environ['KUBERNETES_SERVICE_PORT'],
                     kubernetes_service_host=os.environ['KUBERNETES_SERVICE_HOST']
                 )
-                with open("/srv/etc/meta.yaml", mode='w') as f:
+                with open("/etc/jupyterhub/custom/meta.yaml", mode='w') as f:
                     f.write(meta)
 
                 # Make file executable
-                os.chmod('/srv/etc/meta.yaml', 0o755)
+                os.chmod('/etc/jupyterhub/custom/meta.yaml', 0o755)
 
                 # Setup crontab for volume killer
                 cron = CronTab(user='jovyan')
 
-                job1 = cron.new(command='python3 /srv/etc/delete_volumes.py > /srv/etc/delete_volumes.log')
+                job1 = cron.new(command='python3 /etc/jupyterhub/custom/delete_volumes.py > /etc/jupyterhub/custom/delete_volumes.log')
                 job1.hour.on(12)  # 12 UTC, 3am AKDT
                 job1.enable()
 
                 # Setup crontab for snapshot killer
-                job2 = cron.new(command='python3 /srv/etc/delete_snapshot.py > /srv/etc/delete_snapshot.log')
+                job2 = cron.new(command='python3 /etc/jupyterhub/custom/delete_snapshot.py > /etc/jupyterhub/custom/delete_snapshot.log')
                 job2.hour.on(13)  # 13 UTC, 4am AKDT
                 job2.enable()
 
@@ -197,6 +198,54 @@ hub:
 
             except Exception as e:
                 print(e)
+
+        myProfiles.py: |
+
+            import z2jh
+
+            # Profile list programmatically
+            # Ideally, if/else statements based on permissions would determine the final choices.
+            # https://jupyterhub-kubespawner.readthedocs.io/en/latest/spawner.html#kubespawner.KubeSpawner
+            # Other singleuser server params can be taken from above to below as needed.
+
+            group = ('general_cpu')  #, 'general_gpu')
+
+            c.KubeSpawner.profile_list = []
+
+            if 'general_cpu' in group:
+                profile = {
+                    'display_name': 'General SAR processing',
+                    'description': 'Contains basic SAR processing and analysis tools',
+                    'default': True,
+                    'kubespawner_override': {
+                        'extra_labels': {
+                            'server_type': 'general_cpu'
+                        },
+                        'node_selector': {
+                            'server_type': 'general_cpu'
+                        },
+                        'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                    }
+                }
+                c.KubeSpawner.profile_list.append(profile)
+
+            if 'general_gpu' in group:
+                profile = {
+                    'display_name': 'General SAR processing including GPU support',
+                    'description': 'Contains basic SAR processing and analysis tools',
+                    'default': False,
+                    'kubespawner_override': {
+                        'extra_labels': {
+                            'server_type': 'general_gpu'
+                        },
+                        'node_selector': {
+                            'server_type': 'general_gpu'
+                        },
+                        'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                    }
+                }
+                c.KubeSpawner.profile_list.append(profile)
+
 
         mySubdomainConfig.py: |
             print("Subdomain not implemented...")
@@ -215,6 +264,8 @@ custom:
   CLUSTER_NAME: CLUSTER_NAME
   AZ_NAME: AZ_NAME
   VOLUME_SIZE: VOLUME_SIZE
+  IMAGE_NAME: IMAGE_NAME
+  IMAGE_TAG: IMAGE_TAG
 
 cull:
   enabled: true
@@ -225,13 +276,9 @@ scheduling:
   userScheduler:
     enabled: true
     replicas: 1
-  #podPriority:
-    #enabled: true
-  #userPlaceholder:
-    #replicas: 1
-    #globalDefault: true
-    #defaultPriority: 10
-    #userPlaceholderPriority: 0
-  #userPods:
-    #nodeAffinity:
-      #matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
+  corePods:
+    nodeAffinity:
+      matchNodePurpose: require  # hub.jupyter.org/node-purpose=core
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
