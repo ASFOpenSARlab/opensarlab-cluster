@@ -103,7 +103,7 @@ hub:
                     }
 
                     try:
-                        meta['vol_size'] = int(z2jh.get_config('VOLUME_SIZE'))
+                        meta['vol_size'] = int(z2jh.get_config('custom.VOLUME_SIZE'))
                     except:
                         meta['vol_size'] = 500
 
@@ -167,10 +167,9 @@ hub:
                         'node_selector': {
                             'server_type': 'general_cpu'
                         },
-                        'image': None
+                        'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
                     }
                 }
-                profile['kubespawner_override']['image'] = f"{z2jh.get_config('custom.IMAGE_NAME')}:{z2jh.get_config('custom.IMAGE_TAG')}"
                 c.KubeSpawner.profile_list.append(profile)
 
             if 'general_gpu' in group:
@@ -185,10 +184,9 @@ hub:
                         'node_selector': {
                             'server_type': 'general_gpu'
                         },
-                        'image': None
+                        'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
                     }
                 }
-                profile['kubespawner_override']['image'] = f"{z2jh.get_config('custom.IMAGE_NAME')}:{z2jh.get_config('custom.IMAGE_TAG')}"
                 c.KubeSpawner.profile_list.append(profile)
 
         myHubCron.py: |
