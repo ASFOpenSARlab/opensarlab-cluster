@@ -163,7 +163,7 @@ hub:
                         'node_selector': {
                             'server_type': 'general_cpu'
                         },
-                        'image': "{IMAGE_NAME}:{IMAGE_TAG}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                        'image': f"{z2jh.get_config('custom.IMAGE_NAME')}:{z2jh.get_config('custom.IMAGE_TAG')}"
                     }
                 }, {
                     'display_name': 'General SAR processing including GPU support',
@@ -176,7 +176,7 @@ hub:
                         'node_selector': {
                             'server_type': 'general_gpu'
                         },
-                        'image': "{IMAGE_NAME}:{IMAGE_TAG}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                        'image': f"{z2jh.get_config('custom.IMAGE_NAME')}:{z2jh.get_config('custom.IMAGE_TAG')}"
                     }
                 }
             ]
