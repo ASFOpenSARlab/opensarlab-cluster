@@ -31,26 +31,6 @@ singleuser:
   extraEnv:
     AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
-  image:
-    name: IMAGE_NAME
-    tag: IMAGE_TAG
-  profileList:
-    - display_name: "General SAR processing"
-      description: ""
-      kubespawner_override:
-        extra_labels:
-          instance_type: "cpu"
-        node_selector:
-          instance_type: "cpu"
-      default: true
-    #- display_name: "General SAR processing including GPU support"
-    #  description: ""
-    #  kubespawner_override:
-    #    extra_labels:
-    #      instance_type: "gpu"
-    #    node_selector:
-    #      instance_type: "gpu"
-    #  default: false
   storage:
     capacity: 500Gi
   memory:
@@ -167,6 +147,40 @@ hub:
                 }
             }
 
+            # Profile list programmatically
+            # Ideally, if/else statements based on permissions would determine the final choices.
+            # https://jupyterhub-kubespawner.readthedocs.io/en/latest/spawner.html#kubespawner.KubeSpawner
+            # Other singleuser server params can be taken from above to below as needed.
+            c.KubeSpawner.profile_list = [
+                {
+                    'display_name': 'General SAR processing',
+                    'description': 'Contains basic SAR processing and analysis tools',
+                    'default': True,
+                    'kubespawner_override': {
+                        'extra_labels': {
+                            'server_type': 'general_cpu'
+                        },
+                        'node_selector': {
+                            'server_type': general_cpu'
+                        },
+                        'image': "{IMAGE_NAME}:{IMAGE_TAG}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                    }
+                }, {
+                    'display_name': 'General SAR processing including GPU support',
+                    'description': 'Contains basic SAR processing and analysis tools',
+                    'default': False,
+                    'kubespawner_override': {
+                        'extra_labels': {
+                            'server_type': 'general_gpu'
+                        },
+                        'node_selector': {
+                            'server_type': general_gpu'
+                        },
+                        'image': "{IMAGE_NAME}:{IMAGE_TAG}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                    }
+                }
+            ]
+
         myHubCron.py: |
             import os
             import z2jh
@@ -236,6 +250,8 @@ custom:
   CLUSTER_NAME: CLUSTER_NAME
   AZ_NAME: AZ_NAME
   VOLUME_SIZE: VOLUME_SIZE
+  IMAGE_NAME: IMAGE_NAME
+  IMAGE_TAG: IMAGE_TAG
 
 cull:
   enabled: true
