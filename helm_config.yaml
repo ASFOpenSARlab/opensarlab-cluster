@@ -241,6 +241,54 @@ hub:
             except Exception as e:
                 print(e)
 
+        myProfiles.py: |
+
+            import z2jh
+
+            # Profile list programmatically
+            # Ideally, if/else statements based on permissions would determine the final choices.
+            # https://jupyterhub-kubespawner.readthedocs.io/en/latest/spawner.html#kubespawner.KubeSpawner
+            # Other singleuser server params can be taken from above to below as needed.
+
+            group = ('general_cpu')  #, 'general_gpu')
+
+            c.KubeSpawner.profile_list = []
+
+            if 'general_cpu' in group:
+                profile = {
+                    'display_name': 'General SAR processing',
+                    'description': 'Contains basic SAR processing and analysis tools',
+                    'default': True,
+                    'kubespawner_override': {
+                        'extra_labels': {
+                            'server_type': 'general_cpu'
+                        },
+                        'node_selector': {
+                            'server_type': 'general_cpu'
+                        },
+                        'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                    }
+                }
+                c.KubeSpawner.profile_list.append(profile)
+
+            if 'general_gpu' in group:
+                profile = {
+                    'display_name': 'General SAR processing including GPU support',
+                    'description': 'Contains basic SAR processing and analysis tools',
+                    'default': False,
+                    'kubespawner_override': {
+                        'extra_labels': {
+                            'server_type': 'general_gpu'
+                        },
+                        'node_selector': {
+                            'server_type': 'general_gpu'
+                        },
+                        'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                    }
+                }
+                c.KubeSpawner.profile_list.append(profile)
+
+
         mySubdomainConfig.py: |
             print("Subdomain not implemented...")
             #import z2jh
