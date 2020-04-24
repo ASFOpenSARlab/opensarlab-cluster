@@ -151,8 +151,12 @@ hub:
             # Ideally, if/else statements based on permissions would determine the final choices.
             # https://jupyterhub-kubespawner.readthedocs.io/en/latest/spawner.html#kubespawner.KubeSpawner
             # Other singleuser server params can be taken from above to below as needed.
-            c.KubeSpawner.profile_list = [
-                {
+            group = ('general_cpu', 'general_gpu')
+
+            c.KubeSpawner.profile_list = []
+
+            if 'general_cpu' in group:
+                profile = {
                     'display_name': 'General SAR processing',
                     'description': 'Contains basic SAR processing and analysis tools',
                     'default': True,
@@ -163,9 +167,14 @@ hub:
                         'node_selector': {
                             'server_type': 'general_cpu'
                         },
-                        'image': f"{z2jh.get_config('custom.IMAGE_NAME')}:{z2jh.get_config('custom.IMAGE_TAG')}"
+                        'image': None
                     }
-                }, {
+                }
+                profile['kubespawner_override']['image'] = f"{z2jh.get_config('custom.IMAGE_NAME')}:{z2jh.get_config('custom.IMAGE_TAG')}"
+                c.KubeSpawner.profile_list.append(profile)
+
+            if 'general_gpu' in group:
+                profile = {
                     'display_name': 'General SAR processing including GPU support',
                     'description': 'Contains basic SAR processing and analysis tools',
                     'default': False,
@@ -176,10 +185,11 @@ hub:
                         'node_selector': {
                             'server_type': 'general_gpu'
                         },
-                        'image': f"{z2jh.get_config('custom.IMAGE_NAME')}:{z2jh.get_config('custom.IMAGE_TAG')}"
+                        'image': None
                     }
                 }
-            ]
+                profile['kubespawner_override']['image'] = f"{z2jh.get_config('custom.IMAGE_NAME')}:{z2jh.get_config('custom.IMAGE_TAG')}"
+                c.KubeSpawner.profile_list.append(profile)
 
         myHubCron.py: |
             import os
