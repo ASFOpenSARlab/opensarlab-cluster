@@ -49,7 +49,10 @@ hub:
             # c.JupyterHub.admin_access = True
 
         myAuthConfig.py: |
+            import z2jh
+
             c.JupyterHub.authenticator_class = 'nativeauthenticator.NativeAuthenticator'
+            c.Authenticator.admin_users = {'emlundell_test1'}
             c.Authenticator.check_common_password = True
             c.Authenticator.minimim_password_length = 10
             c.Authenticator.allowed_failed_logins = 3
