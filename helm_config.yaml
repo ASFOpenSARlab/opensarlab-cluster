@@ -54,13 +54,13 @@ hub:
             c.JupyterHub.authenticator_class = 'nativeauthenticator.NativeAuthenticator'
             c.Authenticator.admin_users = {'emlundell_test1'}
             c.Authenticator.check_common_password = True
-            c.Authenticator.minimim_password_length = 10
+            c.Authenticator.minimum_password_length = 10
             #c.Authenticator.allowed_failed_logins = 3
             #c.Authenticator.seconds_before_next_try = 10
             #c.Authenticator.enable_signup = False
             #c.Authenticator.open_signup = True
             c.Authenticator.ask_email_on_signup = True
-            c.Authenticator.add_two_factor_authentication = True
+            #c.Authenticator.add_two_factor_authentication = True
 
         myHooks.py: |
             import z2jh
