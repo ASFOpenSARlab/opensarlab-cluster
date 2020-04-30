@@ -44,9 +44,6 @@ hub:
       tag: HUB_IMAGE_TAG
 
     extraConfig:
-        myARoot.py: |
-            # Run user root
-            c.KubeSpawner.uid = 0
 
         myAdminAccess.py: |
             #print("Admin user access not implemented...")
@@ -125,13 +122,13 @@ hub:
 
 
             # Run gitpuller after mounting volume
-            #c.KubeSpawner.lifecycle_hooks = {
-            #    "postStart": {
-            #        "exec": {
-            #            "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
-            #        }
-            #    }
-            #}
+            c.KubeSpawner.lifecycle_hooks = {
+                "postStart": {
+                    "exec": {
+                        "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
+                    }
+                }
+            }
 
         myHubCron.py: |
             import os

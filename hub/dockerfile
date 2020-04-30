@@ -38,4 +38,5 @@ ENV PYTHONPATH "${PYTHONPATH}:/etc/jupyterhub/custom/"
 
 RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
 
-USER jovyan
+#USER jovyan
+USER root 
