@@ -36,7 +36,7 @@ COPY delete_snapshot.py /etc/jupyterhub/custom/delete_snapshot.py
 RUN chown -R 1000:0 /etc/jupyterhub/custom/
 ENV PYTHONPATH "${PYTHONPATH}:/etc/jupyterhub/custom/"
 
-RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
+#RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
+RUN echo 'jovyan  ALL=(ALL:ALL)ALL' >> /etc/sudoers 
 
-#USER jovyan
-USER root 
+USER jovyan
