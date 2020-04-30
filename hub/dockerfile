@@ -17,13 +17,14 @@ RUN apt install --no-install-recommends -y \
     cron \
     less \
     vim \
-    sudo
+    sudo \
+    mailutils
+
+RUN echo "address { email-addr eric@localhost.example; email-domain opensarlab.asf.alaska.edu; };" > /etc/mailutils.conf
+
 RUN pip3 install --upgrade awscli pyyaml python-crontab
 
 COPY alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
-COPY generic_with_logout.py /usr/local/lib/python3.6/dist-packages/generic_with_logout.py
-COPY login.html /usr/local/share/jupyterhub/templates/login.html
-COPY pending.html /usr/local/share/jupyterhub/templates/pending.html
 
 RUN mkdir -p /etc/jupyterhub/custom
 COPY pv.yaml /etc/jupyterhub/custom/pv.yaml

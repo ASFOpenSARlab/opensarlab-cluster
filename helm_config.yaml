@@ -44,9 +44,13 @@ hub:
       tag: HUB_IMAGE_TAG
 
     extraConfig:
+        myARoot.py: |
+            # Run user root
+            c.KubeSpawner.uid = 0
+
         myAdminAccess.py: |
-            print("Admin user access not implemented...")
-            # c.JupyterHub.admin_access = True
+            #print("Admin user access not implemented...")
+            c.JupyterHub.admin_access = True
 
         myAuthConfig.py: |
             import z2jh
