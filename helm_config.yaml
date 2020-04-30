@@ -125,13 +125,13 @@ hub:
 
 
             # Run gitpuller after mounting volume
-            c.KubeSpawner.lifecycle_hooks = {
-                "postStart": {
-                    "exec": {
-                        "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
-                    }
-                }
-            }
+            #c.KubeSpawner.lifecycle_hooks = {
+            #    "postStart": {
+            #        "exec": {
+            #            "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
+            #        }
+            #    }
+            #}
 
         myHubCron.py: |
             import os
