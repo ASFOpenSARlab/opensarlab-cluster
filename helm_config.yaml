@@ -49,7 +49,7 @@ hub:
             c.KubeSpawner.environment = {
                 "GRANT_SUDO": "yes"
             }
-            c.KubeSpawner.gid = 100
+            c.KubeSpawner.gid = 599
 
         myAdminAccess.py: |
             #print("Admin user access not implemented...")
