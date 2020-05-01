@@ -44,6 +44,11 @@ hub:
       tag: HUB_IMAGE_TAG
 
     extraConfig:
+        myAAAsudo: |
+            c.KubeSpawner.args = ['--allow-root']
+            c.KubeSpawner.environment = {
+                "GRANT_SUDO": "yes"
+            }
 
         myAdminAccess.py: |
             #print("Admin user access not implemented...")
@@ -91,12 +96,6 @@ hub:
                         meta['vol_size'] = 500
 
                     volume_from_snapshot(meta)
-
-
-                    # Add sudo user to sudoer
-                    print(vars(spawner))
-                    with open("/etc/sudoers", "a") as f:
-                        f.write("jovyan ALL=(ALL) NOPASSWD: ALL")
 
                 except Exception as e:
                     print(e)
