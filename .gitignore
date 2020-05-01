@@ -6,5 +6,5 @@
 !helm_config.yaml
 !README.md
 !hub/
-!hub/**
+!hub/*
 !ebs-sc.yaml
