@@ -130,6 +130,10 @@ hub:
                 }
             }
 
+
+            # Run as root if allowed
+            c.KubeSpawner.privileged = True 
+
         myHubCron.py: |
             import os
             import z2jh
