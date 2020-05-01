@@ -38,7 +38,7 @@ ENV PYTHONPATH "${PYTHONPATH}:/etc/jupyterhub/custom/"
 
 COPY nativeauthenticator /tmp/nativeauthenticator
 RUN cd /tmp/nativeauthenticator \
-    && pip3 install -e .
+    && pip3 install -e . \
     && cd /
 
 #RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
