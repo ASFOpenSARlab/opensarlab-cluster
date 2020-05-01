@@ -45,10 +45,10 @@ hub:
 
     extraConfig:
         myAAAsudo: |
-            #c.KubeSpawner.args = ['--allow-root']
-            #c.KubeSpawner.environment = {
-            #    "GRANT_SUDO": "yes"
-            #}
+            c.KubeSpawner.args = ['--allow-root']
+            c.KubeSpawner.environment = {
+                "GRANT_SUDO": "yes"
+            }
             c.KubeSpawner.uid = 0
 
         myAdminAccess.py: |
@@ -128,13 +128,13 @@ hub:
 
 
             # Run gitpuller after mounting volume
-            #c.KubeSpawner.lifecycle_hooks = {
-            #    "postStart": {
-            #        "exec": {
-            #            "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
-            #        }
-            #    }
-            #}
+            c.KubeSpawner.lifecycle_hooks = {
+                "postStart": {
+                    "exec": {
+                        "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
+                    }
+                }
+            }
 
         myHubCron.py: |
             import os
