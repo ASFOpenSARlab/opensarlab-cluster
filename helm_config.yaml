@@ -45,10 +45,10 @@ hub:
 
     extraConfig:
         myAAAsudo: |
-            c.KubeSpawner.args = ['--allow-root']
-            c.KubeSpawner.environment = {
-                "GRANT_SUDO": "yes"
-            }
+            #c.KubeSpawner.args = ['--allow-root']
+            #c.KubeSpawner.environment = {
+            #    "GRANT_SUDO": "yes"
+            #}
             c.KubeSpawner.uid = 0
 
         myAdminAccess.py: |
