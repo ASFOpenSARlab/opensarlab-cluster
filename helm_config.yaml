@@ -195,7 +195,7 @@ hub:
                 my_db = c.JupyterHub.db
                 print(my_db)
 
-                from JupyterHub import orm as o
+                from c.JupyterHub import orm as o
                 print(o.Group)
                 my_db.query(o.Group).first()
 
