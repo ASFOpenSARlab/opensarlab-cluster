@@ -194,8 +194,11 @@ hub:
                 print(c.JupyterHub)
                 my_db = c.JupyterHub.db
                 print(my_db)
+                print(vars(my_db))
 
-                from c.JupyterHub import orm as o
+                from jupyterhub import orm as o
+                print(o)
+                print(dir(o))
                 print(o.Group)
                 my_db.query(o.Group).first()
 
