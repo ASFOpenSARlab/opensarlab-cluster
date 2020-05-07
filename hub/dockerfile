@@ -24,19 +24,19 @@ RUN echo "address { email-addr eric@localhost.example; email-domain opensarlab.a
 
 RUN pip3 install --upgrade awscli pyyaml python-crontab
 
-COPY alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
+COPY assets/alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
 
 RUN mkdir -p /etc/jupyterhub/custom
-COPY pv.yaml /etc/jupyterhub/custom/pv.yaml
-COPY pvc.yaml /etc/jupyterhub/custom/pvc.yaml
-COPY volume_stopping_tags.py /etc/jupyterhub/custom/volume_stopping_tags.py
-COPY volume_from_snapshot.py /etc/jupyterhub/custom/volume_from_snapshot.py
-COPY delete_volumes.py /etc/jupyterhub/custom/delete_volumes.py
-COPY delete_snapshot.py /etc/jupyterhub/custom/delete_snapshot.py
+COPY volumes/pv.yaml /etc/jupyterhub/custom/pv.yaml
+COPY volumes/pvc.yaml /etc/jupyterhub/custom/pvc.yaml
+COPY volumes/volume_stopping_tags.py /etc/jupyterhub/custom/volume_stopping_tags.py
+COPY volumes/volume_from_snapshot.py /etc/jupyterhub/custom/volume_from_snapshot.py
+COPY volumes/delete_volumes.py /etc/jupyterhub/custom/delete_volumes.py
+COPY volumes/delete_snapshot.py /etc/jupyterhub/custom/delete_snapshot.py
 RUN chown -R 1000:0 /etc/jupyterhub/custom/
 ENV PYTHONPATH "${PYTHONPATH}:/etc/jupyterhub/custom/"
 
-#RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
-RUN echo 'jovyan ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
+#RUN echo 'jovyan ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 USER jovyan

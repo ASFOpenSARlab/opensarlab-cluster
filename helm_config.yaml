@@ -44,13 +44,6 @@ hub:
       tag: HUB_IMAGE_TAG
 
     extraConfig:
-        myAAAsudo: |
-            c.KubeSpawner.args = ['--allow-root']
-            c.KubeSpawner.environment = {
-                "GRANT_SUDO": "yes"
-            }
-            c.KubeSpawner.gid = 599
-
         myAdminAccess.py: |
             #print("Admin user access not implemented...")
             c.JupyterHub.admin_access = True
@@ -197,6 +190,20 @@ hub:
             # https://jupyterhub-kubespawner.readthedocs.io/en/latest/spawner.html#kubespawner.KubeSpawner
             # Other singleuser server params can be taken from above to below as needed.
 
+            try:
+                print(c.JupyterHub)
+                my_db = c.JupyterHub.db
+                print(my_db)
+
+                from JupyterHub import orm as o
+                print(o.Group)
+                my_db.query(o.Group).first()
+
+            except Exception as e:
+                print("Problem with getting groups...")
+                print(e)
+
+
             group = ('general_cpu')  #, 'general_gpu')
 
             c.KubeSpawner.profile_list = []
@@ -240,6 +247,17 @@ hub:
             print("Subdomain not implemented...")
             #import z2jh
             #c.JupyterHub.subdomain_host = f"{z2jh.get_config('custom.OAUTH_JUPYTER_URL')}"
+
+        mySudo: |
+            print("Sudo not implemented...")
+
+            group = ('group')
+            if 'sudo' in group:
+                c.KubeSpawner.args = ['--allow-root']
+                c.KubeSpawner.environment = {
+                    "GRANT_SUDO": "yes"
+                }
+                c.KubeSpawner.gid = 599
 
 custom:
   OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
