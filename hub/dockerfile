@@ -27,12 +27,14 @@ RUN pip3 install --upgrade awscli pyyaml python-crontab
 COPY assets/alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
 
 RUN mkdir -p /etc/jupyterhub/custom
+COPY groups/group.py /etc/jupyterhub/custom/group.py
 COPY volumes/pv.yaml /etc/jupyterhub/custom/pv.yaml
 COPY volumes/pvc.yaml /etc/jupyterhub/custom/pvc.yaml
 COPY volumes/volume_stopping_tags.py /etc/jupyterhub/custom/volume_stopping_tags.py
 COPY volumes/volume_from_snapshot.py /etc/jupyterhub/custom/volume_from_snapshot.py
 COPY volumes/delete_volumes.py /etc/jupyterhub/custom/delete_volumes.py
 COPY volumes/delete_snapshot.py /etc/jupyterhub/custom/delete_snapshot.py
+
 RUN chown -R 1000:0 /etc/jupyterhub/custom/
 ENV PYTHONPATH "${PYTHONPATH}:/etc/jupyterhub/custom/"
 
