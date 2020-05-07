@@ -184,7 +184,10 @@ hub:
         myProfiles.py: |
 
             import z2jh
-            from jupyterhub import group
+            try:
+                import group
+            except Exception as e:
+                print(e)
 
             # Profile list programmatically
             # Ideally, if/else statements based on permissions would determine the final choices.
