@@ -192,15 +192,16 @@ hub:
 
             try:
                 print(c.JupyterHub)
-                my_db = c.JupyterHub.db
-                print(my_db)
-                print(vars(my_db))
+                my_db_url = c.JupyterHub.db_url
 
                 from jupyterhub import orm as o
-                print(o)
-                print(dir(o))
-                print(o.Group)
-                my_db.query(o.Group).first()
+                session_factory = o.new_session_factory(my_db_url)
+                print(session_factory)
+                my_db = session_factory()
+                users = my_db.query(o.Users)
+                print(users)
+                groups = my_db.query(o.Group).first()
+                print(groups)
 
             except Exception as e:
                 print("Problem with getting groups...")
