@@ -11,7 +11,7 @@ from jupyterhub import orm
 
 class Groups():
 
-    def __init__(self, db=None: orm.db, db_url=None: str) -> None:
+    def __init__(self, db: orm.db = None, db_url: str = None) -> None:
 
         if db is not None:
             self.db = db
