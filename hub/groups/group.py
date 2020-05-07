@@ -1,6 +1,7 @@
 
-from jupyterhub import orm
+from typing import List, Dict
 
+from jupyterhub import orm
 """
     db_url = ''
     groups = Groups(db_url)
@@ -10,7 +11,7 @@ from jupyterhub import orm
 
 class Groups():
 
-    def __init__(self, db=None: orm.db, db_url=None: str):
+    def __init__(self, db=None: orm.db, db_url=None: str) -> None:
 
         if db is not None:
             self.db = db
@@ -20,7 +21,7 @@ class Groups():
         else:
             raise Exception("No db object or db url given.")
 
-    def get_all_groups(self) -> List(Group):
+    def get_all_groups(self) -> List[orm.Group]:
         return orm.Group.all()
 
     def add_group(self, group_metadata: Dict) -> None:
@@ -35,11 +36,11 @@ class Groups():
     def remove_group(self, group_name: str) -> None:
         pass
 
-    def get_users_of_group(self, group_name: str) -> List(User):
+    def get_users_of_group(self, group_name: str) -> List[orm.User]:
         group = orm.Group.find(self.db, name=group_name)
         return [g.user for g in group]
 
-    def get_group_names_for_user(self, user_name: str) -> List(str):
+    def get_group_names_for_user(self, user_name: str) -> List[str]:
         groups = self.get_all_groups()
         return [g.name for g in groups]
 
@@ -52,12 +53,12 @@ class Groups():
     def remove_user_from_group(self, user_name: str, group_name: str) -> None:
         pass
 
-    def _find_user(self, user_name: str):
+    def _find_user(self, user_name: str) -> str:
         """Find user in database."""
         orm_user = self.db.query(orm.User).filter(orm.User.name == user_name).first()
         return orm_user
 
-    def _add_user(self, **kwargs):
+    def _add_user(self, **kwargs) -> str:
         """Add a user to the database."""
         orm_user = _find_user(name=kwargs.get('name'))
         if orm_user is None:

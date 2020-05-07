@@ -183,6 +183,8 @@ hub:
 
         myProfiles.py: |
 
+            from typing import List, Dict
+
             import z2jh
             try:
                 import group
@@ -190,11 +192,11 @@ hub:
                 print(e)
 
             # Profile list programmatically
-            # Ideally, if/else statements based on permissions would determine the final choices.
+            # Ideally, if/else statements based on permissions would deterfrom typing import List, Dictmine the final choices.
             # https://jupyterhub-kubespawner.readthedocs.io/en/latest/spawner.html#kubespawner.KubeSpawner
             # Other singleuser server params can be taken from above to below as needed.
 
-            def profile_list_hook(spawner: c.Spawner) -> List(Dict):
+            def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                 try:
                     name = spawner.user.name
                     db = spawner.db
