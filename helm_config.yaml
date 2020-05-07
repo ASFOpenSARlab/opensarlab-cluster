@@ -198,7 +198,7 @@ hub:
                 session_factory = o.new_session_factory(my_db_url)
                 print(session_factory)
                 my_db = session_factory()
-                users = my_db.query(o.User)
+                users = my_db.query(o.User).first()
                 print(users)
                 groups = my_db.query(o.Group).first()
                 print(groups)
