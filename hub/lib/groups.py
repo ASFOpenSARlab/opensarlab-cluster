@@ -1,7 +1,10 @@
 
 from typing import List, Dict
 
-import orm
+try:
+    from . import orm
+except Exception as e:
+    print(e) 
 
 """
     db_url = ''
