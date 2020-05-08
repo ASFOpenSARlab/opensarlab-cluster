@@ -2,6 +2,7 @@
 from typing import List, Dict
 
 from jupyterhub import orm
+
 """
     db_url = ''
     groups = Groups(db_url)
@@ -11,7 +12,7 @@ from jupyterhub import orm
 
 class Groups():
 
-    def __init__(self, db: orm.db = None, db_url: str = None) -> None:
+    def __init__(self, db=None, db_url: str = None) -> None:
 
         if db is not None:
             self.db = db
