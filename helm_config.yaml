@@ -197,9 +197,9 @@ hub:
 
             g = group.Groups(db_url='sqlite:///jupyterhub.sqlite')
             g.add_group('general_cpu')
-            g.get_users_of_group('general_cpu')
+            g.get_users_in_group('general_cpu')
             g.add_user_to_group('emlundell_test1', 'general_cpu')
-            g.get_users_of_group('general_cpu')
+            g.get_users_in_group('general_cpu')
 
             """
 
