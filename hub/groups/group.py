@@ -23,7 +23,9 @@ class Groups():
             raise Exception("No db object or db url given.")
 
     def get_all_groups(self) -> List[orm.Group]:
-        return orm.Group.all()
+        print("get_all_groups not implemented...")
+        pass
+        #return orm.Group.all()
 
     def add_group(self, group_metadata: Dict) -> None:
         """
@@ -42,8 +44,10 @@ class Groups():
         return [g.user for g in group]
 
     def get_group_names_for_user(self, user_name: str) -> List[str]:
-        groups = self.get_all_groups()
-        return [g.name for g in groups]
+        print("get_group_names_for_user not implemented...")
+        pass
+        #groups = self.get_all_groups()
+        #return [g.name for g in groups]
 
     def add_user_to_group(self, user_name: str, group_name: str) -> None:
         group = orm.Group.find(self.db, name=group_name)
