@@ -19,3 +19,7 @@ class GroupsHandler(BaseHandler):
             group_list=group_list,
         )
         self.finish(html)
+
+default_handlers = [
+    (r'/groups', GroupsHandler)
+]

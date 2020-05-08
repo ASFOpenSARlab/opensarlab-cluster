@@ -1,10 +1,7 @@
 
 from typing import List, Dict
 
-try:
-    from . import orm
-except Exception as e:
-    print(e) 
+from jupyterhub import orm 
 
 """
     db_url = ''
