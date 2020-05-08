@@ -185,12 +185,6 @@ hub:
 
             from typing import List, Dict
 
-            import z2jh
-            try:
-                import group
-            except Exception as e:
-                print(e)
-
             # Profile list programmatically
             # Ideally, if/else statements based on permissions would deterfrom typing import List, Dictmine the final choices.
             # https://jupyterhub-kubespawner.readthedocs.io/en/latest/spawner.html#kubespawner.KubeSpawner
@@ -198,13 +192,10 @@ hub:
 
             def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                 try:
-                    print(spawner)
-                    print(vars(spawner))
-                    name = spawner.user.name
-                    db = spawner.db
-                    print(name, db)
 
-                    groups = group.Groups(db=db)
+                    import group as group_py
+
+                    groups = group_py.Groups(db=db)
                     group_list = groups.get_group_names_for_user(name)
 
                     profile_list = []
