@@ -1,7 +1,7 @@
 
 from typing import List, Dict
 
-from jupyterhub import orm
+import orm
 
 """
     db_url = ''

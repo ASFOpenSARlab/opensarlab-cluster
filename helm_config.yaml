@@ -193,9 +193,9 @@ hub:
             """
             One way to manually add some Groups and names to Groups, kubectl into the hub, python3 and
 
-            import group
+            from jupyterhub import groups
 
-            g = group.Groups(db_url='sqlite:///jupyterhub.sqlite')
+            g = groups.Groups(db_url='sqlite:///jupyterhub.sqlite')
             g.add_group('general_cpu')
             g.get_users_in_group('general_cpu')
             g.add_user_to_group('emlundell_test1', 'general_cpu')
@@ -205,11 +205,11 @@ hub:
 
             def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                 try:
-                    import group as group_py
+                    from jupyterhub import groups as groups_py
 
                     user_name = spawner.user.name
 
-                    groups = group_py.Groups(db_url='sqlite:///jupyterhub.sqlite')
+                    groups = groups_py.Groups(db_url='sqlite:///jupyterhub.sqlite')
                     print(groups.get_all_groups())
                     group_list = groups.get_group_names_for_user(user_name=user_name)
                     print(group_list)

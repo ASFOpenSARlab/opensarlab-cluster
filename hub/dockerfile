@@ -24,10 +24,14 @@ RUN echo "address { email-addr eric@localhost.example; email-domain opensarlab.a
 
 RUN pip3 install --upgrade awscli pyyaml python-crontab
 
-COPY assets/alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
+COPY static/images/alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
+
+COPY templates/groups.html /usr/local/share/jupyterhub/templates/groups.html
+COPY lib/groups.py /usr/local/lib/python3.6/dist-packages/jupyterhub/groups.py
+COPY lib/handlers/groups.py /usr/local/lib/python3.6/dist-packages/jupyterhub/handlers/groups.py
+COPY lib/handlers/__init__.py /usr/local/lib/python3.6/dist-packages/jupyterhub/handlers/__init__.py
 
 RUN mkdir -p /etc/jupyterhub/custom
-COPY groups/group.py /etc/jupyterhub/custom/group.py
 COPY volumes/pv.yaml /etc/jupyterhub/custom/pv.yaml
 COPY volumes/pvc.yaml /etc/jupyterhub/custom/pvc.yaml
 COPY volumes/volume_stopping_tags.py /etc/jupyterhub/custom/volume_stopping_tags.py
