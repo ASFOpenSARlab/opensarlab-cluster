@@ -60,7 +60,7 @@ class Groups():
 
     def get_group_names_for_user(self, user_name: str) -> List[str]:
         groups = self.get_all_groups()
-        return [u.name for g in groups for u in g.users]
+        return [g.name for g in groups for u in g.users if u.name == user_name]
 
     def add_user_to_group(self, user_name: str, group_name: str) -> None:
         group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
