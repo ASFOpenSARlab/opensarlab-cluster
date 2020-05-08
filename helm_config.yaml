@@ -195,7 +195,9 @@ hub:
                     import group as group_py
 
                     groups = group_py.Groups(db=spawner.db)
-                    group_list = groups.get_group_names_for_user(name)
+                    print(groups.get_all_groups())
+                    group_list = groups.get_group_names_for_user(name=spawner.user.name)
+                    print(group_list)
 
                     profile_list = []
                     if 'general_cpu' in group_list:
