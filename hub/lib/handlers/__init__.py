@@ -2,6 +2,7 @@ from . import base
 from . import login
 from . import metrics
 from . import pages
+from . import groups
 from .base import *
 from .login import *
 
