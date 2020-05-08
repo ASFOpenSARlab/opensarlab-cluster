@@ -37,7 +37,7 @@ class Groups():
             print(f"Group {group_name} not found.")
             return
 
-        self.session.delete(group)
+        self.session.remove(group)
         self.session.commit()
 
     def get_users_in_group(self, group_name: str) -> List[orm.User]:
@@ -87,5 +87,5 @@ class Groups():
             print(f"User {user_name} not found.")
             return
 
-        group.users.delete(user)
+        group.users.remove(user)
         self.session.commit()
