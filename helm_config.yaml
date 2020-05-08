@@ -192,10 +192,9 @@ hub:
 
             def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                 try:
-
                     import group as group_py
 
-                    groups = group_py.Groups(db=db)
+                    groups = group_py.Groups(db=spawner.db)
                     group_list = groups.get_group_names_for_user(name)
 
                     profile_list = []
