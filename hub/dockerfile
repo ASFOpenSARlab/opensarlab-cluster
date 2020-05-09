@@ -29,7 +29,7 @@ COPY static/images/alaska_satellite_facility_1000.png /usr/local/share/jupyterhu
 COPY templates/groups.html /usr/local/share/jupyterhub/templates/groups.html
 COPY lib/groups.py /usr/local/lib/python3.6/dist-packages/jupyterhub/groups.py
 COPY lib/handlers/groups.py /usr/local/lib/python3.6/dist-packages/jupyterhub/handlers/groups.py
-#COPY lib/handlers/__init__.py /usr/local/lib/python3.6/dist-packages/jupyterhub/handlers/__init__.py
+COPY lib/handlers/__init__.py /usr/local/lib/python3.6/dist-packages/jupyterhub/handlers/__init__.py
 
 RUN mkdir -p /etc/jupyterhub/custom
 COPY volumes/pv.yaml /etc/jupyterhub/custom/pv.yaml
