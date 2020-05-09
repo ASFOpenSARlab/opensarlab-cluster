@@ -9,9 +9,11 @@
 {% block main %}
 
 <div id="groups-main" class="container">
-    <h1>Groups go here!!</h1>
     {% for group in group_list %}
-        <p>group</p>
+    <div style="background-color: orange; width: 70%">{{ group.name}} </div>
+        {% for user in group.users %}
+        <div> &nbsp &nbsp &nbsp &nbsp {{ user.name }} </div>
+        {% endfor %}
     {% endfor %}
 </div>
 

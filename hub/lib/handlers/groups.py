@@ -20,6 +20,7 @@ class GroupsHandler(BaseHandler):
         )
         self.finish(html)
 
+
 default_handlers = [
     (r'/groups', GroupsHandler)
 ]

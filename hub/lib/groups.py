@@ -1,7 +1,7 @@
 
 from typing import List, Dict
 
-from jupyterhub import orm 
+from jupyterhub import orm
 
 """
     db_url = ''
@@ -49,7 +49,7 @@ class Groups():
 
         return group.users
 
-    def get_user_names_in_group(self, group_name: str) -> List[orm.User]:
+    def get_user_names_in_group(self, group_name: str) -> List[str]:
         group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
 
         if group == None:
