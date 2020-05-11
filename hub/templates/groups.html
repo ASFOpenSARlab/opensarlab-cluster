@@ -10,12 +10,20 @@
 
 <div id="groups-main" class="container">
     {% for group in group_list %}
-    <div style="background-color: orange; width: 70%">{{ group.name}} </div>
+    <div style="background-color: orange; width: 70%">
+        <p> {{ group.name}} </p>
         {% for user in group.users %}
         <div> &nbsp &nbsp &nbsp &nbsp {{ user.name }} </div>
         {% endfor %}
+    </div>
     {% endfor %}
+    <div>
+        {% for user in users %}
+        <p> {{ user }} </p>
+        {% endfor %}
+    </div>
 </div>
+
 
 {% endblock %}
 
