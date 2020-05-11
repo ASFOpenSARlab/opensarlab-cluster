@@ -13,7 +13,7 @@ def delete_volumes():
 
         print("Checking for expired volumes...")
 
-        with open("/srv/etc/meta.yaml", 'r') as f:
+        with open("/etc/jupyterhub/custom/meta.yaml", 'r') as f:
             data = f.read()
 
         meta = yaml.safe_load(data)
