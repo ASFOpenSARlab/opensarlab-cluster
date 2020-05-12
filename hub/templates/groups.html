@@ -72,21 +72,24 @@
         // this will contain a reference to the checkbox
         if (this.checked) {
             console.log("User '" + this.dataset.user + "' has checked group '" + this.dataset.group + "'");
-            var jqxhr = $.post( "/hub/groups", function(data) {
+            the_data = {"user": this.dataset.user, "group": this.dataset.group, "is_checked": true}
+            var jqxhr = $.post( "/hub/groups", this_data, function(result) {
                   alert( "success" );
-                  console.log("data is " + data);
-                })
-                .done(function() {
-                  alert( "second success" );
+                  console.log("result is " + result);
                 })
                 .fail(function() {
                   alert( "error" );
                 })
-                .always(function() {
-                  alert( "finished" );
-                });
         } else {
             console.log("User '" + this.dataset.user + "' has unchecked group '" + this.dataset.group + "'");
+            the_data = {"user": this.dataset.user, "group": this.dataset.group, "is_checked": false}
+            var jqxhr = $.post( "/hub/groups", this_data, function(result) {
+                  alert( "success" );
+                  console.log("result is " + result);
+                })
+                .fail(function() {
+                  alert( "error" );
+                })
         }
     });
 </script>

@@ -30,11 +30,11 @@ class GroupsHandler(BaseHandler):
 
     #@web.authenticated
     #@admin_only
-    def post(self, *args, **kwargs):
+    def post(self, data, *args, **kwargs):
         print("POST groups")
+        print(data)
         print(args)
         print(kwargs)
-
 
 default_handlers = [
     (r'/groups', GroupsHandler)
