@@ -39,10 +39,12 @@ class GroupsHandler(BaseHandler):
             group_name = data['group']
             is_checked = data['is_checked']
 
+            print(f"POST data includes: {data}")
+
             g = groups.Groups(db=self.db)
             user_names_in_group = g.get_user_names_in_group(group_name)
 
-            if is_checked:
+            if is_checked == 'true':
                 # if user is part of group already, skip
                 if user_name in user_names_in_group:
                     print(f"User '{user_name}' is already added to '{group_name}'. Do nothing.")
