@@ -30,10 +30,16 @@ class GroupsHandler(BaseHandler):
 
     #@web.authenticated
     #@admin_only
-    def post(self, *args, **kwargs):
+    def post(self):
         print("POST groups")
-        print(args)
-        print(kwargs)
+        data = {}
+        try:
+            for arg in self.request.arguments:
+                data[arg] = self.get_argument(arg, strip=False)
+        except Exception as e:
+            print(e)
+
+        print(data)
 
 default_handlers = [
     (r'/groups', GroupsHandler)
