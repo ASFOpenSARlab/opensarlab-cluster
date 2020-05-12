@@ -42,19 +42,19 @@
         <thead>
             <tr>
                 <th>Username</th>
-                {% for group in group_list %}
+                {% for group in groups %}
                 <th> {{ group.name }} </th>
                 {% endfor %}
                 <th> <button id="add_group_btn" >Add Group</button> </th>
             </tr>
         </thead>
         <tbody>
-           {% for user in users %}
+           {% for user in all_users %}
            <tr>
                    <td> {{ user.name }} </td>
-                   {% for group in group_list %}
+                   {% for group in groups %}
                        <td>
-                       {% if group.users[0].name == user.name %}
+                       {% if user.name in group.members %}
                        <input class="group_checkbox" type="checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}" checked />
                        {% else %}
                        <input class="group_checkbox" type="checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}" />
@@ -70,7 +70,7 @@
 <script>
     $('.group_checkbox').change(function() {
         console.log("User '" + this.dataset.user + "' has been updated for group '" + this.dataset.group + "'");
-        this_data = {"user": this.dataset.user, "group": this.dataset.group, "is_checked": this.checked}
+        this_data = {"user": this.dataset.user, "group": this.dataset.group, "change_to_checked": this.checked}
         var jqxhr = $.post( "/hub/groups", this_data, function(result) {
               console.log("Success is " + result);
             })
