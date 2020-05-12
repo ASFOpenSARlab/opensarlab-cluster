@@ -39,6 +39,7 @@ class GroupsHandler(BaseHandler):
             from jupyterhub import groups as groups_py
 
             data = {}
+            print("req.arg ", self.request.arguments)
             for arg in self.request.arguments:
                 data[arg] = self.get_argument(arg, strip=False)
             print("Posted data: ", data)
