@@ -45,7 +45,7 @@
                 {% for group in groups %}
                 <th> {{ group.name }} </th>
                 {% endfor %}
-                <th> <button id="add_group_btn" >Add Group</button> </th>
+                <th> <input id="add_group_box" type='text' size='20' placeholder='New Group Name'/> </th>
             </tr>
         </thead>
         <tbody>
@@ -70,13 +70,27 @@
 <script>
     $('.group_checkbox').change(function() {
         console.log("User '" + this.dataset.user + "' has been updated for group '" + this.dataset.group + "'");
-        this_data = {"user": this.dataset.user, "group": this.dataset.group, "change_to_checked": this.checked}
+        this_data = {"checked": {"user": this.dataset.user, "group": this.dataset.group, "change_to_checked": this.checked}}
         var jqxhr = $.post( "/hub/groups", this_data, function(result) {
               console.log("Success is " + result);
             })
             .fail(function(result) {
               console.log("Error: " + result)
             })
+    });
+
+    $('#add_group_box').on('keydown', function(e) {
+        if (e.keyCode == 13) {
+            group_name = $(this).val();
+            console.log("Group '" + group_name + "' is being added to table" )
+            this_data = {'add_group': {'group_name': group_name}}
+            var jqxhr = $.post( "/hub/groups", this_data, function(result) {
+                  console.log("Success is " + result);
+                })
+                .fail(function(result) {
+                  console.log("Error: " + result)
+                })
+        }
     });
 </script>
 

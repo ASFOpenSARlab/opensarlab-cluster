@@ -249,6 +249,13 @@ hub:
                         }
                         profile_list.append(profile)
 
+                    if 'sudo' in group_list:
+                        c.KubeSpawner.args = ['--allow-root']
+                        c.KubeSpawner.environment = {
+                            "GRANT_SUDO": "yes"
+                        }
+                        c.KubeSpawner.gid = 599
+
                 except Exception as e:
                     print("Something went wrong with the profiles...")
                     print(e)
@@ -263,16 +270,6 @@ hub:
             #import z2jh
             #c.JupyterHub.subdomain_host = f"{z2jh.get_config('custom.OAUTH_JUPYTER_URL')}"
 
-        mySudo: |
-            print("Sudo not implemented...")
-
-            group = ('group')
-            if 'sudo' in group:
-                c.KubeSpawner.args = ['--allow-root']
-                c.KubeSpawner.environment = {
-                    "GRANT_SUDO": "yes"
-                }
-                c.KubeSpawner.gid = 599
 
 custom:
   OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL

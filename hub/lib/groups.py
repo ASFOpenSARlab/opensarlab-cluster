@@ -33,15 +33,19 @@ class Groups():
         self.session.add(group)
         self.session.commit()
 
+        return True
+
     def delete_group(self, group_name: str) -> None:
         group = orm.Group(name=group_name)
 
         if group == None:
             print(f"Group {group_name} not found.")
-            return
+            return False
 
         self.session.remove(group)
         self.session.commit()
+
+        return True
 
     def get_users_in_group(self, group_name: str) -> List[orm.User]:
         group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
