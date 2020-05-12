@@ -69,19 +69,25 @@ class Groups():
         groups = self.get_all_groups()
         return [g.name for g in groups for u in g.users if u.name == user_name]
 
-    def add_user_to_group(self, user_name: str, group_name: str) -> None:
-        group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
-        user = self.session.query(orm.User).filter(orm.User.name == user_name).first()
+    def add_user_to_group(self, user_name: str, group_name: str) -> str:
+        try:
+            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+            user = self.session.query(orm.User).filter(orm.User.name == user_name).first()
 
-        if group == None:
-            print(f"Group {group_name} not found.")
-            return
-        if user == None:
-            print(f"User {user_name} not found.")
-            return
+            if group == None:
+                print(f"Group {group_name} not found.")
+                return
+            if user == None:
+                print(f"User {user_name} not found.")
+                return
 
-        group.users.append(user)
-        self.session.commit()
+            group.users.append(user)
+            self.session.commit()
+            return 'Success'
+
+        except Exception as e:
+            self.session.rollback()
+            return str(e)
 
     def remove_user_from_group(self, user_name: str, group_name: str) -> None:
         user = self.session.query(orm.User).filter(orm.User.name == user_name).first()

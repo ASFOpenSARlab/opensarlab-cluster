@@ -44,10 +44,10 @@ class GroupsHandler(BaseHandler):
                 data[arg] = self.get_argument(arg, strip=False)
             print("Posted data: ", data)
 
-            if 'checked' in data:
-                user_name = data['checked']['user']
-                group_name = data['checked']['group']
-                change_to_checked = data['checked']['change_to_checked']
+            if data['operation'] == 'checked':
+                user_name = data['user_name']
+                group_name = data['group_name']
+                change_to_checked = data['change_to_checked']
 
                 g = groups_py.Groups(db=self.db)
                 user_names_in_group = g.get_user_names_in_group(group_name)
@@ -58,7 +58,8 @@ class GroupsHandler(BaseHandler):
                         print(f"User '{user_name}' is already part of group '{group_name}'. Do nothing.")
                     else:
                         print(f"Add '{user_name}' to group '{group_name}'")
-                        g.add_user_to_group(user_name, group_name)
+                        res = g.add_user_to_group(user_name, group_name)
+                        return {"status": res}
 
                 else:
                     # If user is not already in group, skip
@@ -67,18 +68,21 @@ class GroupsHandler(BaseHandler):
                     else:
                         print(f"Remove '{user_name}' from group '{group_name}'")
                         g.remove_user_from_group(user_name, group_name)
+                        return {""}
 
-            elif 'add_group' in data:
-                group_name = data['add_group']['group_name']
-
-                g = groups_py.Groups(db=self.db)
-                return g.add_group(group_name)
-
-            elif 'delete_group' in data:
-                group_name = data['delete_group']['group_name']
+            elif data['operation'] == 'add_group':
+                group_name = data['group_name']
 
                 g = groups_py.Groups(db=self.db)
-                return g.delete_group(group_name)
+                res = g.add_group(group_name)
+                return {"status": res}
+
+            elif data['operation'] == 'delete_group':
+                group_name = data['group_name']
+
+                g = groups_py.Groups(db=self.db)
+                res = g.delete_group(group_name)
+                return {"status": res}
 
         except Exception as e:
             print("Something went wrong with the POST...")

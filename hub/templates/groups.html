@@ -43,7 +43,7 @@
             <tr>
                 <th>Username</th>
                 {% for group in groups %}
-                <th> {{ group.name }} </th>
+                <th class="group-name" data-group="{{ group.name }}"> {{ group.name }} </th>
                 {% endfor %}
                 <th> <input id="add_group_box" type='text' size='20' placeholder='New Group Name'/> </th>
             </tr>
@@ -51,13 +51,13 @@
         <tbody>
            {% for user in all_users %}
            <tr>
-                   <td> {{ user.name }} </td>
+                   <td class="user-name" data-user="{{ user.name }}"> {{ user.name }} </td>
                    {% for group in groups %}
-                       <td>
+                       <td class="group_checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}">
                        {% if user.name in group.members %}
-                       <input class="group_checkbox" type="checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}" checked />
+                       <input type="checkbox" checked />
                        {% else %}
-                       <input class="group_checkbox" type="checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}" />
+                       <input type="checkbox" />
                        {% endif %}
                        </td>
                    {% endfor %}
@@ -68,10 +68,19 @@
 </div>
 
 <script>
-    $('.group_checkbox').change(function() {
-        console.log("User '" + this.dataset.user + "' has been updated for group '" + this.dataset.group + "'");
-        this_data = {"checked": {"user": this.dataset.user, "group": this.dataset.group, "change_to_checked": this.checked}}
-        var jqxhr = $.post( "/hub/groups", this_data, function(result) {
+    $('.group_checkbox > input[checkbox]').change(function() {
+        user_name = this.parent.dataset.user;
+        group_name = this.parent.dataset.group;
+        change_to_checked = this.checked;
+        console.log("User '" + user_name + "' has been updated for group '" + group_name + "'");
+        this_data = {
+            "user_name": user_name,
+            "group_name": group_name,
+            "change_to_checked": change_to_checked,
+            "operation": "checked"
+        }
+        var jqxhr = $.post( "/hub/groups", this_data)
+            .done(function(result) {
               console.log("Success is " + result);
             })
             .fail(function(result) {
@@ -82,9 +91,42 @@
     $('#add_group_box').on('keydown', function(e) {
         if (e.keyCode == 13) {
             group_name = $(this).val();
-            console.log("Group '" + group_name + "' is being added to table" )
-            this_data = {'add_group': {'group_name': group_name}}
-            var jqxhr = $.post( "/hub/groups", this_data, function(result) {
+            console.log("Group '" + group_name + "' is being added to DB table" );
+            this_data = {
+                "group_name": group_name,
+                "operation": "add_group"
+            };
+            var jqxhr = $.post( "/hub/groups", this_data)
+                .done(function(result) {
+                  console.log("Success is " + result);
+
+                  // Insert table header into second-last column with name of group (to bump group box over one)
+                  th = '<th class="group-name" data-group="' + group_name + '"> ' + group_name + ' </th>';
+                  $("#users_groups th:last").prepend(th);
+
+                  // Loop down through rows, appending cell with name of group and username
+                  $("#users_groups tr:last").each(function(){
+                      user_name = this.parent.dataset.user;
+                      td = '<td class="group_checkbox" data-user="' + user_name + '" data-group="' + group_name + '"> <input type="checkbox" /> </td>';
+                      $(this).append(td)
+                  });
+                })
+                .fail(function(result) {
+                  console.log("Error: " + result)
+                })
+        }
+    });
+
+    $('.delete_group_button').on('keydown', function(e) {
+        if (e.keyCode == 13) {
+            group_name = this.dataset.group;
+            console.log("Group '" + group_name + "' is being deleted from DB table" )
+            this_data = {
+                "group_name": group_name,
+                "operation": "delete_group"
+            }
+            var jqxhr = $.post( "/hub/groups", this_data)
+                .done(function(result) {
                   console.log("Success is " + result);
                 })
                 .fail(function(result) {
@@ -92,6 +134,7 @@
                 })
         }
     });
+
 </script>
 
 
