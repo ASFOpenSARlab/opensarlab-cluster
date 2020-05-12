@@ -7,6 +7,7 @@ from .base import BaseHandler
 class GroupsHandler(BaseHandler):
     """Render the groups page."""
 
+    #@web.authenticated
     @admin_only
     def get(self):
 
@@ -26,6 +27,13 @@ class GroupsHandler(BaseHandler):
             group_list=group_list,
         )
         self.finish(html)
+
+    #@web.authenticated
+    #@admin_only
+    def post(self, *args, **kwargs):
+        print("POST groups")
+        print(args)
+        print(kwargs)
 
 
 default_handlers = [

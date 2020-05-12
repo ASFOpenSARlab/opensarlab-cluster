@@ -8,21 +8,88 @@
 
 {% block main %}
 
+<style>
+
+    #groups-main {
+    }
+
+    #groups-main thead th, tfoot th {
+      font-family: 'Rock Salt', cursive;
+    }
+
+    #groups-main th {
+      letter-spacing: 2px;
+      padding: 10px;
+    }
+
+    #groups-main td {
+      letter-spacing: 1px;
+      padding: 10px;
+    }
+
+    #groups-main tbody td {
+      text-align: center;
+    }
+
+    #groups-main tfoot th {
+      text-align: right;
+    }
+</style>
+
+
 <div id="groups-main" class="container">
-    {% for group in group_list %}
-    <div style="background-color: orange; width: 70%">
-        <p> {{ group.name}} </p>
-        {% for user in group.users %}
-        <div> &nbsp &nbsp &nbsp &nbsp {{ user.name }} </div>
-        {% endfor %}
-    </div>
-    {% endfor %}
-    <div>
-        {% for user in users %}
-        <p> {{ user }} </p>
-        {% endfor %}
-    </div>
+    <table id="users_groups">
+        <thead>
+            <tr>
+                <th>Username</th>
+                {% for group in group_list %}
+                <th> {{ group.name }} </th>
+                {% endfor %}
+                <th> <button id="add_group_btn" >Add Group</button> </th>
+            </tr>
+        </thead>
+        <tbody>
+           {% for user in users %}
+           <tr>
+                   <td> {{ user.name }} </td>
+                   {% for group in group_list %}
+                       <td>
+                       {% if group.users[0].name == user.name %}
+                       <input class="group_checkbox" type="checkbox" data-user="{{ user.name }}" data-group="{{ group.users[0].name }}" checked />
+                       {% else %}
+                       <input class="group_checkbox" type="checkbox" data-user="{{ user.name }}" data-group="{{ group.users[0].name }}" />
+                       {% endif %}
+                       </td>
+                   {% endfor %}
+           </tr>
+           {% endfor %}
+        </tbody>
+    </table>
 </div>
+
+<script>
+    $('.group_checkbox').change(function() {
+        // this will contain a reference to the checkbox
+        if (this.checked) {
+            console.log("User '" + this.dataset.user + "' has checked group '" + this.dataset.group + "'");
+            var jqxhr = $.post( "/hub/groups", function(data) {
+                  alert( "success" );
+                  console.log("data is " + data);
+                })
+                .done(function() {
+                  alert( "second success" );
+                })
+                .fail(function() {
+                  alert( "error" );
+                })
+                .always(function() {
+                  alert( "finished" );
+                });
+        } else {
+            console.log("User '" + this.dataset.user + "' has unchecked group '" + this.dataset.group + "'");
+        }
+    });
+</script>
 
 
 {% endblock %}
