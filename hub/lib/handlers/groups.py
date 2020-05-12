@@ -2,7 +2,7 @@
 #from .. import groups
 #from .. import orm
 from jupyterhub import orm
-from jupyterhub import groups 
+from jupyterhub import groups as groups_py
 from ..utils import admin_only
 from .base import BaseHandler
 
@@ -12,8 +12,13 @@ class GroupsHandler(BaseHandler):
     #@web.authenticated
     @admin_only
     def get(self):
-
-        g = groups.Groups(db=self.db)
+        try:
+            print("Module: ", dir(groups_by))
+        except:
+            print("groups not found. Reimport...")
+            from jupyterhub import groups as groups_py
+            
+        g = groups_py.Groups(db=self.db)
         group_list_obj = g.get_all_groups()
         groups = {
             'name': group_list_obj.name,
@@ -47,7 +52,7 @@ class GroupsHandler(BaseHandler):
 
             print(f"POST data includes: {data}")
 
-            g = groups.Groups(db=self.db)
+            g = groups_py.Groups(db=self.db)
             user_names_in_group = g.get_user_names_in_group(group_name)
 
             print(f"Usernames in group are '{user_names_in_group}'")
