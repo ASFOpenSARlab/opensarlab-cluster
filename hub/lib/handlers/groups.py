@@ -1,6 +1,8 @@
 
-from .. import groups
-from .. import orm
+#from .. import groups
+#from .. import orm
+from jupyterhub import orm
+from jupyterhub import groups 
 from ..utils import admin_only
 from .base import BaseHandler
 
