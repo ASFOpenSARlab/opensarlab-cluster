@@ -55,9 +55,9 @@
                    {% for group in group_list %}
                        <td>
                        {% if group.users[0].name == user.name %}
-                       <input class="group_checkbox" type="checkbox" data-user="{{ user.name }}" data-group="{{ group.users[0].name }}" checked />
+                       <input class="group_checkbox" type="checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}" checked />
                        {% else %}
-                       <input class="group_checkbox" type="checkbox" data-user="{{ user.name }}" data-group="{{ group.users[0].name }}" />
+                       <input class="group_checkbox" type="checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}" />
                        {% endif %}
                        </td>
                    {% endfor %}

@@ -33,30 +33,34 @@ class GroupsHandler(BaseHandler):
         for arg in self.request.arguments:
             data[arg] = self.get_argument(arg, strip=False)
 
-        # {'user': 'emlundell_test2', 'group': 'emlundell_test1', 'is_checked': 'true'}
-        print("Posted data: ", data)
-        user_name = data['user']
-        group_name = data['group']
-        is_checked = data['is_checked']
+        try:
+            print("Posted data: ", data)
+            user_name = data['user']
+            group_name = data['group']
+            is_checked = data['is_checked']
 
-        g = groups.Groups(db=self.db)
-        user_names_in_group = g.get_user_names_in_group(group_name)
+            g = groups.Groups(db=self.db)
+            user_names_in_group = g.get_user_names_in_group(group_name)
 
-        if is_checked:
-            # if user is part of group already, skip
-            if user_name in user_names_in_group:
-                print(f"User '{user_name}' is already added to '{group_name}'. Do nothing.")
+            if is_checked:
+                # if user is part of group already, skip
+                if user_name in user_names_in_group:
+                    print(f"User '{user_name}' is already added to '{group_name}'. Do nothing.")
+                else:
+                    print(f"Add '{user_name}' to group '{group_name}'")
+                    g.add_user_to_group(user_name, group_name)
+
             else:
-                print(f"Add '{user_name}' to group '{group_name}'")
-                g.add_user_to_group(user_name, group_name)
+                # If user is not in group, skip
+                if user_name not in user_names_in_group:
+                    print(f"User '{user_name}' is already removed from '{group_name}'. Do nothing.")
+                else:
+                    print(f"Remove '{user_name}' from group '{group_name}'")
+                    g.remove_user_from_group(user_name, group_name)
 
-        else:
-            # If user is not in group, skip
-            if user_name not in user_names_in_group:
-                print(f"User '{user_name}' is already removed from '{group_name}'. Do nothing.")
-            else:
-                print(f"Remove '{user_name}' from group '{group_name}'")
-                g.remove_user_from_group(user_name, group_name)
+        except Exception as e:
+            print("Something went wrong with the POST...")
+            print(e)
 
 default_handlers = [
     (r'/groups', GroupsHandler)
