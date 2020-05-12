@@ -12,12 +12,15 @@ from jupyterhub import orm
 
 class Groups():
 
-    def __init__(self, db=None, db_url: str = None) -> None:
+    def __init__(self, db=None, db_url: str = None, default=False) -> None:
 
         if db is not None:
             self.session = db
         elif db is None and db_url is not None:
             session_factory = orm.new_session_factory(db_url)
+            self.session = session_factory()
+        elif default:
+            session_factory = orm.new_session_factory('sqlite:////srv/jupyterhub/jupyterhub.sqlite')
             self.session = session_factory()
         else:
             raise Exception("No db object or db url given.")

@@ -1,8 +1,5 @@
 
-#from .. import groups
-#from .. import orm
 from jupyterhub import orm
-from jupyterhub import groups as groups_py
 from ..utils import admin_only
 from .base import BaseHandler
 
@@ -12,18 +9,16 @@ class GroupsHandler(BaseHandler):
     #@web.authenticated
     @admin_only
     def get(self):
-        try:
-            print("Module: ", dir(groups_by))
-        except:
-            print("groups not found. Reimport...")
-            from jupyterhub import groups as groups_py
-            
+        from jupyterhub import groups as groups_py
+
         g = groups_py.Groups(db=self.db)
         group_list_obj = g.get_all_groups()
-        groups = {
-            'name': group_list_obj.name,
-            'members': [u.name for u in group_list_obj.users]
-        }
+        groups = []
+        for group_obj in group_list_obj:
+            groups.append( {
+                'name': group_obj.name,
+                'members': [u.name for u in group_obj.users]
+            })
 
         all_users_query = self.db.query(orm.User)
         all_users = [self._user_from_orm(u) for u in all_users_query]
@@ -40,11 +35,13 @@ class GroupsHandler(BaseHandler):
     #@web.authenticated
     #@admin_only
     def post(self):
-        data = {}
-        for arg in self.request.arguments:
-            data[arg] = self.get_argument(arg, strip=False)
-
         try:
+            from jupyterhub import groups as groups_py
+
+            data = {}
+            for arg in self.request.arguments:
+                data[arg] = self.get_argument(arg, strip=False)
+
             print("Posted data: ", data)
             user_name = data['user']
             group_name = data['group']
