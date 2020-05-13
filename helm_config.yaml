@@ -251,11 +251,21 @@ hub:
 
                     if 'sudo' in group_list:
                         profile("Adding sudo privs...")
-                        spawner.KubeSpawner.args = ['--allow-root']
-                        spawner.KubeSpawner.environment = {
+                        spawner.args = ['--allow-root']
+                        spawner.environment = {
                             "GRANT_SUDO": "yes"
                         }
-                        spawner.KubeSpawner.gid = 599
+                        spawner.gid = 599
+
+                        try:
+                            print(spawner)
+                        except:
+                            pass
+
+                        try:
+                            print(dir(spawner))
+                        except:
+                            pass
 
                 except Exception as e:
                     print("Something went wrong with the profiles...")
