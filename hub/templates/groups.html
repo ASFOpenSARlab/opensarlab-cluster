@@ -81,9 +81,9 @@
 
 <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.js"></script>
 <script>
-    $(document).ready(function() {
+    jQuery(document).ready(function() {
 
-        $('#groups-main-table').DataTable();
+        //$('#groups-main-table').DataTable();
 
         $('#groups-main-table').on('change', '.group-checkbox', function() {
             user_name = $(this).data("user");
