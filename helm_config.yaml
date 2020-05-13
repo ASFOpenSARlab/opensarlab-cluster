@@ -229,7 +229,6 @@ hub:
                                 'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
                             }
                         }
-                        print("general_cpu", profile)
                         profile_list.append(profile)
 
                     if 'general_gpu' in group_list:
@@ -247,11 +246,10 @@ hub:
                                 'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
                             }
                         }
-                        print("gpu", profile)
                         profile_list.append(profile)
 
                     if 'sudo' in group_list:
-                        profile("Adding sudo privs...")
+                        print("Adding sudo privs...")
                         try:
                             print(spawner.args)
                             print(spawner.environment)
