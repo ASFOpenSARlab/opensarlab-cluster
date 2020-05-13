@@ -112,12 +112,12 @@
 
                   // Insert table header into second-last column with name of group (to bump group box over one)
                   th = '<th class="group-name" data-group="' + group_name + '"> ' + group_name + ' </th>';
-                  $("#users_groups thead tr").append(th);
+                  $("#users-groups thead tr").append(th);
 
                   // Loop down through rows, appending cell with name of group and username
-                  $("#users_groups tbody tr").each(function(){
+                  $("#users-groups tbody tr").each(function(){
                       user_name = $(this).data("user");
-                      td = '<td class="group_checkbox" data-user="' + user_name + '" data-group="' + group_name + '"> <input type="checkbox" /> </td>';
+                      td = '<td class="group-checkbox" data-user="' + user_name + '" data-group="' + group_name + '"> <input type="checkbox" /> </td>';
                       $(this).append(td)
                   });
                 })
