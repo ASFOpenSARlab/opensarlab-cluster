@@ -56,7 +56,7 @@
                 {% for group in groups %}
                 <th class="group-name" data-group="{{ group.name }}"> {{ group.name }} <span class="delete-group-button"> [x] </span> </th>
                 {% endfor %}
-                <th> <input id="add-group-box" type='text' size='20' placeholder='New Group Name'/> </th>
+                <th id="add-group"> <input id="add-group-box" type='text' size='20' placeholder='New Group Name'/> </th>
             </tr>
         </thead>
         <tbody>
@@ -67,7 +67,7 @@
                    <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}">
                    {% if user.name in group.members %}
                    <input type="checkbox" checked />
-                   {% else %}
+                   {% else %} ".inner"
                    <input type="checkbox" />
                    {% endif %}
                    </td>
@@ -79,6 +79,17 @@
 </div>
 
 <script>
+
+    // Add tooltips
+    $('.group-checkbox').each(function(){
+        $self = $(this);
+        user_name = $self.data("user");
+        group_name = $self.data("group");
+        $self.tooltip({
+            content: "Group: " + group_name + "/nUser: " + user_name;
+        });
+    });
+
     $('.group-checkbox').change(function() {
         user_name = $(this).data("user");
         group_name = $(this).data("group");
@@ -112,7 +123,7 @@
 
                   // Insert table header into second-last column with name of group (to bump group box over one)
                   th = '<th class="group-name" data-group="' + group_name + '"> ' + group_name + ' </th>';
-                  $("#users-groups thead tr").append(th);
+                  $("#add-group").before(th).val('')
 
                   // Loop down through rows, appending cell with name of group and username
                   $("#users-groups tbody tr").each(function(){
