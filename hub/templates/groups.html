@@ -37,11 +37,11 @@
 
     #groups-main .delete-group-button {
         color: orange;
-        opacity: 0.6;
+        opacity: 0.5;
         transition: 0.3s;
     }
 
-    #groups-main .delete-group-button {
+    #groups-main .delete-group-button:hover {
         opacity: 1;
     }
 
@@ -56,7 +56,7 @@
                 {% for group in groups %}
                 <th class="group-name" data-group="{{ group.name }}"> {{ group.name }} <span class="delete-group-button"> [x] </span> </th>
                 {% endfor %}
-                <th> <input id="add_group_box" type='text' size='20' placeholder='New Group Name'/> </th>
+                <th> <input id="add-group-box" type='text' size='20' placeholder='New Group Name'/> </th>
             </tr>
         </thead>
         <tbody>
@@ -82,8 +82,8 @@
     $('.group-checkbox').change(function() {
         user_name = $(this).data("user");
         group_name = $(this).data("group");
-        change_to_checked = $(this).children('input').checked;
-        console.log("User '" + user_name + "' has been updated for group '" + group_name + "'");
+        change_to_checked = $(this).children('input')[0].checked;
+        console.log("User '" + user_name + "' has been updated for group '" + group_name + "' because 'checked' is " + change_to_checked);
         this_data = {
             "user_name": user_name,
             "group_name": group_name,
