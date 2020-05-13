@@ -140,8 +140,7 @@
             .done(function(res) {
               console.log("Success " + res)
               // Delete matching table column
-        $.noConflict();
-    JQuery('#users-groups').DataTable();          $('.group-name').filter('[data-group="' + group_name + '"]').remove()
+              $('.group-name').filter('[data-group="' + group_name + '"]').remove()
               $('.group-checkbox').filter('[data-group="' + group_name + '"]').remove()
             })
             .fail(function(result) {
