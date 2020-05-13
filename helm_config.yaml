@@ -253,7 +253,7 @@ hub:
                         profile("Adding sudo privs...")
                         try:
                             spawner.args.append('--allow-root')
-                            spawner.environment["GRANT_SUDO"] = "yes"
+                            #spawner.environment["GRANT_SUDO"] = "yes"
                             spawner.gid = 599
                         except Exception as e:
                             print(e)
