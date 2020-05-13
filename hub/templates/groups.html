@@ -81,7 +81,7 @@
 
 <script>
 
-    $('.group-checkbox').change(function() {
+    $('#users-group').on('change', '.group-checkbox', function() {
         user_name = $(this).data("user");
         group_name = $(this).data("group");
         change_to_checked = $(this).children('input')[0].checked;
@@ -101,7 +101,7 @@
             })
     });
 
-    $('#add-group-box').on('keydown', function(e) {
+    $('#users-group').on('keydown', '#add-group-box', function(e) {
         if (e.keyCode == 13) {
             group_name = $(this).val();
             console.log("Group '" + group_name + "' is being added to DB table" );
@@ -129,7 +129,7 @@
         }
     });
 
-    $('.delete-group-button').on('click', function(e) {
+    $('#users-group').on('click', '.delete-group-button', function(e) {
         group_name = $(this).parent().data("group");
         console.log("Group '" + group_name + "' is being deleted from DB table" )
         this_data = {
