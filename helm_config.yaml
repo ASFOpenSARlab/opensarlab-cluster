@@ -250,13 +250,6 @@ hub:
                         profile_list.append(profile)
 
                     if 'sudo' in group_list:
-                        profile("Adding sudo privs...")
-                        spawner.args = ['--allow-root']
-                        spawner.environment = {
-                            "GRANT_SUDO": "yes"
-                        }
-                        spawner.gid = 599
-
                         try:
                             print(spawner)
                         except:
@@ -266,6 +259,13 @@ hub:
                             print(dir(spawner))
                         except:
                             pass
+
+                        profile("Adding sudo privs...")
+                        spawner.args = ['--allow-root']
+                        spawner.environment = {
+                            "GRANT_SUDO": "yes"
+                        }
+                        spawner.gid = 599
 
                 except Exception as e:
                     print("Something went wrong with the profiles...")
