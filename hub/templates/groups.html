@@ -83,9 +83,8 @@
 
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.js"></script>
 <script>
-    $(document).ready( function () {
-        $('#users-groups').DataTable();
-    } );
+
+    $('#users-groups').DataTable();
 
     $('#users-groups').on('change', '.group-checkbox', function() {
         user_name = $(this).data("user");
@@ -119,8 +118,9 @@
                 .done(function() {
 
                   // Insert table header into second-last column with name of group (to bump group box over one)
-                  th = '<th class="group-name" data-group="' + group_name + '"> ' + group_name + ' </th>';
-                  $("#add-group").before(th).val('')
+                  th = '<th class="group-name" data-group="' + group_name + '"> ' + group_name + ' <span class="delete-group-button" title="Delete group ' + group_name + '"> [x] </span> </th>';
+                  $("#add-group").before(th)
+                  $("#add-group-box").val('')
 
                   // Loop down through rows, appending cell with name of group and username
                   $("#users-groups tbody tr").each(function(){
