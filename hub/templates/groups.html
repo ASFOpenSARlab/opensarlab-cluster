@@ -135,8 +135,8 @@
             "operation": "delete_group"
         }
         var jqxhr = $.post( "/hub/groups", this_data)
-            .done(function() {
-              console.log("Success")
+            .done(function(res) {
+              console.log("Success " + res)
               // Delete matching table column
               $('.group-name').filter('[data-group="' + group_name + '"]').remove()
               $('.group-checkbox').filter('[data-group="' + group_name + '"]').remove()

@@ -37,7 +37,7 @@ class Groups():
             print(f"Group {group_name} not found.")
             return False
 
-        self.session.remove(group)
+        self.session.delete(group)
         self.session.commit()
 
         return True
