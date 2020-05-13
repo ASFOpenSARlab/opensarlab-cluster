@@ -127,7 +127,7 @@
         }
     });
 
-    $('.delete-group-button').on('down', function(e) {
+    $('.delete-group-button').on('click', function(e) {
         group_name = $(this).parent().data("group");
         console.log("Group '" + group_name + "' is being deleted from DB table" )
         this_data = {
@@ -139,6 +139,7 @@
               console.log("Success")
               // Delete matching table column
               $('.group-name').filter('[data-group="' + group_name + '"]').remove()
+              $('.group-checkbox').filter('[data-group="' + group_name + '"]').remove()
             })
             .fail(function(result) {
               console.log("Error: " + result)
