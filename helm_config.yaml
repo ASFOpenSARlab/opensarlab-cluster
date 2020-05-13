@@ -210,7 +210,6 @@ hub:
                     user_name = spawner.user.name
 
                     groups = groups_py.Groups(db_url='sqlite:///jupyterhub.sqlite')
-                    print(groups.get_all_groups())
                     group_list = groups.get_group_names_for_user(user_name=user_name)
                     print(group_list)
 
@@ -230,6 +229,7 @@ hub:
                                 'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
                             }
                         }
+                        print("general_cpu", profile)
                         profile_list.append(profile)
 
                     if 'general_gpu' in group_list:
@@ -247,6 +247,7 @@ hub:
                                 'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
                             }
                         }
+                        print("gpu", profile)
                         profile_list.append(profile)
 
                     if 'sudo' in group_list:
@@ -255,19 +256,23 @@ hub:
                             print(spawner.args)
                             print(spawner.environment)
                             print(spawner.gid)
-                        except:
-                            pass
+                        except Exception as e:
+                            print("print spawner.")
+                            print(e)
 
                         try:
                             spawner.args.append('--allow-root')
                             spawner.environment["GRANT_SUDO"] = "yes"
                             spawner.gid = 599
                         except Exception as e:
+                            print("spawner.")
                             print(e)
 
                 except Exception as e:
                     print("Something went wrong with the profiles...")
                     print(e)
+                    import traceback
+                    traceback.print_exc()
                     profile_list = []
 
                 return profile_list
