@@ -48,9 +48,6 @@
 
 </style>
 
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.css">
-
-
 <div id="groups-main" class="container">
     <table id="users-groups">
         <thead>
@@ -81,7 +78,6 @@
     </table>
 </div>
 
-<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.js"></script>
 <script>
 
     $('#users-groups').on('change', '.group-checkbox', function() {
@@ -144,16 +140,14 @@
             .done(function(res) {
               console.log("Success " + res)
               // Delete matching table column
-              $('.group-name').filter('[data-group="' + group_name + '"]').remove()
+        $.noConflict();
+    JQuery('#users-groups').DataTable();          $('.group-name').filter('[data-group="' + group_name + '"]').remove()
               $('.group-checkbox').filter('[data-group="' + group_name + '"]').remove()
             })
             .fail(function(result) {
               console.log("Error: " + result)
             })
     });
-
-    $.noConflict();
-    JQuery('#users-groups').DataTable();
 
 </script>
 
