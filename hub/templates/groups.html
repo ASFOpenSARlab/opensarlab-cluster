@@ -84,8 +84,6 @@
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.js"></script>
 <script>
 
-    $('#users-groups').DataTable();
-
     $('#users-groups').on('change', '.group-checkbox', function() {
         user_name = $(this).data("user");
         group_name = $(this).data("group");
@@ -153,6 +151,9 @@
               console.log("Error: " + result)
             })
     });
+
+    $.noConflict();
+    $('#users-groups').DataTable();
 
 </script>
 
