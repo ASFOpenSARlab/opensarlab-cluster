@@ -24,6 +24,13 @@ class Groups():
         return self.session.query(orm.Group).all()
 
     def add_group(self, group_name: str) -> None:
+
+        # Check if group exists already
+        group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+        if group is not None:
+            print(f"Group '{group_name}' already exists. Aborting adding group.")
+            return False
+
         group = orm.Group(name=group_name)
         self.session.add(group)
         self.session.commit()
@@ -45,7 +52,7 @@ class Groups():
     def get_users_in_group(self, group_name: str) -> List[orm.User]:
         group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
 
-        if group == None:
+        if group is None:
             print(f"Group {group_name} not found.")
             return
 
@@ -54,7 +61,7 @@ class Groups():
     def get_user_names_in_group(self, group_name: str) -> List[str]:
         group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
 
-        if group == None:
+        if group is None:
             print(f"Group {group_name} not found.")
             return
 
