@@ -59,7 +59,7 @@ class GroupsHandler(BaseHandler):
                     else:
                         print(f"Add '{user_name}' to group '{group_name}'")
                         res = g.add_user_to_group(user_name, group_name)
-                        print(res}
+                        print(res)
 
                 else:
                     # If user is not already in group, skip
