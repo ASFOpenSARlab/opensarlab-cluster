@@ -39,6 +39,7 @@
         color: orange;
         opacity: 0.5;
         transition: 0.3s;
+        cursor: pointer;
     }
 
     #groups-main .delete-group-button:hover {
@@ -54,7 +55,7 @@
             <tr>
                 <th>Username</th>
                 {% for group in groups %}
-                <th class="group-name" data-group="{{ group.name }}"> {{ group.name }} <span class="delete-group-button"> [x] </span> </th>
+                <th class="group-name" data-group="{{ group.name }}"> {{ group.name }} <span class="delete-group-button" title="Delete group {{ group.name }}"> [x] </span> </th>
                 {% endfor %}
                 <th id="add-group"> <input id="add-group-box" type='text' size='20' placeholder='New Group Name'/> </th>
             </tr>
@@ -66,9 +67,9 @@
                {% for group in groups %}
                    <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}">
                    {% if user.name in group.members %}
-                   <input type="checkbox" checked />
-                   {% else %} ".inner"
-                   <input type="checkbox" />
+                   <input type="checkbox" title="Group: {{ group.name }}, User: {{ user.name }}" checked />
+                   {% else %}
+                   <input type="checkbox" title="Group: {{ group.name }}, User: {{ user.name }}" />
                    {% endif %}
                    </td>
                {% endfor %}
@@ -79,16 +80,6 @@
 </div>
 
 <script>
-
-    // Add tooltips
-    $('.group-checkbox').each(function(){
-        $self = $(this);
-        user_name = $self.data("user");
-        group_name = $self.data("group");
-        $self.tooltip({
-            content: "Group: " + group_name + "/nUser: " + user_name
-        });
-    });
 
     $('.group-checkbox').change(function() {
         user_name = $(this).data("user");
@@ -128,7 +119,7 @@
                   // Loop down through rows, appending cell with name of group and username
                   $("#users-groups tbody tr").each(function(){
                       user_name = $(this).data("user");
-                      td = '<td class="group-checkbox" data-user="' + user_name + '" data-group="' + group_name + '"> <input type="checkbox" /> </td>';
+                      td = '<td class="group-checkbox" data-user="' + user_name + '" data-group="' + group_name + '"> <input type="checkbox" title="Group: ' + group_name + ', User: ' + user_name + '"/> </td>';
                       $(this).append(td)
                   });
                 })
