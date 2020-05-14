@@ -248,11 +248,16 @@ hub:
                         }
                         profile_list.append(profile)
 
+                    # This clause for sudo should always be last
                     if 'sudo' in group_list:
                         print("Adding sudo privs...")
                         spawner.args.append('--allow-root')
                         spawner.environment["GRANT_SUDO"] = "yes"
                         spawner.gid = 599
+
+                        # Users should know that sudo is enabled in profile before entering
+                        for profile in profile_list:
+                            profile['display_name'] += " (Sudo Enabled)"
 
                 except Exception as e:
                     print("Something went wrong with the profiles...")
