@@ -121,29 +121,8 @@
     </table>
 </div>
 
-<script src="/hub/static/components/requirejs/require.js?v=f0cc8bbb2fcef87fc194fecbb632fcfa" type="text/javascript" charset="utf-8"></script>
 <script src="/hub/static/components/jquery/dist/jquery.min.js?v=220afd743d9e9643852e31a135a9f3ae" type="text/javascript" charset="utf-8"></script>
 <script src="/hub/static/components/bootstrap/dist/js/bootstrap.min.js?v=2f34b630ffe30ba2ff2b91e3f3c322a1" type="text/javascript" charset="utf-8"></script>
-<script>
-      require.config({
-
-          urlArgs: "v=20200514031236",
-
-          baseUrl: '/hub/static/js',
-          paths: {
-            components: '../components',
-            jquery: '../components/jquery/dist/jquery.min',
-            bootstrap: '../components/bootstrap/dist/js/bootstrap.min',
-            moment: "../components/moment/moment",
-          },
-          shim: {
-            bootstrap: {
-              deps: ["jquery"],
-              exports: "bootstrap"
-            },
-          }
-      });
-</script>
 <script type="text/javascript">
       window.jhdata = {
         base_url: "/hub/",
