@@ -104,17 +104,17 @@
         <tbody>
            {% for user in all_users %}
            <tr data-user="{{ user.name }}">
-               <td class="user-name" data-user="{{ user.name }}"> {{ user.name }} </td>
-               {% for group in groups %}
-                   <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}">
-                   {% if user.name in group.members %}
-                   <input type="checkbox" title="Group: {{ group.name }}, User: {{ user.name }}" checked />
-                   {% else %}
-                   <input type="checkbox" title="Group: {{ group.name }}, User: {{ user.name }}" />
-                   {% endif %}
-                   </td>
-               {% endfor %}
-               <td><td/>
+                <td class="user-name" data-user="{{ user.name }}"> {{ user.name }} </td>
+                {% for group in groups %}
+                <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}">
+                    {% if user.name in group.members %}
+                    <input type="checkbox" title="Group: {{ group.name }}, User: {{ user.name }}" checked />
+                    {% else %}
+                    <input type="checkbox" title="Group: {{ group.name }}, User: {{ user.name }}" />
+                    {% endif %}
+                    </td>
+                {% endfor %}
+                <td>&nbsp;&nbsp;&nbsp;<td/>
            </tr>
            {% endfor %}
         </tbody>
