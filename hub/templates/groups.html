@@ -1,53 +1,94 @@
-{% extends "page.html" %}
-{% if announcement_login %}
-  {% set announcement = announcement_login %}
-{% endif %}
+<!DOCTYPE HTML>
+<html>
 
-{% block login_widget %}
-{% endblock %}
+<head>
+    <meta charset="utf-8">
 
-{% block main %}
+    <title>JupyterHub</title>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.css"/>
-<style>
+    <link rel="stylesheet" href="/hub/static/css/style.min.css?v=ab35cbd1a6857ec00620a56c43760477" type="text/css"/>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.css"/>
+    <style>
 
-    #groups-main {
-    }
+        #groups-main {
+        }
 
-    #groups-main thead th, tfoot th {
-        font-family: 'Rock Salt', cursive;
-    }
+        #groups-main thead th, tfoot th {
+            font-family: 'Rock Salt', cursive;
+        }
 
-    #groups-main th {
-        letter-spacing: 2px;
-        padding: 10px;
-    }
+        #groups-main th {
+            letter-spacing: 2px;
+            padding: 10px;
+        }
 
-    #groups-main td {
-        letter-spacing: 1px;
-        padding: 10px;
-    }
+        #groups-main td {
+            letter-spacing: 1px;
+            padding: 10px;
+        }
 
-    #groups-main tbody td {
-        text-align: center;
-    }
+        #groups-main tbody td {
+            text-align: center;
+        }
 
-    #groups-main tfoot th {
-        text-align: right;
-    }
+        #groups-main tfoot th {
+            text-align: right;
+        }
 
-    #groups-main .delete-group-button {
-        color: orange;
-        opacity: 0.5;
-        transition: 0.3s;
-        cursor: pointer;
-    }
+        #groups-main .delete-group-button {
+            color: orange;
+            opacity: 0.5;
+            transition: 0.3s;
+            cursor: pointer;
+        }
 
-    #groups-main .delete-group-button:hover {
-        opacity: 1;
-    }
+        #groups-main .delete-group-button:hover {
+            opacity: 1;
+        }
 
-</style>
+    </style>
+
+</head>
+
+<body>
+
+<noscript>
+  <div id='noscript'>
+    JupyterHub requires JavaScript.<br>
+    Please enable it to proceed.
+  </div>
+</noscript>
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <div class="navbar-header">
+
+        <span id="jupyterhub-logo" class="pull-left">
+            <a href="/hub/"><img src='/hub/logo' alt='JupyterHub' class='jpy-logo' title='Home'/></a>
+        </span>
+
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#thenavbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+
+      <div class="collapse navbar-collapse" id="thenavbar">
+        <ul class="nav navbar-nav">
+            <li><a href="/hub/home">Home</a></li>
+            <li><a href="/hub/token">Token</a></li>
+            <li><a href="/hub/admin">Admin</a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+            <li>
+            </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
 
 <div id="groups-main" class="container">
     <table id="groups-main-table">
@@ -80,12 +121,38 @@
     </table>
 </div>
 
-<!-- I have no idea why we need jquery here for DataTables to work but we do -->
-<script> $.noConflict(); </script>
-<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.min.js"></script>
+<script src="/hub/static/components/requirejs/require.js?v=f0cc8bbb2fcef87fc194fecbb632fcfa" type="text/javascript" charset="utf-8"></script>
+<script src="/hub/static/components/jquery/dist/jquery.min.js?v=220afd743d9e9643852e31a135a9f3ae" type="text/javascript" charset="utf-8"></script>
+<script src="/hub/static/components/bootstrap/dist/js/bootstrap.min.js?v=2f34b630ffe30ba2ff2b91e3f3c322a1" type="text/javascript" charset="utf-8"></script>
+<script>
+      require.config({
 
+          urlArgs: "v=20200514031236",
+
+          baseUrl: '/hub/static/js',
+          paths: {
+            components: '../components',
+            jquery: '../components/jquery/dist/jquery.min',
+            bootstrap: '../components/bootstrap/dist/js/bootstrap.min',
+            moment: "../components/moment/moment",
+          },
+          shim: {
+            bootstrap: {
+              deps: ["jquery"],
+              exports: "bootstrap"
+            },
+          }
+      });
+</script>
+<script type="text/javascript">
+      window.jhdata = {
+        base_url: "/hub/",
+        prefix: "/",
+        user: "emlundell_test1",
+        admin_access: true,
+        options_form: true,
+      }
+</script>
 <script type="text/javascript" charset="utf8">
 
     $('#groups-main-table').DataTable();
@@ -159,11 +226,3 @@
     });
 
 </script>
-
-
-{% endblock %}
-
-{% block script %}
-{{ super() }}
-
-{% endblock %}
