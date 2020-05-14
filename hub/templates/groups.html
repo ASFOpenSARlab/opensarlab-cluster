@@ -81,79 +81,78 @@
 
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.js"></script>
 <script type="text/javascript" charset="utf8">
-    jQuery(document).ready(function() {
 
-        //$('#groups-main-table').DataTable();
+    $.noConflict();
+    $('#groups-main-table').DataTable();
 
-        $('#groups-main-table').on('change', '.group-checkbox', function() {
-            user_name = $(this).data("user");
-            group_name = $(this).data("group");
-            change_to_checked = $(this).children('input')[0].checked;
-            console.log("User '" + user_name + "' has been updated for group '" + group_name + "' because 'checked' is " + change_to_checked);
+    $('#groups-main-table').on('change', '.group-checkbox', function() {
+        user_name = $(this).data("user");
+        group_name = $(this).data("group");
+        change_to_checked = $(this).children('input')[0].checked;
+        console.log("User '" + user_name + "' has been updated for group '" + group_name + "' because 'checked' is " + change_to_checked);
+        this_data = {
+            "user_name": user_name,
+            "group_name": group_name,
+            "change_to_checked": change_to_checked,
+            "operation": "checked"
+        }
+        var jqxhr = $.post( "/hub/groups", this_data)
+            .done(function() {
+              console.log("Success");
+            })
+            .fail(function(result) {
+              console.log("Error: " + result)
+            })
+    });
+
+    $('#groups-main-table').on('keydown', '#add-group-box', function(e) {
+        if (e.keyCode == 13) {
+            group_name = $(this).val();
+            console.log("Group '" + group_name + "' is being added to DB table" );
             this_data = {
-                "user_name": user_name,
                 "group_name": group_name,
-                "change_to_checked": change_to_checked,
-                "operation": "checked"
-            }
+                "operation": "add_group"
+            };
             var jqxhr = $.post( "/hub/groups", this_data)
                 .done(function() {
-                  console.log("Success");
+
+                  // Insert table header into second-last column with name of group (to bump group box over one)
+                  th = '<th class="group-name" data-group="' + group_name + '"> ' + group_name + ' <span class="delete-group-button" title="Delete group ' + group_name + '"> [x] </span> </th>';
+                  $("#add-group").before(th)
+                  $("#add-group-box").val('')
+
+                  // Loop down through rows, appending cell with name of group and username
+                  $("#groups-main-table tbody tr").each(function(){
+                      user_name = $(this).data("user");
+                      td = '<td class="group-checkbox" data-user="' + user_name + '" data-group="' + group_name + '"> <input type="checkbox" title="Group: ' + group_name + ', User: ' + user_name + '"/> </td>';
+                      $(this).append(td)
+                  });
                 })
                 .fail(function(result) {
                   console.log("Error: " + result)
                 })
-        });
-
-        $('#groups-main-table').on('keydown', '#add-group-box', function(e) {
-            if (e.keyCode == 13) {
-                group_name = $(this).val();
-                console.log("Group '" + group_name + "' is being added to DB table" );
-                this_data = {
-                    "group_name": group_name,
-                    "operation": "add_group"
-                };
-                var jqxhr = $.post( "/hub/groups", this_data)
-                    .done(function() {
-
-                      // Insert table header into second-last column with name of group (to bump group box over one)
-                      th = '<th class="group-name" data-group="' + group_name + '"> ' + group_name + ' <span class="delete-group-button" title="Delete group ' + group_name + '"> [x] </span> </th>';
-                      $("#add-group").before(th)
-                      $("#add-group-box").val('')
-
-                      // Loop down through rows, appending cell with name of group and username
-                      $("#groups-main-table tbody tr").each(function(){
-                          user_name = $(this).data("user");
-                          td = '<td class="group-checkbox" data-user="' + user_name + '" data-group="' + group_name + '"> <input type="checkbox" title="Group: ' + group_name + ', User: ' + user_name + '"/> </td>';
-                          $(this).append(td)
-                      });
-                    })
-                    .fail(function(result) {
-                      console.log("Error: " + result)
-                    })
-            }
-        });
-
-        $('#groups-main-table').on('click', '.delete-group-button', function(e) {
-            group_name = $(this).parent().data("group");
-            console.log("Group '" + group_name + "' is being deleted from DB table" )
-            this_data = {
-                "group_name": group_name,
-                "operation": "delete_group"
-            }
-            var jqxhr = $.post( "/hub/groups", this_data)
-                .done(function(res) {
-                  console.log("Success " + res)
-                  // Delete matching table column
-                  $('.group-name').filter('[data-group="' + group_name + '"]').remove()
-                  $('.group-checkbox').filter('[data-group="' + group_name + '"]').remove()
-                })
-                .fail(function(result) {
-                  console.log("Error: " + result)
-                })
-        });
-
+        }
     });
+
+    $('#groups-main-table').on('click', '.delete-group-button', function(e) {
+        group_name = $(this).parent().data("group");
+        console.log("Group '" + group_name + "' is being deleted from DB table" )
+        this_data = {
+            "group_name": group_name,
+            "operation": "delete_group"
+        }
+        var jqxhr = $.post( "/hub/groups", this_data)
+            .done(function(res) {
+              console.log("Success " + res)
+              // Delete matching table column
+              $('.group-name').filter('[data-group="' + group_name + '"]').remove()
+              $('.group-checkbox').filter('[data-group="' + group_name + '"]').remove()
+            })
+            .fail(function(result) {
+              console.log("Error: " + result)
+            })
+    });
+
 </script>
 
 
