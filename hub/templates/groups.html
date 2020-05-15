@@ -106,13 +106,15 @@
            <tr data-user="{{ user.name }}">
                 <td class="user-name" data-user="{{ user.name }}"> {{ user.name }} </td>
                 {% for group in groups %}
-                <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}">
-                    {% if user.name in group.members %}
+                {% if user.name in group.members %}
+                <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}" data-order="true">
                     <input type="checkbox" title="Group: {{ group.name }}, User: {{ user.name }}" checked />
-                    {% else %}
+                </td>
+                {% else %}
+                <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}" data-order="false">
                     <input type="checkbox" title="Group: {{ group.name }}, User: {{ user.name }}" />
-                    {% endif %}
-                    </td>
+                </td>
+                {% endif %}
                 {% endfor %}
                 <td>&nbsp;&nbsp;&nbsp;</td>
            </tr>
@@ -137,7 +139,9 @@
 </script>
 <script type="text/javascript" charset="utf8">
 
-    $('#groups-main-table').DataTable();
+    $('#groups-main-table').DataTable({
+        "scrollX": true
+    });
 
     $('#groups-main-table').on('change', '.group-checkbox', function() {
         user_name = $(this).data("user");
@@ -153,6 +157,7 @@
         var jqxhr = $.post( "/hub/groups", this_data)
             .done(function() {
               console.log("Success");
+              $(this).data("order", str(change_to_checked));
             })
             .fail(function(result) {
               console.log("Error: " + result)
@@ -178,7 +183,7 @@
                   // Loop down through rows, appending cell with name of group and username
                   $("#groups-main-table tbody tr").each(function(){
                       user_name = $(this).data("user");
-                      td = '<td class="group-checkbox" data-user="' + user_name + '" data-group="' + group_name + '"> <input type="checkbox" title="Group: ' + group_name + ', User: ' + user_name + '"/> </td>';
+                      td = '<td class="group-checkbox" data-user="' + user_name + '" data-group="' + group_name + '" data-order="false"> <input type="checkbox" title="Group: ' + group_name + ', User: ' + user_name + '"/> </td>';
                       $(this).children('td:last').before(td);
                   });
                 })
