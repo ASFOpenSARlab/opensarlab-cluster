@@ -207,8 +207,6 @@
             "group_name": group_name,
             "operation": "delete_group"
         }
-        if not modal(delete)
-            return false;
         var jqxhr = $.post( "/hub/groups", this_data)
             .done(function(res) {
               console.log("Success " + res)
