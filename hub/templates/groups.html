@@ -157,7 +157,7 @@
         var jqxhr = $.post( "/hub/groups", this_data)
             .done(function() {
                 console.log("Success");
-                $(this).data("order", "" + change_to_checked));
+                $(this).data("order", "" + change_to_checked);
                 table.draw();
             })
             .fail(function(result) {
