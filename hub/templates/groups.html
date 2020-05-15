@@ -203,7 +203,7 @@
     $('#groups-main-table').on('click', '.delete-group-button', function(e) {
         group_name = $(this).parent().data("group");
         $('#delete-group-button span').val(group_name).data("group-name", group_name);
-        $('#group-warning-dialog'n).modal("show");
+        $('#group-warning-dialog').modal("show");
     });
 
     $('#delete-group-button').on('click', function(e) {
