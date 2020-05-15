@@ -12,6 +12,7 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.css"/>
     <style>
 
+        /*
         #groups-main {
         }
 
@@ -36,6 +37,7 @@
         #groups-main tfoot th {
             text-align: right;
         }
+        */
 
         #groups-main .delete-group-button {
             color: orange;
@@ -91,14 +93,14 @@
   </nav>
 
 <div id="groups-main" class="container">
-    <table id="groups-main-table">
+    <table id="groups-main-table" class="stripe">
         <thead>
             <tr>
                 <th>Username</th>
                 {% for group in groups %}
                 <th class="group-name" data-group="{{ group.name }}"> {{ group.name }} <span class="delete-group-button" title="Delete group {{ group.name }}"> [x] </span> </th>
                 {% endfor %}
-                <th id="add-group"> <input id="add-group-box" type='text' size='20' placeholder='New Group Name'/> </th>
+                <th id="add-group" data-orderable="false"> <input id="add-group-box" type='text' size='20' placeholder='New Group Name'/> </th>
             </tr>
         </thead>
         <tbody>
@@ -139,7 +141,7 @@
 </script>
 <script type="text/javascript" charset="utf8">
 
-    $('#groups-main-table').DataTable();
+    let table = $('#groups-main-table').DataTable();
 
     $('#groups-main-table').on('change', '.group-checkbox', function() {
         user_name = $(this).data("user");
@@ -154,11 +156,14 @@
         }
         var jqxhr = $.post( "/hub/groups", this_data)
             .done(function() {
-              console.log("Success");
-              $(this).data("order", str(change_to_checked));
+                console.log("Success");
+                $(this).data("order", "" + change_to_checked));
+                table.draw();
             })
             .fail(function(result) {
-              console.log("Error: " + result)
+                console.log("Error: " + result)
+                $("#error-dialog .ajax-error").val("There was an error while checking a checkbox: <br/> " + result)
+                $('#error-dialog').modal()
             })
     });
 
@@ -184,9 +189,13 @@
                       td = '<td class="group-checkbox" data-user="' + user_name + '" data-group="' + group_name + '" data-order="false"> <input type="checkbox" title="Group: ' + group_name + ', User: ' + user_name + '"/> </td>';
                       $(this).children('td:last').before(td);
                   });
+
+                  table.draw();
                 })
                 .fail(function(result) {
-                  console.log("Error: " + result)
+                    console.log("Error: " + result)
+                    $("#error-dialog .ajax-error").val("There was an error while adding a group: <br/> " + result)
+                    $('#error-dialog').modal()
                 })
         }
     });
@@ -198,6 +207,8 @@
             "group_name": group_name,
             "operation": "delete_group"
         }
+        if not modal(delete)
+            return false;
         var jqxhr = $.post( "/hub/groups", this_data)
             .done(function(res) {
               console.log("Success " + res)
@@ -207,6 +218,8 @@
             })
             .fail(function(result) {
               console.log("Error: " + result)
+              $("#error-dialog .ajax-error").val("There was an error while deleting a group: <br/> " + result)
+              $('#error-dialog').modal()
             })
     });
 
@@ -222,9 +235,9 @@
       </div>
       <div class="modal-body">
 
-  <div class="ajax-error">
-    The error
-  </div>
+          <div class="ajax-error">
+            The error
+          </div>
 
       </div>
       <div class="modal-footer">
