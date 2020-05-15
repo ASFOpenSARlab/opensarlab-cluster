@@ -139,9 +139,7 @@
 </script>
 <script type="text/javascript" charset="utf8">
 
-    $('#groups-main-table').DataTable({
-        "scrollX": true
-    });
+    $('#groups-main-table').DataTable();
 
     $('#groups-main-table').on('change', '.group-checkbox', function() {
         user_name = $(this).data("user");
