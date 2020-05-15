@@ -6,7 +6,6 @@ from .base import BaseHandler
 class GroupsHandler(BaseHandler):
     """Render the groups page."""
 
-    @web.authenticated
     @admin_only
     def get(self):
         from jupyterhub import groups as groups_py
@@ -32,7 +31,6 @@ class GroupsHandler(BaseHandler):
         )
         self.finish(html)
 
-    @web.authenticated
     @admin_only
     def post(self):
         try:
