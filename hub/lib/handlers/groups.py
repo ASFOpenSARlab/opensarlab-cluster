@@ -56,8 +56,7 @@ class GroupsHandler(BaseHandler):
                         print(f"User '{user_name}' is already part of group '{group_name}'. Do nothing.")
                     else:
                         print(f"Add '{user_name}' to group '{group_name}'")
-                        res = g.add_user_to_group(user_name, group_name)
-                        print(res)
+                        g.add_user_to_group(user_name, group_name)
 
                 else:
                     # If user is not already in group, skip
@@ -65,26 +64,24 @@ class GroupsHandler(BaseHandler):
                         print(f"User '{user_name}' is already not in group '{group_name}'. Do nothing.")
                     else:
                         print(f"Remove '{user_name}' from group '{group_name}'")
-                        res = g.remove_user_from_group(user_name, group_name)
-                        print(res)
+                        g.remove_user_from_group(user_name, group_name)
 
             elif data['operation'] == 'add_group':
                 group_name = data['group_name']
 
                 g = groups_py.Groups(db=self.db)
-                res = g.add_group(group_name)
-                print(res)
+                g.add_group(group_name)
 
             elif data['operation'] == 'delete_group':
                 group_name = data['group_name']
 
                 g = groups_py.Groups(db=self.db)
-                res = g.delete_group(group_name)
-                print(res)
+                g.delete_group(group_name)
 
         except Exception as e:
             print("Something went wrong with the POST...")
             print(e)
+            raise 
 
 default_handlers = [
     (r'/groups', GroupsHandler)
