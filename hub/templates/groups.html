@@ -162,7 +162,7 @@
             })
             .fail(function(result) {
                 console.log("Error: " + result)
-                $("#error-dialog .ajax-error").text("There was an error while checking a checkbox: <br/> " + result)
+                $("#error-dialog .ajax-error").html("There was an error while checking a checkbox: <br/> " + str(result))
                 $('#error-dialog').modal("show")
             })
     });
