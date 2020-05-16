@@ -162,7 +162,7 @@
             })
             .fail(function(result) {
                 console.log("Error: " + result)
-                $("#error-dialog .ajax-error").val("There was an error while checking a checkbox: <br/> " + result)
+                $("#error-dialog .ajax-error").text("There was an error while checking a checkbox: <br/> " + result)
                 $('#error-dialog').modal("show")
             })
     });
@@ -190,11 +190,11 @@
                       $(this).children('td:last').before(td);
                   });
 
-                  table.draw();
+                  //table.draw();
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    $("#error-dialog .ajax-error").val("There was an error while adding a group: <br/> " + result)
+                    $("#error-dialog .ajax-error").text("There was an error while adding a group: <br/> " + result)
                     $('#error-dialog').modal("show")
                 })
         }
@@ -207,7 +207,7 @@
     });
 
     $('html').on('click', '#modal-delete-group-button', function(e) {
-        group_name = $('this').data("group-name");
+        group_name = $(this).data("group-name");
         console.log("Group '" + group_name + "' is being deleted from DB table" )
         this_data = {
             "group_name": group_name,
@@ -222,7 +222,7 @@
             })
             .fail(function(result) {
               console.log("Error: " + result)
-              $("#error-dialog .ajax-error").val("There was an error while deleting a group: <br/> " + result)
+              $("#error-dialog .ajax-error").text("There was an error while deleting a group: <br/> " + result)
               $('#error-dialog').modal("show")
             })
     });
