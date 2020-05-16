@@ -202,12 +202,12 @@
 
     $('#groups-main-table').on('click', '.delete-group-button', function(e) {
         group_name = $(this).parent().data("group");
-        $('#modal-delete-group-button span').val(group_name).data("group-name", group_name);
+        $('#modal-delete-group-button').text("Delete group " + group_name).data("group-name", group_name);
         $('#group-warning-dialog').modal("show");
     });
 
-    $('#group-warning-dialog').on('click', function(e) {
-        group_name = $('#modal-delete-group-button span').data("group-name");
+    $('#modal-delete-group-button').on('click', function(e) {
+        group_name = $('#modal-delete-group-button').data("group-name");
         console.log("Group '" + group_name + "' is being deleted from DB table" )
         this_data = {
             "group_name": group_name,
@@ -229,7 +229,7 @@
 
 </script>
 
-<div class="modal fade" id="group-warning-dialog" tabindex="-1" role="dialog" aria-labelledby="warning-label" aria-hidden="true">
+<div class="modal " id="group-warning-dialog" tabindex="-1" role="dialog" aria-labelledby="warning-label" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -238,9 +238,8 @@
       </div>
       <div class="modal-body">
           <div class="ajax-warning">
-              <p>If you want to delete this group, click on the delete button. This cannnot be undone.</p>
-
-              <button type="button" id="modal-delete-group-button" class="btn btn-warning">Delete group '<span> </span>'</button>
+              <p>Are you sure you want to delete this group? This cannnot be undone.</p>
+              <button type="button" id="modal-delete-group-buttonmodal-delete-group-button" class="btn btn-warning"></button>
           </div>
       </div>
       <div class="modal-footer">
@@ -251,7 +250,7 @@
   </div>
 </div>
 
-<div class="modal fade" id="error-dialog" tabindex="-1" role="dialog" aria-labelledby="error-label" aria-hidden="true">
+<div class="modal " id="error-dialog" tabindex="-1" role="dialog" aria-labelledby="error-label" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
