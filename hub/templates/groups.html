@@ -8,7 +8,7 @@
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!--link rel="stylesheet" href="/hub/static/css/style.min.css?v=ab35cbd1a6857ec00620a56c43760477" type="text/css"/-->
+    <link rel="stylesheet" href="/hub/static/css/style.min.css?v=ab35cbd1a6857ec00620a56c43760477" type="text/css"/>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.css"/>
     <style>
 
@@ -202,12 +202,12 @@
 
     $('#groups-main-table').on('click', '.delete-group-button', function(e) {
         group_name = $(this).parent().data("group");
-        $('#delete-group-button span').val(group_name).data("group-name", group_name);
+        $('#modal-delete-group-button span').val(group_name).data("group-name", group_name);
         $('#group-warning-dialog').modal("show");
     });
 
-    $('#delete-group-button').on('click', function(e) {
-        group_name = $(this).children('span').data("group-name");
+    $('#group-warning-dialog').on('click', function(e) {
+        group_name = $('#modal-delete-group-button span').data("group-name");
         console.log("Group '" + group_name + "' is being deleted from DB table" )
         this_data = {
             "group_name": group_name,
