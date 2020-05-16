@@ -206,8 +206,8 @@
         $('#group-warning-dialog').modal("show");
     });
 
-    $('#modal-delete-group-button').on('click', function(e) {
-        group_name = $('#modal-delete-group-button').data("group-name");
+    $('html').on('click', '#modal-delete-group-button', function(e) {
+        group_name = $('this').data("group-name");
         console.log("Group '" + group_name + "' is being deleted from DB table" )
         this_data = {
             "group_name": group_name,
