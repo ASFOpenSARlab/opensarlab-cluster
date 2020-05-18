@@ -22,13 +22,15 @@ RUN apt install --no-install-recommends -y \
 
 RUN pip3 install --upgrade awscli pyyaml python-crontab
 
-
 #RUN echo "address { email-addr eric@localhost.example; email-domain opensarlab.asf.alaska.edu; };" > /etc/mailutils.conf
 
-
+# Copy login page stuff
 COPY static/images/alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
+COPY login/generic_with_logout.py /usr/local/lib/python3.6/dist-packages/generic_with_logout.py
+COPY login/login.html /usr/local/share/jupyterhub/templates/login.html
+COPY login/pending.html /usr/local/share/jupyterhub/templates/pending.html
 
-# Copy custom page stuff over to jupyterhub module
+# Copy custom group page stuff over to jupyterhub module
 #RUN sed '|s|{% if user.admin %}|{% if user.admin %} <li><a href="{{base_url}}groups">Groups</a></li>|' /usr/local/share/jupyterhub/templates/page.html
 COPY templates/groups.html /usr/local/share/jupyterhub/templates/groups.html
 COPY lib/groups.py /usr/local/lib/python3.6/dist-packages/jupyterhub/groups.py
