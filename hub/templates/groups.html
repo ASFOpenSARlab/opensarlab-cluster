@@ -104,7 +104,39 @@
                 {% for group in groups %}
                 <th class="group-name group-type-{{ group.group_type }}" data-group="{{ group.name }}"> {{ group.name }} <span class="delete-group-button" title="Delete group {{ group.name }}"> [x] </span> </th>
                 {% endfor %}
-                <th id="add-group" data-orderable="false"> <input id="add-group-box" type='text' size='20' placeholder='New Group Name'/> </th>
+                <th id="add-group" data-orderable="false">
+                    <div>
+                        <input id="add-group-box" type='text' size='20' placeholder='New Group Name'/>
+                        <button class="btn btn-primary dropdown-toggle" id="add-group-button" type="button" data-toggle="dropdown"><span class="caret"></span></button>
+                        <div class="dropdown-menu" role="menu" aria-labelledby="menu1">
+
+                            <div class="form-group">
+                                <label for=new-description-select">Description</label>
+                                <input type='text' id="new-description-select" maxlength=254 size='50' placeholder='Description of Group'/>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="new-is-default-select">Default</label>
+                                {% if group.is_default == 1 %}
+                                <input type='checkbox' id="new-is-default-select" checked />
+                                {% else %}
+                                <input type='checkbox' id="new-is-default-select"/>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label for="new-group-type-select">Group Type</label>
+                                <select class="form-control" id="new-group-type-select">
+                                   <option>label</option>
+                                   <option>action</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" id="new-submit-button" class="btn btn-primary">Submit</button>
+
+                        </div>
+                    </div>
+                </th>
             </tr>
         </thead>
         <tbody>
@@ -171,37 +203,40 @@
             })
     });
 
-    $('#groups-main-table').on('keydown', '#add-group-box', function(e) {
-        if (e.keyCode == 13) {
-            group_name = $(this).val();
-            console.log("Group '" + group_name + "' is being added to DB table" );
-            this_data = {
-                "group_name": group_name,
-                "operation": "add_group"
-            };
-            var jqxhr = $.post( "/hub/groups", this_data)
-                .done(function() {
+    $('#groups-main-table').on('click', '#new-sumbit-button', function(e) {
 
-                  // Insert table header into second-last column with name of group (to bump group box over one)
-                  th = '<th class="group-name" data-group="' + group_name + '"> ' + group_name + ' <span class="delete-group-button" title="Delete group ' + group_name + '"> [x] </span> </th>';
-                  $("#add-group").before(th);
-                  $("#add-group-box").val('');
+        group_name = $('add-group-box').val();
+        description = $('#new-description-select').val();
+        is_default = $('#new-is-default-select').checked();
+        group_type = $('#new-group-type-select').val();
 
-                  // Loop down through rows, appending cell with name of group and username
-                  $("#groups-main-table tbody tr").each(function(){
-                      user_name = $(this).data("user");
-                      td = '<td class="group-checkbox" data-user="' + user_name + '" data-group="' + group_name + '" data-order="false"> <input type="checkbox" title="Group: ' + group_name + ', User: ' + user_name + '"/> </td>';
-                      $(this).children('td:last').before(td);
-                  });
+        console.log("Group '" + group_name + "' is being added to DB table" );
+        this_data = {
+            "group_name": group_name,
+            "operation": "add_group"
+        };
+        var jqxhr = $.post( "/hub/groups", this_data)
+            .done(function() {
 
-                  //table.draw();
-                })
-                .fail(function(result) {
-                    console.log("Error: " + result)
-                    $("#error-dialog .ajax-error").text("There was an error while adding a group: <br/> " + result)
-                    $('#error-dialog').modal("show")
-                })
-        }
+              // Insert table header into second-last column with name of group (to bump group box over one)
+              th = '<th class="group-name" data-group="' + group_name + '"> ' + group_name + ' <span class="delete-group-button" title="Delete group ' + group_name + '"> [x] </span> </th>';
+              $("#add-group").before(th);
+              $("#add-group-box").val('');
+
+              // Loop down through rows, appending cell with name of group and username
+              $("#groups-main-table tbody tr").each(function(){
+                  user_name = $(this).data("user");
+                  td = '<td class="group-checkbox" data-user="' + user_name + '" data-group="' + group_name + '" data-order="false"> <input type="checkbox" title="Group: ' + group_name + ', User: ' + user_name + '"/> </td>';
+                  $(this).children('td:last').before(td);
+              });
+
+              //table.draw();
+            })
+            .fail(function(result) {
+                console.log("Error: " + result)
+                $("#error-dialog .ajax-error").text("There was an error while adding a group: <br/> " + result)
+                $('#error-dialog').modal("show")
+            })
     });
 
     $('#groups-main-table').on('click', '.delete-group-button', function(e) {

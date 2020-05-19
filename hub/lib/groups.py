@@ -1,5 +1,6 @@
 
 from typing import List, Dict
+from sqlalchemy import Column, Unicode, Boolean
 
 from jupyterhub import orm
 
