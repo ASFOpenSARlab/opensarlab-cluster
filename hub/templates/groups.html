@@ -51,7 +51,7 @@
         }
 
         #groups-main .group-type-action {
-            background: orange;
+            color: orange;
         }
 
     </style>
@@ -102,7 +102,10 @@
             <tr>
                 <th>Username</th>
                 {% for group in groups %}
-                <th class="group-name group-type-{{ group.group_type }}" data-group="{{ group.name }}"> {{ group.name }} <span class="delete-group-button" title="Delete group {{ group.name }}"> [x] </span> </th>
+                <th class="group-name group-type-{{ group.group_type }}" data-group="{{ group.name }}">
+                    {{ group.name }}
+                    <span class="delete-group-button" title="Delete group {{ group.name }}"> [x] </span>
+                </th>
                 <button class="btn btn-primary dropdown-toggle" id="add-group-button" type="button" data-toggle="dropdown"><span class="caret"></span></button>
                 <div class="dropdown-menu" role="menu" aria-labelledby="menu1">
 
@@ -145,11 +148,7 @@
 
                             <div class="form-group">
                                 <label for="new-is-default-select">Default</label>
-                                {% if group.is_default == 1 %}
-                                <input type='checkbox' id="new-is-default-select" checked />
-                                {% else %}
                                 <input type='checkbox' id="new-is-default-select"/>
-                                {% endif %}
                             </div>
 
                             <div class="form-group">
