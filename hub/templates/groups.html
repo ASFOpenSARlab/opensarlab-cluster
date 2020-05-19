@@ -106,8 +106,8 @@
                     {{ group.name }}
                     <span class="delete-group-button" title="Delete group {{ group.name }}"> [x] </span>
                 </th>
-                <button class="btn btn-primary dropdown-toggle" id="add-group-button" type="button" data-toggle="dropdown"><span class="caret"></span></button>
-                <div class="dropdown-menu" role="menu" aria-labelledby="menu1">
+                <button class="btn btn-primary dropdown-toggle" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown"><span class="caret"></span></button>
+                <div class="dropdown-menu" role="menu" aria-labelledby="{{ group.name }}-add-group-button">
 
                     <div class="form-group">
                         <p>{{ group.description }}</p>
@@ -139,7 +139,7 @@
                     <div>
                         <input id="add-group-box" type='text' size='20' placeholder='New Group Name'/>
                         <button class="btn btn-primary dropdown-toggle" id="add-group-button" type="button" data-toggle="dropdown"><span class="caret"></span></button>
-                        <div class="dropdown-menu" role="menu" aria-labelledby="menu1">
+                        <div class="dropdown-menu" role="menu" aria-labelledby="add-group-button">
 
                             <div class="form-group">
                                 <label for=new-description-select">Description</label>
