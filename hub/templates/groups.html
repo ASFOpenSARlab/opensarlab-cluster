@@ -1,5 +1,7 @@
 {% extends "page.html" %}
 
+{% from 'page.html' import modal %}
+
 {% macro group_settings(group_name='new', description='', group_type='label', is_default=0, is_active=1, new=0) %}
 <div class="group-settings-container" role="menu">
     <div class='form-group'>
@@ -58,6 +60,7 @@
 {% block stylesheet %}
 {{ super() }}
 
+<!--link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"-->
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.css"/>
 <style>
 
