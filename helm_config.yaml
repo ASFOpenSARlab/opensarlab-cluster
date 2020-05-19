@@ -210,7 +210,7 @@ hub:
 
             from jupyterhub import groups
 
-            g = groups.Groups(db_url='sqlite:///jupyterhub.sqlite')
+            g = groups.Groups()
             g.add_group('general_cpu')
             g.get_users_in_group('general_cpu')
             g.add_user_to_group('emlundell_test1', 'general_cpu')
@@ -224,7 +224,7 @@ hub:
 
                     user_name = spawner.user.name
 
-                    groups = groups_py.Groups(db_url='sqlite:///jupyterhub.sqlite')
+                    groups = groups_py.Groups()
                     group_list = groups.get_group_names_for_user(user_name=user_name)
                     print(group_list)
 

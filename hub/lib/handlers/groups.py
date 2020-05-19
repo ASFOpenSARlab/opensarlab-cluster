@@ -16,7 +16,10 @@ class GroupsHandler(BaseHandler):
         for group_obj in group_list_obj:
             groups.append( {
                 'name': group_obj.name,
-                'members': [u.name for u in group_obj.users]
+                'members': [u.name for u in group_obj.users],
+                'description': group_obj.description,
+                'is_default': group_obj.is_default,
+                'group_type': group_obj.group_type
             })
 
         all_users_query = self.db.query(orm.User)
@@ -81,7 +84,7 @@ class GroupsHandler(BaseHandler):
         except Exception as e:
             print("Something went wrong with the POST...")
             print(e)
-            raise 
+            raise
 
 default_handlers = [
     (r'/groups', GroupsHandler)

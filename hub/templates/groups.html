@@ -50,6 +50,10 @@
             opacity: 1;
         }
 
+        #groups-main .group-type-action {
+            background: orange;
+        }
+
     </style>
 
 </head>
@@ -98,7 +102,7 @@
             <tr>
                 <th>Username</th>
                 {% for group in groups %}
-                <th class="group-name" data-group="{{ group.name }}"> {{ group.name }} <span class="delete-group-button" title="Delete group {{ group.name }}"> [x] </span> </th>
+                <th class="group-name group-type-{{ group.group_type }}" data-group="{{ group.name }}"> {{ group.name }} <span class="delete-group-button" title="Delete group {{ group.name }}"> [x] </span> </th>
                 {% endfor %}
                 <th id="add-group" data-orderable="false"> <input id="add-group-box" type='text' size='20' placeholder='New Group Name'/> </th>
             </tr>
