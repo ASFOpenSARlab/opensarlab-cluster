@@ -96,13 +96,13 @@
                     <span class="delete-group-button" title="Delete group {{ group.name }}"> [x] </span>
                 </th>
                 <button class="btn btn-primary dropdown-toggle" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown"><span class="caret"></span></button>
-                {{ group_settings(group_name={{ group.name }}, description={{ group.description }}, group_type={{ group.group_type }}, is_default={{ group.is_default }}, is_active=1, new=0) }}
+                {{ group_settings(group_name=group.name, description=group.description, group_type=group.group_type, is_default=group.is_default, is_active=1, new=0) }}
 
                 {% endfor %}
                 <th id="add-group" data-orderable="false">
                     <div>
                         <button class="btn btn-primary dropdown-toggle" id="add-group-button" type="button" data-toggle="dropdown"><span class="caret"></span></button>
-                        {{ group_settings(group_name={{ new=1) }}
+                        {{ group_settings(new=1) }}
                         </div>
                     </div>
                 </th>
