@@ -56,41 +56,55 @@ class Groups():
         Still need to implement is_active
         """
 
-        # Check if group exists already
-        group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
-        if group is not None:
-            print(f"Group '{group_name}' already exists. Aborting adding group.")
-            raise Exception(f"Group '{group_name}' already exists. Aborting adding group.")
+        try:
+            # Check if group exists already
+            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+            if group is not None:
+                print(f"Group '{group_name}' already exists. Aborting adding group.")
+                raise Exception(f"Group '{group_name}' already exists. Aborting adding group.")
 
-        group = orm.Group(name=group_name, description=description, is_default=is_default, group_type=group_type)
-        self.session.add(group)
-        self.session.commit()
+            group = orm.Group(name=group_name, description=description, is_default=is_default, group_type=group_type)
+            self.session.add(group)
+            self.session.commit()
+
+        except Exception as e:
+            self.session.rollback()
+            raise
 
     def update_group(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
 
         """ TODO
         Still need to implement is_active
         """
+        try:
+            # Check if group does not exist already
+            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+            if group is None:
+                print(f"Group '{group_name}' doesn't exist. Aborting update group.")
+                raise Exception(f"Group '{group_name}' doesn't exist. Aborting update group.")
 
-        # Check if group does not exist already
-        group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
-        if group is None:
-            print(f"Group '{group_name}' doesn't exist. Aborting update group.")
-            raise Exception(f"Group '{group_name}' doesn't exist. Aborting update group.")
+            group = orm.Group(name=group_name, description=description, is_default=is_default, group_type=group_type)
+            self.session.update(group)
+            self.session.commit()
 
-        group = orm.Group(name=group_name, description=description, is_default=is_default, group_type=group_type)
-        self.session.update(group)
-        self.session.commit()
+        except Exception as e:
+            self.session.rollback()
+            raise
 
     def delete_group(self, group_name: str) -> None:
-        group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+        try:
+            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
 
-        if group == None:
-            print(f"Group {group_name} not found.")
-            raise Exception(f"Group {group_name} not found.")
+            if group == None:
+                print(f"Group {group_name} not found.")
+                raise Exception(f"Group {group_name} not found.")
 
-        self.session.delete(group)
-        self.session.commit()
+            self.session.delete(group)
+            self.session.commit()
+
+        except Exception as e:
+            self.session.rollback()
+            raise
 
     def get_users_in_group(self, group_name: str) -> List[orm.User]:
         group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
@@ -134,15 +148,20 @@ class Groups():
             raise
 
     def remove_user_from_group(self, user_name: str, group_name: str) -> None:
-        user = self.session.query(orm.User).filter(orm.User.name == user_name).first()
-        group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+        try:
+            user = self.session.query(orm.User).filter(orm.User.name == user_name).first()
+            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
 
-        if group == None:
-            print(f"Group {group_name} not found.")
-            raise Exception(f"Group {group_name} not found.")
-        if user == None:
-            print(f"User {user_name} not found.")
-            raise Exception(f"User {user_name} not found.")
+            if group == None:
+                print(f"Group {group_name} not found.")
+                raise Exception(f"Group {group_name} not found.")
+            if user == None:
+                print(f"User {user_name} not found.")
+                raise Exception(f"User {user_name} not found.")
 
-        group.users.remove(user)
-        self.session.commit()
+            group.users.remove(user)
+            self.session.commit()
+
+        except Exception as e:
+            self.session.rollback()
+            raise

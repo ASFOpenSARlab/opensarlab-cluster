@@ -162,9 +162,10 @@
     let table = $('#groups-main-table').DataTable();
 
     $('#groups-main-table').on('change', '.group-checkbox', function() {
-        user_name = $(this).data("user");
-        group_name = $(this).data("group");
-        change_to_checked = $(this).children('input')[0].checked;
+        $this = $(this)
+        user_name = $this.data("user");
+        group_name = $this.data("group");
+        change_to_checked = $this.children('input')[0].checked;
         console.log("User '" + user_name + "' has been updated for group '" + group_name + "' because 'checked' is " + change_to_checked);
         this_data = {
             "user_name": user_name,
@@ -175,13 +176,13 @@
         var jqxhr = $.post( "/hub/groups", this_data)
             .done(function() {
                 console.log("Success");
-                $(this).data("order", "" + change_to_checked);
+                $this.data("order", "" + change_to_checked);
                 table.draw();
             })
             .fail(function(result) {
                 console.log("Error: " + result)
-                $("#error-dialog .ajax-error").html("There was an error while checking a checkbox: <br/> " + str(result))
-                $('#error-dialog').modal("show")
+                //$("#error-dialog .ajax-error").html("There was an error while checking a checkbox: <br/> " + str(result))
+                //$('#error-dialog').modal("show")
             })
     });
 
