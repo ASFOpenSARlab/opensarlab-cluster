@@ -86,18 +86,10 @@
 
 {% block script %}
 {{ super() }}
+<script> jQuery.noConflict(); </script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.js"></script>
-<script type="text/javascript">
-      window.jhdata = {
-        base_url: "/hub/",
-        prefix: "/",
-        user: "emlundell_test1",
-        admin_access: true,
-        options_form: true,
-      }
-</script>
 <script type="text/javascript" charset="utf8">
 
     let table = $('#groups-main-table').DataTable();
@@ -197,7 +189,7 @@
 <div class="group-settings-container" role="menu">
     <div class='form-group'>
         <label for="{{ group_name }}-name-select">Group Type</label>
-        <% if new %>
+        <% if new == 1 %>
         <input id="{{ group_name }}-name-select" class="name-select" type='text' size='20' placeholder='New Group Name'/>
         <% else %>
         <p>{{ group_name }}</p>
