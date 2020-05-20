@@ -32,6 +32,13 @@
 </style>
 {% endblock %} <!-- stylesheet -->
 
+{% block scripts %}
+<!-- Override the default JS scripts since they are incompatible with datatables -->
+<!-- require.js is overloaded so it doesn't crash. Require is not in a block so it can't be deleted. -->
+require = {};
+require.config = function(){};
+{% endblock %}
+
 {% if announcement_login %}
   {% set announcement = announcement_login %}
 {% endif %}
@@ -85,8 +92,6 @@
 {% endblock %} <!-- main -->
 
 {% block script %}
-{{ super() }}
-<script> jQuery.noConflict(); </script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
 <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/4.1.0/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.js"></script>
