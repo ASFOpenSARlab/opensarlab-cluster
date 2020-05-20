@@ -29,12 +29,13 @@ BEGIN
 END;
 """
 
-class GroupExtra(orm.Group):
+class Group(orm.Group):
     description = Column(Unicode(255), default='')
     is_default = Column(Boolean, default=False)
     group_type = Column(Unicode(255), default='label')
+    #is_active = Column(Boolean, default=True)
 
-orm.Group = GroupExtra
+orm.Group = Group
 
 class Groups():
 
@@ -49,7 +50,11 @@ class Groups():
     def get_all_groups(self) -> List[orm.Group]:
         return self.session.query(orm.Group).all()
 
-    def add_group(self, group_name: str, description: str, is_default: Boolean, group_type: str) -> None:
+    def add_group(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
+
+        """ TODO
+        Still need to implement is_active
+        """
 
         # Check if group exists already
         group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
@@ -59,6 +64,22 @@ class Groups():
 
         group = orm.Group(name=group_name, description=description, is_default=is_default, group_type=group_type)
         self.session.add(group)
+        self.session.commit()
+
+    def update_group(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
+
+        """ TODO
+        Still need to implement is_active
+        """
+
+        # Check if group does not exist already
+        group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+        if group is None:
+            print(f"Group '{group_name}' doesn't exist. Aborting update group.")
+            raise Exception(f"Group '{group_name}' doesn't exist. Aborting update group.")
+
+        group = orm.Group(name=group_name, description=description, is_default=is_default, group_type=group_type)
+        self.session.update(group)
         self.session.commit()
 
     def delete_group(self, group_name: str) -> None:

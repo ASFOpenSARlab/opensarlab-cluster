@@ -50,10 +50,10 @@
 <div class="group-settings-container dropdown-menu" role="menu" aria-labelledby="{{ group_name }}-add-group-button">
     <div class='form-group'>
         {% if is_new == 1 %}
-        <label for="{{ group_name }}-name-select">Group Name</label>
-        <input id="{{ group_name }}-name-select" class="name-select" type='text' size='20' placeholder='New Group Name'/>
+        <label for="new-name-select">Group Name</label>
+        <input id="new-name-select" class="name-select" type='text' size='20' placeholder='New Group Name'/>
         {% else %}
-        <p>{{ group_name }}</p>
+        <p class="name-select">{{ group_name }}</p>
         {% endif %}
     </div>
 
@@ -92,11 +92,11 @@
     </div>
 
     {% if is_new == 1 %}
-    <button class="btn btn-primary" id="{{ group_name }}-sumbit-select">Add Group</button>
+    <button class="btn btn-primary" id="new-sumbit-button">Add Group</button>
     {% else %}
-    <button class="btn btn-primary" id="{{ group_name }}-sumbit-select">Update Group</button>
+    <button class="btn btn-primary" id="{{ group_name }}-update-button" class="group-update-button" data-group="{{ group_name }}">Update Group</button>
     <div class="dropdown-divider"></div>
-    <button class="btn btn-danger" id="{{ group_name }}-delete-select">Delete Group</button>
+    <button class="btn btn-danger" id="{{ group_name }}-delete-button" class="group-delete-button" data-group="{{ group_name }}">Delete Group</button>
     {% endif %}
 
 </div>
@@ -121,7 +121,7 @@
                     </div>
                 </th>
                 {% endfor %}
-                <th id="add-group" data-orderable="false">
+                <th id="add-group-th" data-orderable="false">
                     <div class="dropdown-container">
                         <button class="btn btn-primary dropdown-toggle" id="new-add-group-button" type="button" data-toggle="dropdown">Add New Group <span class="caret"></span></button>
                         {{ group_settings(is_new=1) }}
@@ -185,66 +185,71 @@
             })
     });
 
-    $('#groups-main-table').on('click', '#new-sumbit-button', function(e) {
+    $('#groups-main-table').on('click', '#new-submit-button', function(e) {
 
-        group_name = $('add-group-box').val();
-        description = $('#new-description-select').val();
-        is_default = $('#new-is-default-select').checked();
-        group_type = $('#new-group-type-select').val();
-
-        console.log("Group '" + group_name + "' is being added to DB table" );
         this_data = {
-            "group_name": group_name,
+            "group_name": $('#new-name-select').val(),
+            "description": $('#new-description-select').val(),
+            "group_type": $('#new-group-type-select').val(),
+            "is_default": $('#new-is-default-select').checked(),
+            "is_active": $('#new-is-active-select').checked(),
             "operation": "add_group"
         };
+
+        console.log("Group is being added to DB table:" + this_data );
+
         var jqxhr = $.post( "/hub/groups", this_data)
             .done(function() {
-
-              // Insert table header into second-last column with name of group (to bump group box over one)
-              th = '<th class="group-name" data-group="' + group_name + '"> ' + group_name + ' <span class="delete-group-button" title="Delete group ' + group_name + '"> [x] </span> </th>';
-              $("#add-group").before(th);
-              $("#add-group-box").val('');
-
-              // Loop down through rows, appending cell with name of group and username
-              $("#groups-main-table tbody tr").each(function(){
-                  user_name = $(this).data("user");
-                  td = '<td class="group-checkbox" data-user="' + user_name + '" data-group="' + group_name + '" data-order="false"> <input type="checkbox" title="Group: ' + group_name + ', User: ' + user_name + '"/> </td>';
-                  $(this).children('td:last').before(td);
-              });
-
-              //table.draw();
+                console.log("This should not be printed. Instead, the page should be reloaded server side.");
             })
             .fail(function(result) {
                 console.log("Error: " + result)
-                $("#error-dialog .ajax-error").text("There was an error while adding a group: <br/> " + result)
-                $('#error-dialog').modal("show")
+                //$("#error-dialog .ajax-error").text("There was an error while adding a group: <br/> " + result)
+                //$('#error-dialog').modal("show")
             })
     });
 
-    $('#groups-main-table').on('click', '.delete-group-button', function(e) {
-        group_name = $(this).parent().data("group");
-        $('#modal-delete-group-button').text('Delete group "' + group_name + '"').data("group-name", group_name);
-        $('#group-warning-dialog').modal("show");
+    $('#groups-main-table').on('click', '.group-update-button', function(e) {
+
+        group_name = $(this).data("group");
+
+        this_data = {
+            "group_name": $('#'+group_name +'-name-select').val(),
+            "description": $('#'+group_name +'-description-select').val(),
+            "group_type": $('#'+group_name +'-group-type-select').val(),
+            "is_default": $('#'+group_name +'-is-default-select').checked(),
+            "is_active": $('#'+group_name +'-is-active-select').checked(),
+            "operation": "update_group"
+        };
+
+        console.log("Group is being updated to DB table:" + this_data );
+
+        var jqxhr = $.post( "/hub/groups", this_data)
+            .done(function() {
+                console.log("This should not be printed. Instead, the page should be reloaded server side.");
+            })
+            .fail(function(result) {
+                console.log("Error: " + result)
+                //$("#error-dialog .ajax-error").text("There was an error while adding a group: <br/> " + result)
+                //$('#error-dialog').modal("show")
+            })
     });
 
-    $('html').on('click', '#modal-delete-group-button', function(e) {
-        group_name = $(this).data("group-name");
-        console.log("Group '" + group_name + "' is being deleted from DB table" )
+    $('#groups-main-table').on('click', '.group-delete-button', function(e) {
+        group_name = $(this).data("group");
         this_data = {
             "group_name": group_name,
             "operation": "delete_group"
-        }
+        };
+        console.log("Group '" + group_name + "' is being deleted from DB table" )
         var jqxhr = $.post( "/hub/groups", this_data)
             .done(function(res) {
-              console.log("Success " + res)
-              // Delete matching table column
-              $('.group-name').filter('[data-group="' + group_name + '"]').remove()
-              $('.group-checkbox').filter('[data-group="' + group_name + '"]').remove()
+              console.log("This should not be printed. Instead, the page should be reloaded server side.");
             })
             .fail(function(result) {
               console.log("Error: " + result)
-              $("#error-dialog .ajax-error").text("There was an error while deleting a group: <br/> " + result)
-              $('#error-dialog').modal("show")
+              //$("#error-dialog .ajax-error").text("There was an error while deleting a group: <br/> " + result)
+              //$('#error-dialog').modal("show")
             })
     });
 
@@ -252,6 +257,7 @@
 
 {% endblock %} <!-- script -->
 
+<!--
 {% from 'page.html' import modal with context %}
 
 {% call modal('Delete Group', btn_label='WARNING') %}
@@ -260,6 +266,7 @@
         <button type="button" id="modal-delete-group-button" data-dismiss="modal" class="btn btn-warning"></button>
     </div>
 {% endcall %}
+-->
 
 <!--div class="modal-dialog">
   <div class="modal-content">

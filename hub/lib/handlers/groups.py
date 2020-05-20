@@ -6,8 +6,7 @@ from .base import BaseHandler
 class GroupsHandler(BaseHandler):
     """Render the groups page."""
 
-    @admin_only
-    def get(self):
+    def _finish_html(self):
         from jupyterhub import groups as groups_py
 
         g = groups_py.Groups(db=self.db)
@@ -35,6 +34,15 @@ class GroupsHandler(BaseHandler):
         self.finish(html)
 
     @admin_only
+    def get(self):
+        try:
+            self._finish_html()
+        except Exception as e:
+            print("Something went wrong with the GET...")
+            print(e)
+            raise
+
+    @admin_only
     def post(self):
         try:
             from jupyterhub import groups as groups_py
@@ -45,12 +53,13 @@ class GroupsHandler(BaseHandler):
                 data[arg] = self.get_argument(arg, strip=False)
             print("Posted data: ", data)
 
+            g = groups_py.Groups(db=self.db)
+
             if data['operation'] == 'checked':
                 user_name = data['user_name']
                 group_name = data['group_name']
                 change_to_checked = data['change_to_checked']
 
-                g = groups_py.Groups(db=self.db)
                 user_names_in_group = g.get_user_names_in_group(group_name)
 
                 if change_to_checked == 'true':
@@ -70,16 +79,21 @@ class GroupsHandler(BaseHandler):
                         g.remove_user_from_group(user_name, group_name)
 
             elif data['operation'] == 'add_group':
-                group_name = data['group_name']
+                g.add_group(**data)
 
-                g = groups_py.Groups(db=self.db)
-                g.add_group(group_name)
+                self._finish_html()
+
+            elif data['operation'] == 'update_group':
+                group_name = data['group_name']
+                g.update_group(group_name)
+
+                self._finish_html()
 
             elif data['operation'] == 'delete_group':
                 group_name = data['group_name']
-
-                g = groups_py.Groups(db=self.db)
                 g.delete_group(group_name)
+
+                self._finish_html()
 
         except Exception as e:
             print("Something went wrong with the POST...")
