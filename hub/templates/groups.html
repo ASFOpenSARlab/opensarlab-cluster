@@ -29,6 +29,10 @@
         color: orange;
     }
 
+    #groups-main .dropdown-container {
+        position: relative;
+    }
+
 </style>
 {% endblock %} <!-- stylesheet -->
 
@@ -45,12 +49,12 @@
 {% macro group_settings(group_name='new', description='', group_type='label', is_default=0, is_active=1, is_new=0) %}
 <div class="group-settings-container dropdown-menu" role="menu" aria-labelledby="{{ group_name }}-add-group-button">
     <div class='form-group'>
-        <% if is_new == 1 %>
+        {% if is_new == 1 %}
         <label for="{{ group_name }}-name-select">Group Name</label>
         <input id="{{ group_name }}-name-select" class="name-select" type='text' size='20' placeholder='New Group Name'/>
-        <% else %>
+        {% else %}
         <p>{{ group_name }}</p>
-        <% endif %>
+        {% endif %}
     </div>
 
     <div class="form-group">
@@ -61,11 +65,11 @@
     <div class="form-group">
         <label for="{{ group_name }}-group-type-select">Group Type</label>
         <select class="form-control group-type-select" id="{{ group_name }}-group-type-select">
-            <% if group_type == 'action' %>
-           <option selected>action</option>
-           <% else %>
-           <option>label</option>
-           <% endif %>
+            {% if group_type == 'action' %}
+            <option selected>action</option>
+            {% else %}
+            <option>label</option>
+            {% endif %}
         </select>
     </div>
 
@@ -87,13 +91,13 @@
         {% endif %}
     </div>
 
-    <% if is_new == 1 %>
+    {% if is_new == 1 %}
     <button class="btn btn-primary" id="{{ group_name }}-sumbit-select">Add Group</button>
-    <% else %>
+    {% else %}
     <button class="btn btn-primary" id="{{ group_name }}-sumbit-select">Update Group</button>
     <div class="dropdown-divider"></div>
     <button class="btn btn-danger" id="{{ group_name }}-delete-select">Delete Group</button>
-    <% endif %>
+    {% endif %}
 
 </div>
 {% endmacro %}
@@ -108,15 +112,18 @@
 
                 <th class="group-name group-type-{{ group.group_type }}" data-group="{{ group.name }}">
                     {{ group.name }}
-                    <span class="delete-group-button" title="Delete group {{ group.name }}"> [x] </span>
-                </th>
-                <button class="btn btn-primary dropdown-toggle" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown"><span class="caret"></span></button>
-                {{ group_settings(group_name=group.name, description=group.description, group_type=group.group_type, is_default=group.is_default, is_active=1, is_new=0) }}
 
+                    <div class="dropdown-container">
+                        <button class="btn btn-primary dropdown-toggle" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown">
+                            <span class="caret"></span>
+                        </button>
+                        {{ group_settings(group_name=group.name, description=group.description, group_type=group.group_type, is_default=group.is_default, is_active=1, is_new=0) }}
+                    </div>
+                </th>
                 {% endfor %}
                 <th id="add-group" data-orderable="false">
-                    <div>
-                        <button class="btn btn-primary dropdown-toggle" id="add-group-button" type="button" data-toggle="dropdown">Add New Group <span class="caret"></span></button>
+                    <div class="dropdown-container">
+                        <button class="btn btn-primary dropdown-toggle" id="new-add-group-button" type="button" data-toggle="dropdown">Add New Group <span class="caret"></span></button>
                         {{ group_settings(is_new=1) }}
                         </div>
                     </div>
