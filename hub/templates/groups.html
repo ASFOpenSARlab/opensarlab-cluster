@@ -35,8 +35,7 @@
 {% block scripts %}
 <!-- Override the default JS scripts since they are incompatible with datatables -->
 <!-- require.js is overloaded so it doesn't crash. Require is not in a block so it can't be deleted. -->
-require = {};
-require.config = function(){};
+<script> require = {}; require.config = function(){}; </script>
 {% endblock %}
 
 {% if announcement_login %}
