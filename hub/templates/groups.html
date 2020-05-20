@@ -243,6 +243,56 @@
 
 {% endblock %} <!-- script -->
 
+{% from 'page.html' import modal %}
+
+{% macro group_settings(group_name='new', description='', group_type='label', is_default=0, is_active=1, new=0) %}
+<div class="group-settings-container" role="menu">
+    <div class='form-group'>
+        <label for="{{ group_name }}-name-select">Group Type</label>
+        <% if new %>
+        <input id="{{ group_name }}-name-select" class="name-select" type='text' size='20' placeholder='New Group Name'/>
+        <% else %>
+        <p>{{ group_name }}</p>
+        <% endif %>
+    </div>
+
+    <div class="form-group">
+        <label for="{{ group_name }}-description-select">Group Type</label>
+        <input type='text' id="{{ group_name }}-description-select" class="description-select" maxlength=254 size='50' placeholder='Description of Group'/>
+    </div>
+
+    <div class="form-group">
+        <label for="{{ group_name }}-group-type-select">Group Type</label>
+        <select class="form-control group-type-select" id="{{ group_name }}-group-type-select">
+            <% if group_type == 'action' %>
+           <option selected>action</option>
+           <% else %>
+           <option>label</option>
+           <% endif %>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="{{ group_name }}-is-default-select">Default</label>
+        {% if is_default == 1 %}
+        <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select" checked />
+        {% else %}
+        <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select"/>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ group_name }}-is-active-select">Default</label>
+        {% if is_active == 1 %}
+        <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select" checked />
+        {% else %}
+        <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select" />
+        {% endif %}
+    </div>
+
+</div>
+{% endmacro %}
+
 {% call modal('Delete Group', btn_label='WARNING') %}
     <div class="ajax-warning">
         <p>Are you sure you want to delete this group? This cannnot be undone.</p>
