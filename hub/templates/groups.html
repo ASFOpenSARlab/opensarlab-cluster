@@ -42,6 +42,54 @@
   {% set announcement = announcement_login %}
 {% endif %}
 
+{% macro group_settings(group_name='new', description='', group_type='label', is_default=0, is_active=1, is_new=0) %}
+<div class="group-settings-container dropdown-menu" role="menu" aria-labelledby="{{ group_name }}-add-group-button">
+    <div class='form-group'>
+        <label for="{{ group_name }}-name-select">Group Type</label>
+        <% if is_new == 1 %>
+        <input id="{{ group_name }}-name-select" class="name-select" type='text' size='20' placeholder='New Group Name'/>
+        <% else %>
+        <p>{{ group_name }}</p>
+        <% endif %>
+    </div>
+
+    <div class="form-group">
+        <label for="{{ group_name }}-description-select">Group Type</label>
+        <input type='text' id="{{ group_name }}-description-select" class="description-select" maxlength=254 size='50' placeholder='Description of Group'/>
+    </div>
+
+    <div class="form-group">
+        <label for="{{ group_name }}-group-type-select">Group Type</label>
+        <select class="form-control group-type-select" id="{{ group_name }}-group-type-select">
+            <% if group_type == 'action' %>
+           <option selected>action</option>
+           <% else %>
+           <option>label</option>
+           <% endif %>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="{{ group_name }}-is-default-select">Default</label>
+        {% if is_default == 1 %}
+        <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select" checked />
+        {% else %}
+        <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select"/>
+        {% endif %}
+    </div>
+
+    <div class="form-group">
+        <label for="{{ group_name }}-is-active-select">Active</label>
+        {% if is_active == 1 %}
+        <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select" checked />
+        {% else %}
+        <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select" />
+        {% endif %}
+    </div>
+
+</div>
+{% endmacro %}
+
 {% block main %}
 <div id="groups-main" class="container">
     <table id="groups-main-table" class="stripe">
@@ -55,13 +103,13 @@
                     <span class="delete-group-button" title="Delete group {{ group.name }}"> [x] </span>
                 </th>
                 <button class="btn btn-primary dropdown-toggle" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown"><span class="caret"></span></button>
-                {{ group_settings(group_name=group.name, description=group.description, group_type=group.group_type, is_default=group.is_default, is_active=1, new=0) }}
+                {{ group_settings(group_name=group.name, description=group.description, group_type=group.group_type, is_default=group.is_default, is_active=1, is_new=0) }}
 
                 {% endfor %}
                 <th id="add-group" data-orderable="false">
                     <div>
                         <button class="btn btn-primary dropdown-toggle" id="add-group-button" type="button" data-toggle="dropdown"><span class="caret"></span></button>
-                        {{ group_settings(new=1) }}
+                        {{ group_settings(is_new=1) }}
                         </div>
                     </div>
                 </th>
@@ -188,54 +236,6 @@
 </script>
 
 {% endblock %} <!-- script -->
-
-{% macro group_settings(group_name='new', description='', group_type='label', is_default=0, is_active=1, new=0) %}
-<div class="group-settings-container" role="menu">
-    <div class='form-group'>
-        <label for="{{ group_name }}-name-select">Group Type</label>
-        <% if new == 1 %>
-        <input id="{{ group_name }}-name-select" class="name-select" type='text' size='20' placeholder='New Group Name'/>
-        <% else %>
-        <p>{{ group_name }}</p>
-        <% endif %>
-    </div>
-
-    <div class="form-group">
-        <label for="{{ group_name }}-description-select">Group Type</label>
-        <input type='text' id="{{ group_name }}-description-select" class="description-select" maxlength=254 size='50' placeholder='Description of Group'/>
-    </div>
-
-    <div class="form-group">
-        <label for="{{ group_name }}-group-type-select">Group Type</label>
-        <select class="form-control group-type-select" id="{{ group_name }}-group-type-select">
-            <% if group_type == 'action' %>
-           <option selected>action</option>
-           <% else %>
-           <option>label</option>
-           <% endif %>
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label for="{{ group_name }}-is-default-select">Default</label>
-        {% if is_default == 1 %}
-        <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select" checked />
-        {% else %}
-        <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select"/>
-        {% endif %}
-    </div>
-
-    <div class="form-group">
-        <label for="{{ group_name }}-is-active-select">Default</label>
-        {% if is_active == 1 %}
-        <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select" checked />
-        {% else %}
-        <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select" />
-        {% endif %}
-    </div>
-
-</div>
-{% endmacro %}
 
 {% from 'page.html' import modal with context %}
 
