@@ -35,6 +35,9 @@ class GroupMeta(orm.Base):
     is_default = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
 
+    def __repr__(self):
+        return f"<{self.__class__.__name__} {self.group_name} {self.description} {self.group_type} {self.is_default} {self.is_active}>"
+
 class Groups():
 
     def __init__(self, db_url='sqlite:////srv/jupyterhub/jupyterhub.sqlite', db=None):
@@ -57,6 +60,7 @@ class Groups():
             if group_meta is None:
                 group_meta = GroupMeta(group_name=group_name)
 
+            print(group_meta)
             groups.append(group_meta)
 
         return groups
