@@ -1,6 +1,6 @@
 
 from typing import List, Dict
-from sqlalchemy import Column, Unicode, Boolean
+from sqlalchemy import Column, Unicode, Boolean, Integer, ForeignKey
 
 from jupyterhub import orm
 
@@ -12,30 +12,28 @@ from jupyterhub import orm
 """
 
 """
-ALTER TABLE groups ADD COLUMN description VARCHAR(255);
-ALTER TABLE groups ADD COLUMN is_default INTEGER DEFAULT 0;
-ALTER TABLE groups ADD COLUMN group_type VARCHAR(255) DEFAULT 'label';
-
-CREATE TRIGGER IF NOT EXISTS add_new_user_to_groups_map
-    AFTER INSERT
-    ON users
-BEGIN
-    INSERT INTO user_group_map (user_id, group_id)
-    SELECT
-        new.id as user_id,
-        id as group_id
-    FROM groups
-    WHERE is_default = 1;
-END;
+ CREATE TABLE groups_meta (
+   id INTEGER NOT NULL,
+   group_name VARCHAR(255) NOT NULL,
+   description VARCHAR(255),
+   group_type VARCHAR(255),
+   is_default INTEGER,
+   is_active INTEGER,
+   PRIMARY KEY (id),
+   FOREIGN KEY(group_name) REFERENCES groups (name) ON DELETE CASCADE
+ );
 """
 
-class Group(orm.Group):
-    description = Column(Unicode(255), default='')
-    is_default = Column(Boolean, default=False)
-    group_type = Column(Unicode(255), default='label')
-    #is_active = Column(Boolean, default=True)
+class GroupMeta(orm.Base):
+    """Group Meta"""
 
-orm.Group = Group
+    __tablename__ = 'groups_meta'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    group_name = Column(Unicode(255), ForeignKey('group.name', ondelete='CASCADE'))
+    description = Column(Unicode(255), default='')
+    group_type = Column(Unicode(255), default='label')
+    is_default = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True)
 
 class Groups():
 
@@ -50,11 +48,20 @@ class Groups():
     def get_all_groups(self) -> List[orm.Group]:
         return self.session.query(orm.Group).all()
 
-    def add_group(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
+    def get_all_group_values_with_meta(self) -> List[Dict]:
 
-        """ TODO
-        Still need to implement is_active
-        """
+        groups = []
+        for group_obj in self.session.query(orm.Group).all():
+            group_name = group_obj.name
+            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
+            if group_meta is None:
+                group_meta = GroupMeta(group_name=group_name)
+
+            groups.append(group_meta)
+
+        return groups
+
+    def add_group(self, group_name: str) -> None:
 
         try:
             # Check if group exists already
@@ -62,6 +69,23 @@ class Groups():
             if group is not None:
                 print(f"Group '{group_name}' already exists. Aborting adding group.")
                 raise Exception(f"Group '{group_name}' already exists. Aborting adding group.")
+
+            group = orm.Group(name=group_name)
+            self.session.add(group)
+            self.session.commit()
+
+        except Exception as e:
+            self.session.rollback()
+            raise
+
+    def add_group_meta(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
+
+        try:
+            # Check if group exists already
+            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
+            if group_meta is not None:
+                print(f"Group Meta for '{group_name}' already exists. Aborting adding group meta.")
+                raise Exception(f"Group Meta for '{group_name}' already exists. Aborting adding group meta.")
 
             if type(is_default) is str:
                 if is_default.lower() == 'true':
@@ -83,28 +107,22 @@ class Groups():
             elif type(is_active) is not bool:
                 raise Exception("is_active is not a boolean")
 
-            group = orm.Group(name=group_name, description=description, is_default=is_default, group_type=group_type)
-            self.session.add(group)
+            group_meta = GroupMeta(group_name=group_name, description=description, is_default=is_default, group_type=group_type, is_active=is_active)
+            self.session.add(group_meta)
             self.session.commit()
-
-            if is_default:
-                self.add_all_users_to_group(group_name)
 
         except Exception as e:
             self.session.rollback()
             raise
 
-    def update_group(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
+    def update_group_meta(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
 
-        """ TODO
-        Still need to implement is_active
-        """
         try:
-            # Check if group does not exist already
-            group = self.session.query(orm.Group).filter(orm.Group.name == group_name)
-            if group is None:
-                print(f"Group '{group_name}' doesn't exist. Aborting update group for {group}.")
-                raise Exception(f"Group '{group_name}' doesn't exist. Aborting update group.")
+            # Check if group exists already
+            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
+            if group_meta is None:
+                print(f"Group Meta for '{group_name}' does not exist. Aborting update...")
+                raise Exception(f"Group Meta for '{group_name}' does not exist. Aborting update...")
 
             if type(is_default) is str:
                 if is_default.lower() == 'true':
@@ -127,23 +145,29 @@ class Groups():
                 raise Exception("is_active is not a boolean")
 
             args = {
-                orm.Group.name: group_name,
-                orm.Group.description: description,
-                orm.Group.is_default: is_default,
-                orm.Group.group_type: group_type,
-                #orm.Group.is_active: is_active
+                GroupMeta.group_name: group_name,
+                GroupMeta.description: description,
+                GroupMeta.is_default: is_default,
+                GroupMeta.group_type: group_type,
+                GroupMeta.is_active: is_active
             }
-            group.update(args)
+            group_meta.update(args)
             self.session.commit()
-
-            if is_default:
-                self.add_all_users_to_group(group_name)
 
         except Exception as e:
             self.session.rollback()
             raise
 
+    def get_group_meta(self, group_name: str) -> GroupMeta:
+
+        group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
+        if group_meta is None:
+            raise Exception(f"No group meta for group '{group_name}'")
+
+        return group_meta
+
     def delete_group(self, group_name: str) -> None:
+        # group meta will also delete via cascade
         try:
             group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
 

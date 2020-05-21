@@ -11,17 +11,8 @@ class GroupsHandler(BaseHandler):
             from jupyterhub import groups as groups_py
 
             g = groups_py.Groups(db=self.db)
-            group_list_obj = g.get_all_groups()
-            groups = []
-            for group_obj in group_list_obj:
-                groups.append( {
-                    'name': group_obj.name,
-                    'members': [u.name for u in group_obj.users],
-                    'description': group_obj.description,
-                    'is_default': group_obj.is_default,
-                    'group_type': group_obj.group_type
-                })
 
+            groups = g.get_all_groups_with_meta()
             all_users_query = self.db.query(orm.User)
             all_users = [self._user_from_orm(u) for u in all_users_query]
 
@@ -86,7 +77,7 @@ class GroupsHandler(BaseHandler):
                         g.remove_user_from_group(user_name, group_name)
 
             elif data['operation'] == 'add_group':
-                print("Adding to group...")
+                print("Adding group...")
                 this_data = {
                     'group_name': data['group_name'],
                     'description': data['description'],
@@ -94,7 +85,8 @@ class GroupsHandler(BaseHandler):
                     'is_default': data['is_default'],
                     'is_active': data['is_active']
                 }
-                g.add_group(**this_data)
+                g.add_group(group_name=this_data['group_name'])
+                g.add_group_meta(**this_data)
 
                 self._finish_html()
 
@@ -107,7 +99,7 @@ class GroupsHandler(BaseHandler):
                     'is_default': data['is_default'],
                     'is_active': data['is_active']
                 }
-                g.update_group(**this_data)
+                g.update_group_meta(**this_data)
 
                 self._finish_html()
 
