@@ -63,6 +63,26 @@ class Groups():
                 print(f"Group '{group_name}' already exists. Aborting adding group.")
                 raise Exception(f"Group '{group_name}' already exists. Aborting adding group.")
 
+            if type(is_default) is str:
+                if is_default.lower() == 'true':
+                    is_default = True
+                elif is_default == 'false':
+                    is_default.lower() = False
+                else:
+                    raise Exception("is_default cannot be converted from string")
+            elif type(is_default) is not bool:
+                raise Exception("is_default is not a boolean")
+
+            if type(is_active) is str:
+                if is_active.lower() == 'true':
+                    is_active = True
+                elif is_active == 'false':
+                    is_active.lower() = False
+                else:
+                    raise Exception("is_active cannot be converted from string")
+            elif type(is_active) is not bool:
+                raise Exception("is_active is not a boolean")
+
             group = orm.Group(name=group_name, description=description, is_default=is_default, group_type=group_type)
             self.session.add(group)
             self.session.commit()
@@ -82,6 +102,26 @@ class Groups():
             if group is None:
                 print(f"Group '{group_name}' doesn't exist. Aborting update group.")
                 raise Exception(f"Group '{group_name}' doesn't exist. Aborting update group.")
+
+            if type(is_default) is str:
+                if is_default.lower() == 'true':
+                    is_default = True
+                elif is_default == 'false':
+                    is_default.lower() = False
+                else:
+                    raise Exception("is_default cannot be converted from string")
+            elif type(is_default) is not bool:
+                raise Exception("is_default is not a boolean")
+
+            if type(is_active) is str:
+                if is_active.lower() == 'true':
+                    is_active = True
+                elif is_active == 'false':
+                    is_active.lower() = False
+                else:
+                    raise Exception("is_active cannot be converted from string")
+            elif type(is_active) is not bool:
+                raise Exception("is_active is not a boolean")
 
             group = orm.Group(name=group_name, description=description, is_default=is_default, group_type=group_type)
             self.session.update(group)
