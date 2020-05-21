@@ -156,7 +156,7 @@
 
                 <th data-group="{{ group.name }}">
                     <div class="dropdown dropright">
-                        <button class="btn btn-link dropdown-toggle dropdown-toggle-split" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown">
+                        <button class="btn btn-link dropdown-toggle" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown">
                             <span class="h4">{{ group.name }}</span>
                         </button>
                         {{ group_settings(group_name=group.name, description=group.description, group_type=group.group_type, is_default=group.is_default, is_active=1, is_new=0) }}
@@ -165,7 +165,7 @@
                 {% endfor %}
                 <th data-orderable="false">
                     <div class="dropdown dropright">
-                        <button type="button" class="btn btn-warning">
+                        <button class="btn btn-warning dropdown-toggle" id="new-add-group-button" type="button" data-toggle="dropdown">
                             Add New Group
                         </button>
                         {{ group_settings(is_new=1) }}

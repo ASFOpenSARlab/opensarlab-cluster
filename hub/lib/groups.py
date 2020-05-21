@@ -98,9 +98,9 @@ class Groups():
         """
         try:
             # Check if group does not exist already
-            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+            group = self.session.query(orm.Group).filter(orm.Group.name == group_name)
             if group is None:
-                print(f"Group '{group_name}' doesn't exist. Aborting update group.")
+                print(f"Group '{group_name}' doesn't exist. Aborting update group for {group}.")
                 raise Exception(f"Group '{group_name}' doesn't exist. Aborting update group.")
 
             if type(is_default) is str:
@@ -123,8 +123,14 @@ class Groups():
             elif type(is_active) is not bool:
                 raise Exception("is_active is not a boolean")
 
-            group = orm.Group(name=group_name, description=description, is_default=is_default, group_type=group_type)
-            self.session.update(group)
+            args = {
+                orm.Group.group_name: group_name,
+                orm.Group.description: description,
+                orm.Group.is_default: is_default,
+                orm.Group.group_type: group_type,
+                #orm.Group.is_active: is_active
+            }
+            group.update(args)
             self.session.commit()
 
         except Exception as e:
