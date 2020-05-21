@@ -87,6 +87,9 @@ class Groups():
             self.session.add(group)
             self.session.commit()
 
+            if is_default:
+                self.add_all_users_to_group(group_name)
+
         except Exception as e:
             self.session.rollback()
             raise
@@ -124,7 +127,7 @@ class Groups():
                 raise Exception("is_active is not a boolean")
 
             args = {
-                orm.Group.group_name: group_name,
+                orm.Group.name: group_name,
                 orm.Group.description: description,
                 orm.Group.is_default: is_default,
                 orm.Group.group_type: group_type,
@@ -132,6 +135,9 @@ class Groups():
             }
             group.update(args)
             self.session.commit()
+
+            if is_default:
+                self.add_all_users_to_group(group_name)
 
         except Exception as e:
             self.session.rollback()
@@ -187,6 +193,27 @@ class Groups():
                 raise Exception(f"User {user_name} not found.")
 
             group.users.append(user)
+            self.session.commit()
+
+        except Exception as e:
+            self.session.rollback()
+            raise
+
+    def add_all_users_to_group(self, group_name: str) -> None:
+        try:
+
+            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+            all_users = self.session.query(orm.User).all()
+
+            if group == None:
+                print(f"Group {group_name} not found.")
+                raise Exception(f"Group {group_name} not found.")
+            if all_users == None:
+                print(f"No users found.")
+                raise Exception(f"Users not found.")
+
+            for user in all_users:
+                group.users.append(user)
             self.session.commit()
 
         except Exception as e:
