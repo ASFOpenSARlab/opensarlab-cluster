@@ -245,8 +245,8 @@
                 "group_name": $('#new-name-select').val(),
                 "description": $('#new-description-select').val(),
                 "group_type": $('#new-group-type-select input:checked').val(),
-                "is_default": $('#new-is-default-select')[0].checked(),
-                "is_active": $('#new-is-active-select')[0].checked(),
+                "is_default": $('#new-is-default-select')[0].checked,
+                "is_active": $('#new-is-active-select')[0].checked,
                 "operation": "add_group"
             };
 
@@ -278,8 +278,8 @@
                 "group_name": $('#'+group_name +'-name-select').val(),
                 "description": $('#'+group_name +'-description-select').val(),
                 "group_type": $('#'+group_name +'-group-type-select input:checked').val(),
-                "is_default": $('#'+group_name +'-is-default-select')[0].checked(),
-                "is_active": $('#'+group_name +'-is-active-select')[0].checked(),
+                "is_default": $('#'+group_name +'-is-default-select')[0].checked,
+                "is_active": $('#'+group_name +'-is-active-select')[0].checked,
                 "operation": "update_group"
             };
 
