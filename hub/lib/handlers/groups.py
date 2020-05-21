@@ -87,14 +87,27 @@ class GroupsHandler(BaseHandler):
 
             elif data['operation'] == 'add_group':
                 print("Adding to group...")
-                g.add_group(**data)
+                this_data = {
+                    'group_name': data['group_name'],
+                    'description': data['description'],
+                    'group_type': data['group_type'],
+                    'is_default': data['is_default'],
+                    'is_active': data['is_active']
+                }
+                g.add_group(**this_data)
 
                 self._finish_html()
 
             elif data['operation'] == 'update_group':
                 print("Updating group...")
-                group_name = data['group_name']
-                g.update_group(group_name)
+                this_data = {
+                    'group_name': data['group_name'],
+                    'description': data['description'],
+                    'group_type': data['group_type'],
+                    'is_default': data['is_default'],
+                    'is_active': data['is_active']
+                }
+                g.update_group(**this_data)
 
                 self._finish_html()
 
