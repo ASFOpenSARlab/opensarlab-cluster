@@ -154,7 +154,7 @@
                 <th>Username</th>
                 {% for group in groups %}
 
-                <th class="group-name group-type-{{ group.group_type }}" data-group="{{ group.name }}">
+                <th data-group="{{ group.name }}">
                     <div class="dropdown dropright">
                         <label> {{ group.name }} </label>
                         <button class="btn btn-default dropdown-toggle dropdown-toggle-split" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown">
@@ -164,7 +164,7 @@
                     </div>
                 </th>
                 {% endfor %}
-                <th id="add-group-th" data-orderable="false">
+                <th data-orderable="false">
                     <div class="dropdown dropright">
                         <button type="button" class="btn btn-primary">
                             Add New Group
@@ -205,98 +205,125 @@
     let table = $('#groups-main-table').DataTable();
 
     $('#groups-main-table').on('change', '.group-checkbox', function() {
-        $this = $(this)
-        user_name = $this.data("user");
-        group_name = $this.data("group");
-        change_to_checked = $this.children('input')[0].checked;
-        console.log("User '" + user_name + "' has been updated for group '" + group_name + "' because 'checked' is " + change_to_checked);
-        this_data = {
-            "user_name": user_name,
-            "group_name": group_name,
-            "change_to_checked": change_to_checked,
-            "operation": "checked"
-        }
-        var jqxhr = $.post( "/hub/groups", this_data)
-            .done(function() {
-                console.log("Success");
-                $this.data("order", "" + change_to_checked);
 
-                table.destroy();
-                table = $('#groups-main-table').DataTable();
-            })
-            .fail(function(result) {
-                console.log("Error: " + result)
-                //$("#error-dialog .ajax-error").html("There was an error while checking a checkbox: <br/> " + str(result))
-                //$('#error-dialog').modal("show")
-            })
+        try {
+            $this = $(this)
+            user_name = $this.data("user");
+            group_name = $this.data("group");
+            change_to_checked = $this.children('input')[0].checked;
+            console.log("User '" + user_name + "' has been updated for group '" + group_name + "' because 'checked' is " + change_to_checked);
+            this_data = {
+                "user_name": user_name,
+                "group_name": group_name,
+                "change_to_checked": change_to_checked,
+                "operation": "checked"
+            }
+            var jqxhr = $.post( "/hub/groups", this_data)
+                .done(function() {
+                    console.log("Success");
+                    $this.data("order", "" + change_to_checked);
+
+                    table.destroy();
+                    table = $('#groups-main-table').DataTable();
+                })
+                .fail(function(result) {
+                    console.log("Error: " + result)
+                    //$("#error-dialog .ajax-error").html("There was an error while checking a checkbox: <br/> " + str(result))
+                    //$('#error-dialog').modal("show")
+                })
+        }
+        catch(err) {
+            e.preventDefault();
+            console.log(err)
+        }
     });
 
     $('#groups-main-table').on('click', '#new-submit-button', function(e) {
 
-        this_data = {
-            "group_name": $('#new-name-select').val(),
-            "description": $('#new-description-select').val(),
-            "group_type": $('#new-group-type-select input:checked').val(),
-            "is_default": $('#new-is-default-select').checked(),
-            "is_active": $('#new-is-active-select').checked(),
-            "operation": "add_group"
-        };
+        try {
+            this_data = {
+                "group_name": $('#new-name-select').val(),
+                "description": $('#new-description-select').val(),
+                "group_type": $('#new-group-type-select input:checked').val(),
+                "is_default": $('#new-is-default-select')[0].checked(),
+                "is_active": $('#new-is-active-select')[0].checked(),
+                "operation": "add_group"
+            };
 
-        console.log("Group is being added to DB table:" + this_data );
+            console.log("Group is being added to DB table:" + this_data );
 
-        var jqxhr = $.post( "/hub/groups", this_data)
-            .done(function() {
-                console.log("This should not be printed. Instead, the page should be reloaded server side.");
-            })
-            .fail(function(result) {
-                console.log("Error: " + result)
-                //$("#error-dialog .ajax-error").text("There was an error while adding a group: <br/> " + result)
-                //$('#error-dialog').modal("show")
-            })
+            var jqxhr = $.post( "/hub/groups", this_data)
+                .done(function() {
+                    console.log("This should not be printed. Instead, the page should be reloaded server side.");
+                })
+                .fail(function(result) {
+                    console.log("Error: " + result)
+                    //$("#error-dialog .ajax-error").text("There was an error while adding a group: <br/> " + result)
+                    //$('#error-dialog').modal("show")
+                })
+
+        }
+        catch(err) {
+            e.preventDefault();
+            console.log(err)
+        }
     });
 
     $('#groups-main-table').on('click', '.group-update-button', function(e) {
 
-        group_name = $(this).data("group");
+        try {
+            group_name = $(this).data("group");
 
-        this_data = {
-            "group_name": $('#'+group_name +'-name-select').val(),
-            "description": $('#'+group_name +'-description-select').val(),
-            "group_type": $('#'+group_name +'-group-type-select input:checked').val(),
-            "is_default": $('#'+group_name +'-is-default-select').checked(),
-            "is_active": $('#'+group_name +'-is-active-select').checked(),
-            "operation": "update_group"
-        };
+            this_data = {
+                "group_name": $('#'+group_name +'-name-select').val(),
+                "description": $('#'+group_name +'-description-select').val(),
+                "group_type": $('#'+group_name +'-group-type-select input:checked').val(),
+                "is_default": $('#'+group_name +'-is-default-select')[0].checked(),
+                "is_active": $('#'+group_name +'-is-active-select')[0].checked(),
+                "operation": "update_group"
+            };
 
-        console.log("Group is being updated to DB table:" + this_data );
+            console.log("Group is being updated to DB table:" + this_data );
 
-        var jqxhr = $.post( "/hub/groups", this_data)
-            .done(function() {
-                console.log("This should not be printed. Instead, the page should be reloaded server side.");
-            })
-            .fail(function(result) {
-                console.log("Error: " + result)
-                //$("#error-dialog .ajax-error").text("There was an error while adding a group: <br/> " + result)
-                //$('#error-dialog').modal("show")
-            })
+            var jqxhr = $.post( "/hub/groups", this_data)
+                .done(function() {
+                    console.log("This should not be printed. Instead, the page should be reloaded server side.");
+                })
+                .fail(function(result) {
+                    console.log("Error: " + result)
+                    //$("#error-dialog .ajax-error").text("There was an error while adding a group: <br/> " + result)
+                    //$('#error-dialog').modal("show")
+                })
+        }
+        catch(err) {
+            e.preventDefault();
+            console.log(err)
+        }
     });
 
     $('#groups-main-table').on('click', '.group-delete-button', function(e) {
-        group_name = $(this).data("group");
-        this_data = {
-            "group_name": group_name,
-            "operation": "delete_group"
-        };
-        console.log("Group '" + group_name + "' is being deleted from DB table" )
-        var jqxhr = $.post( "/hub/groups", this_data)
-            .done(function(res) {
-              console.log("This should not be printed. Instead, the page should be reloaded server side.");
-            })
-            .fail(function(result) {
-              console.log("Error: " + result)
-              //$("#error-dialog .ajax-error").text("There was an error while deleting a group: <br/> " + result)
-              //$('#error-dialog').modal("show")
-            })
+
+        try {
+            group_name = $(this).data("group");
+            this_data = {
+                "group_name": group_name,
+                "operation": "delete_group"
+            };
+            console.log("Group '" + group_name + "' is being deleted from DB table" )
+            var jqxhr = $.post( "/hub/groups", this_data)
+                .done(function(res) {
+                  console.log("This should not be printed. Instead, the page should be reloaded server side.");
+                })
+                .fail(function(result) {
+                  console.log("Error: " + result)
+                  //$("#error-dialog .ajax-error").text("There was an error while deleting a group: <br/> " + result)
+                  //$('#error-dialog').modal("show")
+                })
+        }
+        catch(err) {
+            e.preventDefault();
+            console.log(err)
+        }
     });
 
 </script>
