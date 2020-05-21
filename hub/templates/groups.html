@@ -135,8 +135,8 @@
            <tr data-user="{{ user.name }}">
                 <td class="user-name" data-user="{{ user.name }}"> {{ user.name }} </td>
                 {% for group in groups %}
-                {% set disabled = group.is_disabled == 1 ? "disabled" : "" %}
-                {% set checked = user.name in group.members ? "checked" : "" %}
+                {% set disabled = "disabled" if group.is_disabled == 1 else "" %}
+                {% set checked = "checked" if user.name in group.members else "" %}
                 <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}" data-order="true">
                     <input type="checkbox" title="Group: {{ group.name }}, User: {{ user.name }}" {{ checked }} {{ disabled }}/>
                 </td>
