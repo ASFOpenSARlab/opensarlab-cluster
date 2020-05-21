@@ -48,7 +48,7 @@ class Groups():
     def get_all_groups(self) -> List[orm.Group]:
         return self.session.query(orm.Group).all()
 
-    def get_all_group_values_with_meta(self) -> List[Dict]:
+    def get_all_groups_with_meta(self) -> List[GroupMeta]:
 
         groups = []
         for group_obj in self.session.query(orm.Group).all():
