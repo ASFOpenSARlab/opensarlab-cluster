@@ -154,12 +154,12 @@
                 <th>Username</th>
                 {% for group in groups %}
 
-                <th data-group="{{ group.name }}">
+                <th data-group="{{ group.group_name }}">
                     <div class="dropdown dropright">
-                        <button class="btn btn-link dropdown-toggle" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown">
-                            <span class="h4">{{ group.name }}</span>
+                        <button class="btn btn-link dropdown-toggle" id="{{ group.group_name }}-add-group-button" type="button" data-toggle="dropdown">
+                            <span class="h4">{{ group.group_name }}</span>
                         </button>
-                        {{ group_settings(group_name=group.name, description=group.description, group_type=group.group_type, is_default=group.is_default, is_active=1, is_new=0) }}
+                        {{ group_settings(group_name=group.group_name, description=group.description, group_type=group.group_type, is_default=group.is_default, is_active=1, is_new=0) }}
                     </div>
                 </th>
                 {% endfor %}
@@ -180,8 +180,8 @@
                 {% for group in groups %}
                 {% set disabled = "disabled" if group.is_disabled == 1 else "" %}
                 {% set checked = "checked" if user.name in group.members else "" %}
-                <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.name }}" data-order="true">
-                    <input type="checkbox" title="Group: {{ group.name }}, User: {{ user.name }}" {{ checked }} {{ disabled }}/>
+                <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.group_name }}" data-order="true">
+                    <input type="checkbox" title="Group: {{ group.group_name }}, User: {{ user.name }}" {{ checked }} {{ disabled }}/>
                 </td>
                 {% endfor %}
                 <td>&nbsp;&nbsp;&nbsp;</td>
