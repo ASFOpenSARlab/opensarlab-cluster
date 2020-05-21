@@ -49,56 +49,92 @@
 {% macro group_settings(group_name='new', description='', group_type='label', is_default=0, is_active=1, is_new=0) %}
 <div class="group-settings-container dropdown-menu" role="menu" aria-labelledby="{{ group_name }}-add-group-button">
     <form>
-    <div class='form-group'>
-        {% if is_new == 1 %}
-        <label for="new-name-select">Group Name</label>
-        <input id="new-name-select" class="name-select form-control" type='text' size='20' placeholder='New Group Name'/>
-        {% endif %}
-    </div>
-
-    <div class="form-group">
-        <label for="{{ group_name }}-description-select">Group Description</label>
-        <input type='text' id="{{ group_name }}-description-select" class="description-select form-control" maxlength=254 size=30 placeholder='Description of Group'/>
-    </div>
-
-    <div class="form-group">
-        <label for="{{ group_name }}-group-type-select">Group Type</label>
-        <select class="form-control group-type-select" id="{{ group_name }}-group-type-select">
-            {% if group_type == 'action' %}
-            <option selected>action</option>
-            <option>label</option>
-            {% else %}
-            <option selected>label</option>
-            <option>action</option>
+        <div class='form-group'>
+            {% if is_new == 1 %}
+            <label for="new-name-select">Group Name</label>
+            <input id="new-name-select" class="name-select form-control" type='text' size='20' placeholder='New Group Name'/>
             {% endif %}
-        </select>
-    </div>
+        </div>
 
-    <div class="form-group">
-        {% if is_default == 1 %}
-        <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select form-check-input" checked />
+        <div class="form-group">
+            <label for="{{ group_name }}-description-select">Group Description</label>
+            <input type='text' id="{{ group_name }}-description-select" class="description-select form-control" maxlength=254 size=30 placeholder='Description of Group'/>
+        </div>
+
+        <div class="form-group">
+            <label for="{{ group_name }}-group-type-select">Group Type</label>
+            <select class="form-control group-type-select" id="{{ group_name }}-group-type-select">
+                {% if group_type == 'action' %}
+                <option selected>action</option>
+                <option>label</option>
+                {% else %}
+                <option selected>label</option>
+                <option>action</option>
+                {% endif %}
+            </select>
+        </div>
+
+        <fieldset class="form-group">
+            <div class="row group-type-select" id="{{ group_name }}-group-type-select">>
+                <legend class="col-form-label col-sm-2 pt-0">Group Type</legend>
+                <div class="col-sm-10">
+                    {% if group_type == 'action' %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="{{ group_name }}-group-type-select-label" value="label" checked>
+                        <label class="form-check-label" for="{{ group_name }}--group-type-select-label">
+                            label
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="{{ group_name }}-group-type-select-action" value="action">
+                        <label class="form-check-label" for="{{ group_name }}-group-type-select-action">
+                            action
+                        </label>
+                    </div>
+                    {% else %}
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="{{ group_name }}-group-type-select-label" value="label">
+                        <label class="form-check-label" for="{{ group_name }}-group-type-select-label">
+                            label
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="{{ group_name }}-group-type-select-action" value="action" checked>
+                        <label class="form-check-label" for="{{ group_name }}-group-type-select-action">
+                            action
+                        </label>
+                    </div>
+                    {% endif %}
+                </div>
+                </div>
+         </fieldset>
+
+        <div class="form-group">
+            {% if is_default == 1 %}
+            <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select form-check-input" checked />
+            {% else %}
+            <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select form-check-input"/>
+            {% endif %}
+            <label class="form-check-label" for="{{ group_name }}-is-default-select">Default Group?</label>
+        </div>
+
+        <div class="form-group">
+            {% if is_active == 1 %}
+            <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select form-check-input" checked />
+            {% else %}
+            <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select form-check-input" />
+            {% endif %}
+            <label  class="form-check-label" for="{{ group_name }}-is-active-select">Active Group?</label>
+        </div>
+
+        {% if is_new == 1 %}
+        <button class="btn btn-primary dropdown-item" id="new-sumbit-button">Add Group</button>
         {% else %}
-        <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select form-check-input"/>
-        {% endif %}
-        <label class="form-check-label" for="{{ group_name }}-is-default-select">Default Group?</label>
-    </div>
-
-    <div class="form-group">
-        {% if is_active == 1 %}
-        <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select form-check-input" checked />
-        {% else %}
-        <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select form-check-input" />
-        {% endif %}
-        <label  class="form-check-label" for="{{ group_name }}-is-active-select">Active Group?</label>
-    </div>
-
-    {% if is_new == 1 %}
-    <button class="btn btn-primary dropdown-item" id="new-sumbit-button">Add Group</button>
-    {% else %}
-    <button class="btn btn-primary dropdown-item" id="{{ group_name }}-update-button" class="group-update-button" data-group="{{ group_name }}">Update Group</button>
+        <button class="btn btn-primary dropdown-item" id="{{ group_name }}-update-button" class="group-update-button" data-group="{{ group_name }}">Update Group</button>
     </form>
 
-    <div class="dropdown-divider"></div>
+    <hr>
+
     <button class="btn btn-danger dropdown-item" id="{{ group_name }}-delete-button" class="group-delete-button" data-group="{{ group_name }}">Delete Group</button>
     {% endif %}
 
@@ -114,7 +150,7 @@
                 {% for group in groups %}
 
                 <th class="group-name group-type-{{ group.group_type }}" data-group="{{ group.name }}">
-                    <div class="dropdown-container btn-group dropright">
+                    <div class="dropdown-container dropright">
                         <label> {{ group.name }} </label>
                         <button class="btn btn-default dropdown-toggle dropdown-toggle-split" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown">
                             <span class="sr-only">Toggle Dropright</span>
@@ -124,7 +160,7 @@
                 </th>
                 {% endfor %}
                 <th id="add-group-th" data-orderable="false">
-                    <div class="dropdown-container btn-group dropright">
+                    <div class="dropdown-container dropright">
                         <button type="button" class="btn btn-primary">
                             Add New Group
                         </button>
@@ -196,7 +232,7 @@
         this_data = {
             "group_name": $('#new-name-select').val(),
             "description": $('#new-description-select').val(),
-            "group_type": $('#new-group-type-select').val(),
+            "group_type": $('#new-group-type-select input:selected').val(),
             "is_default": $('#new-is-default-select').checked(),
             "is_active": $('#new-is-active-select').checked(),
             "operation": "add_group"
@@ -222,7 +258,7 @@
         this_data = {
             "group_name": $('#'+group_name +'-name-select').val(),
             "description": $('#'+group_name +'-description-select').val(),
-            "group_type": $('#'+group_name +'-group-type-select').val(),
+            "group_type": $('#'+group_name +'-group-type-select input:selected').val(),
             "is_default": $('#'+group_name +'-is-default-select').checked(),
             "is_active": $('#'+group_name +'-is-active-select').checked(),
             "operation": "update_group"
