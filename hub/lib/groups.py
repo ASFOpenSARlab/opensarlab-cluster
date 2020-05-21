@@ -66,8 +66,8 @@ class Groups():
             if type(is_default) is str:
                 if is_default.lower() == 'true':
                     is_default = True
-                elif is_default == 'false':
-                    is_default.lower() = False
+                elif is_default.lower() == 'false':
+                    is_default = False
                 else:
                     raise Exception("is_default cannot be converted from string")
             elif type(is_default) is not bool:
@@ -76,8 +76,8 @@ class Groups():
             if type(is_active) is str:
                 if is_active.lower() == 'true':
                     is_active = True
-                elif is_active == 'false':
-                    is_active.lower() = False
+                elif is_active.lower() == 'false':
+                    is_active = False
                 else:
                     raise Exception("is_active cannot be converted from string")
             elif type(is_active) is not bool:
@@ -106,8 +106,8 @@ class Groups():
             if type(is_default) is str:
                 if is_default.lower() == 'true':
                     is_default = True
-                elif is_default == 'false':
-                    is_default.lower() = False
+                elif is_default.lower() == 'false':
+                    is_default = False
                 else:
                     raise Exception("is_default cannot be converted from string")
             elif type(is_default) is not bool:
@@ -116,8 +116,8 @@ class Groups():
             if type(is_active) is str:
                 if is_active.lower() == 'true':
                     is_active = True
-                elif is_active == 'false':
-                    is_active.lower() = False
+                elif is_active.lower() == 'false':
+                    is_active = False
                 else:
                     raise Exception("is_active cannot be converted from string")
             elif type(is_active) is not bool:
