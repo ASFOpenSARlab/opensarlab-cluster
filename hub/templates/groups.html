@@ -121,12 +121,12 @@
         {% if is_new == 1 %}
         <button class="btn btn-primary dropdown-item" id="new-submit-button">Add Group</button>
         {% else %}
-        <button class="btn btn-primary dropdown-item" id="{{ group_name }}-update-button" class="group-update-button" data-group="{{ group_name }}">Update Group</button>
+        <button class="btn btn-primary dropdown-item group-update-button" id="{{ group_name }}-update-button" data-group="{{ group_name }}">Update Group</button>
     </form>
 
     <hr>
 
-    <button class="btn btn-danger dropdown-item" id="{{ group_name }}-delete-button" class="group-delete-button" data-group="{{ group_name }}">Delete Group</button>
+    <button class="btn btn-danger dropdown-item group-delete-button" id="{{ group_name }}-delete-button" data-group="{{ group_name }}">Delete Group</button>
     {% endif %}
 
 </div>
