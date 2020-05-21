@@ -29,11 +29,7 @@
         color: orange;
     }
 
-    #groups-main .dropdown-container {
-        position: relative;
-    }
-
-    #groups-main .groups-settings-container {
+    #groups-main .group-settings-container {
         padding: 10px 10px;
     }
 
@@ -118,7 +114,7 @@
                 {% for group in groups %}
 
                 <th class="group-name group-type-{{ group.group_type }}" data-group="{{ group.name }}">
-                    <div class="dropdown-container dropright">
+                    <div class="dropdown-container btn-group dropright">
                         <label> {{ group.name }} </label>
                         <button class="btn btn-default dropdown-toggle dropdown-toggle-split" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown">
                             <span class="sr-only">Toggle Dropright</span>
@@ -128,7 +124,7 @@
                 </th>
                 {% endfor %}
                 <th id="add-group-th" data-orderable="false">
-                    <div class="dropdown-container dropright">
+                    <div class="dropdown-container btn-group dropright">
                         <button type="button" class="btn btn-primary">
                             Add New Group
                         </button>
