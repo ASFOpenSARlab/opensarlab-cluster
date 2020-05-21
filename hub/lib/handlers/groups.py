@@ -7,35 +7,41 @@ class GroupsHandler(BaseHandler):
     """Render the groups page."""
 
     def _finish_html(self):
-        from jupyterhub import groups as groups_py
+        try:
+            from jupyterhub import groups as groups_py
 
-        g = groups_py.Groups(db=self.db)
-        group_list_obj = g.get_all_groups()
-        groups = []
-        for group_obj in group_list_obj:
-            groups.append( {
-                'name': group_obj.name,
-                'members': [u.name for u in group_obj.users],
-                'description': group_obj.description,
-                'is_default': group_obj.is_default,
-                'group_type': group_obj.group_type
-            })
+            g = groups_py.Groups(db=self.db)
+            group_list_obj = g.get_all_groups()
+            groups = []
+            for group_obj in group_list_obj:
+                groups.append( {
+                    'name': group_obj.name,
+                    'members': [u.name for u in group_obj.users],
+                    'description': group_obj.description,
+                    'is_default': group_obj.is_default,
+                    'group_type': group_obj.group_type
+                })
 
-        all_users_query = self.db.query(orm.User)
-        all_users = [self._user_from_orm(u) for u in all_users_query]
+            all_users_query = self.db.query(orm.User)
+            all_users = [self._user_from_orm(u) for u in all_users_query]
 
-        html = self.render_template(
-            'groups.html',
-            current_user=self.current_user,
-            groups=groups,
-            all_users=all_users,
-            admin_access=self.settings.get('admin_access', False),
-        )
-        self.finish(html)
+            html = self.render_template(
+                'groups.html',
+                current_user=self.current_user,
+                groups=groups,
+                all_users=all_users,
+                admin_access=self.settings.get('admin_access', False),
+            )
+            self.finish(html)
+
+        except Exception as e:
+            print("Something went wrong in rendering html...")
+            raise
 
     @admin_only
     def get(self):
         try:
+            print("Getting group page...")
             self._finish_html()
         except Exception as e:
             print("Something went wrong with the GET...")
@@ -56,6 +62,7 @@ class GroupsHandler(BaseHandler):
             g = groups_py.Groups(db=self.db)
 
             if data['operation'] == 'checked':
+                print("Changing checkboxes...")
                 user_name = data['user_name']
                 group_name = data['group_name']
                 change_to_checked = data['change_to_checked']
@@ -79,21 +86,27 @@ class GroupsHandler(BaseHandler):
                         g.remove_user_from_group(user_name, group_name)
 
             elif data['operation'] == 'add_group':
+                print("Adding to group...")
                 g.add_group(**data)
 
                 self._finish_html()
 
             elif data['operation'] == 'update_group':
+                print("Updating group...")
                 group_name = data['group_name']
                 g.update_group(group_name)
 
                 self._finish_html()
 
             elif data['operation'] == 'delete_group':
+                print("Deleting group...")
                 group_name = data['group_name']
                 g.delete_group(group_name)
 
                 self._finish_html()
+
+            else:
+                raise Exception(f"Unknown POST operation: {data['operation']}")
 
         except Exception as e:
             print("Something went wrong with the POST...")
