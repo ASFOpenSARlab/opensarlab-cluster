@@ -33,6 +33,10 @@
         padding: 10px 10px;
     }
 
+    #groups-main .dropdown-container {
+            position: relative;
+    }
+
 </style>
 {% endblock %} <!-- stylesheet -->
 
@@ -62,22 +66,9 @@
         </div>
 
         <div class="form-group">
-            <label for="{{ group_name }}-group-type-select">Group Type</label>
-            <select class="form-control group-type-select" id="{{ group_name }}-group-type-select">
-                {% if group_type == 'action' %}
-                <option selected>action</option>
-                <option>label</option>
-                {% else %}
-                <option selected>label</option>
-                <option>action</option>
-                {% endif %}
-            </select>
-        </div>
-
-        <fieldset class="form-group">
-            <div class="row group-type-select" id="{{ group_name }}-group-type-select">>
-                <legend class="col-form-label col-sm-2 pt-0">Group Type</legend>
-                <div class="col-sm-10">
+            <div class="group-type-select" id="{{ group_name }}-group-type-select">>
+                <label class="col-form-label">Group Type</label>
+                <div>
                     {% if group_type == 'action' %}
                     <div class="form-check">
                         <input class="form-check-input" type="radio" id="{{ group_name }}-group-type-select-label" value="label" checked>
@@ -106,8 +97,8 @@
                     </div>
                     {% endif %}
                 </div>
-                </div>
-         </fieldset>
+            </div>
+         </div>
 
         <div class="form-group">
             {% if is_default == 1 %}
@@ -153,7 +144,7 @@
                     <div class="dropdown-container dropright">
                         <label> {{ group.name }} </label>
                         <button class="btn btn-default dropdown-toggle dropdown-toggle-split" id="{{ group.name }}-add-group-button" type="button" data-toggle="dropdown">
-                            <span class="sr-only">Toggle Dropright</span>
+                            <span class="sr-only">&gt;</span>
                         </button>
                         {{ group_settings(group_name=group.name, description=group.description, group_type=group.group_type, is_default=group.is_default, is_active=1, is_new=0) }}
                     </div>
@@ -165,7 +156,7 @@
                             Add New Group
                         </button>
                         <button class="btn btn-primary dropdown-toggle dropdown-toggle-split" id="new-add-group-button" type="button" data-toggle="dropdown">
-                            <span class="sr-only">Toggle Dropright</span>
+                            <span class="sr-only">&gt;</span>
                         </button>
                         {{ group_settings(is_new=1) }}
                         </div>
