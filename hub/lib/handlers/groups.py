@@ -85,6 +85,7 @@ class GroupsHandler(BaseHandler):
                     'is_default': data['is_default'],
                     'is_active': data['is_active']
                 }
+                print(f"Adding {this_data}")
                 g.add_group(group_name=this_data['group_name'])
                 g.add_group_meta(**this_data)
 

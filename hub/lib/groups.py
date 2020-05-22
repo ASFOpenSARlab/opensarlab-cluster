@@ -128,7 +128,13 @@ class Groups():
     def add_group_meta(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
 
         try:
-            # Check if group exists already
+            # Check if group meta exists already
+            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+            if group is None:
+                print(f"Group '{group_name}' doesn't exist. Aborting adding group meta.")
+                raise Exception(f"Group '{group_name}' doesn't exist. Aborting adding group meta.")
+
+            # Check if group meta exists already
             group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
             if group_meta is not None:
                 print(f"Group Meta for '{group_name}' already exists. Aborting adding group meta.")

@@ -244,13 +244,13 @@
                     console.log("Success");
                 })
                 .fail(function(result) {
-                    console.log("Error: " + result)
+                    console.log("Error: ", result)
                     modal_handler("There was an error while checking a checkbox: <br/> " + result);
                 })
         }
         catch(err) {
             e.preventDefault();
-            modal_handler("There was an error unusual error: <br/> " + err);
+            modal_handler("There was an error unusual error: <br/> ", err);
         }
     });
 
@@ -274,13 +274,13 @@
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    modal_handler("There was an error while adding a new group: <br/> " + result);
+                    modal_handler("There was an error while adding a new group: <br/> ", result);
                 })
 
         }
         catch(err) {
             e.preventDefault();
-            modal_handler("There was an error unusual error: <br/> " + err);
+            modal_handler("There was an error unusual error: <br/> ", err);
         }
     });
 
@@ -306,12 +306,12 @@
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    modal_handler("There was an error while adding a group: <br/> " + result);
+                    modal_handler("There was an error while adding a group: <br/> ", result);
                 })
         }
         catch(err) {
             e.preventDefault();
-            modal_handler("There was an error unusual error: <br/> " + err);
+            modal_handler("There was an error unusual error: <br/> ", err);
         }
     });
 
@@ -333,10 +333,10 @@
                 })
                 .fail(function(result) {
                   console.log("Error: " + result)
-                  modal_handler("There was an error while deleting a group: <br/> " + result);
+                  modal_handler("There was an error while deleting a group: <br/> ", result);
                 })
 
-            /*modal_handler(message,
+            modal_handler(message,
                 function(e){
                     this_data = {
                         "group_name": group_name,
@@ -349,18 +349,18 @@
                         })
                         .fail(function(result) {
                           console.log("Error: " + result)
-                          modal_handler("There was an error while deleting a group: <br/> " + result);
+                          modal_handler("There was an error while deleting a group: <br/> ", result);
                         })
                 },
                 function(e){
-                    modal_handler("There was an error unusual error: <br/> " + e);
+                    modal_handler("There was an error unusual error: <br/> ", e);
                 }
-            );*/
+            );
         }
         catch(err) {
             e.preventDefault();
             console.log(err)
-            modal_handler("There was an error unusual error: <br/> " + err);
+            modal_handler("There was an error unusual error: <br/> ", err);
         }
     });
 
