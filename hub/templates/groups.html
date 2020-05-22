@@ -200,17 +200,25 @@
 
     function modal_handler(message, success, cancel) {
 
-        $('#modal .ajax-message').html(message);
+        $('#error-dialog .ajax-error').html(message);
 
-        $('#modal').off().on("click", "button.btn-primary", function(e){
-            $('#modal').modal("hide");
-            success();
+        $('#error-dialog').off()
+
+        $('#error-dialog').on("click", "button.btn-primary", function(e){
+            $('#error-dialog').modal("hide");
+            if success {
+                success();
+            }
         });
 
-        $('#modal').off().on("click", "button.btn-secondary", function(e){
-            $('#modal').modal("hide");
-            cancel();
+        $('#error-dialog').on("click", "button.btn-default", function(e){
+            $('#error-dialog').modal("hide");
+            if cancel {
+                cancel();
+            }
         });
+
+        $('#error-dialog').modal("show");
     }
 
     $('#groups-main-table').DataTable();
@@ -239,13 +247,12 @@
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    $("#modal .ajax-message").html("There was an error while checking a checkbox: <br/> " + str(result))
-                    $('#modal').modal("show")
+                    modal_handler("There was an error while checking a checkbox: <br/> " + result);
                 })
         }
         catch(err) {
             e.preventDefault();
-            console.log(err)
+            modal_handler("There was an error unusual error: <br/> " + err);
         }
     });
 
@@ -269,14 +276,13 @@
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    $("#modal .ajax-message").html("There was an error while adding a group: <br/> " + result)
-                    $('#modal').modal("show")
+                    modal_handler("There was an error while adding a new group: <br/> " + result);
                 })
 
         }
         catch(err) {
             e.preventDefault();
-            console.log(err)
+            modal_handler("There was an error unusual error: <br/> " + err);
         }
     });
 
@@ -302,13 +308,12 @@
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    $("#modal .ajax-message").html("There was an error while adding a group: <br/> " + result)
-                    $('#modal').modal("show")
+                    modal_handler("There was an error while adding a group: <br/> " + result);
                 })
         }
         catch(err) {
             e.preventDefault();
-            console.log(err)
+            modal_handler("There was an error unusual error: <br/> " + err);
         }
     });
 
@@ -332,18 +337,18 @@
                         })
                         .fail(function(result) {
                           console.log("Error: " + result)
-                          $("#modal .ajax-message").html("There was an error while deleting a group: <br/> " + result)
-                          $('#modal').modal("show")
+                          modal_handler("There was an error while deleting a group: <br/> " + result);
                         })
                 },
                 function(e){
-                    return;
+                    modal_handler("There was an error unusual error: <br/> " + e);
                 }
             );
         }
         catch(err) {
             e.preventDefault();
             console.log(err)
+            modal_handler("There was an error unusual error: <br/> " + err);
         }
     });
 
@@ -352,25 +357,3 @@
 </script>
 
 {% endblock %} <!-- script -->
-
-<div id="modal" class="modal" tabindex="-1" role="dialog">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Error</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-          <div class="ajax-message">
-            The message
-          </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary">OK</button>
-      </div>
-    </div>
-  </div>
-</div>
