@@ -119,7 +119,7 @@ class Groups():
 
         try:
             # Check if group exists already
-            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
+            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name)
             if group_meta is None:
                 print(f"Group Meta for '{group_name}' does not exist. Aborting update...")
                 raise Exception(f"Group Meta for '{group_name}' does not exist. Aborting update...")
@@ -128,11 +128,11 @@ class Groups():
             is_active = self._boolean_check(is_active)
 
             args = {
-                GroupMeta.group_name: group_name,
-                GroupMeta.description: description,
-                GroupMeta.is_default: is_default,
-                GroupMeta.group_type: group_type,
-                GroupMeta.is_active: is_active
+                'group_name': group_name,
+                'description': description,
+                'is_default': is_default,
+                'group_type': group_type,
+                'is_active': is_active
             }
             group_meta.update(args)
             self.session.commit()
