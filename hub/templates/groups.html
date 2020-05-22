@@ -49,8 +49,12 @@
         border-bottom: .3em solid transparent;
         border-left: .3em solid;
     }*/
-    #groups-main .inactive-checkbox {
-        border-color: red;
+    #groups-main .is-enabled-checkbox {
+        border: green;
+    }
+
+    #groups-main .is-disabled-checkbox {
+        border: red;
     }
 
 </style>
@@ -66,7 +70,7 @@
   {% set announcement = announcement_login %}
 {% endif %}
 
-{% macro group_settings(group_name='new', description='', group_type='label', is_default=0, is_active=1, is_new=0) %}
+{% macro group_settings(group_name='new', description='', group_type='label', is_all_users=0, is_enabled=1, is_new=0) %}
 <div class="group-settings-container dropdown-menu" role="menu" aria-labelledby="{{ group_name }}-add-group-button">
     <form>
         <div class='form-group'>
@@ -117,21 +121,21 @@
          </div>
 
         <div class="form-group">
-            {% if is_default == 1 %}
-            <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select form-check-input" checked />
+            {% if is_all_users == 1 %}
+            <input type='checkbox' id="{{ group_name }}-is-all-users-select" class="is-all-users-select form-check-input" checked />
             {% else %}
-            <input type='checkbox' id="{{ group_name }}-is-default-select" class="is-default-select form-check-input"/>
+            <input type='checkbox' id="{{ group_name }}-is-all-users-select" class="is-all-users-select form-check-input"/>
             {% endif %}
-            <label class="form-check-label" for="{{ group_name }}-is-default-select">Is default?</label>
+            <label class="form-check-label" for="{{ group_name }}-is-all-users-select">All Users?</label>
         </div>
 
         <div class="form-group">
-            {% if is_active == 1 %}
-            <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select form-check-input" checked />
+            {% if is_enabled == 1 %}
+            <input type='checkbox' id="{{ group_name }}-is-enabled-select" class="is-enabled-select form-check-input" checked />
             {% else %}
-            <input type='checkbox' id="{{ group_name }}-is-active-select" class="is-active-select form-check-input" />
+            <input type='checkbox' id="{{ group_name }}-is-enabled-select" class="is-enabled-select form-check-input" />
             {% endif %}
-            <label  class="form-check-label" for="{{ group_name }}-is-active-select">Is active?</label>
+            <label  class="form-check-label" for="{{ group_name }}-is-enabled-select">Is enabled?</label>
         </div>
 
         {% if is_new == 1 %}
@@ -161,7 +165,7 @@
                         <button class="btn btn-link dropdown-toggle" id="{{ group.group_name }}-add-group-button" type="button" data-toggle="dropdown">
                             <span class="h4">{{ group.group_name }}</span>
                         </button>
-                        {{ group_settings(group_name=group.group_name, description=group.meta.description, group_type=group.meta.group_type, is_default=group.meta.is_default, is_active=group.meta.is_active, is_new=0) }}
+                        {{ group_settings(group_name=group.group_name, description=group.meta.description, group_type=group.meta.group_type, is_all_users=group.meta.is_all_users, is_enabled=group.meta.is_enabled, is_new=0) }}
                     </div>
                 </th>
                 {% endfor %}
@@ -176,16 +180,16 @@
             </tr>
         </thead>
         <tbody>
-           {% for user in all_users %}
+           {% for user in is_all_users %}
            <tr data-user="{{ user.name }}">
                 <td class="user-name" data-user="{{ user.name }}"> {{ user.name }} </td>
                 {% for group in groups %}
-                {% set active = "active-checkbox" if group.meta.is_active else "inactive-checkbox" %}
-                {% set disabled = "disabled" if (group.meta.is_default or not group.meta.is_active) else "" %}
-                {% set checked = "checked" if (user.name in group.members or group.meta.is_default) else "" %}
+                {% set group_enabled = "group-enabled-checkbox" if group.meta.is_enabled else "group-disabled-checkbox" %}
+                {% set disabled = "disabled" if (group.meta.is_all_users or not group_enabled) else "" %}
+                {% set checked = "checked" if user.name in group.members else "" %}
                 {% set ordered = "true" if checked == "checked" else "false" %}
                 <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.group_name }}" data-order="{{ ordered }}">
-                    <input type="checkbox" class="{{ active }}" title="Group: {{ group.group_name }}, User: {{ user.name }}" {{ checked }} {{ disabled }}/>
+                    <input type="checkbox" class="{{ group_enabled }}" title="Group: {{ group.group_name }}, User: {{ user.name }}" {{ checked }} {{ disabled }}/>
                 </td>
                 {% endfor %}
                 <td>&nbsp;&nbsp;&nbsp;</td>
@@ -264,8 +268,8 @@
                 "group_name": $('#new-name-select').val(),
                 "description": $('#new-description-select').val(),
                 "group_type": $('#new-group-type-select input:checked').val(),
-                "is_default": $('#new-is-default-select')[0].checked,
-                "is_active": $('#new-is-active-select')[0].checked,
+                "is_all_users": $('#new-is-all-users-select')[0].checked,
+                "is_enabled": $('#new-is-enabled-select')[0].checked,
                 "operation": "add_group"
             };
 
@@ -296,8 +300,8 @@
                 "group_name": group_name,
                 "description": $('#'+group_name +'-description-select').val(),
                 "group_type": $('#'+group_name +'-group-type-select input:checked').val(),
-                "is_default": $('#'+group_name +'-is-default-select')[0].checked,
-                "is_active": $('#'+group_name +'-is-active-select')[0].checked,
+                "is_all_users": $('#'+group_name +'-is-all-users-select')[0].checked,
+                "is_enabled": $('#'+group_name +'-is-enabled-select')[0].checked,
                 "operation": "update_group"
             };
 

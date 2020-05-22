@@ -92,8 +92,8 @@ class GroupsHandler(BaseHandler):
                     'group_name': data['group_name'],
                     'description': data['description'],
                     'group_type': data['group_type'],
-                    'is_default': data['is_default'],
-                    'is_active': data['is_active']
+                    'is_all_users': data['is_all_users'],
+                    'is_enabled': data['is_enabled']
                 }
                 print(f"Adding {this_data}")
                 g.add_group(group_name=this_data['group_name'])
@@ -107,8 +107,8 @@ class GroupsHandler(BaseHandler):
                     'group_name': data['group_name'],
                     'description': data['description'],
                     'group_type': data['group_type'],
-                    'is_default': data['is_default'],
-                    'is_active': data['is_active']
+                    'is_all_users': data['is_all_users'],
+                    'is_enabled': data['is_enabled']
                 }
                 g.update_group_meta(**this_data)
 

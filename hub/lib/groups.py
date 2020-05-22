@@ -22,10 +22,10 @@ from jupyterhub import orm
         $ sqlite3 jupyterhub.sqlite
 
     1. As needed, export current data to CSV
-        sqlite> .headers on;
-        sqlite> .mode csv;
-        sqlite> .output groups-meta-data.csv;
-        sqlite> SELECT group_name, description, group_type, is_default, is_active FROM groups_meta;
+        sqlite> .headers on
+        sqlite> .mode csv
+        sqlite> .output groups-meta-data.csv
+        sqlite> SELECT group_name, description, group_type, is_all_users, is_enabled FROM groups_meta;
 
     2. Drop the groups table
         sqlite> DROP TABLE groups_meta;
@@ -33,25 +33,33 @@ from jupyterhub import orm
 
     3. Do upgrade via Helm or otherwise
 
-    4. Log back into the `hub` and sqlite3 and add back `groups_meta` table
+    4. Log back into the `hub` and sqlite3 and create `groups_meta` (and temp) table
+
+        CREATE TABLE temp_1 (
+           group_name VARCHAR(255) NOT NULL,
+           description VARCHAR(255),
+           group_type VARCHAR(255),
+           is_all_users INTEGER,
+           is_enabled INTEGER
+        );
 
         CREATE TABLE groups_meta (
            id INTEGER NOT NULL,
            group_name VARCHAR(255) NOT NULL,
            description VARCHAR(255),
            group_type VARCHAR(255),
-           is_default INTEGER,
-           is_active INTEGER,
+           is_all_users INTEGER,
+           is_enabled INTEGER,
            PRIMARY KEY (id),
            FOREIGN KEY(group_name) REFERENCES groups (name) ON DELETE CASCADE
         );
 
-        sqlite> .schema groups_meta;
-
     5. Reimport data back into table and check
-        sqlite> .mode csv;
-        sqlite> .import groups-meta-data.csv groups_meta;
-        sqlite> SELECT group_name, description, group_type, is_default, is_active FROM groups_meta;
+        sqlite> .mode csv
+        sqlite> .import groups-meta-data.csv temp_1
+        sqlite> INSERT INTO groups_meta(group_name, description, group_type, is_all_users, is_enabled) SELECT group_name, description, group_type, is_all_users, is_enabled FROM temp_1;
+        sqlite> DROP TABLE temp_1;
+        sqlite> SELECT group_name, description, group_type, is_all_users, is_enabled FROM groups_meta;
 
 """
 
@@ -63,11 +71,11 @@ class GroupMeta(orm.Base):
     group_name = Column(Unicode(255), ForeignKey('groups.name', ondelete='CASCADE'))
     description = Column(Unicode(255), default='')
     group_type = Column(Unicode(255), default='label')
-    is_default = Column(Boolean, default=False)
-    is_active = Column(Boolean, default=True)
+    is_all_users = Column(Boolean, default=False)
+    is_enabled = Column(Boolean, default=True)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} name:{self.group_name} description:{self.description} type:{self.group_type} default:{self.is_default} active:{self.is_active}>"
+        return f"<{self.__class__.__name__} name:{self.group_name} description:{self.description} type:{self.group_type} is_all_users:{self.is_all_users} is_enabled:{self.is_enabled}>"
 
 class Groups():
 
@@ -125,7 +133,7 @@ class Groups():
             self.session.rollback()
             raise
 
-    def add_group_meta(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
+    def add_group_meta(self, group_name: str, description: str, is_all_users: Boolean, group_type: str, is_enabled: Boolean) -> None:
 
         try:
             # Check if group exists already
@@ -140,10 +148,10 @@ class Groups():
                 print(f"Group Meta for '{group_name}' already exists. Aborting adding group meta.")
                 raise Exception(f"Group Meta for '{group_name}' already exists. Aborting adding group meta.")
 
-            is_default = self._boolean_check(is_default)
-            is_active = self._boolean_check(is_active)
+            is_all_users = self._boolean_check(is_all_users)
+            is_enabled = self._boolean_check(is_enabled)
 
-            group_meta = GroupMeta(group_name=group_name, description=description, is_default=is_default, group_type=group_type, is_active=is_active)
+            group_meta = GroupMeta(group_name=group_name, description=description, is_all_users=is_all_users, group_type=group_type, is_enabled=is_enabled)
             self.session.add(group_meta)
             self.session.commit()
 
@@ -152,7 +160,7 @@ class Groups():
             self.session.rollback()
             raise
 
-    def update_group_meta(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
+    def update_group_meta(self, group_name: str, description: str, is_all_users: Boolean, group_type: str, is_enabled: Boolean) -> None:
         try:
 
             group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
@@ -160,15 +168,15 @@ class Groups():
                 print(f"Group '{group_name}' doesn't exist. Aborting adding group meta.")
                 raise Exception(f"Group '{group_name}' doesn't exist. Aborting adding group meta.")
 
-            is_default = self._boolean_check(is_default)
-            is_active = self._boolean_check(is_active)
+            is_all_users = self._boolean_check(is_all_users)
+            is_enabled = self._boolean_check(is_enabled)
 
             args = {
                 'group_name': group_name,
                 'description': description,
-                'is_default': is_default,
+                'is_all_users': is_all_users,
                 'group_type': group_type,
-                'is_active': is_active
+                'is_enabled': is_enabled
             }
 
             # Check if group meta exists already. If not, create.

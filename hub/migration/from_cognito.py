@@ -37,7 +37,7 @@ def cognito_users_by_group(group_name):
 
 g = groups.Groups()
 
-# Create default group `general_cpu` action and make default initalize for all
+# Create "is all users" group `general_cpu` action and initalize for all
 try:
     g.add_group('general_cpu')
 
