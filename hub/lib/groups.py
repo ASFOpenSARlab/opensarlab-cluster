@@ -48,6 +48,17 @@ class Groups():
             session_factory = orm.new_session_factory(db_url)
             self.session = session_factory()
 
+    @staticmethod
+    def _boolean_check(arg):
+        if arg in ("1", "True", "true", True, 1):
+            ret = True
+        elif arg in ("0", "False", "false", False, 0):
+            ret = False
+        else:
+            raise Exception(f"'{arg}' cannot be converted to boolean")
+
+        return ret
+
     def get_all_groups(self) -> List[orm.Group]:
         return self.session.query(orm.Group).all()
 
@@ -92,19 +103,8 @@ class Groups():
                 print(f"Group Meta for '{group_name}' already exists. Aborting adding group meta.")
                 raise Exception(f"Group Meta for '{group_name}' already exists. Aborting adding group meta.")
 
-            if is_default in ("1", True, 1):
-                is_default = True
-            elif is_default in ("0", False, 0):
-                is_default = False
-            else:
-                raise Exception(f"is_default '{is_default}' cannot be converted to boolean")
-
-            if is_active in ("1", True, 1):
-                is_active = True
-            elif is_active in ("0", False, 0):
-                is_active = False
-            else:
-                raise Exception(f"is_active '{is_active}' cannot be converted to boolean")
+            is_default = self._boolean_check(is_default)
+            is_active = self._boolean_check(is_active)
 
             group_meta = GroupMeta(group_name=group_name, description=description, is_default=is_default, group_type=group_type, is_active=is_active)
             self.session.add(group_meta)
@@ -124,19 +124,8 @@ class Groups():
                 print(f"Group Meta for '{group_name}' does not exist. Aborting update...")
                 raise Exception(f"Group Meta for '{group_name}' does not exist. Aborting update...")
 
-            if is_default in ("1", True, 1):
-                is_default = True
-            elif is_default in ("0", False, 0):
-                is_default = False
-            else:
-                raise Exception(f"is_default '{is_default}' cannot be converted to boolean")
-
-            if is_active in ("1", True, 1):
-                is_active = True
-            elif is_active in ("0", False, 0):
-                is_active = False
-            else:
-                raise Exception(f"is_active '{is_active}' cannot be converted to boolean")
+            is_default = self._boolean_check(is_default)
+            is_active = self._boolean_check(is_active)
 
             args = {
                 GroupMeta.group_name: group_name,
