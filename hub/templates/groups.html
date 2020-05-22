@@ -180,7 +180,7 @@
             </tr>
         </thead>
         <tbody>
-           {% for user in is_all_users %}
+           {% for user in all_users %}
            <tr data-user="{{ user.name }}">
                 <td class="user-name" data-user="{{ user.name }}"> {{ user.name }} </td>
                 {% for group in groups %}
