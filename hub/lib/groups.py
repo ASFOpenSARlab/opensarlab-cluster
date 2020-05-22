@@ -97,14 +97,14 @@ class Groups():
             elif is_default in ("0", False, 0):
                 is_default = False
             else:
-                raise Exception(f"is_default "{is_default}" cannot be converted to boolean")
+                raise Exception(f"is_default '{is_default}' cannot be converted to boolean")
 
             if is_active in ("1", True, 1):
                 is_active = True
             elif is_active in ("0", False, 0):
                 is_active = False
             else:
-                raise Exception(f"is_active "{is_active}" cannot be converted to boolean")
+                raise Exception(f"is_active '{is_active}' cannot be converted to boolean")
 
             group_meta = GroupMeta(group_name=group_name, description=description, is_default=is_default, group_type=group_type, is_active=is_active)
             self.session.add(group_meta)
@@ -129,14 +129,14 @@ class Groups():
             elif is_default in ("0", False, 0):
                 is_default = False
             else:
-                raise Exception(f"is_default "{is_default}" cannot be converted to boolean")
+                raise Exception(f"is_default '{is_default}' cannot be converted to boolean")
 
             if is_active in ("1", True, 1):
                 is_active = True
             elif is_active in ("0", False, 0):
                 is_active = False
             else:
-                raise Exception(f"is_active "{is_active}" cannot be converted to boolean")
+                raise Exception(f"is_active '{is_active}' cannot be converted to boolean")
 
             args = {
                 GroupMeta.group_name: group_name,
