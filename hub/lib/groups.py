@@ -29,7 +29,7 @@ class GroupMeta(orm.Base):
 
     __tablename__ = 'groups_meta'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    group_name = Column(Unicode(255), ForeignKey('group.name', ondelete='CASCADE'))
+    group_name = Column(Unicode(255), ForeignKey('groups.name', ondelete='CASCADE'))
     description = Column(Unicode(255), default='')
     group_type = Column(Unicode(255), default='label')
     is_default = Column(Boolean, default=False)
