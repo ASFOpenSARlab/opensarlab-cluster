@@ -5,23 +5,37 @@ from sqlalchemy import Column, Unicode, Boolean, Integer, ForeignKey
 from jupyterhub import orm
 
 """
-    db_url = ''
-    groups = Groups(db_url)
+    Usage:
 
-    groups.get_all_groups()
-"""
+    from jupyterhub import Groups
+    g = Groups()
 
-"""
- CREATE TABLE groups_meta (
-   id INTEGER NOT NULL,
-   group_name VARCHAR(255) NOT NULL,
-   description VARCHAR(255),
-   group_type VARCHAR(255),
-   is_default INTEGER,
-   is_active INTEGER,
-   PRIMARY KEY (id),
-   FOREIGN KEY(group_name) REFERENCES groups (name) ON DELETE CASCADE
- );
+    g.get_all_groups()
+
+    ------------
+    During Jupyterhub helm upgrade, the DB might need an update.
+    If the build fails die to DB conflicts, the custom parts of the DB will need to be taken apart briefly.
+
+    1. Within `hub` pod (via `kubectl exec`), run
+        $ cd /srv/jupyterhub/
+        $ sqlite3 jupyterhub.sqlite
+
+    2. As needed, export current data
+        > 
+
+
+    CREATE TABLE groups_meta (
+       id INTEGER NOT NULL,
+       group_name VARCHAR(255) NOT NULL,
+       description VARCHAR(255),
+       group_type VARCHAR(255),
+       is_default INTEGER,
+       is_active INTEGER,
+       PRIMARY KEY (id),
+       FOREIGN KEY(group_name) REFERENCES groups (name) ON DELETE CASCADE
+    );
+
+
 """
 
 class GroupMeta(orm.Base):

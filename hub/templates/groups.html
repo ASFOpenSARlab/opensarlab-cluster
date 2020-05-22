@@ -1,29 +1,5 @@
 {% extends "page.html" %}
 
-{% macro modal(title, btn_label=None, btn_class="btn-primary") %}
-{% set key = title.replace(' ', '-').lower() %}
-{% set btn_label = btn_label or title %}
-<div id="{{ key }}-dialog-modal" class="modal" tabindex="-1" role="dialog">
-  <div class="modal-dialog" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Modal title</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div class="modal-body">
-        {{ caller() }}
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-      </div>
-    </div>
-  </div>
-</div>
-{% endmacro %}
-
 {% block nav_bar_left_items %}
 {{ super() }}
 {% if user.admin %}
@@ -222,7 +198,29 @@
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.js"></script>
 <script type="text/javascript" charset="utf8">
 
-    let table = $('#groups-main-table').DataTable();
+    $('.div-modal').modal({
+        backdrop: true,
+        show: false
+    });
+
+    function modal_handler(dialog-name, message, callback) {
+
+        top_selector = dialog-name + '-dialog-model';
+
+        $(top_selector + ' .ajax-message').html(message);
+
+        $(top_selector).off().on("click", "button.btn-primary", function(e){
+            $(top_selector).modal("hide");
+            callback(true);
+        });
+
+        $(top_selector).off().on("click", "button.btn-secondary", function(e){
+            $(top_selector).modal("hide");
+            callback(false);
+        });
+    }
+
+    $('#groups-main-table').DataTable();
 
     $('#groups-main-table').on('change', '.group-checkbox', function() {
 
@@ -243,12 +241,12 @@
                     console.log("Success");
                     $this.data("order", "" + change_to_checked);
 
-                    table.destroy();
                     table = $('#groups-main-table').DataTable();
+                    table.order()
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    $("#error-dialog-modal .ajax-error").html("There was an error while checking a checkbox: <br/> " + str(result))
+                    $("#error-dialog-modal .ajax-message").html("There was an error while checking a checkbox: <br/> " + str(result))
                     $('#error-dialog-modal').modal("show")
                 })
         }
@@ -278,7 +276,7 @@
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    $("#error-dialog-modal .ajax-error").html("There was an error while adding a group: <br/> " + result)
+                    $("#error-dialog-modal .ajax-message").html("There was an error while adding a group: <br/> " + result)
                     $('#error-dialog-modal').modal("show")
                 })
 
@@ -311,7 +309,7 @@
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    $("#error-dialog-modal .ajax-error").html("There was an error while adding a group: <br/> " + result)
+                    $("#error-dialog-modal .ajax-message").html("There was an error while adding a group: <br/> " + result)
                     $('#error-dialog-modal').modal("show")
                 })
         }
@@ -326,25 +324,25 @@
         try {
 
             group_name = $(this).data("group");
-            $('delete-warning-dialog-modal .ajax-delete-warning').text("Are you sure you want to delete the group '" +group_name + "'?")
-            res = $('delete-warning-dialog-modal').show()
+            message = "Are you sure you want to delete the group '" + group_name + "'?";
 
-            console.log(res)
-            
-            this_data = {
-                "group_name": group_name,
-                "operation": "delete_group"
-            };
-            console.log("Group '" + group_name + "' is being deleted from DB table" )
-            var jqxhr = $.post( "/hub/groups", this_data)
-                .done(function(res) {
-                  console.log("This should not be printed. Instead, the page should be reloaded server side.");
-                })
-                .fail(function(result) {
-                  console.log("Error: " + result)
-                  $("#error-dialog-modal .ajax-error").html("There was an error while deleting a group: <br/> " + result)
-                  $('#error-dialog-modal').modal("show")
-                })
+            modal_handler('delete-warning', message, function(e){
+                if e == true:
+                    this_data = {
+                        "group_name": group_name,
+                        "operation": "delete_group"
+                    };
+                    console.log("Group '" + group_name + "' is being deleted from DB table" )
+                    var jqxhr = $.post( "/hub/groups", this_data)
+                        .done(function(res) {
+                          console.log("This should not be printed. Instead, the page should be reloaded server side.");
+                        })
+                        .fail(function(result) {
+                          console.log("Error: " + result)
+                          $("#error-dialog-modal .ajax-message").html("There was an error while deleting a group: <br/> " + result)
+                          $('#error-dialog-modal').modal("show")
+                        })
+            });
         }
         catch(err) {
             e.preventDefault();
@@ -358,15 +356,38 @@
 
 {% endblock %} <!-- script -->
 
+{% macro modal(title, btn_label=None, btn_class="btn-primary") %}
+{% set key = title.replace(' ', '-').lower() %}
+{% set btn_label = btn_label or title %}
+<div id="{{ key }}-dialog-modal" class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ key }}</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        {{ caller() }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endmacro %}
 
 {% call modal('error', btn_label='OK') %}
-  <div class="ajax-error">
+  <div class="ajax-message">
     The error
   </div>
 {% endcall %}
 
 {% call modal('delete-warning', btn_label='WARNING') %}
-  <div class="ajax-delete-warning">
+  <div class="ajax-message">
     The delete warning
   </div>
 {% endcall %}
