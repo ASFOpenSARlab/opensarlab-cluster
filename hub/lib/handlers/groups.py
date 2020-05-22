@@ -12,7 +12,14 @@ class GroupsHandler(BaseHandler):
 
             g = groups_py.Groups(db=self.db)
 
-            groups = g.get_all_groups_with_meta()
+            groups = []
+            for gu in g.get_all_groups():
+                group = {}
+                group.name = gu.name
+                group.meta = g.get_group_meta(gu.name)
+                group.members = g.get_user_names_in_group(gu.name)
+                groups.append(group)
+
             all_users_query = self.db.query(orm.User)
             all_users = [self._user_from_orm(u) for u in all_users_query]
 
