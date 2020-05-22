@@ -56,11 +56,11 @@ class GroupsHandler(BaseHandler):
                 print("Changing checkboxes...")
                 user_name = data['user_name']
                 group_name = data['group_name']
-                change_to_checked = data['change_to_checked']
+                change_to_checked = g._boolean_check(data['change_to_checked'])
 
                 user_names_in_group = g.get_user_names_in_group(group_name)
 
-                if change_to_checked == 'true':
+                if change_to_checked == True:
                     # if user is part of group already, skip
                     if user_name in user_names_in_group:
                         print(f"User '{user_name}' is already part of group '{group_name}'. Do nothing.")
