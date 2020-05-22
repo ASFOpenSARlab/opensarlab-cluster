@@ -18,7 +18,7 @@ class GroupsHandler(BaseHandler):
             groups = []
             for gu in g.get_all_groups():
                 group = G()
-                group.name = gu.name
+                group.group_name = gu.name
                 group.meta = g.get_group_meta(gu.name)
                 group.members = g.get_user_names_in_group(gu.name)
                 groups.append(group)
