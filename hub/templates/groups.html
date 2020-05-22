@@ -206,14 +206,14 @@
 
         $('#error-dialog').on("click", "button.btn-primary", function(e){
             $('#error-dialog').modal("hide");
-            if success {
+            if (success) {
                 success();
             }
         });
 
         $('#error-dialog').on("click", "button.btn-default", function(e){
             $('#error-dialog').modal("hide");
-            if cancel {
+            if (cancel) {
                 cancel();
             }
         });
