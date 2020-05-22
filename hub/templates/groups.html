@@ -180,7 +180,8 @@
                 {% for group in groups %}
                 {% set disabled = "disabled" if group.is_disabled == 1 else "" %}
                 {% set checked = "checked" if user.name in group.members else "" %}
-                <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.group_name }}" data-order="true">
+                {% set ordered = "true" if checked == "checked" else "false" %}
+                <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.group_name }}" data-order="{{ ordered }}">
                     <input type="checkbox" title="Group: {{ group.group_name }}, User: {{ user.name }}" {{ checked }} {{ disabled }}/>
                 </td>
                 {% endfor %}
@@ -231,6 +232,7 @@
             group_name = $this.data("group");
             change_to_checked = $this.children('input')[0].checked;
             console.log("User '" + user_name + "' has been updated for group '" + group_name + "' because 'checked' is " + change_to_checked);
+            $this.data("order", "" + change_to_checked);
             this_data = {
                 "user_name": user_name,
                 "group_name": group_name,
@@ -240,10 +242,6 @@
             var jqxhr = $.post( "/hub/groups", this_data)
                 .done(function() {
                     console.log("Success");
-                    $this.data("order", "" + change_to_checked);
-
-                    table = $('#groups-main-table').DataTable();
-                    table.order()
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
@@ -324,7 +322,21 @@
             group_name = $(this).data("group");
             message = "Are you sure you want to delete the group '" + group_name + "'?";
 
-            modal_handler(message,
+            this_data = {
+                "group_name": group_name,
+                "operation": "delete_group"
+            };
+            console.log("Group '" + group_name + "' is being deleted from DB table" )
+            var jqxhr = $.post( "/hub/groups", this_data)
+                .done(function(res) {
+                  console.log("This should not be printed. Instead, the page should be reloaded server side.");
+                })
+                .fail(function(result) {
+                  console.log("Error: " + result)
+                  modal_handler("There was an error while deleting a group: <br/> " + result);
+                })
+
+            /*modal_handler(message,
                 function(e){
                     this_data = {
                         "group_name": group_name,
@@ -343,7 +355,7 @@
                 function(e){
                     modal_handler("There was an error unusual error: <br/> " + e);
                 }
-            );
+            );*/
         }
         catch(err) {
             e.preventDefault();
