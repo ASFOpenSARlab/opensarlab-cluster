@@ -12,9 +12,12 @@ class GroupsHandler(BaseHandler):
 
             g = groups_py.Groups(db=self.db)
 
+            class G():
+                pass
+
             groups = []
             for gu in g.get_all_groups():
-                group = {}
+                group = G()
                 group.name = gu.name
                 group.meta = g.get_group_meta(gu.name)
                 group.members = g.get_user_names_in_group(gu.name)
