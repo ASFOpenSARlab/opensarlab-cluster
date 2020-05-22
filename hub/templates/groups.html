@@ -198,20 +198,18 @@
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.js"></script>
 <script type="text/javascript" charset="utf8">
 
-    function modal_handler(dialog_name, message, callback) {
+    function modal_handler(message, success, cancel) {
 
-        top_selector = dialog_name + '-dialog-model';
+        $('#modal .ajax-message').html(message);
 
-        $(top_selector + ' .ajax-message').html(message);
-
-        $(top_selector).off().on("click", "button.btn-primary", function(e){
-            $(top_selector).modal("hide");
-            callback(true);
+        $('#modal').off().on("click", "button.btn-primary", function(e){
+            $('#modal').modal("hide");
+            success();
         });
 
-        $(top_selector).off().on("click", "button.btn-secondary", function(e){
-            $(top_selector).modal("hide");
-            callback(false);
+        $('#modal').off().on("click", "button.btn-secondary", function(e){
+            $('#modal').modal("hide");
+            cancel();
         });
     }
 
@@ -321,8 +319,8 @@
             group_name = $(this).data("group");
             message = "Are you sure you want to delete the group '" + group_name + "'?";
 
-            modal_handler('delete-warning', message, function(e){
-                if e == true:
+            modal_handler(message,
+                function(e){
                     this_data = {
                         "group_name": group_name,
                         "operation": "delete_group"
@@ -337,7 +335,11 @@
                           $("#modal .ajax-message").html("There was an error while deleting a group: <br/> " + result)
                           $('#modal').modal("show")
                         })
-            });
+                },
+                function(e){
+                    return;
+                }
+            );
         }
         catch(err) {
             e.preventDefault();

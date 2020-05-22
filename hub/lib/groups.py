@@ -15,26 +15,43 @@ from jupyterhub import orm
     ------------
     During Jupyterhub helm upgrade, the DB might need an update.
     If the build fails die to DB conflicts, the custom parts of the DB will need to be taken apart briefly.
+    If done within /srv/jupyterhub, any files will be persistent.
 
-    1. Within `hub` pod (via `kubectl exec`), run
+    Firstly, within `hub` pod (via `kubectl exec`), run the following
         $ cd /srv/jupyterhub/
         $ sqlite3 jupyterhub.sqlite
 
-    2. As needed, export current data
-        > 
+    1. As needed, export current data to CSV
+        sqlite> .headers on;
+        sqlite> .mode csv;
+        sqlite> .output groups-meta-data.csv;
+        sqlite> SELECT group_name, description, group_type, is_default, is_active FROM groups_meta;
 
+    2. Drop the groups table
+        sqlite> DROP TABLE groups_meta;
+        sqlite> .quit;
 
-    CREATE TABLE groups_meta (
-       id INTEGER NOT NULL,
-       group_name VARCHAR(255) NOT NULL,
-       description VARCHAR(255),
-       group_type VARCHAR(255),
-       is_default INTEGER,
-       is_active INTEGER,
-       PRIMARY KEY (id),
-       FOREIGN KEY(group_name) REFERENCES groups (name) ON DELETE CASCADE
-    );
+    3. Do upgrade via Helm or otherwise
 
+    4. Log back into the `hub` and sqlite3 and add back `groups_meta` table
+
+        CREATE TABLE groups_meta (
+           id INTEGER NOT NULL,
+           group_name VARCHAR(255) NOT NULL,
+           description VARCHAR(255),
+           group_type VARCHAR(255),
+           is_default INTEGER,
+           is_active INTEGER,
+           PRIMARY KEY (id),
+           FOREIGN KEY(group_name) REFERENCES groups (name) ON DELETE CASCADE
+        );
+
+        sqlite> .schema groups_meta;
+
+    5. Reimport data back into table and check
+        sqlite> .mode csv;
+        sqlite> .import groups-meta-data.csv groups_meta;
+        sqlite> SELECT group_name, description, group_type, is_default, is_active FROM groups_meta;
 
 """
 
