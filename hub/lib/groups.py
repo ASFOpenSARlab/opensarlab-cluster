@@ -79,6 +79,7 @@ class Groups():
             self.session.commit()
 
         except Exception as e:
+            print(f"Error in adding group: {e}")
             self.session.rollback()
             raise
 
@@ -91,31 +92,26 @@ class Groups():
                 print(f"Group Meta for '{group_name}' already exists. Aborting adding group meta.")
                 raise Exception(f"Group Meta for '{group_name}' already exists. Aborting adding group meta.")
 
-            if type(is_default) is str:
-                if is_default.lower() == 'true':
-                    is_default = True
-                elif is_default.lower() == 'false':
-                    is_default = False
-                else:
-                    raise Exception("is_default cannot be converted from string")
-            elif type(is_default) is not bool:
-                raise Exception("is_default is not a boolean")
+            if is_default in ("1", True, 1):
+                is_default = True
+            elif is_default in ("0", False, 0):
+                is_default = False
+            else:
+                raise Exception(f"is_default "{is_default}" cannot be converted to boolean")
 
-            if type(is_active) is str:
-                if is_active.lower() == 'true':
-                    is_active = True
-                elif is_active.lower() == 'false':
-                    is_active = False
-                else:
-                    raise Exception("is_active cannot be converted from string")
-            elif type(is_active) is not bool:
-                raise Exception("is_active is not a boolean")
+            if is_active in ("1", True, 1):
+                is_active = True
+            elif is_active in ("0", False, 0):
+                is_active = False
+            else:
+                raise Exception(f"is_active "{is_active}" cannot be converted to boolean")
 
             group_meta = GroupMeta(group_name=group_name, description=description, is_default=is_default, group_type=group_type, is_active=is_active)
             self.session.add(group_meta)
             self.session.commit()
 
         except Exception as e:
+            print(f"Error in adding group meta: {e}")
             self.session.rollback()
             raise
 
@@ -128,25 +124,19 @@ class Groups():
                 print(f"Group Meta for '{group_name}' does not exist. Aborting update...")
                 raise Exception(f"Group Meta for '{group_name}' does not exist. Aborting update...")
 
-            if type(is_default) is str:
-                if is_default.lower() == 'true':
-                    is_default = True
-                elif is_default.lower() == 'false':
-                    is_default = False
-                else:
-                    raise Exception("is_default cannot be converted from string")
-            elif type(is_default) is not bool:
-                raise Exception("is_default is not a boolean")
+            if is_default in ("1", True, 1):
+                is_default = True
+            elif is_default in ("0", False, 0):
+                is_default = False
+            else:
+                raise Exception(f"is_default "{is_default}" cannot be converted to boolean")
 
-            if type(is_active) is str:
-                if is_active.lower() == 'true':
-                    is_active = True
-                elif is_active.lower() == 'false':
-                    is_active = False
-                else:
-                    raise Exception("is_active cannot be converted from string")
-            elif type(is_active) is not bool:
-                raise Exception("is_active is not a boolean")
+            if is_active in ("1", True, 1):
+                is_active = True
+            elif is_active in ("0", False, 0):
+                is_active = False
+            else:
+                raise Exception(f"is_active "{is_active}" cannot be converted to boolean")
 
             args = {
                 GroupMeta.group_name: group_name,
@@ -159,6 +149,7 @@ class Groups():
             self.session.commit()
 
         except Exception as e:
+            print(f"Error in updating group meta: {e}")
             self.session.rollback()
             raise
 
@@ -183,6 +174,7 @@ class Groups():
             self.session.commit()
 
         except Exception as e:
+            print(f"Error in deleting group: {e}")
             self.session.rollback()
             raise
 
@@ -224,10 +216,11 @@ class Groups():
             self.session.commit()
 
         except Exception as e:
+            print(f"Error in adding user to group: {e}")
             self.session.rollback()
             raise
 
-    def add_all_users_to_group(self, group_name: str) -> None:
+    def add_all_current_users_to_group(self, group_name: str) -> None:
         try:
 
             group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
@@ -245,6 +238,7 @@ class Groups():
             self.session.commit()
 
         except Exception as e:
+            print(f"Error in adding current users to group: {e}")
             self.session.rollback()
             raise
 
@@ -264,5 +258,6 @@ class Groups():
             self.session.commit()
 
         except Exception as e:
+            print(f"Error in removing user from group: {e}")
             self.session.rollback()
             raise
