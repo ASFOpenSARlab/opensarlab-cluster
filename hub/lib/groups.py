@@ -67,7 +67,7 @@ class GroupMeta(orm.Base):
     is_active = Column(Boolean, default=True)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} {self.group_name} {self.description} {self.group_type} {self.is_default} {self.is_active}>"
+        return f"<{self.__class__.__name__} name:{self.group_name} description:{self.description} type:{self.group_type} default:{self.is_default} active:{self.is_active}>"
 
 class Groups():
 
@@ -128,7 +128,7 @@ class Groups():
     def add_group_meta(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
 
         try:
-            # Check if group meta exists already
+            # Check if group exists already
             group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
             if group is None:
                 print(f"Group '{group_name}' doesn't exist. Aborting adding group meta.")
@@ -153,13 +153,12 @@ class Groups():
             raise
 
     def update_group_meta(self, group_name: str, description: str, is_default: Boolean, group_type: str, is_active: Boolean) -> None:
-
         try:
-            # Check if group exists already
-            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name)
-            if group_meta is None:
-                print(f"Group Meta for '{group_name}' does not exist. Aborting update...")
-                raise Exception(f"Group Meta for '{group_name}' does not exist. Aborting update...")
+
+            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+            if group is None:
+                print(f"Group '{group_name}' doesn't exist. Aborting adding group meta.")
+                raise Exception(f"Group '{group_name}' doesn't exist. Aborting adding group meta.")
 
             is_default = self._boolean_check(is_default)
             is_active = self._boolean_check(is_active)
@@ -171,8 +170,16 @@ class Groups():
                 'group_type': group_type,
                 'is_active': is_active
             }
-            group_meta.update(args)
-            self.session.commit()
+
+            # Check if group meta exists already. If not, create.
+            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name)
+            if group_meta is None:
+                print(f"Group Meta for '{group_name}' does not exist. Adding  Meta...")
+                self.add_group_meta(**args)
+
+            else:
+                group_meta.update(args)
+                self.session.commit()
 
         except Exception as e:
             print(f"Error in updating group meta: {e}")

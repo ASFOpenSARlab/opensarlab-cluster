@@ -36,8 +36,7 @@
     #groups-main .dropdown-container {
             position: relative;
     }
-
-    /* The dropright caret isn't showing up * /
+/* The dropright caret isn't showing up * /
     .dropright .dropdown-toggle::after {
         display: inline-block;
         width: 0;
@@ -50,6 +49,9 @@
         border-bottom: .3em solid transparent;
         border-left: .3em solid;
     }*/
+    #groups-main .inactive-checkbox {
+        border-color: red;
+    }
 
 </style>
 {% endblock %} <!-- stylesheet -->
@@ -178,10 +180,11 @@
            <tr data-user="{{ user.name }}">
                 <td class="user-name" data-user="{{ user.name }}"> {{ user.name }} </td>
                 {% for group in groups %}
-                {% set disabled = "disabled" if group.is_disabled == 1 else "" %}
+                {% set active = "" if group.is_active else "inactive-checkbox" %}
+                {% set disabled = "disabled" if (group.is_disabled or not active) else "" %}
                 {% set checked = "checked" if user.name in group.members else "" %}
                 {% set ordered = "true" if checked == "checked" else "false" %}
-                <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.group_name }}" data-order="{{ ordered }}">
+                <td class="group-checkbox {{ active }}" data-user="{{ user.name }}" data-group="{{ group.group_name }}" data-order="{{ ordered }}">
                     <input type="checkbox" title="Group: {{ group.group_name }}, User: {{ user.name }}" {{ checked }} {{ disabled }}/>
                 </td>
                 {% endfor %}
