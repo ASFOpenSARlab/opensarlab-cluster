@@ -198,14 +198,9 @@
 <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/v/dt/dt-1.10.21/datatables.min.js"></script>
 <script type="text/javascript" charset="utf8">
 
-    $('.div-modal').modal({
-        backdrop: true,
-        show: false
-    });
+    function modal_handler(dialog_name, message, callback) {
 
-    function modal_handler(dialog-name, message, callback) {
-
-        top_selector = dialog-name + '-dialog-model';
+        top_selector = dialog_name + '-dialog-model';
 
         $(top_selector + ' .ajax-message').html(message);
 
@@ -246,8 +241,8 @@
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    $("#error-dialog-modal .ajax-message").html("There was an error while checking a checkbox: <br/> " + str(result))
-                    $('#error-dialog-modal').modal("show")
+                    $("#modal .ajax-message").html("There was an error while checking a checkbox: <br/> " + str(result))
+                    $('#modal').modal("show")
                 })
         }
         catch(err) {
@@ -276,8 +271,8 @@
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    $("#error-dialog-modal .ajax-message").html("There was an error while adding a group: <br/> " + result)
-                    $('#error-dialog-modal').modal("show")
+                    $("#modal .ajax-message").html("There was an error while adding a group: <br/> " + result)
+                    $('#modal').modal("show")
                 })
 
         }
@@ -309,8 +304,8 @@
                 })
                 .fail(function(result) {
                     console.log("Error: " + result)
-                    $("#error-dialog-modal .ajax-message").html("There was an error while adding a group: <br/> " + result)
-                    $('#error-dialog-modal').modal("show")
+                    $("#modal .ajax-message").html("There was an error while adding a group: <br/> " + result)
+                    $('#modal').modal("show")
                 })
         }
         catch(err) {
@@ -339,8 +334,8 @@
                         })
                         .fail(function(result) {
                           console.log("Error: " + result)
-                          $("#error-dialog-modal .ajax-message").html("There was an error while deleting a group: <br/> " + result)
-                          $('#error-dialog-modal').modal("show")
+                          $("#modal .ajax-message").html("There was an error while deleting a group: <br/> " + result)
+                          $('#modal').modal("show")
                         })
             });
         }
@@ -356,20 +351,19 @@
 
 {% endblock %} <!-- script -->
 
-{% macro modal(title, btn_label=None, btn_class="btn-primary") %}
-{% set key = title.replace(' ', '-').lower() %}
-{% set btn_label = btn_label or title %}
-<div id="{{ key }}-dialog-modal" class="modal" tabindex="-1" role="dialog">
+<div id="modal" class="modal" tabindex="-1" role="dialog">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">{{ key }}</h5>
+        <h5 class="modal-title">Error</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <div class="modal-body">
-        {{ caller() }}
+          <div class="ajax-message">
+            The message
+          </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
@@ -378,16 +372,3 @@
     </div>
   </div>
 </div>
-{% endmacro %}
-
-{% call modal('error', btn_label='OK') %}
-  <div class="ajax-message">
-    The error
-  </div>
-{% endcall %}
-
-{% call modal('delete-warning', btn_label='WARNING') %}
-  <div class="ajax-message">
-    The delete warning
-  </div>
-{% endcall %}
