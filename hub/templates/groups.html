@@ -71,7 +71,7 @@
 {% endif %}
 
 {% macro group_settings(group_name='new', description='', group_type='label', is_all_users=0, is_enabled=1, is_new=0) %}
-<div class="group-settings-container dropdown-menu" role="menu" aria-labelledby="{{ group_name }}-add-group-button">
+<div class="group-settings-container dropdown-menu" role="menu" aria-labelledby="{{ group_name }}-add-group-button" data-group="{{ group_name }}">
     <form>
         <div class='form-group'>
             {% if is_new == 1 %}
@@ -122,9 +122,9 @@
 
         <div class="form-group">
             {% if is_all_users == 1 %}
-            <input type='checkbox' id="{{ group_name }}-is-all-users-select" class="is-all-users-select form-check-input" checked />
+            <input type='checkbox' id="{{ group_name }}-is-all-users-select" class="is-all-users-select form-check-input" data-group="{{ group_name }}" checked />
             {% else %}
-            <input type='checkbox' id="{{ group_name }}-is-all-users-select" class="is-all-users-select form-check-input"/>
+            <input type='checkbox' id="{{ group_name }}-is-all-users-select" class="is-all-users-select form-check-input" data-group="{{ group_name }}" />
             {% endif %}
             <label class="form-check-label" for="{{ group_name }}-is-all-users-select">All Users?</label>
         </div>
@@ -135,7 +135,7 @@
             {% else %}
             <input type='checkbox' id="{{ group_name }}-is-enabled-select" class="is-enabled-select form-check-input" />
             {% endif %}
-            <label  class="form-check-label" for="{{ group_name }}-is-enabled-select">Is enabled?</label>
+            <label  class="form-check-label" for="{{ group_name }}-is-enabled-select">Is Enabled?</label>
         </div>
 
         {% if is_new == 1 %}
@@ -184,12 +184,12 @@
            <tr data-user="{{ user.name }}">
                 <td class="user-name" data-user="{{ user.name }}"> {{ user.name }} </td>
                 {% for group in groups %}
-                {% set group_enabled = "group-enabled-checkbox" if group.meta.is_enabled else "group-disabled-checkbox" %}
-                {% set disabled = "disabled" if (group.meta.is_all_users or not group_enabled) else "" %}
+                {% set enabled_class = "enabled-checkbox" if group.meta.is_enabled else "disabled-checkbox" %}
+                {% set disabled = "disabled" if not group.meta.is_enabled else "" %}
                 {% set checked = "checked" if user.name in group.members else "" %}
                 {% set ordered = "true" if checked == "checked" else "false" %}
-                <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.group_name }}" data-order="{{ ordered }}">
-                    <input type="checkbox" class="{{ group_enabled }}" title="Group: {{ group.group_name }}, User: {{ user.name }}" {{ checked }} {{ disabled }}/>
+                <td class="group-checkbox" data-user="{{ user.name }}" data-group="{{ group.group_name }}" data-order="{{ ordered }}" data-all-users="{{ group.meta.is_all_users }}">
+                    <input type="checkbox" class="{{ enabled_class }}" title="Group: {{ group.group_name }}, User: {{ user.name }}" {{ checked }} {{ disabled }}/>
                 </td>
                 {% endfor %}
                 <td>&nbsp;&nbsp;&nbsp;</td>
@@ -229,9 +229,11 @@
         $('#error-dialog').modal("show");
     }
 
-    $('#groups-main-table').DataTable();
+    $table = $('#groups-main-table');
 
-    $('#groups-main-table').on('change', '.group-checkbox', function() {
+    $table.DataTable();
+
+    $table.on('change', '.group-checkbox', function() {
 
         try {
             $this = $(this)
@@ -261,7 +263,16 @@
         }
     });
 
-    $('#groups-main-table').on('click', '#new-submit-button', function(e) {
+    // Make sure all the "all users" coiumns have been checked just in case.
+    $table.find('.group-checkbox[data-all-users="true"] input:not(:checked)').trigger("click");
+
+    // When "all users" checkbox is de-checked, get meta and uncheck that whole column
+    $table.on("click", ".is-all-users-select:checked", function(e){
+        group_name = $(this).data("group");
+        $table.find('.group-checkbox[data=' + group_name + '] input:checked').trigger("click");
+    });
+
+    $table.on('click', '#new-submit-button', function(e) {
 
         try {
             this_data = {
@@ -291,7 +302,7 @@
         }
     });
 
-    $('#groups-main-table').on('click', '.group-update-button', function(e) {
+    $table.on('click', '.group-update-button', function(e) {
 
         try {
             group_name = $(this).data("group");
@@ -322,7 +333,7 @@
         }
     });
 
-    $('#groups-main-table').on('click', '.group-delete-button', function(e) {
+    $table.on('click', '.group-delete-button', function(e) {
 
         try {
 
