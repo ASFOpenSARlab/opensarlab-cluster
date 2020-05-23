@@ -151,6 +151,9 @@ class Groups():
             is_all_users = self._boolean_check(is_all_users)
             is_enabled = self._boolean_check(is_enabled)
 
+            if is_all_users:
+                self.add_all_current_users_to_group(group_name)
+
             group_meta = GroupMeta(group_name=group_name, description=description, is_all_users=is_all_users, group_type=group_type, is_enabled=is_enabled)
             self.session.add(group_meta)
             self.session.commit()
@@ -178,6 +181,13 @@ class Groups():
                 'group_type': group_type,
                 'is_enabled': is_enabled
             }
+
+            # if the new "all users" is selected and the current old DB "all users" is unselected, then add all users to group
+            # Otherwise if new "all users" is unselected and the current old DB is seleted, then remove all users from group
+            if is_all_users and is_all_users != group.is_all_users:
+                self.add_all_current_users_to_group(group_name)
+            elif not is_all_users and is_all_users != group.is_all_users:
+                self.remove_all_current_users_from_group(group_name)
 
             # Check if group meta exists already. If not, create.
             group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name)
@@ -282,6 +292,28 @@ class Groups():
 
         except Exception as e:
             print(f"Error in adding current users to group: {e}")
+            self.session.rollback()
+            raise
+
+    def remove_all_current_users_from_group(self, group_name: str) -> None:
+        try:
+
+            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+            all_users = self.session.query(orm.User).all()
+
+            if group == None:
+                print(f"Group {group_name} not found.")
+                raise Exception(f"Group {group_name} not found.")
+            if all_users == None:
+                print(f"No users found.")
+                raise Exception(f"Users not found.")
+
+            for user in all_users:
+                group.users.remove(user)
+            self.session.commit()
+
+        except Exception as e:
+            print(f"Error in removing current users from group: {e}")
             self.session.rollback()
             raise
 

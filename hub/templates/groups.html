@@ -263,14 +263,13 @@
         }
     });
 
-    // Make sure all the "all users" coiumns have been checked just in case.
+    // "All users" has three cases:
+    // 1. Column is "all users" on page load. This means that the option was selected, updated, and reloaded before. The below function does this.
+    //      All checkboxes need to be autochecked if needs be since we know that "all users" has been selected previously.
+    // 2. Column is not "all users" on page load and user clicks on option and then the update button. Nothing happens until page reload.
+    // 3. Column is "all users" on page load and user unclicks ans then updates. Nothing happens until page reload.
     $table.find('.group-checkbox[data-all-users="true"] input:not(:checked)').trigger("click");
 
-    // When "all users" checkbox is de-checked, get meta and uncheck that whole column
-    $table.on("click", ".is-all-users-select:checked", function(e){
-        group_name = $(this).data("group");
-        $table.find('.group-checkbox[data=' + group_name + '] input:checked').trigger("click");
-    });
 
     $table.on('click', '#new-submit-button', function(e) {
 
@@ -363,11 +362,14 @@
                     console.log("Group '" + group_name + "' is being deleted from DB table" )
                     var jqxhr = $.post( "/hub/groups", this_data)
                         .done(function(res) {
-                          console.log("This should not be printed. Instead, the page should be reloaded server side.");
+                            console.log("You should not be reading this. Instead, the page should be reloaded server side.");
+                            console.log("However, if we get here we will jquery delete the column.")
+                            $('th[data-group="' + group_name + '"]').remove();
+                            $('th[data-group="' + group_name + '"]').remove();
                         })
                         .fail(function(result) {
-                          console.log("Error: " + result)
-                          modal_handler("There was an error while deleting a group: <br/> ", result);
+                            console.log("Error: " + result)
+                            modal_handler("There was an error while deleting a group: <br/> ", result);
                         })
                 },
                 function(e){
