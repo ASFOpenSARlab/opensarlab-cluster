@@ -226,6 +226,7 @@ hub:
 
                     groups = groups_py.Groups()
                     group_list = groups.get_group_names_for_user(user_name=user_name)
+                    group_list.extend(groups.get_all_group_names_set_to_all_users())
                     print(group_list)
 
                     profile_list = []

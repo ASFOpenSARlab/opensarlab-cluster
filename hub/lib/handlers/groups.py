@@ -96,8 +96,7 @@ class GroupsHandler(BaseHandler):
                     'is_enabled': data['is_enabled']
                 }
                 print(f"Adding {this_data}")
-                g.add_group(group_name=this_data['group_name'])
-                g.add_group_meta(**this_data)
+                g.add_group_with_meta(**this_data)
 
                 self._finish_html()
 
@@ -110,7 +109,7 @@ class GroupsHandler(BaseHandler):
                     'is_all_users': data['is_all_users'],
                     'is_enabled': data['is_enabled']
                 }
-                g.update_group_meta(**this_data)
+                g.update_group_with_meta(**this_data)
 
                 self._finish_html()
 

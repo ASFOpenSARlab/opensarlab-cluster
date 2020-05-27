@@ -101,6 +101,10 @@ class Groups():
     def get_all_groups(self) -> List[orm.Group]:
         return self.session.query(orm.Group).all()
 
+    def get_all_group_names_set_to_all_users(self) -> List(str):
+        groups = return self.session.query(GroupMeta).filter(GroupMeta.is_all_users == 1).all()
+        return [g.group_name for g in groups]
+
     def get_all_groups_with_meta(self) -> List[GroupMeta]:
 
         groups = []
@@ -115,61 +119,47 @@ class Groups():
 
         return groups
 
-    def add_group(self, group_name: str) -> None:
+    def add_group_with_meta(self, group_name: str, description: str, is_all_users: Boolean, group_type: str, is_enabled: Boolean) -> None:
 
         try:
             # Check if group exists already
             group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
-            if group is not None:
-                print(f"Group '{group_name}' already exists. Aborting adding group.")
-                raise Exception(f"Group '{group_name}' already exists. Aborting adding group.")
+            if group is None:
+                print(f"Group '{group_name}' does not exist. Adding group.")
 
-            group = orm.Group(name=group_name)
-            self.session.add(group)
-            self.session.commit()
+                group = orm.Group(name=group_name)
+                self.session.add(group)
+                self.session.commit()
+
+            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
+            if group_meta is None:
+                print(f"Group Meta for '{group_name}' does not exist. Adding group meta.")
+
+                is_all_users = self._boolean_check(is_all_users)
+                is_enabled = self._boolean_check(is_enabled)
+
+                group_meta = GroupMeta(group_name=group_name, description=description, is_all_users=is_all_users, group_type=group_type, is_enabled=is_enabled)
+                self.session.add(group_meta)
+                self.session.commit()
 
         except Exception as e:
             print(f"Error in adding group: {e}")
             self.session.rollback()
             raise
 
-    def add_group_meta(self, group_name: str, description: str, is_all_users: Boolean, group_type: str, is_enabled: Boolean) -> None:
+    def update_group_with_meta(self, group_name: str, description: str, is_all_users: Boolean, group_type: str, is_enabled: Boolean) -> None:
 
         try:
             # Check if group exists already
             group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
             if group is None:
-                print(f"Group '{group_name}' doesn't exist. Aborting adding group meta.")
-                raise Exception(f"Group '{group_name}' doesn't exist. Aborting adding group meta.")
+                print(f"Group '{group_name}' does not exist. Don't update.")
+                raise
 
-            # Check if group meta exists already
             group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
-            if group_meta is not None:
-                print(f"Group Meta for '{group_name}' already exists. Aborting adding group meta.")
-                raise Exception(f"Group Meta for '{group_name}' already exists. Aborting adding group meta.")
-
-            is_all_users = self._boolean_check(is_all_users)
-            is_enabled = self._boolean_check(is_enabled)
-
-            if is_all_users:
-                self.add_all_current_users_to_group(group_name)
-
-            group_meta = GroupMeta(group_name=group_name, description=description, is_all_users=is_all_users, group_type=group_type, is_enabled=is_enabled)
-            self.session.add(group_meta)
-            self.session.commit()
-
-        except Exception as e:
-            print(f"Error in adding group meta: {e}")
-            self.session.rollback()
-            raise
-
-    def update_group_meta(self, group_name: str, description: str, is_all_users: Boolean, group_type: str, is_enabled: Boolean) -> None:
-        try:
-
-            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
-            if group is None:
-                print(f"Group '{group_name}' doesn't exist. Aborting adding group meta.")
-                raise Exception(f"Group '{group_name}' doesn't exist. Aborting adding group meta.")
+            if group_meta is None:
+                print(f"Group Meta for '{group_name}' does not exist. Don't update.")
+                raise
 
             is_all_users = self._boolean_check(is_all_users)
             is_enabled = self._boolean_check(is_enabled)
@@ -182,25 +172,11 @@ class Groups():
                 'is_enabled': is_enabled
             }
 
-            # if the new "all users" is selected and the current old DB "all users" is unselected, then add all users to group
-            # Otherwise if new "all users" is unselected and the current old DB is seleted, then remove all users from group
-            if is_all_users and is_all_users != group.is_all_users:
-                self.add_all_current_users_to_group(group_name)
-            elif not is_all_users and is_all_users != group.is_all_users:
-                self.remove_all_current_users_from_group(group_name)
-
-            # Check if group meta exists already. If not, create.
-            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name)
-            if group_meta is None:
-                print(f"Group Meta for '{group_name}' does not exist. Adding  Meta...")
-                self.add_group_meta(**args)
-
-            else:
-                group_meta.update(args)
-                self.session.commit()
+            group_meta.update(args)
+            self.session.commit()
 
         except Exception as e:
-            print(f"Error in updating group meta: {e}")
+            print(f"Error in adding group: {e}")
             self.session.rollback()
             raise
 
@@ -286,7 +262,7 @@ class Groups():
                 print(f"No users found.")
                 raise Exception(f"Users not found.")
 
-            for user in all_users:
+            for user in all_users if user not in group.users:
                 group.users.append(user)
             self.session.commit()
 
