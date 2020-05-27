@@ -262,8 +262,9 @@ class Groups():
                 print(f"No users found.")
                 raise Exception(f"Users not found.")
 
-            for user in all_users if user not in group.users:
-                group.users.append(user)
+            for user in all_users:
+                if user not in group.users:
+                    group.users.append(user)
             self.session.commit()
 
         except Exception as e:
