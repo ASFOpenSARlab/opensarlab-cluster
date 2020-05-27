@@ -151,12 +151,12 @@ class Groups():
 
         try:
             # Check if group exists already
-            group = self.session.query(orm.Group).filter(orm.Group.name == group_name).first()
+            group = self.session.query(orm.Group).filter(orm.Group.name == group_name)
             if group is None:
                 print(f"Group '{group_name}' does not exist. Don't update.")
                 raise
 
-            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
+            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name)
             if group_meta is None:
                 print(f"Group Meta for '{group_name}' does not exist. Don't update.")
                 raise
@@ -172,7 +172,7 @@ class Groups():
                 'is_enabled': is_enabled
             }
 
-            group_meta.update(args)
+            self.session.query(GroupMeta).update(args)
             self.session.commit()
 
         except Exception as e:
