@@ -102,8 +102,8 @@ class Groups():
         return self.session.query(orm.Group).all()
 
     def get_all_enabled_group_names_set_to_all_users(self) -> List[str]:
-        groups = self.session.query(GroupMeta).filter(GroupMeta.is_all_users == 1 and GroupMeta.is_enabled == 1).all()
-        return [g.group_name for g in groups]
+        groups = self.session.query(GroupMeta).all()
+        return [g.group_name for g in groups if g.is_enabled and g.is_all_uers]
 
     def get_all_groups_with_meta(self) -> List[GroupMeta]:
 

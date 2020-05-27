@@ -248,7 +248,7 @@
         }
         catch(err) {
             e.preventDefault();
-            modal_handler("There was an error unusual error: <br/> " + err);
+            modal_handler("There was an unusual error: <br/> " + err);
         }
     });
 
@@ -278,7 +278,7 @@
         }
         catch(err) {
             e.preventDefault();
-            modal_handler("There was an error unusual error: <br/> " + err);
+            modal_handler("There was an unusual error: <br/> " + err);
         }
     });
 
@@ -309,7 +309,7 @@
         }
         catch(err) {
             e.preventDefault();
-            modal_handler("There was an error unusual error: <br/> " + err);
+            modal_handler("There was an unusual error: <br/> " + err);
         }
     });
 
@@ -324,15 +324,6 @@
                 "group_name": group_name,
                 "operation": "delete_group"
             };
-            console.log("Group '" + group_name + "' is being deleted from DB table" )
-            var jqxhr = $.post( "/hub/groups", this_data)
-                .done(function(res) {
-                  console.log("This should not be printed. Instead, the page should be reloaded server side.");
-                })
-                .fail(function(result) {
-                  console.log("Error: " + result)
-                  modal_handler("There was an error while deleting a group:" + result);
-                })
 
             modal_handler(message,
                 function(e){
@@ -357,14 +348,14 @@
                         })
                 },
                 function(e){
-                    modal_handler("There was an error unusual error: <br/> " + e);
+                    modal_handler("There was an unusual error: <br/> " + e);
                 }
             );
         }
         catch(err) {
             e.preventDefault();
             console.log(err)
-            modal_handler("There was an error unusual error: <br/> " + err);
+            modal_handler("There was an unusual error: <br/> " + err);
         }
     });
 
