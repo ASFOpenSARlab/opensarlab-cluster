@@ -185,7 +185,7 @@ class Groups():
         group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
         if group_meta is None:
             print(f"No group meta for group '{group_name}'. Creating empty values.")
-            self.add_group_meta(group_name, "", 0, 'label', 0)
+            self.add_group_with_meta(group_name, "", 0, 'label', 0)
             group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
 
         return group_meta
