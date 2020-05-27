@@ -37,16 +37,8 @@
             position: relative;
     }
 
-    #groups-main .is-enabled-checkbox {
-        background-color: #00800033;
-    }
-
-    #groups-main .is-disabled-checkbox {
-        background-color: #ff00001f;
-    }
-
     #groups-main .all-users {
-        backgroud-color: #0000ff3d;
+        backgroud-color: #00ff7e70;
     }
 
 </style>
@@ -222,6 +214,10 @@
         $('#error-dialog').modal("show");
     }
 
+    // The class `fade` conflicts with another library and breaks the modal.
+    // This will give a black backgrouns but at least the modal works.
+    $('#error-dialog').removeClass('fade');
+
     $table = $('#groups-main-table');
 
     $table.DataTable();
@@ -349,8 +345,11 @@
                         .done(function(res) {
                             console.log("You should not be reading this. Instead, the page should be reloaded server side.");
                             console.log("However, if we get here we will jquery delete the column.")
-                            $('th[data-group="' + group_name + '"]').remove();
-                            $('th[data-group="' + group_name + '"]').remove();
+                            el_th = 'th[data-group="' + group_name + '"]'
+                            el_tr = 'th[data-group="' + group_name + '"]'
+                            console.log("Deleting: " + el_tr + ' and ' + el_tr)
+                            $(el_th).remove();
+                            $(el_tr).remove();
                         })
                         .fail(function(result) {
                             console.log("Error: " + result)
