@@ -156,12 +156,12 @@ class Groups():
             group = self.session.query(orm.Group).filter(orm.Group.name == group_name)
             if group is None:
                 print(f"Group '{group_name}' does not exist. Don't update.")
-                raise
+                raise Exception(f"Group '{group_name}' does not exist. Don't update.")
 
             group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name)
             if group_meta is None:
                 print(f"Group Meta for '{group_name}' does not exist. Don't update.")
-                raise
+                raise Exception(f"Group Meta for '{group_name}' does not exist. Don't update.")
 
             is_all_users = self._boolean_check(is_all_users)
             is_enabled = self._boolean_check(is_enabled)
