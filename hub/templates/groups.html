@@ -227,7 +227,9 @@
 
     $table.DataTable();
 
-    $table.on('change', '.group-checkbox', function() {
+    $table.on('change', '.group-checkbox', function(e) {
+
+        e.stopPropagation()
 
         try {
             $this = $(this)
@@ -252,18 +254,17 @@
                 })
         }
         catch(err) {
-            e.preventDefault();
             modal_handler("There was an unusual error: <br/> " + err);
         }
     });
 
     $table.on('click', function(e) {
 
+        e.stopPropagation()
+
         if ( $(e.target).is('#new-submit-button') )
         {   
             try {
-
-                e.stopPropagation()
 
                 this_data = {
                     "group_name": $('#new-name-select').val(),
@@ -294,9 +295,7 @@
 
             try {
 
-                e.stopPropagation()
-
-                group_name = $(this).data("group");
+                group_name = $(e.target).data("group");
 
                 this_data = {
                     "group_name": group_name,
@@ -326,9 +325,7 @@
 
             try {
 
-                e.stopPropagation()
-
-                group_name = $(this).data("group");
+                group_name = $(e.target).data("group");
                 message = "Are you sure you want to delete the group '" + group_name + "'?";
 
                 this_data = {
