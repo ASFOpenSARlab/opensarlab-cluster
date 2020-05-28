@@ -112,7 +112,9 @@ class Groups():
             group_name = group_obj.name
             group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
             if group_meta is None:
-                group_meta = GroupMeta(group_name=group_name)
+                # All groups should have some meta (even if default to 'empty')
+                self.add_group_with_meta(group_name=group_name, description="", is_all_users=False, group_type='label', is_enabled=False)
+                group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
             group_meta.members = [u.name for u in group_obj.users]
 
             groups.append(group_meta)
