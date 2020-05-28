@@ -78,6 +78,12 @@ class GroupsHandler(BaseHandler):
 
             elif data['operation'] == 'add_group':
                 print("Adding group...")
+
+                data['group_name'].strip()
+
+                if not data['group_name']:
+                    raise Exception("Group name is empty.")
+
                 this_data = {
                     'group_name': data['group_name'],
                     'description': data['description'],
