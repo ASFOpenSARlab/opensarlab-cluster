@@ -15,7 +15,7 @@ class GroupsHandler(BaseHandler):
             class G():
                 pass
 
-            groups = get_all_groups_with_meta():
+            groups = get_all_groups_with_meta()
 
             all_users_query = self.db.query(orm.User)
             all_users = [self._user_from_orm(u) for u in all_users_query]
