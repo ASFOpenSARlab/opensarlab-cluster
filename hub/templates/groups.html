@@ -38,7 +38,16 @@
     }
 
     #groups-main .all-users {
-        background-color: #00ff7e70;
+        background-color: #00d0ff70;
+    }
+
+    #groups-main .action-group {
+        border-bottom-color: green;
+        border-bottom-width: 2px;
+    }
+
+    #groups-main .label-group {
+
     }
 
 </style>
@@ -146,7 +155,7 @@
 
                 <th data-group="{{ group.group_name }}">
                     <div class="dropdown dropright">
-                        <button class="btn btn-link dropdown-toggle" id="{{ group.group_name }}-add-group-button" type="button" data-toggle="dropdown">
+                        <button class="btn btn-link dropdown-toggle {{ group.meta.group_type }}-group" id="{{ group.group_name }}-add-group-button" type="button" data-toggle="dropdown">
                             <span class="h4">{{ group.group_name }}</span>
                         </button>
                         {{ group_settings(group_name=group.group_name, description=group.meta.description, group_type=group.meta.group_type, is_all_users=group.meta.is_all_users, is_enabled=group.meta.is_enabled, is_new=0) }}

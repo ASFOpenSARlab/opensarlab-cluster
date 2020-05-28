@@ -103,7 +103,7 @@ class Groups():
 
     def get_all_enabled_group_names_set_to_all_users(self) -> List[str]:
         groups = self.session.query(GroupMeta).all()
-        return [g.group_name for g in groups if g.is_enabled and g.is_all_uers]
+        return [g.group_name for g in groups if g.is_enabled and g.is_all_users]
 
     def get_all_groups_with_meta(self) -> List[GroupMeta]:
 
