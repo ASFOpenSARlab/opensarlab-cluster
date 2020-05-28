@@ -88,7 +88,7 @@ class GroupsHandler(BaseHandler):
                 print(f"Adding {this_data}")
 
                 current_groups = g.get_all_groups()
-                if [True for cg in current_groups if cg.group_name == this_data['group_name']]:
+                if [True for cg in current_groups if cg.name == this_data['group_name']]:
                     raise Exception("There is already a group by that name.")
 
                 g.add_group_with_meta(**this_data)
