@@ -113,8 +113,8 @@ class Groups():
             group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
             if group_meta is None:
                 group_meta = GroupMeta(group_name=group_name)
+            group_meta.members = [u.name for u in group_obj.users]
 
-            print(group_meta)
             groups.append(group_meta)
 
         return groups
@@ -183,10 +183,7 @@ class Groups():
     def get_group_meta(self, group_name: str) -> GroupMeta:
 
         group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
-        if group_meta is None:
-            print(f"No group meta for group '{group_name}'. Creating empty values.")
-            self.add_group_with_meta(group_name, "", 0, 'label', 0)
-            group_meta = self.session.query(GroupMeta).filter(GroupMeta.group_name == group_name).first()
+        print(f"Getting group meta: {group_meta}")
 
         return group_meta
 
