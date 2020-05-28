@@ -259,108 +259,109 @@
 
     $table.on('click', '#new-submit-button', function(e) {
 
-        try {
-            this_data = {
-                "group_name": $('#new-name-select').val(),
-                "description": $('#new-description-select').val(),
-                "group_type": $('#new-group-type-select input:checked').val(),
-                "is_all_users": $('#new-is-all-users-select')[0].checked,
-                "is_enabled": $('#new-is-enabled-select')[0].checked,
-                "operation": "add_group"
-            };
+        if ( $(e.target) == $('#new-submit-button') )
+        {   
+            try {
+                this_data = {
+                    "group_name": $('#new-name-select').val(),
+                    "description": $('#new-description-select').val(),
+                    "group_type": $('#new-group-type-select input:checked').val(),
+                    "is_all_users": $('#new-is-all-users-select')[0].checked,
+                    "is_enabled": $('#new-is-enabled-select')[0].checked,
+                    "operation": "add_group"
+                };
 
-            console.log("Group is being added to DB table:" + this_data );
+                console.log("Group is being added to DB table:" + this_data );
 
-            var jqxhr = $.post( "/hub/groups", this_data)
-                .done(function() {
-                    console.log("This should not be printed. Instead, the page should be reloaded server side.");
-                })
-                .fail(function(result) {
-                    console.log("Error: " + result)
-                    modal_handler("There was an error while adding a new group: <br/> " + result);
-                })
+                var jqxhr = $.post( "/hub/groups", this_data)
+                    .done(function() {
+                        console.log("This should not be printed. Instead, the page should be reloaded server side.");
+                    })
+                    .fail(function(result) {
+                        console.log("Error: ", result)
+                        throw "There was an error while adding a new group: " + result;
+                    })
 
+            }
+            catch(err) {
+                e.preventDefault();
+                modal_handler("There was an unusual error: <br/> " + err);
+            }
         }
-        catch(err) {
-            e.preventDefault();
-            modal_handler("There was an unusual error: <br/> " + err);
+        else if ( $(e.target) == $('.group-update-button') ) {
+
+            try {
+                group_name = $(this).data("group");
+
+                this_data = {
+                    "group_name": group_name,
+                    "description": $('#'+group_name +'-description-select').val(),
+                    "group_type": $('#'+group_name +'-group-type-select input:checked').val(),
+                    "is_all_users": $('#'+group_name +'-is-all-users-select')[0].checked,
+                    "is_enabled": $('#'+group_name +'-is-enabled-select')[0].checked,
+                    "operation": "update_group"
+                };
+
+                console.log("Group is being updated to DB table:" + this_data );
+
+                var jqxhr = $.post( "/hub/groups", this_data)
+                    .done(function() {
+                        console.log("This should not be printed. Instead, the page should be reloaded server side.");
+                    })
+                    .fail(function(result) {
+                        console.log("Error: " + result)
+                        modal_handler("There was an error while adding a group: <br/> " + result);
+                    })
+            }
+            catch(err) {
+                e.preventDefault();
+                modal_handler("There was an unusual error: <br/> " + err);
+            }
         }
-    });
+        else if ( $(e.target) == $('.group-delete-button') ) {
 
-    $table.on('click', '.group-update-button', function(e) {
+            try {
 
-        try {
-            group_name = $(this).data("group");
+                group_name = $(this).data("group");
+                message = "Are you sure you want to delete the group '" + group_name + "'?";
 
-            this_data = {
-                "group_name": group_name,
-                "description": $('#'+group_name +'-description-select').val(),
-                "group_type": $('#'+group_name +'-group-type-select input:checked').val(),
-                "is_all_users": $('#'+group_name +'-is-all-users-select')[0].checked,
-                "is_enabled": $('#'+group_name +'-is-enabled-select')[0].checked,
-                "operation": "update_group"
-            };
+                this_data = {
+                    "group_name": group_name,
+                    "operation": "delete_group"
+                };
 
-            console.log("Group is being updated to DB table:" + this_data );
-
-            var jqxhr = $.post( "/hub/groups", this_data)
-                .done(function() {
-                    console.log("This should not be printed. Instead, the page should be reloaded server side.");
-                })
-                .fail(function(result) {
-                    console.log("Error: " + result)
-                    modal_handler("There was an error while adding a group: <br/> " + result);
-                })
-        }
-        catch(err) {
-            e.preventDefault();
-            modal_handler("There was an unusual error: <br/> " + err);
-        }
-    });
-
-    $table.on('click', '.group-delete-button', function(e) {
-
-        try {
-
-            group_name = $(this).data("group");
-            message = "Are you sure you want to delete the group '" + group_name + "'?";
-
-            this_data = {
-                "group_name": group_name,
-                "operation": "delete_group"
-            };
-
-            modal_handler(message,
-                function(e){
-                    this_data = {
-                        "group_name": group_name,
-                        "operation": "delete_group"
-                    };
-                    console.log("Group '" + group_name + "' is being deleted from DB table" )
-                    var jqxhr = $.post( "/hub/groups", this_data)
-                        .done(function(res) {
-                            console.log("You should not be reading this. Instead, the page should be reloaded server side.");
-                            console.log("However, if we get here we will jquery delete the column.")
-                            el_th = 'th[data-group="' + group_name + '"]'
-                            el_tr = 'th[data-group="' + group_name + '"]'
-                            console.log("Deleting: " + el_tr + ' and ' + el_tr)
-                            $(el_th).remove();
-                            $(el_tr).remove();
-                        })
-                        .fail(function(result) {
-                            console.log("Error: " + result)
-                            modal_handler("There was an error while deleting a group:" + result);
-                        })
-                },
-                function(e){
-                    modal_handler("There was an unusual error: <br/> " + e);
-                }
-            );
-        }
-        catch(err) {
-            e.preventDefault();
-            console.log(err)
-            modal_handler("There was an unusual error: <br/> " + err);
+                modal_handler(message,
+                    function(e){
+                        this_data = {
+                            "group_name": group_name,
+                            "operation": "delete_group"
+                        };
+                        console.log("Group '" + group_name + "' is being deleted from DB table" )
+                        var jqxhr = $.post( "/hub/groups", this_data)
+                            .done(function(res) {
+                                console.log("You should not be reading this. Instead, the page should be reloaded server side.");
+                                console.log("However, if we get here we will jquery delete the column.")
+                                el_th = 'th[data-group="' + group_name + '"]'
+                                el_tr = 'th[data-group="' + group_name + '"]'
+                                console.log("Deleting: " + el_tr + ' and ' + el_tr)
+                                $(el_th).remove();
+                                $(el_tr).remove();
+                            })
+                            .fail(function(result) {
+                                console.log("Error: " + result)
+                                modal_handler("There was an error while deleting a group:" + result);
+                            })
+                    },
+                    function(e){
+                        modal_handler("There was an unusual error: <br/> " + e);
+                    }
+                );
+            }
+            catch(err) {
+                e.preventDefault();
+                console.log(err)
+                modal_handler("There was an unusual error: <br/> " + err);
+            }
         }
     });
 
