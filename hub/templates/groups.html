@@ -262,7 +262,9 @@
 
         e.stopPropagation()
 
-        if ( $(e.target).is('#new-submit-button') )
+        $target = $(e.target)
+
+        if ( $target.is('#new-submit-button') )
         {   
             try {
 
@@ -291,11 +293,11 @@
                 modal_handler("There was an unusual error: <br/> " + err);
             }
         }
-        else if ( $(e.target).is('.group-update-button') ) {
+        else if ( $target.is('.group-update-button') ) {
 
             try {
 
-                group_name = $(e.target).data("group");
+                group_name = $target.data("group");
 
                 this_data = {
                     "group_name": group_name,
@@ -321,11 +323,11 @@
                 modal_handler("There was an unusual error: <br/> " + err);
             }
         }
-        else if ( $(e.target).is('.group-delete-button') ) {
+        else if ( $target.is('.group-delete-button') ) {
 
             try {
 
-                group_name = $(e.target).data("group");
+                group_name = $target.data("group");
                 message = "Are you sure you want to delete the group '" + group_name + "'?";
 
                 this_data = {
@@ -364,6 +366,12 @@
                 console.log(err)
                 modal_handler("There was an unusual error: <br/> " + err);
             }
+        }
+        else if ( $target.is('th') ) {
+            console.log("Sorting...")
+        }
+        else {
+            console.log("Target evented: ", $target)
         }
     });
 
