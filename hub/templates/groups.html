@@ -259,9 +259,12 @@
 
     $table.on('click', function(e) {
 
-        if ( $(e.target) == $('#new-submit-button') )
+        if ( $(e.target).is('#new-submit-button') )
         {   
             try {
+
+                e.stopPropagation()
+
                 this_data = {
                     "group_name": $('#new-name-select').val(),
                     "description": $('#new-description-select').val(),
@@ -284,13 +287,15 @@
 
             }
             catch(err) {
-                e.preventDefault();
                 modal_handler("There was an unusual error: <br/> " + err);
             }
         }
-        else if ( $(e.target) == $('.group-update-button') ) {
+        else if ( $(e.target).is('.group-update-button') ) {
 
             try {
+
+                e.stopPropagation()
+
                 group_name = $(this).data("group");
 
                 this_data = {
@@ -314,13 +319,14 @@
                     })
             }
             catch(err) {
-                e.preventDefault();
                 modal_handler("There was an unusual error: <br/> " + err);
             }
         }
-        else if ( $(e.target) == $('.group-delete-button') ) {
+        else if ( $(e.target).is('.group-delete-button') ) {
 
             try {
+
+                e.stopPropagation()
 
                 group_name = $(this).data("group");
                 message = "Are you sure you want to delete the group '" + group_name + "'?";
@@ -358,7 +364,6 @@
                 );
             }
             catch(err) {
-                e.preventDefault();
                 console.log(err)
                 modal_handler("There was an unusual error: <br/> " + err);
             }
