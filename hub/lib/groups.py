@@ -167,14 +167,13 @@ class Groups():
             is_enabled = self._boolean_check(is_enabled)
 
             args = {
-                'group_name': group_name,
-                'description': description,
-                'is_all_users': is_all_users,
-                'group_type': group_type,
-                'is_enabled': is_enabled
+                GroupMeta.description: description,
+                GroupMeta.is_all_users: is_all_users,
+                GroupMeta.group_type: group_type,
+                GroupMeta.is_enabled: is_enabled
             }
 
-            self.session.query(GroupMeta).update(args)
+            group_meta.update(args)
             self.session.commit()
 
         except Exception as e:
