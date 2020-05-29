@@ -256,6 +256,7 @@ hub:
                         }
                         profile_list.append(profile)
 
+<<<<<<< HEAD
                     if 'no_smart_git' not in group_list:
                         # Run gitpuller after mounting volume
                         spawner.lifecycle_hooks = {
@@ -266,6 +267,8 @@ hub:
                             }
                         }
 
+=======
+>>>>>>> a084ed77886669515869a116680c767537e8b071
                     # This clause for sudo should always be last
                     if 'sudo' in group_list:
                         print("Adding sudo privs...")
