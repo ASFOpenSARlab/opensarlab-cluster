@@ -255,7 +255,7 @@ hub:
                             }
                         }
                         profile_list.append(profile)
-
+                        
                     if 'no_smart_git' not in group_list:
                         print("Run gitpuller after mounting volume")
 
