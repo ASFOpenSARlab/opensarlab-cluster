@@ -46,14 +46,13 @@ hub:
     extraConfig:
         myAdminAccess.py: |
             print("Admin user access not implemented...")
-            # c.JupyterHub.admin_access = True
+            #c.JupyterHub.admin_access = True
 
         myAuthConfig.py: |
             try:
                 import sys
                 import os
                 import z2jh
-
                 oauth_dns_name = z2jh.get_config("custom.OAUTH_DNS_NAME")
                 os.environ["OAUTH2_AUTHORIZE_URL"] = "{0}/oauth2/authorize".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
                 oauth_jupyter_url = z2jh.get_config("custom.OAUTH_JUPYTER_URL")
@@ -61,7 +60,6 @@ hub:
                 oauth_client_id = z2jh.get_config("custom.OAUTH_CLIENT_ID")
                 os.environ["OAUTH2_USERDATA_URL"] = "{0}/oauth2/userInfo".format(z2jh.get_config("custom.OAUTH_DNS_NAME"))
                 oauth_client_secret = z2jh.get_config("custom.OAUTH_CLIENT_SECRET")
-
                 os.environ["OAUTH_LOGOUT_URL"] = "{0}/logout?client_id={1}&logout_uri={2}".format(z2jh.get_config("custom.OAUTH_DNS_NAME"), z2jh.get_config("custom.OAUTH_CLIENT_ID"), z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
                 os.environ["OAUTH2_AUTHORIZE_URL"] = f"{oauth_dns_name}/oauth2/authorize"
                 os.environ["OAUTH2_TOKEN_URL"] = f"{oauth_dns_name}/oauth2/token"
@@ -70,7 +68,6 @@ hub:
                 os.environ["OAUTH_LOGOUT_URL"] = f"{oauth_dns_name}/logout?client_id={oauth_client_id}&logout_uri={oauth_jupyter_url}"
                 os.environ["OAUTH_CLIENT_ID"] = f"{oauth_client_id}"
                 os.environ["OAUTH_CLIENT_SECRET"] = f"{oauth_client_secret}"
-
                 from generic_with_logout import GenericOAuthenticator
                 c.JupyterHub.authenticator_class = GenericOAuthenticator
                 c.GenericOAuthenticator.oauth_callback_url = '{0}/hub/oauth_callback'.format(z2jh.get_config("custom.OAUTH_JUPYTER_URL"))
@@ -201,6 +198,8 @@ hub:
 
         myProfiles.py: |
 
+            from typing import List, Dict
+
             import z2jh
 
             # Profile list programmatically
@@ -208,49 +207,90 @@ hub:
             # https://jupyterhub-kubespawner.readthedocs.io/en/latest/spawner.html#kubespawner.KubeSpawner
             # Other singleuser server params can be taken from above to below as needed.
 
-            group = ('general_cpu')  #, 'general_gpu')
+            """
+            To manually add some Groups and names to Groups, `kubectl` into the hub, python3 and
 
-            c.KubeSpawner.profile_list = []
+            from jupyterhub import groups
 
-            if 'general_cpu' in group:
-                profile = {
-                    'display_name': 'General SAR processing',
-                    'description': 'Contains basic SAR processing and analysis tools',
-                    'default': True,
-                    'kubespawner_override': {
-                        'extra_labels': {
-                            'server_type': 'general_cpu'
-                        },
-                        'node_selector': {
-                            'server_type': 'general_cpu'
-                        },
-                        'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
-                    }
-                }
-                c.KubeSpawner.profile_list.append(profile)
+            g = groups.Groups()
+            g.add_group('general_cpu')
+            g.get_users_in_group('general_cpu')
+            g.add_user_to_group('emlundell_test1', 'general_cpu')
+            g.get_users_in_group('general_cpu')
 
-            if 'general_gpu' in group:
-                profile = {
-                    'display_name': 'General SAR processing including GPU support',
-                    'description': 'Contains basic SAR processing and analysis tools',
-                    'default': False,
-                    'kubespawner_override': {
-                        'extra_labels': {
-                            'server_type': 'general_gpu'
-                        },
-                        'node_selector': {
-                            'server_type': 'general_gpu'
-                        },
-                        'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
-                    }
-                }
-                c.KubeSpawner.profile_list.append(profile)
+            """
 
+            def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
+                try:
+                    from jupyterhub import groups as groups_py
+
+                    user_name = spawner.user.name
+
+                    groups = groups_py.Groups()
+                    group_list = groups.get_group_names_for_user(user_name=user_name)
+                    group_list.extend(groups.get_all_enabled_group_names_set_to_all_users())
+                    print(group_list)
+
+                    profile_list = []
+                    if 'general_cpu' in group_list:
+                        profile = {
+                            'display_name': 'General SAR processing',
+                            'description': 'Contains basic SAR processing and analysis tools',
+                            'default': True,
+                            'kubespawner_override': {
+                                'extra_labels': {
+                                    'server_type': 'general_cpu'
+                                },
+                                'node_selector': {
+                                    'server_type': 'general_cpu'
+                                },
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                            }
+                        }
+                        profile_list.append(profile)
+
+                    if 'general_gpu' in group_list:
+                        profile = {
+                            'display_name': 'General SAR processing including GPU support',
+                            'description': 'Contains basic SAR processing and analysis tools',
+                            'default': False,
+                            'kubespawner_override': {
+                                'extra_labels': {
+                                    'server_type': 'general_gpu'
+                                },
+                                'node_selector': {
+                                    'server_type': 'general_gpu'
+                                },
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                            }
+                        }
+                        profile_list.append(profile)
+
+                    # This clause for sudo should always be last
+                    if 'sudo' in group_list:
+                        print("Adding sudo privs...")
+                        spawner.args.append('--allow-root')
+                        spawner.environment["GRANT_SUDO"] = "yes"
+                        spawner.gid = 599
+
+                        # Users should know that sudo is enabled in profile before entering
+                        for profile in profile_list:
+                            profile['display_name'] += " (Sudo Enabled)"
+
+                except Exception as e:
+                    print("Something went wrong with the profiles...")
+                    print(e)
+                    profile_list = []
+
+                return profile_list
+
+            c.KubeSpawner.profile_list = profile_list_hook
 
         mySubdomainConfig.py: |
             print("Subdomain not implemented...")
             #import z2jh
             #c.JupyterHub.subdomain_host = f"{z2jh.get_config('custom.OAUTH_JUPYTER_URL')}"
+
 
 custom:
   OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
