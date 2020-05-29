@@ -263,7 +263,7 @@
         $target = $(e.target)
 
         if ( $target.is('#new-add-group-button') ) {
-            e.stopPropagation()
+            // This is a dropdown button. Don't stop the bubble.
             console.log("Clicked on new button..")
         }
         else if ( $target.is('#new-submit-button') ){  
