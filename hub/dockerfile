@@ -38,10 +38,6 @@ COPY lib/groups.py /usr/local/lib/python3.6/dist-packages/jupyterhub/groups.py
 COPY lib/handlers/groups.py /usr/local/lib/python3.6/dist-packages/jupyterhub/handlers/groups.py
 COPY lib/handlers/__init__.py /usr/local/lib/python3.6/dist-packages/jupyterhub/handlers/__init__.py
 
-# Cognito migration items
-COPY migration/from_cognito.conf.example /tmp/migration/from_cognito.conf.example
-COPY migration/from_cognito.py /tmp/migration/from_cognito.py
-
 # Copy volume handling
 RUN mkdir -p /etc/jupyterhub/custom
 COPY volumes/pv.yaml /etc/jupyterhub/custom/pv.yaml
