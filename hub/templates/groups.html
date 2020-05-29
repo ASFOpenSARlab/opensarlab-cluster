@@ -264,6 +264,7 @@
 
         if ( $target.is('#new-submit-button') )
         {  
+            e.stopPropagation()
             try {
 
                 this_data = {
@@ -292,7 +293,7 @@
             }
         }
         else if ( $target.is('.group-update-button') ) {
-
+            e.stopPropagation()
             try {
 
                 group_name = $target.data("group");
@@ -322,7 +323,7 @@
             }
         }
         else if ( $target.is('.group-delete-button') ) {
-
+            e.stopPropagation()
             try {
 
                 group_name = $target.data("group");
@@ -368,16 +369,19 @@
         else if ( $target.is('th.sorting_asc') ) {
             e.stopPropagation()
 
-            myIndex = $(parent).prevAll().length;
+            myIndex = $(e.target).prevAll().length;
             console.log("Sorting asc on index '" + myIndex + "'")
             $('#groups-main-table').DataTable().order([myIndex, "asc"]).draw()
         }
         else if ( $target.is('th.sorting_desc') ) {
             e.stopPropagation()
 
-            myIndex = $(parent).prevAll().length;
+            myIndex = $(e.target).prevAll().length;
             console.log("Sorting desc on index '" + myIndex + "'")
             $('#groups-main-table').DataTable().order([myIndex, "desc"]).draw()
+        }
+        else if ( $target.is('span.h4') ) {
+            console.log("Clicked on link...")
         }
         else {
 
