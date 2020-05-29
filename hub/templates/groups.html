@@ -287,7 +287,7 @@
                     })
                     .fail(function(result) {
                         console.log("Error: ", result)
-                        throw "There was an error while adding a new group: " + result;
+                        modal_handler("There was an error while adding a new group: " + result.responseText)
                     })
 
             }
@@ -349,10 +349,10 @@
                                 console.log("You should not be reading this. Instead, the page should be reloaded server side.");
                                 console.log("However, if we get here we will jquery delete the column.")
                                 el_th = 'th[data-group="' + group_name + '"]'
-                                el_tr = 'th[data-group="' + group_name + '"]'
-                                console.log("Deleting: " + el_tr + ' and ' + el_tr)
+                                el_td = 'td[data-group="' + group_name + '"]'
+                                console.log("Deleting: " + el_tr + ' and ' + el_td)
                                 $(el_th).remove();
-                                $(el_tr).remove();
+                                $(el_td).remove();
                             })
                             .fail(function(result) {
                                 console.log("Error: " + result)
