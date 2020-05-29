@@ -260,12 +260,10 @@
 
     $table.on('click', function(e) {
 
-        e.stopPropagation()
-
         $target = $(e.target)
 
         if ( $target.is('#new-submit-button') )
-        {   
+        {  
             try {
 
                 this_data = {
@@ -367,11 +365,24 @@
                 modal_handler("There was an unusual error: <br/> " + err);
             }
         }
-        else if ( $target.is('th') ) {
-            console.log("Sorting...")
+        else if ( $target.is('th.sorting_asc') ) {
+            e.stopPropagation()
+
+            myIndex = $(parent).prevAll().length;
+            console.log("Sorting asc on index '" + myIndex + "'")
+            $('#groups-main-table').DataTable().order([myIndex, "asc"]).draw()
+        }
+        else if ( $target.is('th.sorting_desc') ) {
+            e.stopPropagation()
+
+            myIndex = $(parent).prevAll().length;
+            console.log("Sorting desc on index '" + myIndex + "'")
+            $('#groups-main-table').DataTable().order([myIndex, "desc"]).draw()
         }
         else {
-            console.log("Target evented: ", $target)
+
+            e.stopPropagation()
+            console.log("Target evented: ", $target, ". Not bubbling up event.")
         }
     });
 
