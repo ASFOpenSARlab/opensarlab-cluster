@@ -134,16 +134,6 @@ hub:
 
             c.Spawner.post_stop_hook = my_post_hook
 
-
-            # Run gitpuller after mounting volume
-            c.KubeSpawner.lifecycle_hooks = {
-                "postStart": {
-                    "exec": {
-                        "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
-                    }
-                }
-            }
-
         myHubCron.py: |
             import os
             import z2jh
@@ -265,6 +255,17 @@ hub:
                             }
                         }
                         profile_list.append(profile)
+                        
+                    if 'no_smart_git' not in group_list:
+                        print("Run gitpuller after mounting volume")
+
+                        spawner.lifecycle_hooks = {
+                            "postStart": {
+                                "exec": {
+                                    "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
+                                }
+                            }
+                        }
 
                     # This clause for sudo should always be last
                     if 'sudo' in group_list:
