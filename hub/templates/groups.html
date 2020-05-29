@@ -380,11 +380,15 @@
             console.log("Sorting desc on index '" + myIndex + "'")
             $('#groups-main-table').DataTable().order([myIndex, "desc"]).draw()
         }
+        else if ( $target.is('th.sorting') ) {
+            // Stop any bubbles for sorting that are not already captured.
+            e.stopPropagation()
+        }
         else if ( $target.is('span.h4') ) {
+            // This may be a dropdown. Don't stop the bubble.
             console.log("Clicked on link...")
         }
         else {
-
             e.stopPropagation()
             console.log("Target evented: ", $target, ". Not bubbling up event.")
         }
