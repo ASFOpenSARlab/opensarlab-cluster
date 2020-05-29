@@ -32,7 +32,7 @@ COPY login/pending.html /usr/local/share/jupyterhub/templates/pending.html
 
 # Copy custom group page stuff over to jupyterhub module
 RUN sed -i 's|{% if user.admin %}|{% if user.admin %} <li><a href="{{base_url}}groups">Groups</a></li>|' /usr/local/share/jupyterhub/templates/page.html
-COPY static/js/group.js /usr/local/share/jupyterhub/static/js/groups.js
+COPY static/js/groups.js /usr/local/share/jupyterhub/static/js/groups.js
 COPY templates/groups.html /usr/local/share/jupyterhub/templates/groups.html
 COPY lib/groups.py /usr/local/lib/python3.6/dist-packages/jupyterhub/groups.py
 COPY lib/handlers/groups.py /usr/local/lib/python3.6/dist-packages/jupyterhub/handlers/groups.py
