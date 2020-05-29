@@ -45,8 +45,8 @@ hub:
 
     extraConfig:
         myAdminAccess.py: |
-            #print("Admin user access not implemented...")
-            c.JupyterHub.admin_access = True
+            print("Admin user access not implemented...")
+            #c.JupyterHub.admin_access = True
 
         myAuthConfig.py: |
             try:
