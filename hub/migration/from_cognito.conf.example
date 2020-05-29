@@ -1,4 +1,0 @@
-aws_secret_access_key = pass
-aws_access_key_id = pass
-region_name = 'us-east-1'
-user_pool_id = 'us-east-1_SRN0dZC66'
