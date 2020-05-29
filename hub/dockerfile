@@ -17,24 +17,41 @@ RUN apt install --no-install-recommends -y \
     cron \
     less \
     vim \
-    sudo
+    sudo \
+    mailutils
+
 RUN pip3 install --upgrade awscli pyyaml python-crontab
 
-COPY alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
-COPY generic_with_logout.py /usr/local/lib/python3.6/dist-packages/generic_with_logout.py
-COPY login.html /usr/local/share/jupyterhub/templates/login.html
-COPY pending.html /usr/local/share/jupyterhub/templates/pending.html
+#RUN echo "address { email-addr eric@localhost.example; email-domain opensarlab.asf.alaska.edu; };" > /etc/mailutils.conf
 
+# Copy login page stuff
+COPY static/images/alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
+COPY login/generic_with_logout.py /usr/local/lib/python3.6/dist-packages/generic_with_logout.py
+COPY login/login.html /usr/local/share/jupyterhub/templates/login.html
+COPY login/pending.html /usr/local/share/jupyterhub/templates/pending.html
+
+# Copy custom group page stuff over to jupyterhub module
+RUN sed -i 's|{% if user.admin %}|{% if user.admin %} <li><a href="{{base_url}}groups">Groups</a></li>|' /usr/local/share/jupyterhub/templates/page.html
+COPY static/js/groups.js /usr/local/share/jupyterhub/static/js/groups.js
+COPY templates/groups.html /usr/local/share/jupyterhub/templates/groups.html
+COPY lib/groups.py /usr/local/lib/python3.6/dist-packages/jupyterhub/groups.py
+COPY lib/handlers/groups.py /usr/local/lib/python3.6/dist-packages/jupyterhub/handlers/groups.py
+COPY lib/handlers/__init__.py /usr/local/lib/python3.6/dist-packages/jupyterhub/handlers/__init__.py
+
+# Copy volume handling
 RUN mkdir -p /etc/jupyterhub/custom
-COPY pv.yaml /etc/jupyterhub/custom/pv.yaml
-COPY pvc.yaml /etc/jupyterhub/custom/pvc.yaml
-COPY volume_stopping_tags.py /etc/jupyterhub/custom/volume_stopping_tags.py
-COPY volume_from_snapshot.py /etc/jupyterhub/custom/volume_from_snapshot.py
-COPY delete_volumes.py /etc/jupyterhub/custom/delete_volumes.py
-COPY delete_snapshot.py /etc/jupyterhub/custom/delete_snapshot.py
+COPY volumes/pv.yaml /etc/jupyterhub/custom/pv.yaml
+COPY volumes/pvc.yaml /etc/jupyterhub/custom/pvc.yaml
+COPY volumes/volume_stopping_tags.py /etc/jupyterhub/custom/volume_stopping_tags.py
+COPY volumes/volume_from_snapshot.py /etc/jupyterhub/custom/volume_from_snapshot.py
+COPY volumes/delete_volumes.py /etc/jupyterhub/custom/delete_volumes.py
+COPY volumes/delete_snapshot.py /etc/jupyterhub/custom/delete_snapshot.py
+
 RUN chown -R 1000:0 /etc/jupyterhub/custom/
 ENV PYTHONPATH "${PYTHONPATH}:/etc/jupyterhub/custom/"
 
-RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
+# Allow joyvan user some sudo privileges
+#RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
+RUN echo 'jovyan ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 USER jovyan
