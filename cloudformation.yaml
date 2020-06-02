@@ -121,7 +121,7 @@ Parameters:
   CertificateArn:
     Description: The ARN of the SSL certificate attached to the load balancer.
     Type: String
-    Default: arn:aws:acm:us-east-1:553778890976:certificate/10791780-75d2-4ef0-bfbc-2c074e94b92b
+    Default: arn:aws:acm:us-east-1:553778890976:certificate/21d7b22a-86a3-4727-ab3a-2579a58d2d46
 
   NodeProxyPort:
     Description: The port of the hub proxy service opened to the load balancer.
