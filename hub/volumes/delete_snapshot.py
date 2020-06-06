@@ -1,5 +1,42 @@
 #!/usr/bin/env python3
 
+def send_email(send_to, header, body, session):
+
+    sns = session.client('sns')
+
+def send_email_if_expired_and_maybe_delete(days_inactive_till_trigger, snap, session):
+
+    import datetime
+
+    cognito = session.client('cognito')
+    ec2 = session.client('ec2')
+
+    today = datetime.datetime.now()
+
+    volume_stopped_tag_date = ''
+    username = ''
+    days_inactive = ''
+    send_to = ''
+
+    send_email_if = days_inactive_till_trigger[0:-1]
+    send_email_and_deactivate_if = days_inactive_till_trigger[-1]
+
+    for d in send_email_if:
+        if days_inactive == d:
+            email_header = "OpenSARlab account notifcation"
+            email_body = "The OpenSARlab account for {username} will be deactivated in {num_days} days. Any user data will deleted permanently. To stop this action, please sign back into your OpenSARlab account."
+            send_email(send_to, email_header, email_body, session)
+
+    if days_inactive >= send_email_and_deactivate_if:
+
+        # Deaactivate account
+
+        # Delete remaining snapshot
+
+        email_header = "OpenSARlab account notifcation"
+        email_body = "The OpenSARlab account for {username} has been deactivated. All user data has been deleted permanently."
+        send_email(send_to, (email_header, email_body, session)
+
 
 def delete_snapshot():
     try:
@@ -61,13 +98,20 @@ def delete_snapshot():
                     snaps = sorted(snaps, key=lambda s: s['StartTime'], reverse=True)
                     if len(snaps) > 1:
                         # Always keep the newest snapshot of the group
-                        snaps = snaps[1:]
-                        for s in snaps:
+                        extra_snaps = snaps[1:]
+                        for s in extra_snaps:
                             if not [v['Value'] for v in s['Tags'] if v['Key'] == 'do-not-delete']:
                                 print(f"**** Deleting {s['SnapshotId']}")
                                 ec2.delete_snapshot(SnapshotId=s['SnapshotId'], DryRun=False)
+                    
+                    snap = snaps[0]
+
+                    # Send email deletion warning and/or delete as needed
+                    if not [v['Value'] for v in snap['Tags'] if v['Key'] == 'do-not-delete']:
+                        send_email_if_expired_and_maybe_delete([30,44,46], snap, session)
+
                 except Exception as e:
-                    print("Something went wrong with deleting the snapshots...")
+                    print("Something went wrong with snapshot handling...")
                     print(e)
 
     except Exception as e:
