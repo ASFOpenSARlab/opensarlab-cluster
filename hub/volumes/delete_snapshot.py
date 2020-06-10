@@ -13,7 +13,7 @@ class DeleteSnapshot():
     def __init__(self):
 
         print("Checking for expired snapshots...")
-        """
+        
         with open("/etc/jupyterhub/custom/meta.yaml", 'r') as f:
             data = f.read()
 
@@ -24,12 +24,14 @@ class DeleteSnapshot():
         """
         session = boto3.Session(profile_name='jupyterhub')
         self.cluster_name = 'opensarlab-test'
+        """
+
         # List of threshold days since last activity.
         # On all but the last day an email is sent out warning about deletion of data and user deactivation.
         # On the last day, users are deactivated and user data is deleted.
         self.days_since_activity_thresholds = [30,44,46] 
         self.dry_run_disable = False
-        self.dry_run_delete = True 
+        self.dry_run_delete = False 
         self.dry_run_email = False
 
         self.cognito = session.client('cognito-idp')
