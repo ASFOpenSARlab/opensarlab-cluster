@@ -172,6 +172,8 @@ hub:
                 # Setup crontab for volume killer
                 cron = CronTab(user='jovyan')
 
+                # Lifecycle snapshot runs at 10 UTC, 1am AKDT 
+
                 job1 = cron.new(command='python3 /etc/jupyterhub/custom/delete_volumes.py > /etc/jupyterhub/custom/delete_volumes.log')
                 job1.hour.on(12)  # 12 UTC, 3am AKDT
                 job1.enable()
