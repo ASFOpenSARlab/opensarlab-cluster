@@ -48,6 +48,25 @@ class DeleteSnapshot():
     def _get_tags(self, snapshot, tag_key):
         return [v['Value'] for v in snapshot['Tags'] if v['Key'] == tag_key]
 
+    def _volume_still_exists(self, pvc_name, snapshot):
+        vol = self.ec2.describe_volumes(
+            Filters=[
+                {
+                    'Name': 'tag:kubernetes.io/created-for/pvc/name',
+                    'Values': [pvc_name]
+                },
+                {
+                    'Name': 'tag:kubernetes.io/cluster/{0}'.format(self.cluster_name),
+                    'Values': ['owned']
+                }
+            ]
+        )
+
+        if not vol['Volumes']:
+            print(f"No volumes found for {pvc_name} in {self.cluster_name}")
+            return False 
+        return True
+
     def _delete_snapshot(self, snapshot):
         if not self.dry_run_delete:
             if self._get_tags(snapshot, 'do-not-delete'):
@@ -109,10 +128,10 @@ class DeleteSnapshot():
 
     def _send_email_if_expired_and_maybe_delete(self, snapshot):
         #import pdb; pdb.set_trace()
-        username = self._get_tags(snapshot, 'kubernetes.io/created-for/pvc/name')
-        if len(username) == 0:
+        pvc_name = self._get_tags(snapshot, 'kubernetes.io/created-for/pvc/name')
+        if len(pvc_name) == 0:
             raise Exception(f"Something went wrong with getting username for {snapshot['Tags']}")
-        username = username[0].replace('claim-', '')
+        username = pvc_name[0].replace('claim-', '')
         if username == 'hub-db-dir':
             print("Database volume found. Do not delete. Skipping...")
             return
@@ -135,6 +154,11 @@ class DeleteSnapshot():
             today = datetime.datetime.now()
             days_inactive = today - datetime.datetime.strptime(volume_stopped_tag_date, '%Y-%m-%d %H:%M:%S.%f') 
             days_inactive = days_inactive.days
+
+            # Double-check if any volumes exist. If so, then something went wrong with volume delete or snapshot management.
+            if self._volume_still_exists(pvc_name[0], snapshot):
+                print(f"Volume still present for snapshot for {pvc_name}. Skipping...")
+                return 
 
             user_email_address = self._cognito_get_email_address(username)
 
@@ -179,10 +203,10 @@ class DeleteSnapshot():
                     'BODY_HTML': """<html>
                         <head></head>
                         <body>
-                        <p>The OpenSARlab account for {username} has been deactivated due to 46 days of inactivity. All user data has been permanently deleted and cannot be recovered.</p>                
+                        <p>The OpenSARlab account for {username} has been deactivated due to {days} days of inactivity. All user data has been permanently deleted and cannot be recovered.</p>                
                         <p>If you would like to activate your account or have any questions, please don't hesitate to email the <a href="mailto:uaf-jupyterhub-asf@alaska.edu">OpenSARlab Admin</a>.<p>
                         </body>
-                        </html>""".format(username=username)
+                        </html>""".format(username=username, days=send_email_and_deactivate_after_days_inactive)
                 }
                 self._send_email(email_meta)
 
