@@ -203,7 +203,7 @@ class DeleteSnapshot():
                     'BODY_HTML': """<html>
                         <head></head>
                         <body>
-                        <p>The OpenSARlab account for {username} has been deactivated due to 46 {days} days of inactivity. All user data has been permanently deleted and cannot be recovered.</p>                
+                        <p>The OpenSARlab account for {username} has been deactivated due to {days} days of inactivity. All user data has been permanently deleted and cannot be recovered.</p>                
                         <p>If you would like to activate your account or have any questions, please don't hesitate to email the <a href="mailto:uaf-jupyterhub-asf@alaska.edu">OpenSARlab Admin</a>.<p>
                         </body>
                         </html>""".format(username=username, days=send_email_and_deactivate_after_days_inactive)
