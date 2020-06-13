@@ -207,8 +207,9 @@ hub:
                 print(e)
 
         myLengthenServicesCheck.py: |
-            # To reduce service checks, we make the polling time (seconds) larger: once every 12 hours
-            c.JupyterHub.service_check_interval = 60 * 60 * 12
+            # To reduce service checks, we make the polling time (seconds) larger: once every 5 minutes.
+            # The previous 12 hours was ignored. Though unknown, perhaps the value was too big. 
+            c.JupyterHub.service_check_interval = 300
 
         myProfiles.py: |
 
