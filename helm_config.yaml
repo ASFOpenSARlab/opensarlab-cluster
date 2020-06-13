@@ -49,6 +49,7 @@ hub:
             #c.JupyterHub.admin_access = True
 
         myAuthConfig.py: |
+            """
             try:
                 import sys
                 import os
@@ -76,6 +77,21 @@ hub:
                 c.GenericOAuthenticator.login_service = 'AWS Cognito'
             except Exception as e:
                 print(e)
+            """
+            import z2jh
+            try:
+                c.JupyterHub.authenticator_class = 'nativeauthenticator.NativeAuthenticator'
+                c.Authenticator.admin_users = {'emlundell_test1'}
+                c.Authenticator.check_common_password = True
+                c.Authenticator.minimum_password_length = 10
+                #c.Authenticator.allowed_failed_logins = 3
+                #c.Authenticator.seconds_before_next_try = 10
+                #c.Authenticator.enable_signup = False
+                #c.Authenticator.open_signup = True
+                c.Authenticator.ask_email_on_signup = True
+                #c.Authenticator.add_two_factor_authentication = True
+            except Exception as e:
+                print(f"Something went wrong with authentication. {e}")
 
         myHooks.py: |
             import z2jh
@@ -189,6 +205,10 @@ hub:
 
             except Exception as e:
                 print(e)
+
+        myLengthenServicesCheck.py: |
+            # To reduce service checks, we make the polling time (seconds) larger: once every 12 hours
+            c.JupyterHub.service_check_interval = 60 * 60 * 12
 
         myProfiles.py: |
 
