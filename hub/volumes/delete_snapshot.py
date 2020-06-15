@@ -13,7 +13,7 @@ class DeleteSnapshot():
     def __init__(self):
 
         print("Checking for expired snapshots...")
-        
+
         with open("/etc/jupyterhub/custom/meta.yaml", 'r') as f:
             data = f.read()
 
@@ -175,7 +175,7 @@ class DeleteSnapshot():
                     email_meta = {
                         'SENDER': "uaf-jupyterhub-asf@alaska.edu",
                         'RECIPIENT': '<{user_email_address}>'.format(user_email_address=user_email_address),
-                        'SUBJECT': "OpenSARlab Account Notifcation",
+                        'SUBJECT': "OpenSARlab Account Notification",
                         'BODY_HTML': """<html>
                             <head></head>
                             <body>
@@ -199,7 +199,7 @@ class DeleteSnapshot():
                 email_meta = {
                     'SENDER': "uaf-jupyterhub-asf@alaska.edu",
                     'RECIPIENT': '<{user_email_address}>'.format(user_email_address=user_email_address),
-                    'SUBJECT': "OpenSARlab Account Notifcation",
+                    'SUBJECT': "OpenSARlab Account Notification",
                     'BODY_HTML': """<html>
                         <head></head>
                         <body>
