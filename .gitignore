@@ -8,3 +8,5 @@
 !hub/
 !hub/**
 !ebs-sc.yaml
+!convert_stopping_tags.py
+!kubectl-temp.sh

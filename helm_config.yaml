@@ -140,12 +140,12 @@ hub:
             try:
                 from crontab import CronTab
 
-                days_inactive_till_termination = 5
+                days_vol_inactive_till_termination = 5
 
                 # Set metadata for use by cron scripts
                 meta = [
                     "---",
-                    "days_inactive_till_termination: {days_inactive_till_termination}",
+                    "days_vol_inactive_till_termination: {days_vol_inactive_till_termination}",
                     "namespace: jupyter",
                     "cluster_name: {cluster_name}",
                     "region_name: {region_name}",
@@ -155,7 +155,7 @@ hub:
                     "kubernetes_service_host: {kubernetes_service_host}"
                 ]
                 meta = "\n".join(meta).format(
-                    days_inactive_till_termination=days_inactive_till_termination,
+                    days_vol_inactive_till_termination=days_vol_inactive_till_termination,
                     region_name=z2jh.get_config('custom.AZ_NAME')[:-1],
                     cluster_name=z2jh.get_config('custom.CLUSTER_NAME'),
                     aws_secret_access_key=z2jh.get_config('custom.HUB_SECRET_ACCESS_KEY'),
@@ -172,13 +172,17 @@ hub:
                 # Setup crontab for volume killer
                 cron = CronTab(user='jovyan')
 
-                job1 = cron.new(command='python3 /etc/jupyterhub/custom/delete_volumes.py > /etc/jupyterhub/custom/delete_volumes.log')
-                job1.hour.on(12)  # 12 UTC, 3am AKDT
+                # Lifecycle snapshot runs at 10 UTC, 1am AKST 
+
+                job1 = cron.new(command='python3 /etc/jupyterhub/custom/delete_volumes.py >> /etc/jupyterhub/custom/delete_volumes.log')
+                job1.hour.on(12)  # 12 UTC, 3am AKST
+                job1.minute.on(0)
                 job1.enable()
 
                 # Setup crontab for snapshot killer
-                job2 = cron.new(command='python3 /etc/jupyterhub/custom/delete_snapshot.py > /etc/jupyterhub/custom/delete_snapshot.log')
-                job2.hour.on(13)  # 13 UTC, 4am AKDT
+                job2 = cron.new(command='python3 /etc/jupyterhub/custom/delete_snapshot.py >> /etc/jupyterhub/custom/delete_snapshot.log')
+                job2.hour.on(13)  # 13 UTC, 4am AKST
+                job2.minute.on(0)
                 job2.enable()
 
                 cron.write()

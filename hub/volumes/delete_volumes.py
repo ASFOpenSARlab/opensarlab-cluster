@@ -19,7 +19,7 @@ def delete_volumes():
         meta = yaml.safe_load(data)
 
         namespace = meta['namespace']
-        days_inactive_till_termination = meta['days_inactive_till_termination']
+        days_inactive_till_termination = meta['days_vol_inactive_till_termination']
         cluster_name = meta['cluster_name']
         region_name = meta['region_name']
         aws_secret_access_key = meta['aws_secret_access_key']
