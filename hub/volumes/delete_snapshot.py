@@ -2,6 +2,7 @@
 
 import datetime
 import urllib
+import time
 
 import escapism
 import yaml
@@ -263,10 +264,12 @@ class DeleteSnapshot():
                 except Exception:
                     hash_table[h] = [snap]
 
+            first_before = time.time()
             for i, value in enumerate(hash_table):
                 try:
                     print(f">>>> Checking snapshot #{i+1}")
                     snaps_hash = hash_table[value]
+                    before = time.time()
 
                     # Order duplicate snaps by day. It is assumed that the latest is the one wanted.
                     snaps_hash = sorted(snaps_hash, key=lambda s: s['StartTime'], reverse=True)
@@ -279,6 +282,16 @@ class DeleteSnapshot():
                     
                     snap = snaps_hash[0]
                     self._send_email_if_expired_and_maybe_delete(snap)
+
+                    after = time.time()
+                    print(f"It took about {after-before} seconds")
+
+                    # ses.sendEmail is rated to 14 emails per second. Let's make sure we stay below that limit.
+                    # It is assumed that there is at least one email in that second and that it takes at least 0.5 seconds.
+                    rate_limit_per_second = 14
+                    if i != 0 and i % rate_limit_per_second == 0 and (i+1)/(after - first_before) > rate_limit_per_second:
+                        print("Throttling... Sleeping for 0.5 seconds.")
+                        time.sleep(0.5)
 
                 except Exception as e:
                     print(f"Something went wrong with snapshot handling...{e}")                                   
