@@ -573,7 +573,7 @@ Resources:
                     --set custom.VOLUME_SIZE='${NodeVolumeSize}'
                     --set hub.image.tag=$HUB_IMAGE_TAG
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
-                - kubectl --logtostderr=true -n jupyter patch deployment hub -p 'spec:\n template:\n  spec:\n   containers:\n   - command: \n     - sh\n     - "-c"\n     - "sudo /usr/sbin/service cron start && jupyterhub --config /etc/jupyterhub/jupyterhub_config.py --upgrade-db"\n   name: hub\n   securityContext:\n    allowPrivilegeEscalation: true' || true
+                - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat deploy-patch.yaml)" || true
                 - kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
                 - kubectl apply -f https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.5/config/v1.5/aws-k8s-cni.yaml
                 - helm repo update
