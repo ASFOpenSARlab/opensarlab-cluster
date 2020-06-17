@@ -1,7 +1,6 @@
 *
 !.gitignore
 !aws-auth-cm.yaml
-!cwagent-configmap.yaml
 !cloudformation.yaml
 !helm_config.yaml
 !README.md
@@ -10,3 +9,4 @@
 !ebs-sc.yaml
 !convert_stopping_tags.py
 !kubectl-temp.sh
+!deploy-patch.yaml
