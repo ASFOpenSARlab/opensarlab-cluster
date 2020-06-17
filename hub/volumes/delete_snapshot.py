@@ -14,7 +14,7 @@ class DeleteSnapshot():
     def __init__(self):
 
         print("Checking for expired snapshots...")
-
+        """
         with open("/etc/jupyterhub/custom/meta.yaml", 'r') as f:
             data = f.read()
 
@@ -25,7 +25,7 @@ class DeleteSnapshot():
         """
         session = boto3.Session(profile_name='jupyterhub')
         self.cluster_name = 'opensarlab-test'
-        """
+        
 
         # List of threshold days since last activity.
         # On all but the last day an email is sent out warning about deletion of data and user deactivation.
@@ -46,8 +46,31 @@ class DeleteSnapshot():
 
         self.ses = session.client('ses')
 
+        # Get all users in cluster
+        res = self.cognito.list_users(
+            UserPoolId=self.cognito.user_pool_id,
+            Limit=10000,
+        )
+        self.all_cog_users = res['Users']
+
     def _get_tags(self, snapshot, tag_key):
         return [v['Value'] for v in snapshot['Tags'] if v['Key'] == tag_key]
+
+    def get_cog_username(self, username):
+
+        user_list = [u for u in self.all_cog_users if username == u.lower()]
+
+        if len(user_list) == 0:
+            print(f"Username {username} not found in Cognito")
+            return []
+
+        elif len(user_list) >= 2:
+            print(f"Username {username} matches more than one cognito name: {user_list}")
+            return []
+
+        else:
+            print(f"Username {username} matches cognito name {user_list[0]}")
+            return user_list[0] 
 
     def _volume_still_exists(self, pvc_name, snapshot):
         vol = self.ec2.describe_volumes(
@@ -80,15 +103,18 @@ class DeleteSnapshot():
 
     def _disable_user(self, username):
         if not self.dry_run_disable:
+
+            cog_username = self.get_cog_username(username)
+
             #https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.admin_disable_user
-            response = self.cognito.admin_disable_user(
+            res = self.cognito.admin_disable_user(
                 UserPoolId=self.cognito.user_pool_id,
-                Username=username
+                Username=cog_username
             )
 
-            print(f"Disabled user {username}: {response}")
+            print(f"Disabled user {cog_username}: {res}")
         else:
-            print(f"Dry run: Did not disable user {username}.")
+            print(f"Dry run: Did not disable user {cog_username}.")
 
     def _send_email(self, email_meta):
         if not self.dry_run_email:
@@ -216,14 +242,16 @@ class DeleteSnapshot():
 
     def _cognito_get_email_address(self, username):
 
+        cog_username = self.get_cog_username(username)
+
         res = self.cognito.admin_get_user(
             UserPoolId=self.cognito.user_pool_id,
-            Username=username
+            Username=cog_username
         )
         
         email_address = [ua['Value'] for ua in res['UserAttributes'] if ua['Name'] == 'email']
         if email_address is None:
-            raise Exception(f"No email address set for user {username}")
+            raise Exception(f"No email address set for user {username}:{cog_username}")
 
         return email_address[0]
 
