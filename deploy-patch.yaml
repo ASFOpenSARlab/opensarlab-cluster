@@ -5,4 +5,4 @@ spec:
             -   name: hub
                 command: ["sh","-c","sudo /usr/sbin/service cron start && jupyterhub --config /etc/jupyterhub/jupyterhub_config.py --upgrade-db"]
                 securityContext:
-					allowPrivilegeEscalation: true
+                    allowPrivilegeEscalation: true
