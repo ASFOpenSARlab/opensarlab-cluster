@@ -270,6 +270,8 @@ hub:
                                 }
                             }
                         }
+                    else:
+                        print("Not running gitpuller after mounting volume.")
 
                     # This clause for sudo should always be last
                     if 'sudo' in group_list:
@@ -281,6 +283,8 @@ hub:
                         # Users should know that sudo is enabled in profile before entering
                         for profile in profile_list:
                             profile['display_name'] += " (Sudo Enabled)"
+                    else:
+                        print("Sudo privs not given.")
 
                 except Exception as e:
                     print("Something went wrong with the profiles...")
