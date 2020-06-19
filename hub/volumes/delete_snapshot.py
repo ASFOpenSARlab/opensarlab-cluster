@@ -3,6 +3,7 @@
 import datetime
 import urllib
 import time
+import argparse
 
 import escapism
 import yaml
@@ -11,29 +12,30 @@ from botocore.exceptions import ClientError
 
 class DeleteSnapshot():
 
-    def __init__(self):
-
+    def __init__(self, cluster=None, local=None, dry_run=True):
         print("Checking for expired snapshots...")
-        """
-        with open("/etc/jupyterhub/custom/meta.yaml", 'r') as f:
-            data = f.read()
 
-        meta = yaml.safe_load(data)
+        if local:
+            session = boto3.Session(profile_name='jupyterhub')
+            self.cluster_name = cluster
+        else:
+            with open("/etc/jupyterhub/custom/meta.yaml", 'r') as f:
+                data = f.read()
 
-        session = boto3.Session(aws_secret_access_key=meta['aws_secret_access_key'], aws_access_key_id=meta['aws_access_key_id'], region_name=meta['region_name'])
-        self.cluster_name = meta['cluster_name']
-        """
-        session = boto3.Session(profile_name='jupyterhub')
-        self.cluster_name = 'opensarlab-test'
-        
+            meta = yaml.safe_load(data)
+
+            session = boto3.Session(aws_secret_access_key=meta['aws_secret_access_key'], aws_access_key_id=meta['aws_access_key_id'], region_name=meta['region_name'])
+            self.cluster_name = meta['cluster_name']
 
         # List of threshold days since last activity.
         # On all but the last day an email is sent out warning about deletion of data and user deactivation.
         # On the last day, users are deactivated and user data is deleted.
-        self.days_since_activity_thresholds = [30,44,46] 
-        self.dry_run_disable = False
-        self.dry_run_delete = False 
-        self.dry_run_email = False
+        self.days_since_activity_thresholds = [30,44,46]
+
+        if dry_run: 
+            self.dry_run_disable = dry_run and True
+            self.dry_run_delete = dry_run and True 
+            self.dry_run_email = dry_run and True
 
         self.cognito = session.client('cognito-idp')
         user_pools = self.cognito.list_user_pools(MaxResults=10)
@@ -46,30 +48,47 @@ class DeleteSnapshot():
 
         self.ses = session.client('ses')
 
-        # Get all users in cluster
+        self.all_cog_users = self._get_user_list()
+        
+    def _get_user_list(self):
         res = self.cognito.list_users(
-            UserPoolId=self.cognito.user_pool_id,
-            Limit=10000,
-        )
-        self.all_cog_users = res['Users']
+                UserPoolId=self.cognito.user_pool_id,
+                Limit=60
+            )
+        user_list = [u['Username'] for u in res['Users']]
+        token = res.get('PaginationToken', None)
+
+        while token:
+            res = self.cognito.list_users(
+                UserPoolId=self.cognito.user_pool_id,
+                Limit=60, 
+                PaginationToken=token
+            )
+            user_list.extend([u['Username'] for u in res['Users']])
+            token = res.get('PaginationToken', None)
+            
+            if not token:
+                break
+        
+        print(f"{len(user_list)} users found")
+        return user_list
 
     def _get_tags(self, snapshot, tag_key):
         return [v['Value'] for v in snapshot['Tags'] if v['Key'] == tag_key]
 
-    def get_cog_username(self, username):
+    def _get_cog_username(self, username):
 
         user_list = [u for u in self.all_cog_users if username == u.lower()]
-
         if len(user_list) == 0:
             print(f"Username {username} not found in Cognito")
             return []
 
         elif len(user_list) >= 2:
-            print(f"Username {username} matches more than one cognito name: {user_list}")
+            print(f"Username '{username}' matches more than one cognito name: {user_list}")
             return []
 
         else:
-            print(f"Username {username} matches cognito name {user_list[0]}")
+            print(f"Username '{username}' matches cognito name '{user_list[0]}'")
             return user_list[0] 
 
     def _volume_still_exists(self, pvc_name, snapshot):
@@ -103,8 +122,8 @@ class DeleteSnapshot():
 
     def _disable_user(self, username):
         if not self.dry_run_disable:
-
-            cog_username = self.get_cog_username(username)
+        
+            cog_username = self._get_cog_username(username)
 
             #https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.admin_disable_user
             res = self.cognito.admin_disable_user(
@@ -154,7 +173,6 @@ class DeleteSnapshot():
             print(f"Dry run: Did not send email to {email_meta['RECIPIENT']}")
 
     def _send_email_if_expired_and_maybe_delete(self, snapshot):
-        #import pdb; pdb.set_trace()
         pvc_name = self._get_tags(snapshot, 'kubernetes.io/created-for/pvc/name')
         if len(pvc_name) == 0:
             raise Exception(f"Something went wrong with getting username for {snapshot['Tags']}")
@@ -189,33 +207,31 @@ class DeleteSnapshot():
 
             user_email_address = self._cognito_get_email_address(username)
 
-            send_email_after_days_inactive = self.days_since_activity_thresholds[0:-1]
-            send_email_and_deactivate_after_days_inactive = self.days_since_activity_thresholds[-1]
+            only_email_threshold = self.days_since_activity_thresholds[0:-1]
+            email_and_action_threshold = self.days_since_activity_thresholds[-1]
 
-            for d in send_email_after_days_inactive:
-                if days_inactive == d:
+            if days_inactive in only_email_threshold:
+                num_days_left = email_and_action_threshold - days_inactive
+                if num_days_left < 0:
+                    num_days_left = 0
+                
+                email_meta = {
+                    'SENDER': "uaf-jupyterhub-asf@alaska.edu",
+                    'RECIPIENT': '<{user_email_address}>'.format(user_email_address=user_email_address),
+                    'SUBJECT': "OpenSARlab Account Notification",
+                    'BODY_HTML': """<html>
+                        <head></head>
+                        <body>
+                        <p>The OpenSARlab account for {username} will be deactivated in {num_days_left} days due to inactivity. Any user data will be permanently deleted.</p> 
+                        <p>To stop this action, please sign back into your OpenSARlab account and start your server.</p>
+                        <p>If you have any questions please don't hesitate to email the <a href="mailto:uaf-jupyterhub-asf@alaska.edu">OpenSARlab Admin</a>.<p>
+                        </body>
+                        </html>""".format(username=username, num_days_left=num_days_left)
+                }
+                
+                self._send_email(email_meta)
 
-                    num_days_left = send_email_and_deactivate_after_days_inactive - days_inactive
-                    if num_days_left < 0:
-                        num_days_left = 0
-                    
-                    email_meta = {
-                        'SENDER': "uaf-jupyterhub-asf@alaska.edu",
-                        'RECIPIENT': '<{user_email_address}>'.format(user_email_address=user_email_address),
-                        'SUBJECT': "OpenSARlab Account Notification",
-                        'BODY_HTML': """<html>
-                            <head></head>
-                            <body>
-                            <p>The OpenSARlab account for {username} will be deactivated in {num_days_left} days due to inactivity. Any user data will be permanently deleted.</p> 
-                            <p>To stop this action, please sign back into your OpenSARlab account and start your server.</p>
-                            <p>If you have any questions please don't hesitate to email the <a href="mailto:uaf-jupyterhub-asf@alaska.edu">OpenSARlab Admin</a>.<p>
-                            </body>
-                            </html>""".format(username=username, num_days_left=num_days_left)
-                    }
-                    
-                    self._send_email(email_meta)
-
-            if days_inactive >= send_email_and_deactivate_after_days_inactive:
+            elif days_inactive >= email_and_action_threshold:
 
                 # Disable user
                 self._disable_user(username)
@@ -233,16 +249,19 @@ class DeleteSnapshot():
                         <p>The OpenSARlab account for {username} has been deactivated due to {days} days of inactivity. All user data has been permanently deleted and cannot be recovered.</p>                
                         <p>If you would like to activate your account or have any questions, please don't hesitate to email the <a href="mailto:uaf-jupyterhub-asf@alaska.edu">OpenSARlab Admin</a>.<p>
                         </body>
-                        </html>""".format(username=username, days=send_email_and_deactivate_after_days_inactive)
+                        </html>""".format(username=username, days=email_and_action_threshold)
                 }
                 self._send_email(email_meta)
+
+            else:
+                print(f"Days inactive ({days_inactive}) do not match any thresholds ({self.days_since_activity_thresholds}). Not performing any action.")
 
         except Exception as e:
             raise Exception(f"Username {username} had a snapshot issue. {e}")
 
     def _cognito_get_email_address(self, username):
 
-        cog_username = self.get_cog_username(username)
+        cog_username = self._get_cog_username(username)
 
         res = self.cognito.admin_get_user(
             UserPoolId=self.cognito.user_pool_id,
@@ -324,9 +343,9 @@ class DeleteSnapshot():
                 except Exception as e:
                     print(f"Something went wrong with snapshot handling...{e}")                                   
 
-def delete_snapshot():
+def delete_snapshot(cluster='opensarlab', local=False, dry_run=False):
     try:
-        ds = DeleteSnapshot()
+        ds = DeleteSnapshot(cluster, local, dry_run)
         snaps = ds.get_snapshots()
         ds.delete_unneeded_snapshots(snaps)
 
@@ -335,4 +354,11 @@ def delete_snapshot():
 
 
 if __name__ == "__main__":
-    delete_snapshot()
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cluster", default="opensarlab")
+    parser.add_argument("--local", action="store_true", dest="local")
+    parser.add_argument("--dry-run", action="store_true", dest="dry_run")
+    args = parser.parse_args()
+
+    delete_snapshot(args.cluster, args.local, args.dry_run)
