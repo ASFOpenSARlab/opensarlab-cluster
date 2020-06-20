@@ -26,16 +26,18 @@ class DeleteSnapshot():
 
             session = boto3.Session(aws_secret_access_key=meta['aws_secret_access_key'], aws_access_key_id=meta['aws_access_key_id'], region_name=meta['region_name'])
             self.cluster_name = meta['cluster_name']
+        print(f"Cluster name set to {self.cluster_name}")
 
         # List of threshold days since last activity.
         # On all but the last day an email is sent out warning about deletion of data and user deactivation.
         # On the last day, users are deactivated and user data is deleted.
         self.days_since_activity_thresholds = [30,44,46]
 
+        print(f"Dry run set to {dry_run}")
         if dry_run: 
-            self.dry_run_disable = dry_run and True
-            self.dry_run_delete = dry_run and True 
-            self.dry_run_email = dry_run and True
+            self.dry_run_disable = dry_run
+            self.dry_run_delete = dry_run 
+            self.dry_run_email = dry_run
 
         self.cognito = session.client('cognito-idp')
         user_pools = self.cognito.list_user_pools(MaxResults=10)
@@ -70,7 +72,7 @@ class DeleteSnapshot():
             if not token:
                 break
         
-        print(f"{len(user_list)} users found")
+        print(f"{len(user_list)} Cognito users found")
         return user_list
 
     def _get_tags(self, snapshot, tag_key):
@@ -80,12 +82,10 @@ class DeleteSnapshot():
 
         user_list = [u for u in self.all_cog_users if username == u.lower()]
         if len(user_list) == 0:
-            print(f"Username {username} not found in Cognito")
-            return []
+            raise Exception(f"Username {username} not found in Cognito")
 
         elif len(user_list) >= 2:
-            print(f"Username '{username}' matches more than one cognito name: {user_list}")
-            return []
+            raise Exception(f"Username '{username}' matches more than one cognito name: {user_list}")
 
         else:
             print(f"Username '{username}' matches cognito name '{user_list[0]}'")
@@ -125,13 +125,14 @@ class DeleteSnapshot():
         
             cog_username = self._get_cog_username(username)
 
-            #https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.admin_disable_user
-            res = self.cognito.admin_disable_user(
-                UserPoolId=self.cognito.user_pool_id,
-                Username=cog_username
-            )
+            if cog_username:
+                #https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.admin_disable_user
+                res = self.cognito.admin_disable_user(
+                    UserPoolId=self.cognito.user_pool_id,
+                    Username=cog_username
+                )
 
-            print(f"Disabled user {cog_username}: {res}")
+                print(f"Disabled user {cog_username}: {res}")
         else:
             print(f"Dry run: Did not disable user {cog_username}.")
 
@@ -196,9 +197,11 @@ class DeleteSnapshot():
                 print("volume_stopped_tag_date is not present. Skipping...")
                 return  
             volume_stopped_tag_date = volume_stopped_tag_date[0]
-            today = datetime.datetime.now()
+            today = datetime.datetime.utcnow()
             days_inactive = today - datetime.datetime.strptime(volume_stopped_tag_date, '%Y-%m-%d %H:%M:%S.%f') 
             days_inactive = days_inactive.days
+
+            print(f"Days inactive ({days_inactive}) for username '{username}'")
 
             # Double-check if any volumes exist. If so, then something went wrong with volume delete or snapshot management.
             if self._volume_still_exists(pvc_name[0], snapshot):
@@ -263,16 +266,20 @@ class DeleteSnapshot():
 
         cog_username = self._get_cog_username(username)
 
-        res = self.cognito.admin_get_user(
-            UserPoolId=self.cognito.user_pool_id,
-            Username=cog_username
-        )
-        
-        email_address = [ua['Value'] for ua in res['UserAttributes'] if ua['Name'] == 'email']
-        if email_address is None:
-            raise Exception(f"No email address set for user {username}:{cog_username}")
+        if cog_username:
+            res = self.cognito.admin_get_user(
+                UserPoolId=self.cognito.user_pool_id,
+                Username=cog_username
+            )
+            
+            email_address = [ua['Value'] for ua in res['UserAttributes'] if ua['Name'] == 'email']
+            if email_address is None:
+                raise Exception(f"No email address set for user {username}:{cog_username}")
 
-        return email_address[0]
+            return email_address[0]
+        
+        else:
+            return None
 
     def get_snapshots(self):
 
@@ -313,10 +320,10 @@ class DeleteSnapshot():
 
             first_before = time.time()
             for i, value in enumerate(hash_table):
+                before = time.time()
                 try:
-                    print(f">>>> Checking snapshot #{i+1}")
+                    print(f">>>> Checking snapshot #{i+1} about {time.time() - first_before} seconds since beginning")
                     snaps_hash = hash_table[value]
-                    before = time.time()
 
                     # Order duplicate snaps by day. It is assumed that the latest is the one wanted.
                     snaps_hash = sorted(snaps_hash, key=lambda s: s['StartTime'], reverse=True)
@@ -330,18 +337,15 @@ class DeleteSnapshot():
                     snap = snaps_hash[0]
                     self._send_email_if_expired_and_maybe_delete(snap)
 
+                except Exception as e:
+                    print(f"Something went wrong with snapshot handling...{e}")    
+                
+                finally:
                     after = time.time()
                     print(f"It took about {after-before} seconds")
 
-                    # ses.sendEmail is rated to 14 emails per second. Let's make sure we stay below that limit.
-                    # It is assumed that there is at least one email in that second and that it takes at least 0.5 seconds.
-                    rate_limit_per_second = 14
-                    if i != 0 and i % rate_limit_per_second == 0 and (i+1)/(after - first_before) > rate_limit_per_second:
-                        print("Throttling... Sleeping for 0.5 seconds.")
-                        time.sleep(0.5)
-
-                except Exception as e:
-                    print(f"Something went wrong with snapshot handling...{e}")                                   
+                    # ses.sendEmail is rated to 14 emails per second. Let's make sure we stay below that limit. Even if we don't always get there.
+                    time.sleep(0.2)
 
 def delete_snapshot(cluster='opensarlab', local=False, dry_run=False):
     try:

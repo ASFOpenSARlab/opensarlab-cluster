@@ -78,7 +78,7 @@ for r in res['Snapshots']:
         snap_name = [v['Value'] for v in r['Tags'] if v['Key'] == 'kubernetes.io/created-for/pvc/name'][0]
 
         d1 = datetime.datetime.strptime(snap_stopped, '%Y-%m-%d %H:%M:%S.%f')
-        d2 = datetime.datetime.now()
+        d2 = datetime.datetime.utcnow()
         days = (d2-d1).days
 
         if args.list_meta:
@@ -98,7 +98,7 @@ if len(sr) == 0:
     exit
 
 print("*****")
-d1 = datetime.datetime.now()
+d1 = datetime.datetime.utcnow()
 new_timestamp = datetime.datetime.strftime(d1 - datetime.timedelta(days=int(args.new_days_since)), '%Y-%m-%d %H:%M:%S.%f')
 
 print(f"Will change {len(sr)} snapshots")
