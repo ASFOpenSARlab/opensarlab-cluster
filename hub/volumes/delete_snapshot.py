@@ -197,9 +197,11 @@ class DeleteSnapshot():
                 print("volume_stopped_tag_date is not present. Skipping...")
                 return  
             volume_stopped_tag_date = volume_stopped_tag_date[0]
-            today = datetime.datetime.now()
+            today = datetime.datetime.utcnow()
             days_inactive = today - datetime.datetime.strptime(volume_stopped_tag_date, '%Y-%m-%d %H:%M:%S.%f') 
             days_inactive = days_inactive.days
+
+            print(f"Days inactive ({days_inactive}) for username '{username}'")
 
             # Double-check if any volumes exist. If so, then something went wrong with volume delete or snapshot management.
             if self._volume_still_exists(pvc_name[0], snapshot):
