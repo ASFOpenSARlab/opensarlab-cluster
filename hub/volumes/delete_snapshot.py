@@ -343,11 +343,7 @@ class DeleteSnapshot():
                     print(f"It took about {after-before} seconds")
 
                     # ses.sendEmail is rated to 14 emails per second. Let's make sure we stay below that limit. Even if we don't always get there.
-                    rate_limit_per_second = 13
-                    sleep_time = 1  # sec
-                    if i != 0 and i % rate_limit_per_second == 0 and (i+1)/(after - first_before) > rate_limit_per_second:
-                        print(f"Throttling... Sleeping for {sleep_time} seconds.")
-                        time.sleep(sleep_time)
+                    time.sleep(0.2)
 
 def delete_snapshot(cluster='opensarlab', local=False, dry_run=False):
     try:
