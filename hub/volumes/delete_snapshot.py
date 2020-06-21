@@ -34,10 +34,14 @@ class DeleteSnapshot():
         self.days_since_activity_thresholds = [30,44,46]
 
         print(f"Dry run set to {dry_run}")
-        if dry_run: 
-            self.dry_run_disable = dry_run
-            self.dry_run_delete = dry_run 
-            self.dry_run_email = dry_run
+        if dry_run == True: 
+            self.dry_run_disable = True
+            self.dry_run_delete = True 
+            self.dry_run_email = True
+        else:
+            self.dry_run_disable = False
+            self.dry_run_delete = False 
+            self.dry_run_email = False
 
         self.cognito = session.client('cognito-idp')
         user_pools = self.cognito.list_user_pools(MaxResults=10)
