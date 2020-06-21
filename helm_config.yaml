@@ -238,7 +238,14 @@ hub:
                                 'node_selector': {
                                     'server_type': 'general_cpu'
                                 },
-                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG')), 
+                                'lifecycle_hooks': {
+                                    "postStart": {
+                                        "exec": {
+                                            "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
+                                        }
+                                    }
+                                }
                             }
                         }
                         profile_list.append(profile)
@@ -260,18 +267,24 @@ hub:
                         }
                         profile_list.append(profile)
                         
-                    if 'no_smart_git' not in group_list:
-                        print("Run gitpuller after mounting volume")
+                    if 'no_smart_git' in group_list:
+                        print("Do not run gitpuller after on general_cpu")
 
-                        spawner.lifecycle_hooks = {
-                            "postStart": {
-                                "exec": {
-                                    "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
-                                }
+                        profile = {
+                            'display_name': 'General SAR processing (without git puller)',
+                            'description': 'Useful for debugging some server timeouts. Contains basic SAR processing and analysis tools. This does not pull in the latest notebooks.',
+                            'default': False,
+                            'kubespawner_override': {
+                                'extra_labels': {
+                                    'server_type': 'general_cpu'
+                                },
+                                'node_selector': {
+                                    'server_type': 'general_cpu'
+                                },
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
                             }
                         }
-                    else:
-                        print("Not running gitpuller after mounting volume.")
+                        profile_list.append(profile)
 
                     # This clause for sudo should always be last
                     if 'sudo' in group_list:
