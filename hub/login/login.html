@@ -13,6 +13,10 @@
 {% if login_service %}
     <div class="service-login">
       <div class="announcement">
+        <p style="color: black; font-size: 14pt;">
+            Users have reported server timeouts. 
+            If this happens, please email the <a href="mailto:uaf-jupyterhub-asf@alaska.edu">OpenSARlab Admin</a> with time and description of the event.
+        </p>
       </div>
       <div class="main-center">
         <img style="float: left; max-height: 37px; margin-top: 7px; margin-left: 5px; z-index: 10;" src="{{static_url('images/alaska_satellite_facility_1000.png')}}">
@@ -38,11 +42,11 @@
         }
 
         .announcement {
-            padding: 10pt 10pt 10pt 10pt;
-            border: 3px solid #ff0000;
+            padding: 15pt 10pt 10pt 10pt;
+            border: 3px solid #efff00;
             margin: 70px 0px;
             color: black;
-            visibility: hidden;
+            /*visibility: hidden;*/
         }
 
         .main-center {
