@@ -268,7 +268,6 @@ hub:
                         profile_list.append(profile)
                         
                     if 'no_smart_git' in group_list:
-                        print("Do not run gitpuller after on general_cpu")
 
                         profile = {
                             'display_name': 'General SAR processing (without git puller)',
@@ -276,12 +275,20 @@ hub:
                             'default': False,
                             'kubespawner_override': {
                                 'extra_labels': {
-                                    'server_type': 'general_cpu'
+                                    'server_type': 'general_cpu',
+                                    'extra_configs': 'no_smart_git'
                                 },
                                 'node_selector': {
                                     'server_type': 'general_cpu'
                                 },
-                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG')),
+                                'lifecycle_hooks': {
+                                    "postStart": {
+                                        "exec": {
+                                            "command": ["/bin/sh", "-c", "echo 'No git puller enabled.'"]
+                                        }
+                                    }
+                                }
                             }
                         }
                         profile_list.append(profile)
