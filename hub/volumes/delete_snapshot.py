@@ -31,7 +31,7 @@ class DeleteSnapshot():
         # List of threshold days since last activity.
         # On all but the last day an email is sent out warning about deletion of data and user deactivation.
         # On the last day, users are deactivated and user data is deleted.
-        self.days_since_activity_thresholds = [30,44,46]
+        self.days_since_activity_thresholds = [30,37,41,43,45,46]
 
         print(f"Dry run set to {dry_run}")
         if dry_run == True: 
