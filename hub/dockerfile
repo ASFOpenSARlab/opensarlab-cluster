@@ -46,6 +46,8 @@ COPY volumes/volume_stopping_tags.py /etc/jupyterhub/custom/volume_stopping_tags
 COPY volumes/volume_from_snapshot.py /etc/jupyterhub/custom/volume_from_snapshot.py
 COPY volumes/delete_volumes.py /etc/jupyterhub/custom/delete_volumes.py
 COPY volumes/delete_snapshot.py /etc/jupyterhub/custom/delete_snapshot.py
+COPY volumes/force_deactivation.py /etc/jupyterhub/custom/force_deactivation.py
+COPY volumes/remove_disabled.py /etc/jupyterhub/custom/remove_disabled.py
 
 RUN chown -R 1000:0 /etc/jupyterhub/custom/
 ENV PYTHONPATH "${PYTHONPATH}:/etc/jupyterhub/custom/"
