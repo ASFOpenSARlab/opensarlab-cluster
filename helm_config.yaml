@@ -320,35 +320,6 @@ hub:
                             profile['display_name'] += " (Sudo Enabled)"
                     else:
                         print("Sudo privs not given.")
-                    
-                    if 'force_deactivation' in group_list:
-                        print("Checking for force_deactivation")
-                        
-
-                        def my_post_hook(this_spawner):
-                            try:
-                                from volume_stopping_tags import volume_stopping_tags
-                                from add_disable_flag import add_disable_flag
-            
-                                meta = {
-                                    'pvc_name': this_spawner.pvc_name,
-                                    'cluster_name': z2jh.get_config('custom.CLUSTER_NAME'),
-                                    'az_name': z2jh.get_config('custom.AZ_NAME'),
-                                    'aws_secret_access_key': z2jh.get_config('custom.HUB_SECRET_ACCESS_KEY'),
-                                    'aws_access_key_id': z2jh.get_config('custom.HUB_ACCESS_KEY_ID')
-                                }
-            
-                                volume_stopping_tags(meta)
-                                add_disable_flag(meta)
-            
-                            except Exception as e:
-                                print(e)
-                                raise
-
-                        spawner.post_stop_hook = my_post_hook
-
-                    else:
-                        print("force_deactivation not checked.")
 
                 except Exception as e:
                     print("Something went wrong with the profiles...")

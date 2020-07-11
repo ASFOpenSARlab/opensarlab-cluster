@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-
+   
 import os
 import datetime
 import urllib
 import time
 import argparse
 
+from jupyterhub import groups
 import escapism
 import yaml
 import boto3
@@ -14,12 +15,9 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 
-
 class Deactivate():
 
     def __init__(self, cluster=None, dry_run=True):
-        print("Checking for expired snapshots...")
-
         with open("/etc/jupyterhub/custom/meta.yaml", 'r') as f:
             data = f.read()
 
@@ -28,11 +26,6 @@ class Deactivate():
         session = boto3.Session(aws_secret_access_key=meta['aws_secret_access_key'], aws_access_key_id=meta['aws_access_key_id'], region_name=meta['region_name'])
         self.cluster_name = meta['cluster_name']
         print(f"Cluster name set to {self.cluster_name}")
-
-        # List of threshold days since last activity.
-        # On all but the last day an email is sent out warning about deletion of data and user deactivation.
-        # On the last day, users are deactivated and user data is deleted.
-        self.days_since_activity_thresholds = [30,37,41,43,45,46]
 
         print(f"Dry run set to {dry_run}")
         self.dry_run = dry_run
@@ -46,10 +39,6 @@ class Deactivate():
 
         self.ec2 = session.client('ec2')
 
-        self.ses = session.client('ses')
-
-        self.all_cog_users = self._get_user_list()
-
         os.environ['KUBERNETES_SERVICE_PORT'] = meta['kubernetes_service_port']
         os.environ['KUBERNETES_SERVICE_HOST'] = meta['kubernetes_service_host']
 
@@ -57,32 +46,33 @@ class Deactivate():
 
         k8s_config.load_incluster_config()
         self.api = k8s_client.CoreV1Api()
-        
-    def _get_user_list(self):
-        res = self.cognito.list_users(
-                UserPoolId=self.cognito.user_pool_id,
-                Limit=60
-            )
-        user_list = [u['Username'] for u in res['Users']]
-        token = res.get('PaginationToken', None)
 
-        while token:
-            res = self.cognito.list_users(
-                UserPoolId=self.cognito.user_pool_id,
-                Limit=60, 
-                PaginationToken=token
-            )
-            user_list.extend([u['Username'] for u in res['Users']])
-            token = res.get('PaginationToken', None)
-            
-            if not token:
-                break
-        
-        print(f"{len(user_list)} Cognito users found")
-        return user_list
+        self.g = groups.Groups()
+        self.session = self.g.session 
 
     def _get_tags(self, snapshot, tag_key):
         return [v['Value'] for v in snapshot['Tags'] if v['Key'] == tag_key]
+
+    def _get_snapshots(self, pvc_name):
+        # Get snapshot
+        snap = self.ec2.describe_snapshots(
+            Filters=[
+                {
+                    'Name': 'tag:kubernetes.io/cluster/{0}'.format(self.cluster_name),
+                    'Values': ['owned']
+                },
+                {
+                    'Name': 'status',
+                    'Values': ['completed']
+                },
+                {
+                    'Name': 'tag:kubernetes.io/created-for/pvc/name',
+                    'Values': [f'{pvc_name}']
+                }
+            ],
+            OwnerIds=['self']
+        )
+        return snap['Snapshots']
 
     def _get_cog_username(self, username):
 
@@ -97,64 +87,23 @@ class Deactivate():
             print(f"Username '{username}' matches cognito name '{user_list[0]}'")
             return user_list[0] 
 
-    def _get_username(self, snapshot):
+    def get_pvc_names_in_group(self):
+        users = self.g.get_users_in_group('force-deactivate')
 
-        pvc_name = self._get_tags(snapshot, 'kubernetes.io/created-for/pvc/name')
-        if len(pvc_name) == 0:
-            raise Exception(f"Something went wrong with getting username for {snapshot['Tags']}")
-        username = pvc_name[0].replace('claim-', '')
-        if username == 'hub-db-dir':
-            print("Database volume found. Do not delete. Skipping...")
-            return
+        # Convert users to pvc_names
+        names = [(f"claim-{escapism.escape(u.name, escape_char='-')}", u) for u in users]
 
-        # 'escapism' is the custom library used by JupyterHub to escape server names
-        username = escapism.unescape(username, escape_char='-')
+        return names
 
-        return username
-
-    def _disable_user(self, username):
+    def delete_volume(self, pvc_name):
         if not self.dry_run:
-        
-            cog_username = self._get_cog_username(username)
-
-            if cog_username:
-                #https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.admin_disable_user
-                res = self.cognito.admin_disable_user(
-                    UserPoolId=self.cognito.user_pool_id,
-                    Username=cog_username
-                )
-
-                print(f"Disabled user {cog_username}: {res}")
+            print(f"Deleting pvc_name {pvc_name}")
+            self.api.delete_namespaced_persistent_volume_claim(body=k8s_client.V1DeleteOptions(), name=pvc_name, namespace=self.namespace)
         else:
-            print(f"Dry run: Did not disable user {cog_username}.")
+            print(f"Dry run: Did not delete pvc_name {pvc_name}")
 
-    def get_snapshots(self):
-
-        # Get snapshot
-        snap = self.ec2.describe_snapshots(
-            Filters=[
-                {
-                    'Name': 'tag:kubernetes.io/cluster/{0}'.format(self.cluster_name),
-                    'Values': ['owned']
-                },
-                {
-                    'Name': 'status',
-                    'Values': ['completed']
-                },
-                {
-                    'Name': 'tag:kubernetes.io/created-for/pvc/name',
-                    'Values': ['*']
-                }, 
-                {
-                    'Name': 'tag:forced-deactivation',
-                    'Values': ['*']
-                }
-            ],
-            OwnerIds=['self']
-        )
-        return snap['Snapshots']
-
-    def delete_snapshots_and_user(self, snaps):
+    def delete_snapshot(self, pvc_name):
+        snaps = self._get_snapshots(pvc_name)
 
         if len(snaps) > 0:
             for snap in snaps:
@@ -164,57 +113,42 @@ class Deactivate():
                     else:
                         print(f"**** Deleting {snap['SnapshotId']}")
                         self.ec2.delete_snapshot(SnapshotId=snap['SnapshotId'], DryRun=False)
-
-                        username = self._get_username(snap)
-                        self._disable_user(username)
                 else:
                     print(f"Dry run: Did not delete snapshot {snap['SnapshotId']}") 
 
-    def get_volumes(self):
+    def disable_cog_user(self, user):
+        cog_username = self._get_cog_username(user.name)
+        if cog_username:
+            if not self.dry_run:
+                #https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.admin_disable_user
+                res = self.cognito.admin_disable_user(
+                    UserPoolId=self.cognito.user_pool_id,
+                    Username=cog_username
+                )
 
-        vols = self.ec2.describe_volumes(
-            Filters=[
-                {
-                    'Name': 'tag:kubernetes.io/cluster/{0}'.format(self.cluster_name),
-                    'Values': ['owned']
-                },
-                {
-                    'Name': 'tag:kubernetes.io/created-for/pvc/name',
-                    'Values': ['*']
-                },
-                {
-                    'Name': 'status',
-                    'Values': ['available']
-                }, 
-                {
-                    'Name': 'tag:forced-deactivation',
-                    'Values': ['*']
-                }
-            ]
-        )
+                print(f"Disabled Cognito user {cog_username}: {res}")
+            else:
+                print(f"Dry run: Did not disable Cognito user {cog_username}.")
 
-        vols = vols['Volumes']
-
-        print(f"Number of vols: {len(vols)}")
-        if len(vols) == 0:
-            vols = []
-
-        return vols
-
-    def delete_volumes(self, volumes):
-        for vol in volumes:
-            pvc_name = self._get_tags(vol, 'kubernetes.io/created-for/pvc/name')
-            self.api.delete_namespaced_persistent_volume_claim(body=k8s_client.V1DeleteOptions(), name=pvc_name, namespace=self.namespace)
+    def remove_osl_user(self, user):
+        # Get User DB object
+        userDB = ...
+        self.session.delete(userDB)
 
 def deactivate(cluster='opensarlab', dry_run=False):
     try:
         ds = Deactivate(cluster, dry_run)
 
-        vols = ds.get_volumes()
-        ds.delete_volumes(vols)
+        names = ds.get_pvc_names_in_group()
 
-        snaps = ds.get_snapshots()
-        ds.delete_snapshots_and_user(snaps)
+        for pvc_name, user in names:
+            try:
+                ds.delete_volume(pvc_name)
+                ds.delete_snapshot(pvc_name)
+                ds.disable_cog_user(user)
+                ds.remove_osl_user(user)
+            except Exception as e:
+                print(f"There was an error: {e}")
 
     except Exception as e:
         print(e)
