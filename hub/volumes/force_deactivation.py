@@ -15,10 +15,6 @@ from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 
-import logging
-log = logging.getLogger(__file__)
-log.setLevel(logging.DEBUG)
-
 class Deactivate():
 
     def __init__(self, cluster=None, dry_run=True):
@@ -29,9 +25,9 @@ class Deactivate():
 
         session = boto3.Session(aws_secret_access_key=meta['aws_secret_access_key'], aws_access_key_id=meta['aws_access_key_id'], region_name=meta['region_name'])
         self.cluster_name = meta['cluster_name']
-        log.info(f"Cluster name set to {self.cluster_name}")
+        print(f"Cluster name set to {self.cluster_name}")
 
-        log.info(f"Dry run set to {dry_run}")
+        print(f"Dry run set to {dry_run}")
         self.dry_run = dry_run
 
         self.cognito = session.client('cognito-idp')
@@ -78,7 +74,7 @@ class Deactivate():
             if not token:
                 break
         
-        log.info(f"{len(user_list)} Cognito users found")
+        print(f"{len(user_list)} Cognito users found")
         return user_list
 
     def _get_tags(self, snapshot, tag_key):
@@ -115,7 +111,7 @@ class Deactivate():
             raise Exception(f"Username '{username}' matches more than one cognito name: {user_list}")
 
         else:
-            log.info(f"Username '{username}' matches cognito name '{user_list[0]}'")
+            print(f"Username '{username}' matches cognito name '{user_list[0]}'")
             return user_list[0] 
 
     def get_names_in_group(self):
@@ -128,10 +124,10 @@ class Deactivate():
 
     def delete_volume(self, pvc_name):
         if not self.dry_run:
-            log.info(f"Deleting pvc_name {pvc_name}")
+            print(f"Deleting pvc_name {pvc_name}")
             self.api.delete_namespaced_persistent_volume_claim(body=k8s_client.V1DeleteOptions(), name=pvc_name, namespace=self.namespace)
         else:
-            log.info(f"Dry run: Did not delete pvc (and volume) for {pvc_name}")
+            print(f"Dry run: Did not delete pvc (and volume) for {pvc_name}")
 
     def delete_snapshot(self, pvc_name):
         snaps = self._get_snapshots(pvc_name)
@@ -140,14 +136,14 @@ class Deactivate():
             for snap in snaps:
                 if not self.dry_run:
                     if self._get_tags(snap, 'do-not-delete'):
-                        log.info("Do-not-delete tag found. Skipping...")
+                        print("Do-not-delete tag found. Skipping...")
                     else:
-                        log.info(f"**** Deleting {snap['SnapshotId']}")
+                        print(f"**** Deleting {snap['SnapshotId']}")
                         self.ec2.delete_snapshot(SnapshotId=snap['SnapshotId'], DryRun=False)
                 else:
-                    log.info(f"Dry run: Did not delete snapshot {snap['SnapshotId']}") 
+                    print(f"Dry run: Did not delete snapshot {snap['SnapshotId']}") 
         else:
-            log.info(f"No snapshots found for {pvc_name}")
+            print(f"No snapshots found for {pvc_name}")
 
     def disable_cog_user(self, userObj):
         cog_username = self._get_cog_username(userObj.name)
@@ -159,17 +155,17 @@ class Deactivate():
                     Username=cog_username
                 )
 
-                log.info(f"Disabled Cognito user {cog_username}")
+                print(f"Disabled Cognito user {cog_username}")
             else:
-                log.info(f"Dry run: Did not disable Cognito user {cog_username}.")
+                print(f"Dry run: Did not disable Cognito user {cog_username}.")
 
     def remove_osl_user(self, userObj):
         if not self.dry_run:
             self.session.delete(userObj)
             self.session.commit()
-            log.info(f"User {userObj.name} deleted from OSL DB")
+            print(f"User {userObj.name} deleted from OSL DB")
         else:
-            log.info(f"Dry run: Did not delete user {userObj.name} from OSL DB")
+            print(f"Dry run: Did not delete user {userObj.name} from OSL DB")
 
 def deactivate(cluster='opensarlab', dry_run=False):
     try:
@@ -177,7 +173,7 @@ def deactivate(cluster='opensarlab', dry_run=False):
 
         names = ds.get_names_in_group()
 
-        log.info(f"Found {len(names)} users belonging to group '{ds.force_group_name}'")
+        print(f"Found {len(names)} users belonging to group '{ds.force_group_name}'")
 
         for pvc_name, userObj in names:
             try:
@@ -186,10 +182,10 @@ def deactivate(cluster='opensarlab', dry_run=False):
                 ds.delete_volume(pvc_name)
                 ds.delete_snapshot(pvc_name)
             except Exception as e:
-                log.info(f"There was an error: {e}. Skipping to next name...")
+                print(f"There was an error: {e}. Skipping to next name...")
 
     except Exception as e:
-        log.info(e)
+        print(e)
 
 
 if __name__ == "__main__":
