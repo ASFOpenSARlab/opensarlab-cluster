@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-
+def _get_tags(vol, value):
+    return [v['Value'] for v in vol['Tags'] if v['Value'] == value]
 
 def delete_volumes():
     try:
@@ -66,24 +67,24 @@ def delete_volumes():
             print(f"Checking volume {vol_id}...")
 
             # Do not delete the Hub DB!!
-            if [v['Value'] for v in vol['Tags'] if v['Value'] == 'hub-db-dir']:
+            if _get_tags(vol, 'hub-db-dir'):
                 print("Volume 'hub-db-dir' found. Skipping....")
                 continue
 
             # Do not delete if tagged as such
-            if [v['Value'] for v in vol['Tags'] if v['Key'] == 'do-not-delete']:
+            if _get_tags(vol, 'do-not-delete'):
                 print(f"Volume '{vol_id}' tagged 'do-not-delete'. Skipping....")
                 continue
 
             # Get last stopped tags
-            last_stopped = [v['Value'] for v in vol['Tags'] if v['Key'] == 'jupyter-volume-stopping-time']
+            last_stopped = _get_tags(vol, 'jupyter-volume-stopping-time')
             if len(last_stopped) != 1:
                 print(f"Volume '{vol_id}' is tagged with last_stopped '{last_stopped}' and is not useable. Skipping...")
                 continue
 
             last_stopped = last_stopped[0]
 
-            pvc_name = [v['Value'] for v in vol['Tags'] if v['Key'] == 'kubernetes.io/created-for/pvc/name'][0]
+            pvc_name = _get_tags(vol, 'kubernetes.io/created-for/pvc/name')[0]
 
             # Get snapshot
             snap = ec2.describe_snapshots(
@@ -133,7 +134,7 @@ def delete_volumes():
                 # Delete PVC
                 print(f"Delete pvc '{pvc_name}'")
                 try:
-                    api.delete_namespaced_persistent_volume_claim(body=k8s_client.V1DeleteOptions(), name=pvc_name, namespace=namespace, dry_run=True)
+                    api.delete_namespaced_persistent_volume_claim(body=k8s_client.V1DeleteOptions(), name=pvc_name, namespace=namespace)
                 except ApiException as e:
                     print("Did not delete volume...")
                     print(e)
