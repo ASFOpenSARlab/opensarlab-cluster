@@ -192,12 +192,6 @@ hub:
                 job3.minute.on(0)
                 job3.enable()
 
-                # Setup crontab to remove disabled users from admin table
-                job4 = cron.new(command='python3 /etc/jupyterhub/custom/remove_disabled.py >> /etc/jupyterhub/custom/remove_disabled.log')
-                job4.hour.on(14)  # 14 UTC, 5am AKST
-                job4.minute.on(0)
-                job4.enable()
-
                 cron.write()
 
             except Exception as e:
