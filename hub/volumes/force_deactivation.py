@@ -50,6 +50,33 @@ class Deactivate():
         self.g = groups.Groups()
         self.session = self.g.session 
 
+        self._all_cog_users = self._get_user_list()
+
+        self.force_group_name = 'force_deactivation'
+
+    def _get_user_list(self):
+        res = self.cognito.list_users(
+                UserPoolId=self.cognito.user_pool_id,
+                Limit=60
+            )
+        user_list = [u['Username'] for u in res['Users']]
+        token = res.get('PaginationToken', None)
+
+        while token:
+            res = self.cognito.list_users(
+                UserPoolId=self.cognito.user_pool_id,
+                Limit=60, 
+                PaginationToken=token
+            )
+            user_list.extend([u['Username'] for u in res['Users']])
+            token = res.get('PaginationToken', None)
+            
+            if not token:
+                break
+        
+        print(f"{len(user_list)} Cognito users found")
+        return user_list
+
     def _get_tags(self, snapshot, tag_key):
         return [v['Value'] for v in snapshot['Tags'] if v['Key'] == tag_key]
 
@@ -76,7 +103,7 @@ class Deactivate():
 
     def _get_cog_username(self, username):
 
-        user_list = [u for u in self.all_cog_users if username == u.lower()]
+        user_list = [u for u in self._all_cog_users if username == u.lower()]
         if len(user_list) == 0:
             raise Exception(f"Username {username} not found in Cognito")
 
@@ -87,8 +114,8 @@ class Deactivate():
             print(f"Username '{username}' matches cognito name '{user_list[0]}'")
             return user_list[0] 
 
-    def get_pvc_names_in_group(self):
-        users = self.g.get_users_in_group('force-deactivate')
+    def get_names_in_group(self):
+        users = self.g.get_users_in_group(self.force_group_name)
 
         # Convert users to pvc_names
         names = [(f"claim-{escapism.escape(u.name, escape_char='-')}", u) for u in users]
@@ -100,7 +127,7 @@ class Deactivate():
             print(f"Deleting pvc_name {pvc_name}")
             self.api.delete_namespaced_persistent_volume_claim(body=k8s_client.V1DeleteOptions(), name=pvc_name, namespace=self.namespace)
         else:
-            print(f"Dry run: Did not delete pvc_name {pvc_name}")
+            print(f"Dry run: Did not delete pvc (and volume) for {pvc_name}")
 
     def delete_snapshot(self, pvc_name):
         snaps = self._get_snapshots(pvc_name)
@@ -115,9 +142,11 @@ class Deactivate():
                         self.ec2.delete_snapshot(SnapshotId=snap['SnapshotId'], DryRun=False)
                 else:
                     print(f"Dry run: Did not delete snapshot {snap['SnapshotId']}") 
+        else:
+            print(f"No snapshots found for {pvc_name}")
 
-    def disable_cog_user(self, user):
-        cog_username = self._get_cog_username(user.name)
+    def disable_cog_user(self, userObj):
+        cog_username = self._get_cog_username(userObj.name)
         if cog_username:
             if not self.dry_run:
                 #https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/cognito-idp.html#CognitoIdentityProvider.Client.admin_disable_user
@@ -126,29 +155,34 @@ class Deactivate():
                     Username=cog_username
                 )
 
-                print(f"Disabled Cognito user {cog_username}: {res}")
+                print(f"Disabled Cognito user {cog_username}")
             else:
                 print(f"Dry run: Did not disable Cognito user {cog_username}.")
 
-    def remove_osl_user(self, user):
-        # Get User DB object
-        userDB = ...
-        self.session.delete(userDB)
+    def remove_osl_user(self, userObj):
+        if not self.dry_run:
+            self.session.delete(userObj)
+            self.session.commit()
+            print(f"User {userObj.name} deleted from OSL DB")
+        else:
+            print(f"Dry run: Did not delete user {userObj.name} from OSL DB")
 
 def deactivate(cluster='opensarlab', dry_run=False):
     try:
         ds = Deactivate(cluster, dry_run)
 
-        names = ds.get_pvc_names_in_group()
+        names = ds.get_names_in_group()
 
-        for pvc_name, user in names:
+        print(f"Found {len(names)} users belonging to group '{ds.force_group_name}'")
+
+        for pvc_name, userObj in names:
             try:
+                ds.disable_cog_user(userObj)
+                ds.remove_osl_user(userObj)
                 ds.delete_volume(pvc_name)
                 ds.delete_snapshot(pvc_name)
-                ds.disable_cog_user(user)
-                ds.remove_osl_user(user)
             except Exception as e:
-                print(f"There was an error: {e}")
+                print(f"There was an error: {e}. Skipping to next name...")
 
     except Exception as e:
         print(e)
