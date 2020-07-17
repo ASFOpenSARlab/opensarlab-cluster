@@ -60,6 +60,11 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/eks/optimized-ami/1.14/amazon-linux-2/recommended/image_id
 
+  NodeImageIdCPULarge:
+    Description: AMI id for the node instances of K8s
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/eks/optimized-ami/1.14/amazon-linux-2/recommended/image_id
+
   NodeImageIdCore:
     Description: AMI id for the node instances of K8s
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
@@ -95,7 +100,25 @@ Parameters:
     Type: Number
     Default: 2
 
+  NodeInstanceTypeCPULarge:
+    Description: EC2 instance type for the node Large CPU instances.
+    Type: String
+    Default: m5.2xlarge
 
+  NodeAutoScalingGroupMinSizeCPULarge:
+    Description: Minimum size of Node Group ASG.
+    Type: Number
+    Default: 0
+
+  NodeAutoScalingGroupMaxSizeCPULarge:
+    Description: Maximum size of Node Group ASG. Set to at least 1 greater than NodeAutoScalingGroupDesiredCapacityCPU.
+    Type: Number
+    Default: 1
+
+  NodeAutoScalingGroupDesiredCapacityCPULarge:
+    Description: Desired capacity of Node Group ASG.
+    Type: Number
+    Default: 0
 
   NodeVolumeSize:
     Description: Node volume size (GB)
@@ -423,6 +446,52 @@ Resources:
           --stack  ${AWS::StackName} \
           --resource NodeGroup  \
           --region ${AWS::Region}
+
+  AutoScalingGroupCPULarge:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+        DesiredCapacity: !Ref NodeAutoScalingGroupDesiredCapacityCPULarge
+        LaunchConfigurationName: !Ref LaunchConfigurationCPULarge
+        MinSize: !Ref NodeAutoScalingGroupMinSizeCPULarge
+        MaxSize: !Ref NodeAutoScalingGroupMaxSizeCPULarge
+        VPCZoneIdentifier: !Ref ActiveSubnets
+        TargetGroupARNs:
+        - !Ref TargetGroup
+        Tags:
+        - Key: Name
+        Value: !Sub ${AWS::StackName}-instance
+        PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster/${Cluster}
+        Value: owned
+        PropagateAtLaunch: true
+        - Key: !Sub kubernetes.io/cluster/${Cluster}
+        Value: owned
+        PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/enabled
+        Value: true
+        PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+        Value: true
+        PropagateAtLaunch: true
+
+  LaunchConfigurationCPULarge:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+        AssociatePublicIpAddress: true
+        IamInstanceProfile: !Ref NodeInstanceProfile
+        ImageId: !Ref NodeImageIdCPULarge
+        InstanceType: !Ref NodeInstanceTypeCPULarge
+        SecurityGroups:
+        - !Ref NodeSecurityGroup
+        UserData:
+        Fn::Base64: !Sub |
+            #!/bin/bash
+            set -o xtrace
+            /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=general_cpu_large'
+            /opt/aws/bin/cfn-signal --exit-code $? \
+            --stack  ${AWS::StackName} \
+            --resource NodeGroup  \
+            --region ${AWS::Region}
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
