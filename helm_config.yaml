@@ -174,16 +174,23 @@ hub:
 
                 # Lifecycle snapshot runs at 10 UTC, 1am AKST 
 
-                job1 = cron.new(command='python3 /etc/jupyterhub/custom/delete_volumes.py >> /etc/jupyterhub/custom/delete_volumes.log')
-                job1.hour.on(12)  # 12 UTC, 3am AKST
-                job1.minute.on(0)
+                # Setup crontab for force deactivation
+                job1 = cron.new(command='python3 /etc/jupyterhub/custom/force_deactivation.py > /proc/1/fd/1 2>&1')
+                job1.hour.on(11)  # 11:30 UTC, 2:30am AKST
+                job1.minute.on(30)
                 job1.enable()
 
-                # Setup crontab for snapshot killer
-                job2 = cron.new(command='python3 /etc/jupyterhub/custom/delete_snapshot.py >> /etc/jupyterhub/custom/delete_snapshot.log')
-                job2.hour.on(13)  # 13 UTC, 4am AKST
+                # Setup crontab for volume killer
+                job2 = cron.new(command='python3 /etc/jupyterhub/custom/delete_volumes.py > /proc/1/fd/1 2>&1')
+                job2.hour.on(12)  # 12 UTC, 3am AKST
                 job2.minute.on(0)
                 job2.enable()
+
+                # Setup crontab for snapshot killer
+                job3 = cron.new(command='python3 /etc/jupyterhub/custom/delete_snapshot.py > /proc/1/fd/1 2>&1')
+                job3.hour.on(13)  # 13 UTC, 4am AKST
+                job3.minute.on(0)
+                job3.enable()
 
                 cron.write()
 
@@ -225,6 +232,15 @@ hub:
                     group_list.extend(groups.get_all_enabled_group_names_set_to_all_users())
                     print(group_list)
 
+                    # Some defaults
+                    spawner.lifecycle_hooks = {
+                        "postStart": {
+                            "exec": {
+                                "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
+                            }
+                        }
+                    }
+
                     profile_list = []
                     if 'general_cpu' in group_list:
                         profile = {
@@ -238,14 +254,7 @@ hub:
                                 'node_selector': {
                                     'server_type': 'general_cpu'
                                 },
-                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG')), 
-                                'lifecycle_hooks': {
-                                    "postStart": {
-                                        "exec": {
-                                            "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
-                                        }
-                                    }
-                                }
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
                             }
                         }
                         profile_list.append(profile)
@@ -268,7 +277,6 @@ hub:
                         profile_list.append(profile)
                         
                     if 'no_smart_git' in group_list:
-                        print("Do not run gitpuller after on general_cpu")
 
                         profile = {
                             'display_name': 'General SAR processing (without git puller)',
@@ -276,12 +284,20 @@ hub:
                             'default': False,
                             'kubespawner_override': {
                                 'extra_labels': {
-                                    'server_type': 'general_cpu'
+                                    'server_type': 'general_cpu',
+                                    'extra_configs': 'no_smart_git'
                                 },
                                 'node_selector': {
                                     'server_type': 'general_cpu'
                                 },
-                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG')),
+                                'lifecycle_hooks': {
+                                    "postStart": {
+                                        "exec": {
+                                            "command": ["/bin/sh", "-c", "echo 'No git puller enabled.'"]
+                                        }
+                                    }
+                                }
                             }
                         }
                         profile_list.append(profile)
