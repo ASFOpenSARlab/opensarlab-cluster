@@ -242,6 +242,7 @@ hub:
                     }
 
                     profile_list = []
+
                     if 'general_cpu' in group_list:
                         profile = {
                             'display_name': 'General SAR processing',
@@ -253,6 +254,23 @@ hub:
                                 },
                                 'node_selector': {
                                     'server_type': 'general_cpu'
+                                },
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                            }
+                        }
+                        profile_list.append(profile)
+
+                    if 'unavco' in group_list:
+                        profile = {
+                            'display_name': 'UNAVCO Training',
+                            'description': 'Contains basic SAR processing and analysis tools to be used in UNAVCO training',
+                            'default': False,
+                            'kubespawner_override': {
+                                'extra_labels': {
+                                    'server_type': 'general_cpu_large'
+                                },
+                                'node_selector': {
+                                    'server_type': 'general_cpu_large'
                                 },
                                 'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
                             }
