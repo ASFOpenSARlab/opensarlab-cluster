@@ -445,48 +445,48 @@ Resources:
   AutoScalingGroupCPULarge:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-        DesiredCapacity: !Ref NodeAutoScalingGroupDesiredCapacityCPULarge
-        LaunchConfigurationName: !Ref LaunchConfigurationCPULarge
-        MinSize: !Ref NodeAutoScalingGroupMinSizeCPULarge
-        MaxSize: !Ref NodeAutoScalingGroupMaxSizeCPULarge
-        VPCZoneIdentifier: !Ref ActiveSubnets
-        TargetGroupARNs:
-        - !Ref TargetGroup
-        Tags:
-        - Key: Name
-        Value: !Sub ${AWS::StackName}-instance
-        PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster/${Cluster}
-        Value: owned
-        PropagateAtLaunch: true
-        - Key: !Sub kubernetes.io/cluster/${Cluster}
-        Value: owned
-        PropagateAtLaunch: true
-        - Key: k8s.io/cluster-autoscaler/enabled
-        Value: true
-        PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-        Value: true
-        PropagateAtLaunch: true
+      DesiredCapacity: !Ref NodeAutoScalingGroupDesiredCapacityCPULarge
+      LaunchConfigurationName: !Ref LaunchConfigurationCPULarge
+      MinSize: !Ref NodeAutoScalingGroupMinSizeCPULarge
+      MaxSize: !Ref NodeAutoScalingGroupMaxSizeCPULarge
+      VPCZoneIdentifier: !Ref ActiveSubnets
+      TargetGroupARNs:
+      - !Ref TargetGroup
+      Tags:
+      - Key: Name
+      Value: !Sub ${AWS::StackName}-instance
+      PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster/${Cluster}
+      Value: owned
+      PropagateAtLaunch: true
+      - Key: !Sub kubernetes.io/cluster/${Cluster}
+      Value: owned
+      PropagateAtLaunch: true
+      - Key: k8s.io/cluster-autoscaler/enabled
+      Value: true
+      PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+      Value: true
+      PropagateAtLaunch: true
 
   LaunchConfigurationCPULarge:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
-        AssociatePublicIpAddress: true
-        IamInstanceProfile: !Ref NodeInstanceProfile
-        ImageId: !Ref NodeImageIdCPULarge
-        InstanceType: !Ref NodeInstanceTypeCPULarge
-        SecurityGroups:
-        - !Ref NodeSecurityGroup
-        UserData:
-        Fn::Base64: !Sub |
-            #!/bin/bash
-            set -o xtrace
-            /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=general_cpu_large'
-            /opt/aws/bin/cfn-signal --exit-code $? \
-            --stack  ${AWS::StackName} \
-            --resource NodeGroup  \
-            --region ${AWS::Region}
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref NodeInstanceProfile
+      ImageId: !Ref NodeImageIdCPULarge
+      InstanceType: !Ref NodeInstanceTypeCPULarge
+      SecurityGroups:
+      - !Ref NodeSecurityGroup
+      UserData:
+      Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=general_cpu_large'
+          /opt/aws/bin/cfn-signal --exit-code $? \
+          --stack  ${AWS::StackName} \
+          --resource NodeGroup  \
+          --region ${AWS::Region}
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -649,3 +649,4 @@ Resources:
         CloudWatchLogs:
           Status: ENABLED
           GroupName: !Ref ProjectLogGroup
+  
