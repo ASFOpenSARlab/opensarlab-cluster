@@ -25,14 +25,13 @@ proxy:
 
 singleuser:
   storage:
+    capacity: 500Gi
     dynamic:
       storageClass: ebs_sc
       pvcNameTemplate: claim-{username}
   extraEnv:
     AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
-  storage:
-    capacity: 500Gi
   memory:
     limit: 16G
     guarantee: 6G
@@ -272,7 +271,9 @@ hub:
                                 'node_selector': {
                                     'server_type': 'general_cpu_large'
                                 },
-                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG')), 
+                                'mem_limit': '96G', 
+                                'mem_guarantee': '32G'
                             }
                         }
                         profile_list.append(profile)

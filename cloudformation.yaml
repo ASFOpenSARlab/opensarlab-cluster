@@ -85,6 +85,11 @@ Parameters:
     Type: String
     Default: m5.2xlarge
 
+  NodeInstanceTypeCPULarge:
+    Description: EC2 instance type for the large node CPU instances.
+    Type: String
+    Default: m5.8xlarge
+
   NodeAutoScalingGroupMinSizeCPU:
     Description: Minimum size of Node Group ASG.
     Type: Number
@@ -100,11 +105,6 @@ Parameters:
     Type: Number
     Default: 2
 
-  NodeInstanceTypeCPULarge:
-    Description: EC2 instance type for the node Large CPU instances.
-    Type: String
-    Default: m5.2xlarge
-
   NodeAutoScalingGroupMinSizeCPULarge:
     Description: Minimum size of Node Group ASG.
     Type: Number
@@ -113,17 +113,12 @@ Parameters:
   NodeAutoScalingGroupMaxSizeCPULarge:
     Description: Maximum size of Node Group ASG. Set to at least 1 greater than NodeAutoScalingGroupDesiredCapacityCPU.
     Type: Number
-    Default: 1
+    Default: 25
 
   NodeAutoScalingGroupDesiredCapacityCPULarge:
     Description: Desired capacity of Node Group ASG.
     Type: Number
     Default: 0
-
-  NodeVolumeSize:
-    Description: Node volume size (GB)
-    Type: Number
-    Default: 500
 
   NodeAccessKeyId:
     Description: The access key to allow aws cli usage. Specific AWS resource access is handled by the user attached to the key.
@@ -639,7 +634,6 @@ Resources:
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
                     --set custom.HUB_ACCESS_KEY_ID='${HubAWSId}',custom.HUB_SECRET_ACCESS_KEY='${HubAWSSecret}'
                     --set custom.CLUSTER_NAME=${Cluster},custom.AZ_NAME=${AWS::Region}d
-                    --set custom.VOLUME_SIZE='${NodeVolumeSize}'
                     --set hub.image.tag=$HUB_IMAGE_TAG
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat deploy-patch.yaml)" || true
