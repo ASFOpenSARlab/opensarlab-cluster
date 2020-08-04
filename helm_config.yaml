@@ -273,7 +273,8 @@ hub:
                                 },
                                 'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG')), 
                                 'mem_limit': '96G', 
-                                'mem_guarantee': '32G'
+                                'mem_guarantee': '32G', 
+                                'cpu_limit': 8
                             }
                         }
                         profile_list.append(profile)
