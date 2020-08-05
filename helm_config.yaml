@@ -231,15 +231,6 @@ hub:
                     group_list.extend(groups.get_all_enabled_group_names_set_to_all_users())
                     print(group_list)
 
-                    # Some defaults
-                    spawner.lifecycle_hooks = {
-                        "postStart": {
-                            "exec": {
-                                "command": ["/bin/sh", "-c", "gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master /home/jovyan/notebooks;"]
-                            }
-                        }
-                    }
-
                     profile_list = []
 
                     if 'general_cpu' in group_list:
@@ -254,7 +245,14 @@ hub:
                                 'node_selector': {
                                     'server_type': 'general_cpu'
                                 },
-                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG')),
+                                'lifecycle_hooks': {
+                                    "postStart": {
+                                        "exec": {
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/general_cpu.sh"]
+                                        }
+                                    }
+                                }
                             }
                         }
                         profile_list.append(profile)
@@ -271,7 +269,14 @@ hub:
                                 'node_selector': {
                                     'server_type': 'general_cpu_large'
                                 },
-                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG')), 
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG')),
+                                'lifecycle_hooks': {
+                                    "postStart": {
+                                        "exec": {
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/unavco.sh"]
+                                        }
+                                    }
+                                }, 
                                 'mem_limit': '96G', 
                                 'mem_guarantee': '32G', 
                                 'cpu_limit': 8
@@ -291,13 +296,19 @@ hub:
                                 'node_selector': {
                                     'server_type': 'general_gpu'
                                 },
-                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG'))
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG')),
+                                'lifecycle_hooks': {
+                                    "postStart": {
+                                        "exec": {
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/general_gpu.sh"]
+                                        }
+                                    }
+                                }
                             }
                         }
                         profile_list.append(profile)
                         
                     if 'no_smart_git' in group_list:
-
                         profile = {
                             'display_name': 'General SAR processing (without git puller)',
                             'description': 'Useful for debugging some server timeouts. Contains basic SAR processing and analysis tools. This does not pull in the latest notebooks.',
@@ -314,7 +325,7 @@ hub:
                                 'lifecycle_hooks': {
                                     "postStart": {
                                         "exec": {
-                                            "command": ["/bin/sh", "-c", "echo 'No git puller enabled.'"]
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/no_smart_git.sh"]
                                         }
                                     }
                                 }
