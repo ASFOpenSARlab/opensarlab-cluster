@@ -249,7 +249,7 @@ hub:
                                 'lifecycle_hooks': {
                                     "postStart": {
                                         "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/general_cpu.sh"]
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/general_cpu.sh {user_name}".format(user_name=user_name)]
                                         }
                                     }
                                 }
