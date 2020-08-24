@@ -9,7 +9,7 @@ def delete_volumes():
         import yaml
         import boto3
         from kubernetes import client as k8s_client
-        from kubernetes import config as k8s_cvonfig
+        from kubernetes import config as k8s_config
         from kubernetes.client.rest import ApiException
 
         print("Checking for expired volumes...")
