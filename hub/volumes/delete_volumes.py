@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-def _get_tags(vol, value):
-    return [v['Value'] for v in vol['Tags'] if v['Value'] == value]
+def _get_tags(vol, key):
+    return [v['Value'] for v in vol['Tags'] if v['Key'] == key]
 
 def delete_volumes():
     try:
