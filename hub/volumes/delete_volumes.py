@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-def _get_tags(vol, value):
-    return [v['Value'] for v in vol['Tags'] if v['Value'] == value]
+def _get_tags(vol, key):
+    return [v['Value'] for v in vol['Tags'] if v['Key'] == key]
 
 def delete_volumes():
     try:
@@ -9,7 +9,7 @@ def delete_volumes():
         import yaml
         import boto3
         from kubernetes import client as k8s_client
-        from kubernetes import config as k8s_config
+        from kubernetes import config as k8s_cvonfig
         from kubernetes.client.rest import ApiException
 
         print("Checking for expired volumes...")
