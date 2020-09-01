@@ -333,6 +333,31 @@ hub:
                         }
                         profile_list.append(profile)
 
+                    if 'no_start_hooks' in group_list:
+                        profile = {
+                            'display_name': 'General SAR processing (without running preStart hook)',
+                            'description': 'Useful for debugging. Contains basic SAR processing and analysis tools.',
+                            'default': False,
+                            'kubespawner_override': {
+                                'extra_labels': {
+                                    'server_type': 'general_cpu',
+                                    'extra_configs': 'no_start_hooks'
+                                },
+                                'node_selector': {
+                                    'server_type': 'general_cpu'
+                                },
+                                'image': "{0}:{1}".format(z2jh.get_config('custom.IMAGE_NAME'), z2jh.get_config('custom.IMAGE_TAG')),
+                                'lifecycle_hooks': {
+                                    "postStart": {
+                                        "exec": {
+                                            "command": ["/bin/sh", "-c", "echo 'No hooks'"]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        profile_list.append(profile)
+
                     # This clause for sudo should always be last
                     if 'sudo' in group_list:
                         print("Adding sudo privs...")
