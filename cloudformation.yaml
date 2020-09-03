@@ -638,7 +638,9 @@ Resources:
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat deploy-patch.yaml)" || true
                 - kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
-                - kubectl apply -f https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.5/config/v1.5/aws-k8s-cni.yaml
+                - curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.6/config/v1.6/aws-k8s-cni.yaml
+                - sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml
+                - kubectl apply -f aws-k8s-cni.yaml
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
