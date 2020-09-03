@@ -10,3 +10,4 @@
 !convert_stopping_tags.py
 !kubectl-temp.sh
 !deploy-patch.yaml
+!aws-service-role.sh 
