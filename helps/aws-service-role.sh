@@ -42,28 +42,6 @@ kubectl -n ${SERVICE_ACCOUNT_NAMESPACE} create serviceaccount ${SERVICE_ACCOUNT_
 echo "Create oidc provider..."
 eksctl --profile ${PROFILE} utils associate-iam-oidc-provider --cluster ${CLUSTER_NAME} --approve
 
-# Create policy
-echo "Create role policy..." 
-cat << EOF > policy.json
-{
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "*"
-            ],
-            "Resource": [
-                "*"
-            ]
-        }
-    ]
-}
-EOF
-
-aws --profile ${PROFILE} iam create-policy --policy-name ${IAM_POLICY_NAME} --policy-document file://policy.json && rm policy.json 
-IAM_POLICY_ARN=$(aws --profile ${PROFILE} iam list-policies --query 'Policies[?PolicyName==`${IAM_POLICY_NAME}`].Arn' --output text)
-
 # Create IAM role to attach to service account
 # https://docs.aws.amazon.com/eks/latest/userguide/create-service-account-iam-policy-and-role.html
 # If the cluster was created by eksctl, this would be a one-liner. But, alas, it is not.
@@ -83,7 +61,7 @@ cat << EOF > trust.json
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
         "StringEquals": {
-          "${OIDC_PROVIDER}:sub": "system:serviceaccount:${POD_NAMESPACE}:${POD_NAME}"
+          "${OIDC_PROVIDER}:sub": "system:serviceaccount:${SERVICE_ACCOUNT_NAMESPACE}:${SERVICE_ACCOUNT_NAME}"
         }
       }
     }
@@ -91,18 +69,41 @@ cat << EOF > trust.json
 }
 EOF
 
-aws --profile ${PROFILE} iam create-role --role-name ${IAM_ROLE_NAME} --assume-role-policy-document file://trust.json --description "" && rm trust.json
-ROLE_ARN=$(aws --profile ${PROFILE} iam get-role --role-name ${IAM_ROLE_NAME} --query 'Roles[?RoleName==`${IAM_ROLE_NAME}`].Arn' --output text)
+aws --profile ${PROFILE} iam get-role --role-name ${IAM_ROLE_NAME} 
+aws --profile ${PROFILE} iam create-role --role-name ${IAM_ROLE_NAME} --assume-role-policy-document file://trust.json --description "" || \
+    aws --profile ${PROFILE} iam update-role --role-name ${IAM_ROLE_NAME} --assume-role-policy-document file://trust.json --description ""
+rm trust.json
+ROLE_ARN="$(aws --profile ${PROFILE} iam get-role --role-name ${IAM_ROLE_NAME} --query "Role.Arn" --output text)"
+echo "Role ARN: ${ROLE_ARN}"
 
-# Attch policy to role
-echo "Attching policy to role..."
-exit ## IAM_POLICY_ARN not defined here for some reason 
-aws --profile ${PROFILE} iam attach-role-policy --role-name ${IAM_ROLE_NAME} --policy-arn=${IAM_POLICY_ARN}
+# Create policy
+echo "Create role policy..." 
+cat << EOF > policy.json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "*"
+            ],
+            "Resource": [
+                "*"
+            ]
+        }
+    ]
+}
+EOF
+
+# Add inline policy to role. Put does both create and update
+aws --profile ${PROFILE} iam put-role-policy --role-name ${IAM_ROLE_NAME} --policy-name ${IAM_POLICY_NAME} --policy-document file://policy.json
+rm policy.json
 
 # Associalte role with service account
 echo "Associate role with service account..."
-kubectl -n ${SERVICE_ACCOUNT_NAMESPACE} annotate sa ${SERVICE_ACCOUNT_NAME} eks.amazonaws.com/role-arn=${ROLE_ARN} --dry-run=client -o yaml | kubectl apply -f -
+kubectl -n ${SERVICE_ACCOUNT_NAMESPACE} annotate sa ${SERVICE_ACCOUNT_NAME} "eks.amazonaws.com/role-arn=${ROLE_ARN}" --dry-run=client -o yaml | kubectl apply -f -
 
 # Respawn pod for changes to take affect
+# Assumes that the pod namespace is the same as the service account ns
 echo "Respawn hub pod..."
-kubectl -n ${POD_NAMESPACE} delete pod -l component=hub
+kubectl -n ${SERVICE_ACCOUNT_NAMESPACE} delete pod -l component=hub
