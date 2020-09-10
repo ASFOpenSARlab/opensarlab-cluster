@@ -29,9 +29,6 @@ singleuser:
     dynamic:
       storageClass: gp2
       pvcNameTemplate: claim-{username}
-  extraEnv:
-    AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
-    AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
   memory:
     limit: 16G
     guarantee: 6G
@@ -93,8 +90,6 @@ hub:
                         'namespace': 'jupyter',
                         'cluster_name': z2jh.get_config('custom.CLUSTER_NAME'),
                         'az_name': z2jh.get_config('custom.AZ_NAME'),
-                        'aws_secret_access_key': z2jh.get_config('custom.HUB_SECRET_ACCESS_KEY'),
-                        'aws_access_key_id': z2jh.get_config('custom.HUB_ACCESS_KEY_ID'),
                         'spawn_pvc': spawner.get_pvc_manifest()
                     }
 
@@ -120,9 +115,7 @@ hub:
                     meta = {
                         'pvc_name': spawner.pvc_name,
                         'cluster_name': z2jh.get_config('custom.CLUSTER_NAME'),
-                        'az_name': z2jh.get_config('custom.AZ_NAME'),
-                        'aws_secret_access_key': z2jh.get_config('custom.HUB_SECRET_ACCESS_KEY'),
-                        'aws_access_key_id': z2jh.get_config('custom.HUB_ACCESS_KEY_ID')
+                        'az_name': z2jh.get_config('custom.AZ_NAME')
                     }
 
                     volume_stopping_tags(meta)
@@ -148,8 +141,6 @@ hub:
                     "namespace: jupyter",
                     "cluster_name: {cluster_name}",
                     "region_name: {region_name}",
-                    "aws_secret_access_key: {aws_secret_access_key}",
-                    "aws_access_key_id: {aws_access_key_id}",
                     "kubernetes_service_port: '{kubernetes_service_port}'",
                     "kubernetes_service_host: {kubernetes_service_host}"
                 ]
@@ -157,8 +148,6 @@ hub:
                     days_vol_inactive_till_termination=days_vol_inactive_till_termination,
                     region_name=z2jh.get_config('custom.AZ_NAME')[:-1],
                     cluster_name=z2jh.get_config('custom.CLUSTER_NAME'),
-                    aws_secret_access_key=z2jh.get_config('custom.HUB_SECRET_ACCESS_KEY'),
-                    aws_access_key_id=z2jh.get_config('custom.HUB_ACCESS_KEY_ID'),
                     kubernetes_service_port=os.environ['KUBERNETES_SERVICE_PORT'],
                     kubernetes_service_host=os.environ['KUBERNETES_SERVICE_HOST']
                 )
@@ -391,10 +380,6 @@ custom:
   OAUTH_CLIENT_ID: OAUTH_CLIENT_ID
   OAUTH_CLIENT_SECRET: OAUTH_CLIENT_SECRET
   OAUTH_DNS_NAME: OAUTH_DNS_NAME
-  AWS_ACCESS_KEY_ID: NODE_ACCESS_KEY_ID
-  AWS_SECRET_ACCESS_KEY: NODE_SECRET_KEY
-  HUB_ACCESS_KEY_ID: HUB_ACCESS_KEY_ID
-  HUB_SECRET_ACCESS_KEY: HUB_SECRET_ACCESS_KEY
   CLUSTER_NAME: CLUSTER_NAME
   AZ_NAME: AZ_NAME
   VOLUME_SIZE: VOLUME_SIZE

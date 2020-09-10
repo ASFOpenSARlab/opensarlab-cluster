@@ -14,6 +14,7 @@ Usage:
 
 import argparse
 import os
+import json
 
 import boto3 
 from kubernetes import client as k8s_client
@@ -44,9 +45,6 @@ class ServiceAccountRole(object):
         self.cluster_name = args.cluster_name
 
         # Setup k8s
-        #os.environ['KUBERNETES_SERVICE_PORT'] = meta['kubernetes_service_port']
-        #os.environ['KUBERNETES_SERVICE_HOST'] = meta['kubernetes_service_host']
-        #k8s_config.load_incluster_config()
         k8s_config.load_kube_config()
         self.k8s = k8s_client.CoreV1Api()
 
@@ -58,28 +56,26 @@ class ServiceAccountRole(object):
 
         self.iam_policy_name = f'sa-{self.cluster_name}-{self.sa_namespace}-{self.sa_name}-policy'
         self.iam_role_name = f'sa-{self.cluster_name}-{self.sa_namespace}-{self.sa_name}-role'
+        self.inline_policy = None 
+        self.iam_role_arn = None
+
+        print(f"IAM policy name: {self.iam_policy_name}")
+        print(f"IAM role name: {self.iam_role_name}")
 
     def _get_aws_account_id(self):
         """
         AWS_ACCOUNT_ID=$(aws --profile ${PROFILE} sts get-caller-identity --query "Account" --output text)
         """
-        print("Get AWS account id...")
+        print("---> Get AWS account id...")
         return self.sts.get_caller_identity().get('Account')
 
     def _get_oidc_provider(self):
         """
         OIDC_PROVIDER=$(aws --profile ${PROFILE} eks describe-cluster --name ${CLUSTER_NAME} --query "cluster.identity.oidc.issuer" --output text | sed -e "s/^https:\/\///")
         """
-        print("Get OIDC provider...")
+        print("---> Get OIDC provider...")
         cluster_info = self.eks.describe_cluster(name=self.cluster_name)
         return cluster_info.get('cluster').get('identity').get('oidc').get('issuer')
-
-    def _check_policy_exists(self):
-        try:
-            _ = client.get_role_policy(RoleName=self.iam_role_name, PolicyName=self.iam_policy_name)
-            return True
-        except self.iam.exceptions.NoSuchEntityException as e:
-            return False
 
     def create_service_account(self):
         """
@@ -91,12 +87,15 @@ class ServiceAccountRole(object):
             body = k8s_client.V1ServiceAccount(metadata=meta_obj)
             api_response = self.k8s.create_namespaced_service_account(namespace=self.sa_namespace, body=body)
         except ApiException as e:
-            # TODO: Parse e for response code
-            #if (e.body)[0]['code'] == 409:
-            #    print(f"Service Account named {self.sa_namespace}:{self.sa_name} creation conflict. {(e.body)[0]['message']}. Skipping to next step...")
-            #else:
-            #    raise
-            pass
+            error_body = json.loads(e.body)
+            message = error_body['message']
+            reason = error_body['reason']
+
+            if reason == 'AlreadyExists':
+                print(f"---> {message} for namespace {self.sa_namespace}")
+            else:
+                raise
+
 
     def create_iam_role(self):
         """
@@ -106,7 +105,7 @@ class ServiceAccountRole(object):
         """
         print("Create role...")
         aws_account_id = self._get_aws_account_id()
-        oidc_provider = self._get_oidc_provider()
+        oidc_provider = self._get_oidc_provider().replace('https://', '')
 
         trust_json = f"""
         {{
@@ -127,18 +126,19 @@ class ServiceAccountRole(object):
         ]
         }}
         """.strip()
-
         try:
             resp = self.iam.create_role(RoleName=self.iam_role_name, AssumeRolePolicyDocument=trust_json)
-            print(f"resp: {resp}")
         except self.iam.exceptions.EntityAlreadyExistsException as e:
-            print("Role already exists. skipping....")
+            print("---> Role already exists. skipping....")
 
-        return self.iam.get_role(RoleName=self.iam_role_name).get('arn')
+        self.iam_role_arn = self.iam.get_role(RoleName=self.iam_role_name).get('Role').get('Arn')
+        if not self.iam_role_arn:
+            raise Exception(f"Role creation did not work. No ARN exists for {self.iam_role_name}")
 
     def get_default_inline_policy(self):
         print("Get default inline policy...")
-        return """
+        
+        self.inline_policy = """
         {
             "Version": "2012-10-17",
             "Statement": [
@@ -153,25 +153,24 @@ class ServiceAccountRole(object):
                 }
             ]
         }
-        """
+        """.strip()
 
-    def add_inline_policy_to_iam_role(self, inline_policy):
+    def add_inline_policy_to_iam_role(self):
         """
         aws --profile ${PROFILE} iam put-role-policy --role-name ${IAM_ROLE_NAME} --policy-name ${IAM_POLICY_NAME} --policy-document file://policy.json
         rm policy.json
         """
         print("Add inline policy to role...")
 
-        # If inline policy alreay exists, skip. We don't want to override any customization from the console.
-        if not self._check_policy_exists():
-            response = self.iam.put_role_policy(RoleName=self.iam_role_name, PolicyName=self.iam_policy_name, PolicyDocument=inline_policy)
+        response = self.iam.put_role_policy(RoleName=self.iam_role_name, PolicyName=self.iam_policy_name, PolicyDocument=self.inline_policy)
 
 
-    def associate_iam_role_with_service_account(self, role_arn):
+    def associate_iam_role_with_service_account(self):
         """
         kubectl -n ${SERVICE_ACCOUNT_NAMESPACE} annotate sa ${SERVICE_ACCOUNT_NAME} "eks.amazonaws.com/role-arn=${ROLE_ARN}" --dry-run=client -o yaml | kubectl apply -f -
         """
-        body = { 'metadata': { 'annotations': { 'eks.amazonaws.com/role-arn': role_arn } } }
+        print(f'Associating role with service account "{self.sa_name}" in "{self.sa_namespace}"')
+        body = { 'metadata': { 'annotations': { 'eks.amazonaws.com/role-arn': self.iam_role_arn } } }
         resp = self.k8s.patch_namespaced_service_account(name=self.sa_name, namespace=self.sa_namespace, body=body)
 
 if __name__ == "__main__":
@@ -181,8 +180,7 @@ if __name__ == "__main__":
     sar = ServiceAccountRole(args)
 
     sar.create_service_account()
-    role_arn = sar.create_iam_role()
-    print(role_arn)
-    inline_policy = sar.get_default_inline_policy()
-    sar.add_inline_policy_to_iam_role(inline_policy)
-    sar.associate_iam_role_with_service_account(role_arn)
+    sar.create_iam_role()
+    sar.get_default_inline_policy()
+    sar.add_inline_policy_to_iam_role()
+    sar.associate_iam_role_with_service_account()

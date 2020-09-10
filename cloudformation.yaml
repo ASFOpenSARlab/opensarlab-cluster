@@ -656,7 +656,7 @@ Resources:
                     --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True,nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
                 - curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/master/k8s-yaml-templates/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/" | kubectl apply -f -
                 - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
-                - python3 scripts/service_account_role.py --cluster-name ${Cluster}
+                - python3 scripts/service_account_role.py --cluster-name ${Cluster} 
                 - kubectl -n jupyter delete pod -l component=hub
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
       LogsConfig:
