@@ -638,7 +638,6 @@ Resources:
                     --set auth.admin.users[0]=${AdminUserName}
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'                    
                     --set custom.IMAGE_NAME='${ImageName}',custom.IMAGE_TAG='${ImageTag}'
-                    --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
                     --set custom.CLUSTER_NAME=${Cluster},custom.AZ_NAME=${AWS::Region}d
