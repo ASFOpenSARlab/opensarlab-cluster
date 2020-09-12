@@ -42,13 +42,18 @@ Parameters:
     NoEcho: True
 
   ImageName:
-    Description: Name of ECR docker image.
+    Description: Name of ECR docker image for user's server.
     Type: String
     Default: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
 
   ImageTag:
-    Description: Tag of ECR docker image.
+    Description: Tag of ECR docker image for user's server.
     Type: String
+
+  HubImageName:
+    Description: Name of ECR docker image for hub pod
+    Type: String
+    Default: 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub
 
   NodeImageIdGPU:
     Description: AMI id for the node instances of K8s
@@ -603,48 +608,56 @@ Resources:
                 python: 3.8
               commands:
                 - pip3 install awscli>=1.16.158 --upgrade
+                - pip3 install boto3 --upgrade
+                - pip3 install kubernetes
+                - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
+                - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
+                - curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+                - mv /tmp/eksctl /usr/local/bin
+                - eksctl version
             pre_build:
               commands:
                 - echo "logging in to AWS ECR..."
-                - $(aws ecr get-login --no-include-email --region us-east-1)
-            build:
-              commands:
-                - HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
-                - docker build -t 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG -f hub/dockerfile hub/
-                - docker push 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub:$HUB_IMAGE_TAG
-                - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
-                - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
-                - aws eks update-kubeconfig --name ${Cluster}
-                - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" aws-auth-cm.yaml
-                - kubectl apply -f aws-auth-cm.yaml
-                - kubectl apply -f ebs-sc.yaml
+                - $(aws ecr get-login --no-include-email --region ${AWS::Region})
                 - helm init --client-only
                 - helm plugin install https://github.com/rimusz/helm-tiller
                 - helm tiller start-ci
+            build:
+              commands:
+                - HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
+                - docker build -t ${HubImageName}:$HUB_IMAGE_TAG -f hub/dockerfile hub/
+                - docker push ${HubImageName}:$HUB_IMAGE_TAG
+                - aws eks update-kubeconfig --name ${Cluster}
+                - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" configs/aws-auth-cm.yaml
+                - kubectl apply -f configs/aws-auth-cm.yaml
+                - kubectl apply -f configs/ebs-sc.yaml
                 - export HELM_HOST=127.0.0.1:44134
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
-                - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.9.0-beta.4  --values helm_config.yaml --timeout=1800
+                - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.9.0-beta.4  --values configs/helm_config.yaml --timeout=1800
                     --set auth.admin.users[0]=${AdminUserName}
-                    --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
-                    --set singleuser.extraEnv.AWS_ACCESS_KEY_ID='${NodeAccessKeyId}',singleuser.extraEnv.AWS_SECRET_ACCESS_KEY='${NodeSecretKey}'
+                    --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'                    
                     --set custom.IMAGE_NAME='${ImageName}',custom.IMAGE_TAG='${ImageTag}'
-                    --set custom.OAUTH_CLIENT_ID='${OAuthClientId}',custom.OAUTH_CLIENT_SECRET='${OAuthClientSecret}'
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
-                    --set custom.HUB_ACCESS_KEY_ID='${HubAWSId}',custom.HUB_SECRET_ACCESS_KEY='${HubAWSSecret}'
                     --set custom.CLUSTER_NAME=${Cluster},custom.AZ_NAME=${AWS::Region}d
                     --set hub.image.tag=$HUB_IMAGE_TAG
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
-                - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat deploy-patch.yaml)" || true
+                - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true
                 - kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
-                - kubectl apply -f https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.5/config/v1.5/aws-k8s-cni.yaml
+                - curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.6/config/v1.6/aws-k8s-cni.yaml
+                - sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml
+                - kubectl apply -f aws-k8s-cni.yaml
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
                 - helm upgrade autoscaler stable/cluster-autoscaler --install --namespace autoscaler --values cluster-autoscaler*/values.yaml --timeout=120
                     --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True,nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
                 - curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/master/k8s-yaml-templates/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/" | kubectl apply -f -
+                - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
+                - python3 scripts/service_account_role.py --cluster-name ${Cluster} 
+                - kubectl -n jupyter delete pod -l component=hub
+                - kubectl -n jupyter rollout status -w deployment.apps/hub
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
