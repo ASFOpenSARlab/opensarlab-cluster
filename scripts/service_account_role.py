@@ -45,7 +45,11 @@ class ServiceAccountRole(object):
         self.cluster_name = args.cluster_name
 
         # Setup k8s
-        k8s_config.load_kube_config()
+        try:
+            k8s_config.load_kube_config()
+        except:
+            k8s_config.load_incluster_config()
+
         self.k8s = k8s_client.CoreV1Api()
 
         # Setup Boto3
@@ -175,12 +179,17 @@ class ServiceAccountRole(object):
 
 if __name__ == "__main__":
 
-    args = setup_menu()
+    try:
+        args = setup_menu()
 
-    sar = ServiceAccountRole(args)
+        sar = ServiceAccountRole(args)
 
-    sar.create_service_account()
-    sar.create_iam_role()
-    sar.get_default_inline_policy()
-    sar.add_inline_policy_to_iam_role()
-    sar.associate_iam_role_with_service_account()
+        sar.create_service_account()
+        sar.create_iam_role()
+        sar.get_default_inline_policy()
+        sar.add_inline_policy_to_iam_role()
+        sar.associate_iam_role_with_service_account()
+
+    except Exception as e:
+        print("Something went wrong with `service_account_role.py`...")
+        raise
