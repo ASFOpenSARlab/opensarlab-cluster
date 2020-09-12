@@ -22,20 +22,9 @@ from oauthenticator.oauth2 import OAuthLoginHandler, OAuthenticator
 
 class GenericParameters():
 
-
     _OAUTH_DNS_NAME = os.environ.get('OAUTH_DNS_NAME', '')
     _OAUTH_JUPYTER_URL = os.environ.get('OAUTH_JUPYTER_URL', '')
     _OAUTH_POOL_NAME = os.environ.get('OAUTH_POOL_NAME', '')
-
-    _OAUTH_CLIENT_ID, _OAUTH_CLIENT_SECRET = _get_client_and_secret(_OAUTH_POOL_NAME)
-
-    _OAUTH_ACCESS_TOKEN_URL = f"{_OAUTH_DNS_NAME}/oauth2/token"
-    _OAUTH_AUTHORIZE_URL = f"{_OAUTH_DNS_NAME}/oauth2/authorize"
-    _OAUTH_LOGOUT_URL = f"{_OAUTH_DNS_NAME}/logout?client_id={_OAUTH_CLIENT_ID}&logout_uri={_OAUTH_JUPYTER_URL}"
-    _OAUTH2_TOKEN_URL = f"{_OAUTH_DNS_NAME}/oauth2/token"
-    _OAUTH2_USERDATA_URL = f"{_OAUTH_DNS_NAME}/oauth2/userInfo"
-    _OAUTH_CALLBACK_URL = f"{_OAUTH_JUPYTER_URL}/hub/oauth_callback"
-    _OAUTH_LOGIN_SERVICE = "AWS Cognito"
 
     def _get_client_and_secret(self, pool_name):
 
@@ -59,12 +48,22 @@ class GenericParameters():
             client_id = user_client_info['ClientId']
             client_secret = user_client_info['ClientSecret']
 
-            return client_id, client_secret  
+            return client_id, client_secret
+
+    _OAUTH_CLIENT_ID, _OAUTH_CLIENT_SECRET = _get_client_and_secret(_OAUTH_POOL_NAME)
+
+    _OAUTH_ACCESS_TOKEN_URL = f"{_OAUTH_DNS_NAME}/oauth2/token"
+    _OAUTH_AUTHORIZE_URL = f"{_OAUTH_DNS_NAME}/oauth2/authorize"
+    _OAUTH_LOGOUT_URL = f"{_OAUTH_DNS_NAME}/logout?client_id={_OAUTH_CLIENT_ID}&logout_uri={_OAUTH_JUPYTER_URL}"
+    _OAUTH2_TOKEN_URL = f"{_OAUTH_DNS_NAME}/oauth2/token"
+    _OAUTH2_USERDATA_URL = f"{_OAUTH_DNS_NAME}/oauth2/userInfo"
+    _OAUTH_CALLBACK_URL = f"{_OAUTH_JUPYTER_URL}/hub/oauth_callback"
+    _OAUTH_LOGIN_SERVICE = "AWS Cognito"  
 
 class GenericLoginHandler(OAuthLoginHandler):
     pass
 
-class GenericLogoutHandler(LogoutHandler, GenericParameters):
+class GenericLogoutHandler(LogoutHandler):
     """
     Handle custom logout URLs and token revocation. If a custom logout url
     is specified, the 'logout' button will log the user out of that identity
@@ -76,7 +75,7 @@ class GenericLogoutHandler(LogoutHandler, GenericParameters):
         user = self.get_current_user()
         if user:
             self.clear_login_cookie()
-        self.redirect(self._OAUTH_LOGOUT_URL)
+        self.redirect(GenericParameters._OAUTH_LOGOUT_URL)
 
 class PendingHandler(BaseHandler):
     @gen.coroutine
@@ -87,13 +86,13 @@ class PendingHandler(BaseHandler):
         html = self.render_template('pending.html')
         self.finish(html)
 
-class GenericOAuthenticator(OAuthenticator, GenericParameters):
+class GenericOAuthenticator(OAuthenticator):
 
-    login_service = self._OAUTH_LOGIN_SERVICE
-    oauth_callback_url = self._OAUTH_CALLBACK_URL
-    authorize_url = self._OAUTH_AUTHORIZE_URL
-    client_id = self._OAUTH_CLIENT_ID
-    client_secret = self._OAUTH_CLIENT_SECRET 
+    login_service = GenericParameters._OAUTH_LOGIN_SERVICE
+    oauth_callback_url = GenericParameters._OAUTH_CALLBACK_URL
+    authorize_url = GenericParameters._OAUTH_AUTHORIZE_URL
+    client_id = GenericParameters._OAUTH_CLIENT_ID
+    client_secret = GenericParameters._OAUTH_CLIENT_SECRET 
 
     login_handler = GenericLoginHandler
     logout_handler = GenericLogoutHandler
@@ -103,12 +102,12 @@ class GenericOAuthenticator(OAuthenticator, GenericParameters):
         return super().get_handlers(app) + [(r'/logout', self.logout_handler)] + [(r'/pending', self.pending_handler)]
 
     userdata_url = Unicode(
-        self._OAUTH2_USERDATA_URL,
+        GenericParameters._OAUTH2_USERDATA_URL,
         config=True,
         help="Userdata url to get user data login information"
     )
     token_url = Unicode(
-        self._OAUTH2_TOKEN_URL,
+        GenericParameters._OAUTH2_TOKEN_URL,
         config=True,
         help="Access token endpoint URL"
     )
