@@ -624,7 +624,7 @@ Resources:
                 - helm tiller start-ci
             build:
               commands:
-                - HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
+                - export HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
                 - docker build -t ${HubImageName}:$HUB_IMAGE_TAG -f hub/dockerfile hub/
                 - docker push ${HubImageName}:$HUB_IMAGE_TAG
                 - aws eks update-kubeconfig --name ${Cluster}
@@ -641,7 +641,7 @@ Resources:
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
                     --set custom.CLUSTER_NAME=${Cluster},custom.AZ_NAME=${AWS::Region}d
-                    --set hub.image.tag=${HUB_IMAGE_TAG}
+                    --set hub.image.tag=$HUB_IMAGE_TAG
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true
                 - kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
