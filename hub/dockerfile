@@ -1,4 +1,4 @@
-FROM jupyterhub/k8s-hub:0.9.0-beta.4
+FROM jupyterhub/k8s-hub:0.9.1
 LABEL MAINTAINER="Alaska Satellite Facility"
 
 # By default, the notebook base image is set to non-sudo user joyvan. This makes root-ful actions difficult.
