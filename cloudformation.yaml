@@ -611,7 +611,7 @@ Resources:
                 - pip3 install boto3 --upgrade
                 - pip3 install kubernetes
                 - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
-                - curl https://raw.githubusercontent.com/kubernetes/helm/master/scripts/get | bash
+                - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
                 - curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
                 - mv /tmp/eksctl /usr/local/bin
                 - eksctl version
@@ -624,10 +624,6 @@ Resources:
                 - dh_username=$(echo $dh_creds | cut -f1 -d' ')
                 - echo $dh_creds | cut -f2 -d' ' > dh.pass
                 - cat dh.pass | docker login -u $dh_username --password-stdin
-                - echo "Install Helm..."
-                - helm init --client-only
-                - helm plugin install https://github.com/rimusz/helm-tiller
-                - helm tiller start-ci
             build:
               commands:
                 - export HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
@@ -640,7 +636,6 @@ Resources:
                 - export HELM_HOST=127.0.0.1:44134
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
-                - kubectl cluster-info dump
                 - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.9.1  --values helm_config.yaml --timeout=1800
                     --set auth.admin.users[0]=${AdminUserName}
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'                    
