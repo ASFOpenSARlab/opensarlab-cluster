@@ -640,6 +640,7 @@ Resources:
                 - export HELM_HOST=127.0.0.1:44134
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
+                - kubectl cluster-info dump
                 - helm upgrade jupyter jupyterhub/jupyterhub --install --namespace jupyter  --version 0.9.1  --values helm_config.yaml --timeout=1800
                     --set auth.admin.users[0]=${AdminUserName}
                     --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'                    
