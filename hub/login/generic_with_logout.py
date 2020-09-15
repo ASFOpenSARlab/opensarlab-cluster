@@ -26,7 +26,7 @@ class GenericParameters():
     _OAUTH_JUPYTER_URL = os.environ.get('OAUTH_JUPYTER_URL', '')
     _OAUTH_POOL_NAME = os.environ.get('OAUTH_POOL_NAME', '')
 
-    def _get_client_and_secret(self, pool_name):
+    def _get_client_and_secret(pool_name):
 
         # This only works if the parent pod has rights to Cognito
         session = boto3.Session()
