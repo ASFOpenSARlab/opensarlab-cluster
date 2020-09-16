@@ -26,3 +26,18 @@ echo "Creating Docker Hub secret entry. Password needs to be updated manually...
 # Create secret for Docker Hub user to be used in image pulls
 # To retrieve: aws --profile=$PROFILE secretsmanager get-secret-value --secret-id dockerhub/creds --version-stage AWSCURRENT
 aws --profile=$PROFILE secretsmanager create-secret --name dockerhub/creds --description "Docker Hub Username/Password" --secret-string $MY_DOCKER_HUB_CREDS
+
+exit 
+
+
+# Update cluster when Helm 2 -> 3
+# If the release fails complaining about lack of annotations, apply the following
+# https://github.com/helm/helm/issues/7697#issuecomment-613535044
+
+for n in $(kubectl api-resources --verbs=list -o name | xargs -n 1 kubectl get -o name --ignore-not-found -l chart -n jupyter)
+do
+    echo "$n"
+    kubectl -n jupyter annotate $n meta.helm.sh/release-name=jupyter
+    kubectl -n jupyter annotate $n meta.helm.sh/release-namespace=jupyter
+    kubectl -n jupyter label $n app.kubernetes.io/managed-by=Helm
+done
