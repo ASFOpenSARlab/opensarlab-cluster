@@ -34,10 +34,14 @@ exit
 # If the release fails complaining about lack of annotations, apply the following
 # https://github.com/helm/helm/issues/7697#issuecomment-613535044
 
-for n in $(kubectl api-resources --verbs=list -o name | xargs -n 1 kubectl get -o name --ignore-not-found -l chart -n jupyter)
+for n in $(kubectl get ns -o name | cut -c11-)
 do
-    echo "$n"
-    kubectl -n jupyter annotate $n meta.helm.sh/release-name=jupyter
-    kubectl -n jupyter annotate $n meta.helm.sh/release-namespace=jupyter
-    kubectl -n jupyter label $n app.kubernetes.io/managed-by=Helm
+    echo "Namespace '$n'"
+    for r in $(kubectl api-resources --verbs=list -o name | xargs -n 1 kubectl get -o name --ignore-not-found -l chart -n $n)
+    do
+        echo "Resource '$r' in namespace '$n'"
+        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-name=$n
+        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-namespace=$n
+        kubectl -n $n label --overwrite $r app.kubernetes.io/managed-by=Helm
+    done
 done
