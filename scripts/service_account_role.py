@@ -24,7 +24,7 @@ from kubernetes.client.rest import ApiException
 def setup_menu():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--profile', default='default', help="AWS credential profile")
+    parser.add_argument('-p', '--profile', default='None', help="AWS credential profile")
     parser.add_argument('--sa-namespace', dest='sa_namespace', default='jupyter', help="k8s namespace of service account")
     parser.add_argument('--sa-name', default='hub', dest='sa_name', help="Name of service account")
     parser.add_argument('-c', '--cluster-name', dest='cluster_name', help="Cluster name")
@@ -53,7 +53,11 @@ class ServiceAccountRole(object):
         self.k8s = k8s_client.CoreV1Api()
 
         # Setup Boto3
-        session = boto3.Session(profile_name=self.aws_profile)
+        try:
+            session = boto3.Session(profile_name=self.aws_profile)
+        except:
+            session = boto3.Session()
+        
         self.iam = session.client('iam')
         self.sts = session.client('sts')
         self.eks = session.client('eks')
