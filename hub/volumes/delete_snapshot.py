@@ -24,7 +24,7 @@ class DeleteSnapshot():
 
             meta = yaml.safe_load(data)
 
-            session = boto3.Session(aws_secret_access_key=meta['aws_secret_access_key'], aws_access_key_id=meta['aws_access_key_id'], region_name=meta['region_name'])
+            session = boto3.Session(region_name=meta['region_name'])
             self.cluster_name = meta['cluster_name']
         print(f"Cluster name set to {self.cluster_name}")
 
