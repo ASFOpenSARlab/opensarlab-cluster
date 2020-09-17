@@ -30,8 +30,20 @@ aws --profile=$PROFILE secretsmanager create-secret --name dockerhub/creds --des
 exit 
 
 
-# Update cluster when Helm 2 -> 3
-# If the release fails complaining about lack of annotations, apply the following
+# Update cluster when Helm 2 -> 3 locally
+# This assumes that helm and kubeconfig are installed and configured properly
+
+# First way:
+# https://helm.sh/docs/topics/v2_v3_migration/
+# Install the converter and convert cluster in place
+helm plugin install https://github.com/helm/helm-2to3.git
+helm list 
+helm 2to3 convert jupyter --dry-run --tiller-out-cluster  # Or whatever the release name is
+# If the dry run throws no errors, run for real
+helm 2to3 convert jupyter --tiller-out-cluster
+
+# If the previous doesn't work (though it should) then do the following:
+# If on build the release fails complaining about lack of annotations, apply the following
 # https://github.com/helm/helm/issues/7697#issuecomment-613535044
 
 for n in $(kubectl get ns -o name | cut -c11-)
@@ -59,4 +71,4 @@ do
     done
 done
 
-# There will likely be others not picked up. These will need to be handled by hand as any failures show what needs to be changed.
+# There will likely be others not picked up. These will need to be handled by hand as any failures show what needs to be changed during build.
