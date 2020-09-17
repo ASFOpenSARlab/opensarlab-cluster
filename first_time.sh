@@ -30,6 +30,9 @@ aws --profile=$PROFILE secretsmanager create-secret --name dockerhub/creds --des
 exit 
 
 
+################################################################
+# Other helps for upgrading and conversion
+
 # Update cluster when Helm 2 -> 3 locally
 # This assumes that helm and kubeconfig are installed and configured properly
 
@@ -72,3 +75,36 @@ do
 done
 
 # There will likely be others not picked up. These will need to be handled by hand as any failures show what needs to be changed during build.
+
+#######################
+# Update cluster versions https://docs.aws.amazon.com/eks/latest/userguide/update-cluster.html
+
+# 1. Spin down all autoscaler to 0 nodes. Remain here till upgrade is complete.  
+
+# 2. Update cluster manually to 1.16 in AWS console. Refrsh the page and check the Updates tab since the console is broken on dispalying status.
+
+# 3. Check current kube-proxy image for right region and cluster address
+kubectl get daemonset kube-proxy --namespace kube-system -o=jsonpath='{$.spec.template.spec.containers[:1].image}'
+# 602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/kube-proxy:v1.15.11-eksbuild.1
+
+# 4. Apply new image for 1.16
+kubectl set image daemonset.apps/kube-proxy -n kube-system kube-proxy=602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/kube-proxy:v1.16.13-eksbuild.1
+
+# 5. This should not be needed if the chart makers are keeping things up-to-date.
+# If not, a patch will need to be made during build via something like `kubectl convert -f ./my-deployment.yaml --output-version apps/v1`
+#kubectl patch psp -p {"apiVersion":"policy/v1beta1"}'  # apiVersion: extensions/v1beta1 => apiVersion: policy/v1beta1
+
+# 6. Update cluster manually to 1.17
+
+# 7. Apply new image for 1.17
+kubectl set image daemonset.apps/kube-proxy -n kube-system kube-proxy=602401143452.dkr.ecr.us-east-1.amazonaws.com/eks/kube-proxy:v1.17.9-eksbuild.1
+
+# 8. Update cloudformation template parameters 
+#       NodeImageIdGPU.default  => /aws/service/eks/optimized-ami/1.17/amazon-linux-2-gpu/recommended/image_id
+#       NodeImageIdCPU.default  => /aws/service/eks/optimized-ami/1.17/amazon-linux-2/recommended/image_id
+#       NodeImageIdCPULarge.default  => /aws/service/eks/optimized-ami/1.17/amazon-linux-2/recommended/image_id
+#       NodeImageIdCore.default  => /aws/service/eks/optimized-ami/1.17/amazon-linux-2/recommended/image_id
+
+# 9. Redeploy build via codepipeline
+
+# 10. Autoscale nodes back to default values (1,2,etc)
