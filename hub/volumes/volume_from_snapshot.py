@@ -22,12 +22,10 @@ def volume_from_snapshot(meta):
         cluster_name = meta['cluster_name']
         az_name = meta['az_name']
         vol_size = meta['vol_size']
-        aws_secret_access_key = meta['aws_secret_access_key']
-        aws_access_key_id = meta['aws_access_key_id']
         spawn_pvc = meta['spawn_pvc']
         region_name = az_name[:-1]
 
-        session = boto3.Session(aws_secret_access_key=aws_secret_access_key, aws_access_key_id=aws_access_key_id, region_name=region_name)
+        session = boto3.Session(region_name=region_name)
         ec2 = session.client('ec2')
 
         pvcs = api.list_namespaced_persistent_volume_claim(namespace=namespace, watch=False)
