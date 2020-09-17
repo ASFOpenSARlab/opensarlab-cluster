@@ -634,6 +634,8 @@ Resources:
                 - kubectl apply -f configs/aws-auth-cm.yaml
                 - kubectl apply -f configs/ebs-sc.yaml
                 - export HELM_HOST=127.0.0.1:44134
+                - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
+                - python3 scripts/service_account_role.py --cluster-name ${Cluster}
                 - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
                 - helm repo update
                 - helm upgrade jupyter jupyterhub/jupyterhub
@@ -668,10 +670,6 @@ Resources:
                     --timeout=2m0s
                     --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True,nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
                 - curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/master/k8s-yaml-templates/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/" | kubectl apply -f -
-                - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
-                - python3 scripts/service_account_role.py --cluster-name ${Cluster} 
-                - kubectl -n jupyter delete pod -l component=hub
-                - kubectl -n jupyter rollout status -w deployment.apps/hub
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED

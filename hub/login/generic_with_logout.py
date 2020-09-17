@@ -25,12 +25,13 @@ class GenericParameters():
     _OAUTH_DNS_NAME = os.environ.get('OAUTH_DNS_NAME', '')
     _OAUTH_JUPYTER_URL = os.environ.get('OAUTH_JUPYTER_URL', '')
     _OAUTH_POOL_NAME = os.environ.get('OAUTH_POOL_NAME', '')
+    _REGION_NAME = os.environ.get('REGION_NAME', '')
 
-    def _get_client_and_secret(pool_name):
+    def _get_client_and_secret(pool_name, region_name):
 
         # This only works if the parent pod has rights to Cognito
         session = boto3.Session()
-        cognito = session.client('cognito-idp')
+        cognito = session.client('cognito-idp', region_name=region_name)
 
         user_pools = cognito.list_user_pools(MaxResults=10)
         user_pool_ids = [up['Id'] for up in user_pools['UserPools'] if up['Name'] == pool_name]
@@ -50,7 +51,7 @@ class GenericParameters():
 
             return client_id, client_secret
 
-    _OAUTH_CLIENT_ID, _OAUTH_CLIENT_SECRET = _get_client_and_secret(_OAUTH_POOL_NAME)
+    _OAUTH_CLIENT_ID, _OAUTH_CLIENT_SECRET = _get_client_and_secret(_OAUTH_POOL_NAME, _REGION_NAME)
 
     _OAUTH_ACCESS_TOKEN_URL = f"{_OAUTH_DNS_NAME}/oauth2/token"
     _OAUTH_AUTHORIZE_URL = f"{_OAUTH_DNS_NAME}/oauth2/authorize"
