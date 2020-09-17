@@ -45,3 +45,18 @@ do
         kubectl -n $n label --overwrite $r app.kubernetes.io/managed-by=Helm
     done
 done
+
+# Also pickup any labelled with Tiller
+for n in $(kubectl get ns -o name | cut -c11-)
+do
+    echo "Namespace '$n'"
+    for r in $(kubectl api-resources --verbs=list -o name | xargs -n 1 kubectl get -o name --ignore-not-found -l app.kubernetes.io/managed-by=Tiller -n $n)
+    do
+        echo "Resource '$r' in namespace '$n'"
+        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-name=$n
+        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-namespace=$n
+        kubectl -n $n label --overwrite $r app.kubernetes.io/managed-by=Helm
+    done
+done
+
+# There will likely be others not picked up. These will need to be handled by hand as any failures show what needs to be changed.
