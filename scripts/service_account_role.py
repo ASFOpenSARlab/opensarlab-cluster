@@ -146,7 +146,8 @@ class ServiceAccountRole(object):
     def get_default_inline_policy(self):
         print("Get default inline policy...")
         
-        with open('service_account_policy.json', 'r') as f:
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        with open(f'{dir_path}/service_account_policy.json', 'r') as f:
             self.inline_policy = f.read().strip()
 
     def add_inline_policy_to_iam_role(self):
