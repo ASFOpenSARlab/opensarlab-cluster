@@ -500,7 +500,7 @@ Resources:
       VpcId: !Ref VpcId
       Protocol: HTTP
       Port: !Ref NodeProxyPort
-      HealthCheckPath: /hub/login
+      HealthCheckPath: /hub/health
       HealthCheckIntervalSeconds: 120
       HealthyThresholdCount: 2
 
