@@ -223,9 +223,9 @@ class Groups():
 
         return [u.name for u in group.users]
 
-    def get_group_names_for_user(self, user_name: str) -> List[str]:
+    def get_all_enabled_group_names_for_user(self, user_name: str) -> List[str]:
         groups = self.get_all_groups()
-        return [g.name for g in groups for u in g.users if u.name == user_name]
+        return [g.name for g in groups for u in g.users if u.name == user_name and g.is_enabled]
 
     def add_user_to_group(self, user_name: str, group_name: str) -> str:
         try:

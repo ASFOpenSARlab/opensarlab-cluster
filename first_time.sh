@@ -74,10 +74,14 @@ do
     done
 done
 
+exit 
+
 # There will likely be others not picked up. These will need to be handled by hand as any failures show what needs to be changed during build.
 
 #######################
 # Update cluster versions https://docs.aws.amazon.com/eks/latest/userguide/update-cluster.html
+
+# 0. Disabled all OSL server profiles so no one can get in. 
 
 # 1. Spin down all autoscaler to 0 nodes. Remain here till upgrade is complete.  
 
@@ -108,3 +112,7 @@ kubectl set image daemonset.apps/kube-proxy -n kube-system kube-proxy=6024011434
 # 9. Redeploy build via codepipeline
 
 # 10. Autoscale nodes back to default values (1,2,etc)
+
+# 11. Enable all needed OSL server profiles
+
+exit 

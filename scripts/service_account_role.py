@@ -146,22 +146,8 @@ class ServiceAccountRole(object):
     def get_default_inline_policy(self):
         print("Get default inline policy...")
         
-        self.inline_policy = """
-        {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Action": [
-                        "*"
-                    ],
-                    "Resource": [
-                        "*"
-                    ]
-                }
-            ]
-        }
-        """.strip()
+        with open('service_account_policy.json', 'r') as f:
+            self.inline_policy = f.read().strip()
 
     def add_inline_policy_to_iam_role(self):
         """
