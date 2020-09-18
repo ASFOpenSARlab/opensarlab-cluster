@@ -225,7 +225,7 @@ class Groups():
 
     def get_all_enabled_group_names_for_user(self, user_name: str) -> List[str]:
         groups = self.get_all_groups()
-        return [g.name for g in groups for u in g.users if u.name == user_name and is_group_name_enabled(g.name)]
+        return [g.name for g in groups for u in g.users if u.name == user_name and self.is_group_name_enabled(g.name)]
 
     def is_group_name_enabled(self, group_name: str) -> Boolean:
         try:
