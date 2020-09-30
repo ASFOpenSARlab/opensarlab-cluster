@@ -13,10 +13,16 @@
 {% if login_service %}
     <div class="service-login">
       <div class="announcement">
-        <p style="color: black; font-size: 14pt;">
+        <p style="color:black; font-size: 18pt;">
+          Notice
+        </p>
+        <p style="color:black; font-size: 14pt;">
+          OpenSARlab will be taken down for maintenance on Fri 2 Oct 2020 around 9pm AKDT for about 2 hours. All servers will be stopped. User's home directories will be safe and not touched.    
+        </p>
+        <!--p style="color: black; font-size: 14pt;">
             Users have reported server timeouts. 
             If this happens, please email the <a href="mailto:uaf-jupyterhub-asf@alaska.edu">OpenSARlab Admin</a> with time and description of the event.
-        </p>
+        </p-->
       </div>
       <div class="main-center">
         <img style="float: left; max-height: 37px; margin-top: 7px; margin-left: 5px; z-index: 10;" src="{{static_url('images/alaska_satellite_facility_1000.png')}}">
@@ -43,7 +49,8 @@
 
         .announcement {
             padding: 15pt 10pt 10pt 10pt;
-            border: 3px solid #efff00;
+            /*border: 3px solid #efff00;*/
+            border: 3px solid #2c7bb6;
             margin: 70px 0px;
             color: black;
             /*visibility: hidden;*/
