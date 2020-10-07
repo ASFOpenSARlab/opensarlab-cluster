@@ -44,7 +44,7 @@ Parameters:
   ImageName:
     Description: Name of ECR docker image for user's server.
     Type: String
-    Default: 553778890976.dkr.ecr.us-east-1.amazonaws.com/asf-franz-labs
+    Default: 553778890976.dkr.ecr.us-east-1.amazonaws.com/opensarlab/general_cpu
 
   ImageTag:
     Description: Tag of ECR docker image for user's server.
@@ -125,17 +125,6 @@ Parameters:
     Type: Number
     Default: 0
 
-  NodeAccessKeyId:
-    Description: The access key to allow aws cli usage. Specific AWS resource access is handled by the user attached to the key.
-    Type: String
-    Default: ""
-
-  NodeSecretKey:
-    Description: The secret key to allow aws cli usage. Specific AWS resource access is handled by the user attached to the key.
-    Type: String
-    Default: ""
-    NoEcho: true
-
   LoadBalancerCidrBlock:
     Description: The range of allowed IPv4 addresses for the load balancer. This only firewalls the load balancer URL and not the cluster in general.
     Type: String
@@ -150,17 +139,6 @@ Parameters:
     Description: The port of the hub proxy service opened to the load balancer.
     Type: Number
     Default: 30052
-
-  HubAWSId:
-    Description: The access key to allow the hub to work with Boto3.
-    Type: String
-    Default: ""
-
-  HubAWSSecret:
-    Description: The secret key to allow the hub to work with Boto3.
-    Type: String
-    Default: ""
-    NoEcho: true
 
 Outputs:
 
