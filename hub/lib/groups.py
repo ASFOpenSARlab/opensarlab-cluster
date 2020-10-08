@@ -229,7 +229,7 @@ class Groups():
 
     def is_group_name_enabled(self, group_name: str) -> Boolean:
         try:
-            gm = get_group_meta(group_name)
+            gm = self.get_group_meta(group_name)
             return gm.is_enabled
         except:
             return False
