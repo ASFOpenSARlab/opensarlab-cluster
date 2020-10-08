@@ -8,31 +8,63 @@ import os
 import base64
 import urllib
 
-from tornado.auth import OAuth2Mixin
-from tornado import gen
+import boto3
 
+from tornado import gen
 from tornado.httputil import url_concat
 from tornado.web import RequestHandler
 from tornado.httpclient import HTTPRequest, AsyncHTTPClient
-
 from jupyterhub.handlers import LogoutHandler, BaseHandler
 from jupyterhub.auth import LocalAuthenticator
-
 from traitlets import Unicode, Dict, Bool
-
 from oauthenticator.oauth2 import OAuthLoginHandler, OAuthenticator
 
 
-class GenericEnvMixin(OAuth2Mixin):
-    _OAUTH_ACCESS_TOKEN_URL = os.environ.get('OAUTH2_TOKEN_URL', '')
-    _OAUTH_AUTHORIZE_URL = os.environ.get('OAUTH2_AUTHORIZE_URL', '')
-    _OAUTH_LOGOUT_URL = os.environ.get('OAUTH_LOGOUT_URL', '')
+class GenericParameters():
 
+    _OAUTH_DNS_NAME = os.environ.get('OAUTH_DNS_NAME', '')
+    _OAUTH_JUPYTER_URL = os.environ.get('OAUTH_JUPYTER_URL', '')
+    _OAUTH_POOL_NAME = os.environ.get('OAUTH_POOL_NAME', '')
+    _REGION_NAME = os.environ.get('REGION_NAME', '')
 
-class GenericLoginHandler(OAuthLoginHandler, GenericEnvMixin):
+    def _get_client_and_secret(pool_name, region_name):
+
+        # This only works if the parent pod has rights to Cognito
+        session = boto3.Session()
+        cognito = session.client('cognito-idp', region_name=region_name)
+
+        user_pools = cognito.list_user_pools(MaxResults=10)
+        user_pool_ids = [up['Id'] for up in user_pools['UserPools'] if up['Name'] == pool_name]
+
+        if user_pool_ids:
+            user_pool_id = user_pool_ids[0]
+
+            # Assume that the user pool has only one client. This is reasonable since the cluster should only need one client.
+            pool_clients = cognito.list_user_pool_clients(UserPoolId=user_pool_id)
+            pool_client_id = pool_clients['UserPoolClients'][0]['ClientId']
+        
+            user_client_info = cognito.describe_user_pool_client(UserPoolId=user_pool_id, ClientId=pool_client_id)
+            user_client_info = user_client_info['UserPoolClient']
+
+            client_id = user_client_info['ClientId']
+            client_secret = user_client_info['ClientSecret']
+
+            return client_id, client_secret
+
+    _OAUTH_CLIENT_ID, _OAUTH_CLIENT_SECRET = _get_client_and_secret(_OAUTH_POOL_NAME, _REGION_NAME)
+
+    _OAUTH_ACCESS_TOKEN_URL = f"{_OAUTH_DNS_NAME}/oauth2/token"
+    _OAUTH_AUTHORIZE_URL = f"{_OAUTH_DNS_NAME}/oauth2/authorize"
+    _OAUTH_LOGOUT_URL = f"{_OAUTH_DNS_NAME}/logout?client_id={_OAUTH_CLIENT_ID}&logout_uri={_OAUTH_JUPYTER_URL}"
+    _OAUTH2_TOKEN_URL = f"{_OAUTH_DNS_NAME}/oauth2/token"
+    _OAUTH2_USERDATA_URL = f"{_OAUTH_DNS_NAME}/oauth2/userInfo"
+    _OAUTH_CALLBACK_URL = f"{_OAUTH_JUPYTER_URL}/hub/oauth_callback"
+    _OAUTH_LOGIN_SERVICE = "AWS Cognito"  
+
+class GenericLoginHandler(OAuthLoginHandler):
     pass
 
-class GenericLogoutHandler(LogoutHandler, GenericEnvMixin):
+class GenericLogoutHandler(LogoutHandler):
     """
     Handle custom logout URLs and token revocation. If a custom logout url
     is specified, the 'logout' button will log the user out of that identity
@@ -44,7 +76,7 @@ class GenericLogoutHandler(LogoutHandler, GenericEnvMixin):
         user = self.get_current_user()
         if user:
             self.clear_login_cookie()
-        self.redirect(self._OAUTH_LOGOUT_URL)
+        self.redirect(GenericParameters._OAUTH_LOGOUT_URL)
 
 class PendingHandler(BaseHandler):
     @gen.coroutine
@@ -57,10 +89,11 @@ class PendingHandler(BaseHandler):
 
 class GenericOAuthenticator(OAuthenticator):
 
-    login_service = Unicode(
-        "GenericOAuth2",
-        config=True
-    )
+    login_service = GenericParameters._OAUTH_LOGIN_SERVICE
+    oauth_callback_url = GenericParameters._OAUTH_CALLBACK_URL
+    authorize_url = GenericParameters._OAUTH_AUTHORIZE_URL
+    client_id = GenericParameters._OAUTH_CLIENT_ID
+    client_secret = GenericParameters._OAUTH_CLIENT_SECRET 
 
     login_handler = GenericLoginHandler
     logout_handler = GenericLogoutHandler
@@ -70,12 +103,12 @@ class GenericOAuthenticator(OAuthenticator):
         return super().get_handlers(app) + [(r'/logout', self.logout_handler)] + [(r'/pending', self.pending_handler)]
 
     userdata_url = Unicode(
-        os.environ.get('OAUTH2_USERDATA_URL', ''),
+        GenericParameters._OAUTH2_USERDATA_URL,
         config=True,
         help="Userdata url to get user data login information"
     )
     token_url = Unicode(
-        os.environ.get('OAUTH2_TOKEN_URL', ''),
+        GenericParameters._OAUTH2_TOKEN_URL,
         config=True,
         help="Access token endpoint URL"
     )
@@ -204,9 +237,3 @@ class GenericOAuthenticator(OAuthenticator):
                 'scope': scope,
             }
         }
-
-
-class LocalGenericOAuthenticator(LocalAuthenticator, GenericOAuthenticator):
-
-    """A version that mixes in local system user creation"""
-    pass

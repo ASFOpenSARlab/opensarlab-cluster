@@ -23,8 +23,6 @@ def delete_volumes():
         days_inactive_till_termination = meta['days_vol_inactive_till_termination']
         cluster_name = meta['cluster_name']
         region_name = meta['region_name']
-        aws_secret_access_key = meta['aws_secret_access_key']
-        aws_access_key_id = meta['aws_access_key_id']
 
         os.environ['KUBERNETES_SERVICE_PORT'] = meta['kubernetes_service_port']
         os.environ['KUBERNETES_SERVICE_HOST'] = meta['kubernetes_service_host']
@@ -33,7 +31,7 @@ def delete_volumes():
         api = k8s_client.CoreV1Api()
 
         # Cycle through all the volumes in a cluster
-        session = boto3.Session(aws_secret_access_key=aws_secret_access_key, aws_access_key_id=aws_access_key_id, region_name=region_name)
+        session = boto3.Session(region_name=region_name)
         ec2 = session.client('ec2')
 
         print(f"Searching for volumes in cluster '{cluster_name}' to delete...")

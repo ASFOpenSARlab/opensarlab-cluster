@@ -10,11 +10,9 @@ def volume_stopping_tags(meta):
     pvc_name = meta['pvc_name']
     cluster_name = meta['cluster_name']
     az_name = meta['az_name']
-    aws_secret_access_key = meta['aws_secret_access_key']
-    aws_access_key_id = meta['aws_access_key_id']
     region_name = az_name[:-1]
 
-    session = boto3.Session(aws_secret_access_key=aws_secret_access_key, aws_access_key_id=aws_access_key_id, region_name=region_name)
+    session = boto3.Session(region_name=region_name)
     ec2 = session.client('ec2')
 
     print(f"Updating stopping tags to '{pvc_name}' in cluster '{cluster_name}'...")

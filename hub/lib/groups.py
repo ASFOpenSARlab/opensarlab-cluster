@@ -223,9 +223,16 @@ class Groups():
 
         return [u.name for u in group.users]
 
-    def get_group_names_for_user(self, user_name: str) -> List[str]:
+    def get_all_enabled_group_names_for_user(self, user_name: str) -> List[str]:
         groups = self.get_all_groups()
-        return [g.name for g in groups for u in g.users if u.name == user_name]
+        return [g.name for g in groups for u in g.users if u.name == user_name and self.is_group_name_enabled(g.name)]
+
+    def is_group_name_enabled(self, group_name: str) -> Boolean:
+        try:
+            gm = get_group_meta(group_name)
+            return gm.is_enabled
+        except:
+            return False
 
     def add_user_to_group(self, user_name: str, group_name: str) -> str:
         try:
