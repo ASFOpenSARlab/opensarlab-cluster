@@ -1,6 +1,16 @@
+#!/bin/bash
+
+#
+# In order to locally manage a remote EKS cluster, a K8s config must be configured properly.
+# This script makes the configuring simpler. 
+# You need to rerun after the AWS session expires (about every hour)
+# Usage: kubectl-temp.sh {cluster-name}
+#
+#
 # You need to run against the root account and not a sub-account. That's what the STS part does.
 # Users will need to be added as Trusted to the _jupyter-hub-build_ role for this to work.
 # For ease, an alias works well: alias sk=/path/kubectl-temp.sh
+#
 
 AWS_PROFILE=jupyterhub
 AWS_REGION=us-east-1

@@ -36,7 +36,7 @@ singleuser:
 hub:
     image:
       imagePullPolicy: Always
-      name: 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub
+      name: HUB_IMAGE_NAME
       tag: HUB_IMAGE_TAG
 
     extraConfig:
@@ -194,6 +194,8 @@ hub:
             g.add_user_to_group('emlundell_test1', 'general_cpu')
             g.get_users_in_group('general_cpu')
 
+
+            The `server_type` found in the profiles (e.g. general_cpu_large) are defined in the cloudformation template.
             """
 
             def profile_list_hook(spawner: c.Spawner) -> List[Dict]:

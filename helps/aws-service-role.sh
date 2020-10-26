@@ -1,15 +1,21 @@
 #!/bin/bash
 
 #
-# The following assumes that AWS credential profiles have already been made and the kubeconfig is properly set
+# The following assumes that local AWS credential profiles have already been made and the local kubeconfig is properly set.
+#
+# The following is used to apply K8s Service Accounts with IAM roles to the cluster. 
+# A close variation of this is used within helm_config.yaml.
+# This script is used more for informational purposes.
+#
+#
+####  Some parameters
+#
+#  bash aws-service-role.sh {cluster name} {service account namespace} {service account name} {optional awscli profile name}
+#  bash aws-service-role.sh opensarlab-test jupyter hub jupyterhub
+#
 #
 
 set -ex
-
-####  Some parameters
-#
-#  bash aws-service-role.sh opensarlab-test jupyter hub jupyterhub
-#
 
 if [[ "$#" == 3 ]] ; then
    PROFILE=default

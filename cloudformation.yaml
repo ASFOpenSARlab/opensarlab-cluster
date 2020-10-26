@@ -2,6 +2,21 @@ AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
 
+  LoadBalancerCidrBlock:
+    Description: The range of allowed IPv4 addresses for the load balancer. This only firewalls the load balancer URL and not the cluster in general.
+    Type: String
+    Default: 0.0.0.0/0
+
+  CertificateArn:
+    Description: The ARN of the SSL certificate attached to the load balancer.
+    Type: String
+    Default: arn:aws:acm:us-east-1:553778890976:certificate/21d7b22a-86a3-4727-ab3a-2579a58d2d46
+
+  NodeProxyPort:
+    Description: The port of the hub proxy service opened to the load balancer.
+    Type: Number
+    Default: 30052
+
   VpcId:
     Description: The VPC of the worker instances
     Type: AWS::EC2::VPC::Id
@@ -13,10 +28,6 @@ Parameters:
   ActiveSubnets:
     Description: The subnets actually used by resources in the cluster. Typically only one (e.g., subnet for AZ -d).
     Type: List<AWS::EC2::Subnet::Id>
-
-  CodeBuildServiceRoleArn:
-    Description: Role externally created to give Code Build permission to use AWS resources.
-    Type: String
 
   AdminUserName:
     Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
@@ -124,21 +135,6 @@ Parameters:
     Description: Desired capacity of Node Group ASG.
     Type: Number
     Default: 0
-
-  LoadBalancerCidrBlock:
-    Description: The range of allowed IPv4 addresses for the load balancer. This only firewalls the load balancer URL and not the cluster in general.
-    Type: String
-    Default: 0.0.0.0/0
-
-  CertificateArn:
-    Description: The ARN of the SSL certificate attached to the load balancer.
-    Type: String
-    Default: arn:aws:acm:us-east-1:553778890976:certificate/21d7b22a-86a3-4727-ab3a-2579a58d2d46
-
-  NodeProxyPort:
-    Description: The port of the hub proxy service opened to the load balancer.
-    Type: Number
-    Default: 30052
 
 Outputs:
 
@@ -562,6 +558,51 @@ Resources:
       LogGroupName: !Sub "/aws/codebuild/${AWS::StackName}"
       RetentionInDays: 30
 
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-hub-build
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: 
+              - codebuild.amazonaws.com
+              - cloudformation.amazonaws.com
+              - codepipeline.amazonaws.com
+          Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${AWS::StackName}-hub-build
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codestar-connections:*"
+                  - "s3:*"
+                  - "dlm:*"
+                  - "logs:*"
+                  - "cloudformation:*"
+                  - "elasticloadbalancing:*"
+                  - "autoscaling:*"
+                  - "codebuild:*"
+                  - "iam:*"
+                  - "secretsmanager:*"
+                  - "ssm:*"
+                  - "ecr:*"
+                  - "ec2:*"
+                  - "eks:*"
+                Resource: '*'
+
+  JupyterImageSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: ''
+      Name: !Sub ${AWS::StackName}-dockerhub/creds
+      SecretString: 'USERNAME PASSWORD'
+      Tags: 
+        - !Sub ${AWS::StackName}
+
   Project:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -573,7 +614,7 @@ Resources:
         PrivilegedMode: True
       Artifacts:
         Type: CODEPIPELINE
-      ServiceRole: !Ref CodeBuildServiceRoleArn
+      ServiceRole: !Ref CodeBuildServiceRole.Arn
       TimeoutInMinutes: 45
       Source:
         Type: CODEPIPELINE
@@ -597,8 +638,8 @@ Resources:
               commands:
                 - echo "Logging into AWS ECR..."
                 - $(aws ecr get-login --no-include-email --region ${AWS::Region})
-                - echo "Logging into Docker Hub user..."
-                - dh_creds=$(aws secretsmanager get-secret-value --secret-id dockerhub/creds --query 'SecretString' | sed 's/\"//g' )
+                - echo "Logging into Docker Hub user to get latest jupyter image..."
+                - dh_creds=$(aws secretsmanager get-secret-value --secret-id ${AWS::StackName}-dockerhub/creds --query 'SecretString' | sed 's/\"//g' )
                 - dh_username=$(echo $dh_creds | cut -f1 -d' ')
                 - echo $dh_creds | cut -f2 -d' ' > dh.pass
                 - cat dh.pass | docker login -u $dh_username --password-stdin
@@ -629,7 +670,7 @@ Resources:
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
                     --set custom.CLUSTER_NAME=${Cluster},custom.AZ_NAME=${AWS::Region}d
-                    --set hub.image.tag=$HUB_IMAGE_TAG
+                    --set hub.image.tag=$HUB_IMAGE_TAG,hub.image.name=${HubImageName}
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true
                 - kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
