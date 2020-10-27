@@ -590,7 +590,7 @@ Resources:
   JupyterImageSecret:
     Type: AWS::SecretsManager::Secret
     Properties: 
-      Description: ''
+      Description: 'Docker Hub creds to grab the Jupyter base image'
       Name: !Sub ${AWS::StackName}-dockerhub/creds
       SecretString: 'USERNAME PASSWORD'
       Tags: 
