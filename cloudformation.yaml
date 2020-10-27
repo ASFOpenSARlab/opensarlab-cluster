@@ -208,18 +208,16 @@ Resources:
 
   NodeSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow instances to communicate with each other
       GroupId: !Ref NodeSecurityGroup
       SourceSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: -1
+      IpProtocol: "-1"
       FromPort: 0
       ToPort: 65535
 
   NodeSecurityGroupFromControlPlaneIngress:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
       GroupId: !Ref NodeSecurityGroup
@@ -230,7 +228,6 @@ Resources:
 
   NodeSecurityGroupFromLoadBalancer:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow worker Kubelets and pods to receive communication from the load balancer
       GroupId: !Ref NodeSecurityGroup
@@ -241,7 +238,6 @@ Resources:
 
   ControlPlaneEgressToNodeSecurityGroup:
     Type: AWS::EC2::SecurityGroupEgress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow the cluster control plane to communicate with worker Kubelet and pods
       GroupId: !GetAtt ClusterSecurityGroup.GroupId
@@ -252,7 +248,6 @@ Resources:
 
   NodeSecurityGroupFromControlPlaneOn443Ingress:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
       GroupId: !Ref NodeSecurityGroup
@@ -263,7 +258,6 @@ Resources:
 
   ControlPlaneEgressToNodeSecurityGroupOn443:
     Type: AWS::EC2::SecurityGroupEgress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow the cluster control plane to communicate with pods running extension API servers on port 443
       GroupId: !GetAtt ClusterSecurityGroup.GroupId
@@ -274,7 +268,6 @@ Resources:
 
   ClusterControlPlaneSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow pods to communicate with the cluster API Server
       GroupId: !GetAtt ClusterSecurityGroup.GroupId
@@ -286,10 +279,10 @@ Resources:
   AutoScalingGroupCore:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      DesiredCapacity: 1
+      DesiredCapacity: "1"
       LaunchConfigurationName: !Ref LaunchConfigurationCore
-      MinSize: 1
-      MaxSize: 2
+      MinSize: "1"
+      MaxSize: "2"
       VPCZoneIdentifier: !Ref ActiveSubnets
       TargetGroupARNs:
       - !Ref TargetGroup
@@ -304,10 +297,10 @@ Resources:
         Value: owned
         PropagateAtLaunch: true
       - Key: k8s.io/cluster-autoscaler/enabled
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
       - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
 
   LaunchConfigurationCore:
@@ -332,10 +325,10 @@ Resources:
   AutoScalingGroupGPU:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      DesiredCapacity: 0
+      DesiredCapacity: "0"
       LaunchConfigurationName: !Ref LaunchConfigurationGPU
-      MinSize: 0
-      MaxSize: 5
+      MinSize: "0"
+      MaxSize: "5"
       VPCZoneIdentifier: !Ref ActiveSubnets
       TargetGroupARNs:
       - !Ref TargetGroup
@@ -350,10 +343,10 @@ Resources:
         Value: owned
         PropagateAtLaunch: true
       - Key: k8s.io/cluster-autoscaler/enabled
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
       - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
 
   LaunchConfigurationGPU:
@@ -396,10 +389,10 @@ Resources:
         Value: owned
         PropagateAtLaunch: true
       - Key: k8s.io/cluster-autoscaler/enabled
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
       - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
 
   LaunchConfigurationCPU:
@@ -442,10 +435,10 @@ Resources:
         Value: owned
         PropagateAtLaunch: true
       - Key: k8s.io/cluster-autoscaler/enabled
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
       - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
 
   LaunchConfigurationCPULarge:
@@ -513,7 +506,7 @@ Resources:
         RedirectConfig:
           StatusCode: HTTP_301
           Protocol: HTTPS
-          Port: 443
+          Port: "443"
 
   HttpsListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -601,7 +594,8 @@ Resources:
       Name: !Sub ${AWS::StackName}-dockerhub/creds
       SecretString: 'USERNAME PASSWORD'
       Tags: 
-        - !Sub ${AWS::StackName}
+        - Key: 'StackName'
+          Value: !Sub ${AWS::StackName}
 
   Project:
     Type: AWS::CodeBuild::Project
@@ -614,7 +608,7 @@ Resources:
         PrivilegedMode: True
       Artifacts:
         Type: CODEPIPELINE
-      ServiceRole: !Ref CodeBuildServiceRole.Arn
+      ServiceRole: !Ref CodeBuildServiceRole
       TimeoutInMinutes: 45
       Source:
         Type: CODEPIPELINE
