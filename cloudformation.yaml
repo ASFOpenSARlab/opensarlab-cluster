@@ -175,6 +175,26 @@ Resources:
         SecurityGroupIds:
         - !GetAtt ClusterSecurityGroup.GroupId
 
+  UserAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-access
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Deny
+          Principal:
+            AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+          Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${AWS::StackName}-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "eks:*"
+                Resource: '*'
+
   NodeInstanceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -525,7 +545,7 @@ Resources:
     Properties:
       Description: !Sub "Lifecycle Policy for ${Cluster}"
       State: "ENABLED"
-      ExecutionRoleArn: "arn:aws:iam::553778890976:role/service-role/AWSDataLifecycleManagerDefaultRole"
+      ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/service-role/AWSDataLifecycleManagerDefaultRole"
       PolicyDetails:
         ResourceTypes:
           - "VOLUME"
@@ -556,14 +576,15 @@ Resources:
     Properties:
       RoleName: !Sub ${AWS::StackName}-hub-build
       AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
-          Effect: Allow
-          Principal:
-            Service: 
-              - codebuild.amazonaws.com
-              - cloudformation.amazonaws.com
-              - codepipeline.amazonaws.com
-          Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service: 
+                - codebuild.amazonaws.com
+                - cloudformation.amazonaws.com
+                - codepipeline.amazonaws.com
+            Action: sts:AssumeRole
       Policies:
         - PolicyName: !Sub ${AWS::StackName}-hub-build
           PolicyDocument:
@@ -623,7 +644,7 @@ Resources:
                 - pip3 install awscli>=1.16.158 --upgrade
                 - pip3 install boto3 --upgrade
                 - pip3 install kubernetes
-                - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
+                - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.17.11/2020-09-18/bin/linux/amd64/kubectl
                 - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
                 - curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
                 - mv /tmp/eksctl /usr/local/bin
@@ -644,6 +665,7 @@ Resources:
                 - docker push ${HubImageName}:$HUB_IMAGE_TAG
                 - aws eks update-kubeconfig --name ${Cluster}
                 - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" configs/aws-auth-cm.yaml
+                - sed -i "s|USER_ACCESS_ROLE_ARN|${UserAccessRole.Arn}|" configs/aws-auth-cm.yaml
                 - kubectl apply -f configs/aws-auth-cm.yaml
                 - kubectl apply -f configs/ebs-sc.yaml
                 - export HELM_HOST=127.0.0.1:44134
