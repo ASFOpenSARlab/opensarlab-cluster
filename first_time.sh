@@ -16,6 +16,7 @@ echo "Using AWS profile '$PROFILE'"
 #### User Params
 MY_DOCKER_HUB_CREDS=asfdaac:myPassword
 
+#### Load Balancer and Domain
 
 #### Roles 
 
@@ -24,59 +25,12 @@ MY_DOCKER_HUB_CREDS=asfdaac:myPassword
 #### Secret Manager
 echo "Creating Docker Hub secret entry. Password needs to be updated manually..."
 # Create secret for Docker Hub user to be used in image pulls
-# To retrieve: aws --profile=$PROFILE secretsmanager get-secret-value --secret-id dockerhub/creds --version-stage AWSCURRENT
+# To retrieve from AWS if already exists: aws --profile=$PROFILE secretsmanager get-secret-value --secret-id dockerhub/creds --version-stage AWSCURRENT
 aws --profile=$PROFILE secretsmanager create-secret --name dockerhub/creds --description "Docker Hub Username/Password" --secret-string $MY_DOCKER_HUB_CREDS
 
-exit 
-
-
-################################################################
-# Other helps for upgrading and conversion
-
-# Update cluster when Helm 2 -> 3 locally
-# This assumes that helm and kubeconfig are installed and configured properly
-
-# First way:
-# https://helm.sh/docs/topics/v2_v3_migration/
-# Install the converter and convert cluster in place
-helm plugin install https://github.com/helm/helm-2to3.git
-helm list 
-helm 2to3 convert jupyter --dry-run --tiller-out-cluster  # Or whatever the release name is
-# If the dry run throws no errors, run for real
-helm 2to3 convert jupyter --tiller-out-cluster
-
-# If the previous doesn't work (though it should) then do the following:
-# If on build the release fails complaining about lack of annotations, apply the following
-# https://github.com/helm/helm/issues/7697#issuecomment-613535044
-
-for n in $(kubectl get ns -o name | cut -c11-)
-do
-    echo "Namespace '$n'"
-    for r in $(kubectl api-resources --verbs=list -o name | xargs -n 1 kubectl get -o name --ignore-not-found -l chart -n $n)
-    do
-        echo "Resource '$r' in namespace '$n'"
-        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-name=$n
-        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-namespace=$n
-        kubectl -n $n label --overwrite $r app.kubernetes.io/managed-by=Helm
-    done
-done
-
-# Also pickup any labelled with Tiller
-for n in $(kubectl get ns -o name | cut -c11-)
-do
-    echo "Namespace '$n'"
-    for r in $(kubectl api-resources --verbs=list -o name | xargs -n 1 kubectl get -o name --ignore-not-found -l app.kubernetes.io/managed-by=Tiller -n $n)
-    do
-        echo "Resource '$r' in namespace '$n'"
-        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-name=$n
-        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-namespace=$n
-        kubectl -n $n label --overwrite $r app.kubernetes.io/managed-by=Helm
-    done
-done
 
 exit 
 
-# There will likely be others not picked up. These will need to be handled by hand as any failures show what needs to be changed during build.
 
 #######################
 # Update cluster versions https://docs.aws.amazon.com/eks/latest/userguide/update-cluster.html
@@ -111,8 +65,56 @@ kubectl set image daemonset.apps/kube-proxy -n kube-system kube-proxy=6024011434
 
 # 9. Redeploy build via codepipeline
 
-# 10. Autoscale nodes back to default values (1,2,etc)
+# 10. Update cluster metadata from Helm 2 to Helm 3 if needed.
+# See instructions below. 
 
-# 11. Enable all needed OSL server profiles
+# 11. Autoscale nodes back to default values (1,2,etc)
 
-exit 
+# 12. Enable all needed OSL server profiles
+
+
+##### Upgrade from Helm 2 to Helm 3
+
+# This assumes that helm and kubeconfig are installed and configured properly
+
+# First way:
+# https://helm.sh/docs/topics/v2_v3_migration/
+# Install the converter and convert cluster in place
+helm plugin install https://github.com/helm/helm-2to3.git
+helm list 
+helm 2to3 convert jupyter --dry-run --tiller-out-cluster  # Or whatever the release name is
+# If the dry run throws no errors, run for real
+helm 2to3 convert jupyter --tiller-out-cluster
+helm 2to3 convert autoscaler --dry-run --tiller-out-cluster  # Or whatever the release name is
+# If the dry run throws no errors, run for real
+helm 2to3 convert autoscaler --tiller-out-cluster
+
+# Second way:
+# If the previous doesn't work (though it should) then do the following:
+# If on build the release fails complaining about lack of annotations, apply the following
+# https://github.com/helm/helm/issues/7697#issuecomment-613535044
+
+for n in $(kubectl get ns -o name | cut -c11-)
+do
+    echo "Namespace '$n'"
+    for r in $(kubectl api-resources --verbs=list -o name | xargs -n 1 kubectl get -o name --ignore-not-found -l chart -n $n)
+    do
+        echo "Resource '$r' in namespace '$n'"
+        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-name=$n
+        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-namespace=$n
+        kubectl -n $n label --overwrite $r app.kubernetes.io/managed-by=Helm
+    done
+done
+
+# Also pickup any labelled with Tiller
+for n in $(kubectl get ns -o name | cut -c11-)
+do
+    echo "Namespace '$n'"
+    for r in $(kubectl api-resources --verbs=list -o name | xargs -n 1 kubectl get -o name --ignore-not-found -l app.kubernetes.io/managed-by=Tiller -n $n)
+    do
+        echo "Resource '$r' in namespace '$n'"
+        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-name=$n
+        kubectl -n $n annotate --overwrite $r meta.helm.sh/release-namespace=$n
+        kubectl -n $n label --overwrite $r app.kubernetes.io/managed-by=Helm
+    done
+done

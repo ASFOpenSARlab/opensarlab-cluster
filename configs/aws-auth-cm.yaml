@@ -10,3 +10,7 @@ data:
       groups:
         - system:bootstrappers
         - system:nodes
+    - rolearn: USER_ACCESS_ROLE_ARN
+      username: user-access-role
+      groups:
+        - system:masters

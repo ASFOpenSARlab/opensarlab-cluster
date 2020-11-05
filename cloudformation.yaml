@@ -2,6 +2,21 @@ AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
 
+  LoadBalancerCidrBlock:
+    Description: The range of allowed IPv4 addresses for the load balancer. This only firewalls the load balancer URL and not the cluster in general.
+    Type: String
+    Default: 0.0.0.0/0
+
+  CertificateArn:
+    Description: The ARN of the SSL certificate attached to the load balancer.
+    Type: String
+    Default: arn:aws:acm:us-east-1:553778890976:certificate/21d7b22a-86a3-4727-ab3a-2579a58d2d46
+
+  NodeProxyPort:
+    Description: The port of the hub proxy service opened to the load balancer.
+    Type: Number
+    Default: 30052
+
   VpcId:
     Description: The VPC of the worker instances
     Type: AWS::EC2::VPC::Id
@@ -14,13 +29,15 @@ Parameters:
     Description: The subnets actually used by resources in the cluster. Typically only one (e.g., subnet for AZ -d).
     Type: List<AWS::EC2::Subnet::Id>
 
-  CodeBuildServiceRoleArn:
-    Description: Role externally created to give Code Build permission to use AWS resources.
-    Type: String
-
   AdminUserName:
     Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
     Type: String
+
+  # "OldClusterBuildARN": "arn:aws:iam::553778890976:role/jupyter-hub-build"
+  OldClusterBuildARN:
+    Description: If the cluster was originally built with a different role, use this to update the cluster.
+    Type: String
+    Default: ''
 
   JupyterHubURL:
     Description: Jupyterhub URL used by AWS Cognito authentication. If not given, the default is the load balancer URL
@@ -125,21 +142,6 @@ Parameters:
     Type: Number
     Default: 0
 
-  LoadBalancerCidrBlock:
-    Description: The range of allowed IPv4 addresses for the load balancer. This only firewalls the load balancer URL and not the cluster in general.
-    Type: String
-    Default: 0.0.0.0/0
-
-  CertificateArn:
-    Description: The ARN of the SSL certificate attached to the load balancer.
-    Type: String
-    Default: arn:aws:acm:us-east-1:553778890976:certificate/21d7b22a-86a3-4727-ab3a-2579a58d2d46
-
-  NodeProxyPort:
-    Description: The port of the hub proxy service opened to the load balancer.
-    Type: Number
-    Default: 30052
-
 Outputs:
 
   AppUrl:
@@ -179,6 +181,26 @@ Resources:
         SecurityGroupIds:
         - !GetAtt ClusterSecurityGroup.GroupId
 
+  UserAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-access
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Deny
+          Principal:
+            AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+          Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${AWS::StackName}-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "eks:*"
+                Resource: '*'
+
   NodeInstanceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -212,18 +234,16 @@ Resources:
 
   NodeSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow instances to communicate with each other
       GroupId: !Ref NodeSecurityGroup
       SourceSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: -1
+      IpProtocol: "-1"
       FromPort: 0
       ToPort: 65535
 
   NodeSecurityGroupFromControlPlaneIngress:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
       GroupId: !Ref NodeSecurityGroup
@@ -234,7 +254,6 @@ Resources:
 
   NodeSecurityGroupFromLoadBalancer:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow worker Kubelets and pods to receive communication from the load balancer
       GroupId: !Ref NodeSecurityGroup
@@ -245,7 +264,6 @@ Resources:
 
   ControlPlaneEgressToNodeSecurityGroup:
     Type: AWS::EC2::SecurityGroupEgress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow the cluster control plane to communicate with worker Kubelet and pods
       GroupId: !GetAtt ClusterSecurityGroup.GroupId
@@ -256,7 +274,6 @@ Resources:
 
   NodeSecurityGroupFromControlPlaneOn443Ingress:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
       GroupId: !Ref NodeSecurityGroup
@@ -267,7 +284,6 @@ Resources:
 
   ControlPlaneEgressToNodeSecurityGroupOn443:
     Type: AWS::EC2::SecurityGroupEgress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow the cluster control plane to communicate with pods running extension API servers on port 443
       GroupId: !GetAtt ClusterSecurityGroup.GroupId
@@ -278,7 +294,6 @@ Resources:
 
   ClusterControlPlaneSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
-    DependsOn: NodeSecurityGroup
     Properties:
       Description: Allow pods to communicate with the cluster API Server
       GroupId: !GetAtt ClusterSecurityGroup.GroupId
@@ -290,10 +305,10 @@ Resources:
   AutoScalingGroupCore:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      DesiredCapacity: 1
+      DesiredCapacity: "1"
       LaunchConfigurationName: !Ref LaunchConfigurationCore
-      MinSize: 1
-      MaxSize: 2
+      MinSize: "1"
+      MaxSize: "2"
       VPCZoneIdentifier: !Ref ActiveSubnets
       TargetGroupARNs:
       - !Ref TargetGroup
@@ -308,10 +323,10 @@ Resources:
         Value: owned
         PropagateAtLaunch: true
       - Key: k8s.io/cluster-autoscaler/enabled
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
       - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
 
   LaunchConfigurationCore:
@@ -336,10 +351,10 @@ Resources:
   AutoScalingGroupGPU:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      DesiredCapacity: 0
+      DesiredCapacity: "0"
       LaunchConfigurationName: !Ref LaunchConfigurationGPU
-      MinSize: 0
-      MaxSize: 5
+      MinSize: "0"
+      MaxSize: "5"
       VPCZoneIdentifier: !Ref ActiveSubnets
       TargetGroupARNs:
       - !Ref TargetGroup
@@ -354,10 +369,10 @@ Resources:
         Value: owned
         PropagateAtLaunch: true
       - Key: k8s.io/cluster-autoscaler/enabled
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
       - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
 
   LaunchConfigurationGPU:
@@ -400,10 +415,10 @@ Resources:
         Value: owned
         PropagateAtLaunch: true
       - Key: k8s.io/cluster-autoscaler/enabled
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
       - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
 
   LaunchConfigurationCPU:
@@ -446,10 +461,10 @@ Resources:
         Value: owned
         PropagateAtLaunch: true
       - Key: k8s.io/cluster-autoscaler/enabled
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
       - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-        Value: true
+        Value: "true"
         PropagateAtLaunch: true
 
   LaunchConfigurationCPULarge:
@@ -517,7 +532,7 @@ Resources:
         RedirectConfig:
           StatusCode: HTTP_301
           Protocol: HTTPS
-          Port: 443
+          Port: "443"
 
   HttpsListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -536,7 +551,7 @@ Resources:
     Properties:
       Description: !Sub "Lifecycle Policy for ${Cluster}"
       State: "ENABLED"
-      ExecutionRoleArn: "arn:aws:iam::553778890976:role/service-role/AWSDataLifecycleManagerDefaultRole"
+      ExecutionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/service-role/AWSDataLifecycleManagerDefaultRole"
       PolicyDetails:
         ResourceTypes:
           - "VOLUME"
@@ -562,6 +577,53 @@ Resources:
       LogGroupName: !Sub "/aws/codebuild/${AWS::StackName}"
       RetentionInDays: 30
 
+  CodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-hub-build
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: 
+                - codebuild.amazonaws.com
+                - cloudformation.amazonaws.com
+                - codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${AWS::StackName}-hub-build
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codestar-connections:*"
+                  - "s3:*"
+                  - "dlm:*"
+                  - "logs:*"
+                  - "cloudformation:*"
+                  - "elasticloadbalancing:*"
+                  - "autoscaling:*"
+                  - "codebuild:*"
+                  - "iam:*"
+                  - "secretsmanager:*"
+                  - "ssm:*"
+                  - "ecr:*"
+                  - "ec2:*"
+                  - "eks:*"
+                Resource: '*'
+
+  JupyterImageSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: 'Docker Hub creds to grab the Jupyter base image'
+      Name: !Sub ${AWS::StackName}-dockerhub/creds
+      SecretString: 'USERNAME PASSWORD'
+      Tags: 
+        - Key: 'StackName'
+          Value: !Sub ${AWS::StackName}
+
   Project:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -573,7 +635,7 @@ Resources:
         PrivilegedMode: True
       Artifacts:
         Type: CODEPIPELINE
-      ServiceRole: !Ref CodeBuildServiceRoleArn
+      ServiceRole: !Ref CodeBuildServiceRole
       TimeoutInMinutes: 45
       Source:
         Type: CODEPIPELINE
@@ -588,7 +650,7 @@ Resources:
                 - pip3 install awscli>=1.16.158 --upgrade
                 - pip3 install boto3 --upgrade
                 - pip3 install kubernetes
-                - wget --no-verbose https://amazon-eks.s3-us-west-2.amazonaws.com/1.11.5/2018-12-06/bin/linux/amd64/kubectl
+                - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.17.11/2020-09-18/bin/linux/amd64/kubectl
                 - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
                 - curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
                 - mv /tmp/eksctl /usr/local/bin
@@ -597,8 +659,8 @@ Resources:
               commands:
                 - echo "Logging into AWS ECR..."
                 - $(aws ecr get-login --no-include-email --region ${AWS::Region})
-                - echo "Logging into Docker Hub user..."
-                - dh_creds=$(aws secretsmanager get-secret-value --secret-id dockerhub/creds --query 'SecretString' | sed 's/\"//g' )
+                - echo "Logging into Docker Hub user to get latest jupyter image..."
+                - dh_creds=$(aws secretsmanager get-secret-value --secret-id ${AWS::StackName}-dockerhub/creds --query 'SecretString' | sed 's/\"//g' )
                 - dh_username=$(echo $dh_creds | cut -f1 -d' ')
                 - echo $dh_creds | cut -f2 -d' ' > dh.pass
                 - cat dh.pass | docker login -u $dh_username --password-stdin
@@ -607,8 +669,9 @@ Resources:
                 - export HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
                 - docker build -t ${HubImageName}:$HUB_IMAGE_TAG -f hub/dockerfile hub/
                 - docker push ${HubImageName}:$HUB_IMAGE_TAG
-                - aws eks update-kubeconfig --name ${Cluster}
+                - test -z "${OldClusterBuildARN}" && aws eks update-kubeconfig --name ${Cluster} || aws eks update-kubeconfig --name ${Cluster} --role-arn ${OldClusterBuildARN}
                 - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" configs/aws-auth-cm.yaml
+                - sed -i "s|USER_ACCESS_ROLE_ARN|${UserAccessRole.Arn}|" configs/aws-auth-cm.yaml
                 - kubectl apply -f configs/aws-auth-cm.yaml
                 - kubectl apply -f configs/ebs-sc.yaml
                 - export HELM_HOST=127.0.0.1:44134
@@ -629,14 +692,14 @@ Resources:
                     --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                     --set custom.OAUTH_DNS_NAME='${OAuthDnsName}'
                     --set custom.CLUSTER_NAME=${Cluster},custom.AZ_NAME=${AWS::Region}d
-                    --set hub.image.tag=$HUB_IMAGE_TAG
+                    --set hub.image.tag=$HUB_IMAGE_TAG,hub.image.name=${HubImageName}
                 - kubectl -n jupyter rollout status -w deployment.apps/hub
                 - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true
                 - kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
                 - curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.6/config/v1.6/aws-k8s-cni.yaml
                 - sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml
                 - kubectl apply -f aws-k8s-cni.yaml
-                - helm repo add stable https://kubernetes-charts.storage.googleapis.com
+                - helm repo add stable https://charts.helm.sh/stable
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
