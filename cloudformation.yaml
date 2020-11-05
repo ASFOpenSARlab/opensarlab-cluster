@@ -33,6 +33,12 @@ Parameters:
     Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
     Type: String
 
+  # "OldClusterBuildARN": "arn:aws:iam::553778890976:role/jupyter-hub-build"
+  OldClusterBuildARN:
+    Description: If the cluster was originally built with a different role, use this to update the cluster.
+    Type: String
+    Default: ''
+
   JupyterHubURL:
     Description: Jupyterhub URL used by AWS Cognito authentication. If not given, the default is the load balancer URL
     Type: String
@@ -661,9 +667,9 @@ Resources:
             build:
               commands:
                 - export HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
-                - docker build -t ${HubImageName}:$HUB_IMAGE_TAG -f hub/dockerfile hub/
-                - docker push ${HubImageName}:$HUB_IMAGE_TAG
-                - aws eks update-kubeconfig --name ${Cluster}
+                - docker build -t ${HubImageName}:${HUB_IMAGE_TAG} -f hub/dockerfile hub/
+                - docker push ${HubImageName}:${HUB_IMAGE_TAG}
+                - test -z "${OldClusterBuildARN}" && aws eks update-kubeconfig --name ${Cluster} || aws eks update-kubeconfig --name ${Cluster} --role-arn ${OldClusterBuildARN}
                 - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" configs/aws-auth-cm.yaml
                 - sed -i "s|USER_ACCESS_ROLE_ARN|${UserAccessRole.Arn}|" configs/aws-auth-cm.yaml
                 - kubectl apply -f configs/aws-auth-cm.yaml
@@ -693,7 +699,7 @@ Resources:
                 - curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.6/config/v1.6/aws-k8s-cni.yaml
                 - sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml
                 - kubectl apply -f aws-k8s-cni.yaml
-                - helm repo add stable https://kubernetes-charts.storage.googleapis.com
+                - helm repo add stable https://charts.helm.sh/stable
                 - helm repo update
                 - helm fetch stable/cluster-autoscaler
                 - tar -zxf cluster-autoscaler*
