@@ -667,8 +667,8 @@ Resources:
             build:
               commands:
                 - export HUB_IMAGE_TAG=$(date +"%F-%H-%M-%S")
-                - docker build -t ${HubImageName}:${HUB_IMAGE_TAG} -f hub/dockerfile hub/
-                - docker push ${HubImageName}:${HUB_IMAGE_TAG}
+                - docker build -t ${HubImageName}:$HUB_IMAGE_TAG -f hub/dockerfile hub/
+                - docker push ${HubImageName}:$HUB_IMAGE_TAG
                 - test -z "${OldClusterBuildARN}" && aws eks update-kubeconfig --name ${Cluster} || aws eks update-kubeconfig --name ${Cluster} --role-arn ${OldClusterBuildARN}
                 - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" configs/aws-auth-cm.yaml
                 - sed -i "s|USER_ACCESS_ROLE_ARN|${UserAccessRole.Arn}|" configs/aws-auth-cm.yaml
