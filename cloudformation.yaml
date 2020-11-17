@@ -2,11 +2,6 @@ AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
 
-  ClusterVersion:
-    Description: Version of EKS cluster.
-    Type: String
-    Default: "1.17"
-
   LoadBalancerCidrBlock:
     Description: The range of allowed IPv4 addresses for the load balancer. This only firewalls the load balancer URL and not the cluster in general.
     Type: String
@@ -76,6 +71,26 @@ Parameters:
     Description: Name of ECR docker image for hub pod
     Type: String
     Default: 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub
+
+  NodeImageIdGPU:
+    Description: AMI id for the node instances of K8s
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/eks/optimized-ami/1.17/amazon-linux-2-gpu/recommended/image_id
+
+  NodeImageIdCPU:
+    Description: AMI id for the node instances of K8s
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/eks/optimized-ami/1.17/amazon-linux-2/recommended/image_id
+
+  NodeImageIdCPULarge:
+    Description: AMI id for the node instances of K8s
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/eks/optimized-ami/1.17/amazon-linux-2/recommended/image_id
+
+  NodeImageIdCore:
+    Description: AMI id for the node instances of K8s
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/eks/optimized-ami/1.17/amazon-linux-2/recommended/image_id
 
   NodeInstanceTypeCore:
     Description: EC2 instance type for the node Core instances.
@@ -165,7 +180,6 @@ Resources:
         SubnetIds: !Ref Subnets
         SecurityGroupIds:
         - !GetAtt ClusterSecurityGroup.GroupId
-      Version: !Ref ClusterVersion
 
   UserAccessRole:
     Type: AWS::IAM::Role
@@ -320,7 +334,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Sub /aws/service/eks/optimized-ami/${ClusterVersion}/amazon-linux-2/recommended/image_id
+      ImageId: !Ref NodeImageIdCore
       InstanceType: !Ref NodeInstanceTypeCore
       SecurityGroups:
       - !Ref NodeSecurityGroup
@@ -366,7 +380,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Sub /aws/service/eks/optimized-ami/${ClusterVersion}/amazon-linux-2-gpu/recommended/image_id
+      ImageId: !Ref NodeImageIdGPU
       InstanceType: !Ref NodeInstanceTypeGPU
       SecurityGroups:
       - !Ref NodeSecurityGroup
@@ -412,7 +426,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Sub /aws/service/eks/optimized-ami/${ClusterVersion}/amazon-linux-2/recommended/image_id
+      ImageId: !Ref NodeImageIdCPU
       InstanceType: !Ref NodeInstanceTypeCPU
       SecurityGroups:
       - !Ref NodeSecurityGroup
@@ -458,7 +472,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Sub /aws/service/eks/optimized-ami/${ClusterVersion}/amazon-linux-2/recommended/image_id
+      ImageId: !Ref NodeImageIdCPULarge
       InstanceType: !Ref NodeInstanceTypeCPULarge
       SecurityGroups:
       - !Ref NodeSecurityGroup
