@@ -2,6 +2,11 @@ AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
 
+  ClusterVersion:
+    Description: Version of EKS cluster.
+    Type: String
+    Default: "1.17"
+
   LoadBalancerCidrBlock:
     Description: The range of allowed IPv4 addresses for the load balancer. This only firewalls the load balancer URL and not the cluster in general.
     Type: String
@@ -71,26 +76,6 @@ Parameters:
     Description: Name of ECR docker image for hub pod
     Type: String
     Default: 553778890976.dkr.ecr.us-east-1.amazonaws.com/jupyter-hub
-
-  NodeImageIdGPU:
-    Description: AMI id for the node instances of K8s
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/eks/optimized-ami/1.17/amazon-linux-2-gpu/recommended/image_id
-
-  NodeImageIdCPU:
-    Description: AMI id for the node instances of K8s
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/eks/optimized-ami/1.17/amazon-linux-2/recommended/image_id
-
-  NodeImageIdCPULarge:
-    Description: AMI id for the node instances of K8s
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/eks/optimized-ami/1.17/amazon-linux-2/recommended/image_id
-
-  NodeImageIdCore:
-    Description: AMI id for the node instances of K8s
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/eks/optimized-ami/1.17/amazon-linux-2/recommended/image_id
 
   NodeInstanceTypeCore:
     Description: EC2 instance type for the node Core instances.
@@ -180,6 +165,7 @@ Resources:
         SubnetIds: !Ref Subnets
         SecurityGroupIds:
         - !GetAtt ClusterSecurityGroup.GroupId
+      Version: !Ref ClusterVersion
 
   UserAccessRole:
     Type: AWS::IAM::Role
@@ -334,7 +320,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageIdCore
+      ImageId: !Sub /aws/service/eks/optimized-ami/${ClusterVersion}/amazon-linux-2/recommended/image_id
       InstanceType: !Ref NodeInstanceTypeCore
       SecurityGroups:
       - !Ref NodeSecurityGroup
@@ -380,7 +366,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageIdGPU
+      ImageId: !Sub /aws/service/eks/optimized-ami/${ClusterVersion}/amazon-linux-2-gpu/recommended/image_id
       InstanceType: !Ref NodeInstanceTypeGPU
       SecurityGroups:
       - !Ref NodeSecurityGroup
@@ -426,7 +412,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageIdCPU
+      ImageId: !Sub /aws/service/eks/optimized-ami/${ClusterVersion}/amazon-linux-2/recommended/image_id
       InstanceType: !Ref NodeInstanceTypeCPU
       SecurityGroups:
       - !Ref NodeSecurityGroup
@@ -472,7 +458,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageIdCPULarge
+      ImageId: !Sub /aws/service/eks/optimized-ami/${ClusterVersion}/amazon-linux-2/recommended/image_id
       InstanceType: !Ref NodeInstanceTypeCPULarge
       SecurityGroups:
       - !Ref NodeSecurityGroup
@@ -699,17 +685,14 @@ Resources:
                 - curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.6/config/v1.6/aws-k8s-cni.yaml
                 - sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml
                 - kubectl apply -f aws-k8s-cni.yaml
-                - helm repo add stable https://charts.helm.sh/stable
+                - helm repo add autoscaler https://kubernetes.github.io/autoscaler
                 - helm repo update
-                - helm fetch stable/cluster-autoscaler
-                - tar -zxf cluster-autoscaler*
-                - helm upgrade autoscaler stable/cluster-autoscaler
+                - helm upgrade autoscaler autoscaler/cluster-autoscaler-chart
                     --install
                     --namespace autoscaler
-                    --values cluster-autoscaler*/values.yaml
                     --atomic
                     --timeout=2m0s
-                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True,nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
+                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
                 - curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/master/k8s-yaml-templates/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/" | kubectl apply -f -
       LogsConfig:
         CloudWatchLogs:
