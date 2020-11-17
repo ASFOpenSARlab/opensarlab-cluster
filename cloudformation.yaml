@@ -180,6 +180,7 @@ Resources:
         SubnetIds: !Ref Subnets
         SecurityGroupIds:
         - !GetAtt ClusterSecurityGroup.GroupId
+      Version: "1.17"
 
   UserAccessRole:
     Type: AWS::IAM::Role
@@ -699,17 +700,14 @@ Resources:
                 - curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.6/config/v1.6/aws-k8s-cni.yaml
                 - sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml
                 - kubectl apply -f aws-k8s-cni.yaml
-                - helm repo add stable https://charts.helm.sh/stable
+                - helm repo add autoscaler https://kubernetes.github.io/autoscaler
                 - helm repo update
-                - helm fetch stable/cluster-autoscaler
-                - tar -zxf cluster-autoscaler*
-                - helm upgrade autoscaler stable/cluster-autoscaler
+                - helm upgrade autoscaler autoscaler/cluster-autoscaler-chart
                     --install
                     --namespace autoscaler
-                    --values cluster-autoscaler*/values.yaml
                     --atomic
                     --timeout=2m0s
-                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},sslCertPath='/etc/kubernetes/pki/ca.crt',rbac.create=True,nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
+                    --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
                 - curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/master/k8s-yaml-templates/quickstart/cwagent-fluentd-quickstart.yaml | sed "s/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/" | kubectl apply -f -
       LogsConfig:
         CloudWatchLogs:
