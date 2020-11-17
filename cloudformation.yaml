@@ -180,6 +180,7 @@ Resources:
         SubnetIds: !Ref Subnets
         SecurityGroupIds:
         - !GetAtt ClusterSecurityGroup.GroupId
+      Version: "1.17"
 
   UserAccessRole:
     Type: AWS::IAM::Role
