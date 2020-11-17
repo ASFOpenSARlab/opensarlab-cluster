@@ -8,12 +8,6 @@ auth:
     users:
     - ADMIN_USER
 
-prePuller:
-  continuous:
-    enabled: true
-  hook:
-    enabled: true
-
 proxy:
   https:
     enabled: false
@@ -24,6 +18,7 @@ proxy:
     type: NodePort
 
 singleuser:
+  startTimeout: 600
   storage:
     capacity: 500Gi
     dynamic:
@@ -32,6 +27,38 @@ singleuser:
   memory:
     limit: 16G
     guarantee: 6G
+
+prePuller:
+  continuous:
+    enabled: false
+  hook:
+    enabled: false
+
+cull:
+  enabled: true
+  timeout: 3600
+  every: 300
+
+scheduling:
+  userPlaceholder:
+    enabled: false
+  userScheduler:
+    enabled: true
+  corePods:
+    nodeAffinity:
+      matchNodePurpose: require  # hub.jupyter.org/node-purpose=core
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
+
+custom:
+  OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
+  OAUTH_DNS_NAME: OAUTH_DNS_NAME
+  CLUSTER_NAME: CLUSTER_NAME
+  AZ_NAME: AZ_NAME
+  VOLUME_SIZE: VOLUME_SIZE
+  IMAGE_NAME: IMAGE_NAME
+  IMAGE_TAG: IMAGE_TAG
 
 hub:
     image:
@@ -362,29 +389,3 @@ hub:
             print("Subdomain not implemented...")
             #import z2jh
             #c.JupyterHub.subdomain_host = f"{z2jh.get_config('custom.OAUTH_JUPYTER_URL')}"
-
-
-custom:
-  OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
-  OAUTH_DNS_NAME: OAUTH_DNS_NAME
-  CLUSTER_NAME: CLUSTER_NAME
-  AZ_NAME: AZ_NAME
-  VOLUME_SIZE: VOLUME_SIZE
-  IMAGE_NAME: IMAGE_NAME
-  IMAGE_TAG: IMAGE_TAG
-
-cull:
-  enabled: true
-  timeout: 3600
-  every: 300
-
-scheduling:
-  userScheduler:
-    enabled: true
-    replicas: 1
-  corePods:
-    nodeAffinity:
-      matchNodePurpose: require  # hub.jupyter.org/node-purpose=core
-  userPods:
-    nodeAffinity:
-      matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
