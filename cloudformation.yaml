@@ -49,15 +49,6 @@ Parameters:
     Type: String
     Default: ''
 
-  OAuthClientId:
-    Description: AWS Cognito authentication client id.
-    Type: String
-
-  OAuthClientSecret:
-    Description: AWS Cognito authentication client secret.
-    Type: String
-    NoEcho: True
-
   ImageName:
     Description: Name of ECR docker image for user's server.
     Type: String
