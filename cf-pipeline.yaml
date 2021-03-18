@@ -1,0 +1,248 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+  AdminUserName:
+    Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
+    Type: String
+
+  CertificateArn:
+    Type: String
+    Default: ''
+
+  CodeCommitRepoName:
+    Type: String
+    Default: ''
+
+  CodeCommitBranchName:
+    Type: String
+    Default: ''
+
+  ContainerNamespace:
+    Type: String
+    Default: ''
+
+  OAuthPoolName:
+    Description: AWS Cognito User Pool name
+    Type: String
+    Default: ''
+
+  JupyterHubURL:
+    Description: Jupyterhub URL A record used by AWS Cognito authentication. If not given, the default is the load balancer URL
+    Type: String
+    Default: ''
+
+Outputs:
+
+  CommonRoleArn:
+    Description: "Common role arn"
+    Value: !GetAtt CommonRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-cluster-${AWS::AccountId}-common-role-arn
+
+Resources:
+
+  CommonRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-common-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+                - codebuild.amazonaws.com
+                - codepipeline.amazonaws.com
+                - eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+      Policies:
+        - PolicyName: GetPassRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "iam:GetRole"
+                  - "iam:PassRole"
+                Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/*
+                Condition:
+                  "StringEquals":
+                    "iam:PassedToService":
+                      - "eks.amazonaws.com"
+                      - "cloudformation.amazonaws.com"
+                      - "codepipeline.amazonaws.com"
+                      - "codebuild.amazonaws.com"
+        - PolicyName: !Sub ${AWS::StackName}-hub-build
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codestar-connections:*"
+                  - "s3:*"
+                  - "dlm:*"
+                  - "logs:*"
+                  - "cloudformation:*"
+                  - "elasticloadbalancing:*"
+                  - "autoscaling:*"
+                  - "codebuild:*"
+                  - "iam:*"
+                  - "secretsmanager:*"
+                  - "ssm:*"
+                  - "ecr:*"
+                  - "ec2:*"
+                  - "eks:*"
+                  - "codepipeline:*"
+                  - "sts:AssumeRole"
+                Resource: '*'
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub codepipeline-${AWS::Region}-${AWS::StackName}
+      AccessControl: PublicRead
+      Tags:
+        - Key: Description
+          Value: Artifact Bucket
+
+  PrebuildCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${AWS::StackName}-prebuild-codebuild
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:4.0
+        ComputeType: BUILD_GENERAL1_SMALL
+      ServiceRole: !GetAtt CommonRole.Arn
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+
+          env:
+            shell: bash
+            exported-variables:
+              - VpcId
+              - ActiveSubnets
+              - Subnets
+              
+          phases:
+            install:
+              runtime-versions:
+                python: 3.8
+            build:
+              commands:
+                - python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}-cluster
+                - export VPCIDS_SUBNETS=( $(cat get_vpcid_and_subnets.tmp) );
+                  echo ${!VPCIDS_SUBNETS[@]};
+                  export VpcId="${!VPCIDS_SUBNETS[0]}";
+                  export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
+                  export Subnets="${!VPCIDS_SUBNETS[2]}";
+          artifacts:
+            files:
+              - '**/*'
+            secondary-artifacts:
+              PreBuildArtifact:
+          #      base-directory: $CODEBUILD_SRC_DIR
+                files:
+                  - '**/*'
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties: 
+      ArtifactStore: 
+        Type: S3
+        Location: !Sub codepipeline-${AWS::Region}-${AWS::StackName}
+      Name: !Sub ${AWS::StackName}-Pipeline
+      RestartExecutionOnUpdate: True
+      RoleArn: !GetAtt CommonRole.Arn
+      Stages:
+        - Name: !Sub ${AWS::StackName}-Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeCommit
+                Version: "1"
+              Configuration:
+                BranchName: !Sub ${CodeCommitBranchName}
+                OutputArtifactFormat: CODE_ZIP
+                PollForSourceChanges: "false"
+                RepositoryName: !Sub ${CodeCommitRepoName}
+              OutputArtifacts:
+                - Name: SourceArtifact
+              Region: !Sub ${AWS::Region}
+              Namespace: SourceVariables
+        - Name: !Sub ${AWS::StackName}-Build-Cluster
+          Actions:
+            - Name: PreBuild
+              RunOrder: 1
+              Namespace: prebuild
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref PrebuildCodeBuild
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: PreBuildArtifact
+              Region: !Sub ${AWS::Region}
+            - Name: BuildCluster
+              RunOrder: 2
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CommonRole.Arn
+                StackName: !Sub ${AWS::StackName}-cluster
+                TemplatePath: PreBuildArtifact::cloudformation.yaml
+                ParameterOverrides: !Sub
+                  - | 
+                    {
+                      "AdminUserName": "${AdminUserName}",
+                      "ContainerNamespace": "${ContainerNamespace}",
+                      "OAuthPoolName": "${OAuthPoolName}",
+                      "OAuthDNSName": "https://${OAuthPoolName}.auth.us-east-1.amazoncognito.com",
+                      "JupyterHubURL": "${JupyterHubURL}", 
+                      "CertificateArn": "${CertificateArn}", 
+                      "VpcId": "${myVpcId}", 
+                      "ActiveSubnets": "${myActiveSubnets}", 
+                      "Subnets": "${mySubnets}"
+                    }
+                  - myVpcId: "#{prebuild.VpcId}"
+                    myActiveSubnets: "#{prebuild.ActiveSubnets}"
+                    mySubnets: "#{prebuild.Subnets}"
+              InputArtifacts:
+                - Name: PreBuildArtifact
+              Region: !Sub ${AWS::Region}
+              RoleArn: !GetAtt CommonRole.Arn
+        - Name: !Sub ${AWS::StackName}-BuildJupyterHub
+          Actions:
+            - Name: BuildJupyterHub
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Sub ${AWS::StackName}-cluster-jupyterhub
+              InputArtifacts:
+                - Name: PreBuildArtifact
+              Region: !Sub ${AWS::Region}
+

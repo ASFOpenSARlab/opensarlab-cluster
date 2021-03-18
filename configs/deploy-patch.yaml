@@ -1,0 +1,11 @@
+spec:
+    template:
+        spec:
+            containers:
+            -   name: hub
+                args: 
+                - sh
+                - -c
+                - sudo /usr/sbin/service cron start && jupyterhub --config /etc/jupyterhub/jupyterhub_config.py --upgrade-db
+                securityContext:
+                    allowPrivilegeEscalation: true
