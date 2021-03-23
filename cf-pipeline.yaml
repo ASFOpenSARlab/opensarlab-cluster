@@ -126,6 +126,7 @@ Resources:
         Type: LINUX_CONTAINER
         Image: aws/codebuild/standard:4.0
         ComputeType: BUILD_GENERAL1_SMALL
+        PrivilegedMode: True
       ServiceRole: !GetAtt CommonRole.Arn
       Source:
         Type: CODEPIPELINE
@@ -144,6 +145,10 @@ Resources:
               runtime-versions:
                 docker: 18
                 python: 3.8
+            prebuild:
+              commands:
+                - echo "Logging into AWS ECR..."
+                - $(aws ecr get-login --no-include-email --region ${AWS::Region})
             build:
               commands:
                 - python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}-cluster
