@@ -237,7 +237,7 @@ hub:
                         image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
                         profile = {
                             'display_name': 'SAR 1',
-                            'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM guarantee: 6 GiB. RAM limit: 16GiB',
+                            'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16GiB. Storage: 500 GiB.',
                             'default': True,
                             'kubespawner_override': {
                                 'extra_labels': {
@@ -255,8 +255,7 @@ hub:
                                     }
                                 },
                                 'mem_limit': '16Gi', 
-                                'mem_guarantee': '6Gi', 
-                                'cpu_guarantee': 1.25,
+                                'mem_guarantee': '6Gi',
                                 'storage_capacity': '500Gi'
                             }
                         }
@@ -267,7 +266,7 @@ hub:
                         image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
                         profile = {
                             'display_name': 'SAR 2',
-                            'description': 'Formally UNAVCO. Contains basic SAR processing packages on a bigger machine. RAM guarantee: 32Gi. RAM limit: 96Gi. CPU limit: 8 cpus.',
+                            'description': 'Formally UNAVCO. Contains basic SAR processing packages on a bigger machine. RAM limit: 96Gi. CPU limit: 8 cpus. Storage: 500 GiB.',
                             'default': False,
                             'kubespawner_override': {
                                 'extra_labels': {
