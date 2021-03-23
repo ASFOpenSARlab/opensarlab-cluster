@@ -346,14 +346,14 @@ hub:
 
                     c.Spawner.options_form = """
                         <style>
-                          .no-profiles: {
+                          .no-profiles: {{
                               text-align: center;
                               color: #225f8d;
                               font-size: 36px;
-                          }
-                          .feedback-container {
+                          }}
+                          .feedback-container {{
                               display: none;
-                          }
+                          }}
                         </style>
 
                         <p class="no-profiles"> There are no server profiles assigned for {user}</p>
@@ -365,14 +365,14 @@ hub:
 
                     c.Spawner.options_form = """
                         <style>
-                          .no-profiles: {
+                          .no-profiles: {{
                               text-align: center;
                               color: #225f8d;
                               font-size: 36px;
-                          }
-                          .feedback-container {
+                          }}
+                          .feedback-container {{
                               display: none;
-                          }
+                          }}
                         </style>
 
                         <p class="no-profiles"> Something went wrong with the profile list</p>
