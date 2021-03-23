@@ -17,6 +17,4 @@ if [ "$HUB_FORCE_BUILD" = 'true' ]; then
     # Push to registry
     docker push $DOCKER_REGISTRY/hub:$BUILD_TAG
     docker push $DOCKER_REGISTRY/hub:latest
-
-    export HubBuildTag=$BUILD_TAG
 fi

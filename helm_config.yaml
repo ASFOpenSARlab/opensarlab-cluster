@@ -61,7 +61,7 @@ hub:
     image:
       imagePullPolicy: Always
       name: HUB_IMAGE_NAME_HERE
-      tag: HUB_IMAGE_TAG_HERE
+      tag: latest
 
     extraConfig:
         myAuthConfig.py: |

@@ -138,7 +138,6 @@ Resources:
               - VpcId
               - ActiveSubnets
               - Subnets
-              - HubBuildTag
               
           phases:
             install:
@@ -244,13 +243,11 @@ Resources:
                       "CertificateArn": "${CertificateArn}", 
                       "VpcId": "${myVpcId}", 
                       "ActiveSubnets": "${myActiveSubnets}", 
-                      "Subnets": "${mySubnets}", 
-                      "HubBuildTag": "${myHubBuildTag}"
+                      "Subnets": "${mySubnets}"
                     }
                   - myVpcId: "#{prebuild.VpcId}"
                     myActiveSubnets: "#{prebuild.ActiveSubnets}"
                     mySubnets: "#{prebuild.Subnets}"
-                    myHubBuildTag: "#{prebuild.HubBuildTag}"
               InputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}

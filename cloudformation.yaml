@@ -686,7 +686,6 @@ Resources:
                       --set custom.OAUTH_DNS_NAME=${OAuthDNSName}
                       --set custom.CLUSTER_NAME=${Cluster},custom.OAUTH_POOL_NAME=${OAuthPoolName},custom.AZ_NAME=${AWS::Region}d
                       --set hub.image.name=$IMAGE_REPO_URL/hub
-                      --set hub.image.tag=${HubBuildTag}
                   - kubectl -n jupyter rollout status -w deployment.apps/hub
                   - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true
                   - echo "Associate volume provisioner with service account..."
