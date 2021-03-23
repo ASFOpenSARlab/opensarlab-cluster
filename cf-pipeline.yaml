@@ -111,6 +111,11 @@ Resources:
         - Key: Description
           Value: Artifact Bucket
 
+  HubRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ContainerNamespace}/hub"
+
   PrebuildCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
