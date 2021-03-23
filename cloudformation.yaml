@@ -44,11 +44,6 @@ Parameters:
     Description: The subnets actually used by resources in the cluster. Typically only one (e.g., subnet for AZ -d).
     Type: List<AWS::EC2::Subnet::Id>
 
-  HubBuildTag:
-    Description: The image tag of the Hub 
-    Type: String 
-    Default: ''
-
   # The following values require defaults.
   LoadBalancerCidrBlock:
     Description: The range of allowed IPv4 addresses for the load balancer. This only firewalls the load balancer URL and not the cluster in general.
