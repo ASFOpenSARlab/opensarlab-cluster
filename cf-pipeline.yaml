@@ -145,7 +145,7 @@ Resources:
               runtime-versions:
                 docker: 18
                 python: 3.8
-            prebuild:
+            pre_build:
               commands:
                 - echo "Logging into AWS ECR..."
                 - $(aws ecr get-login --no-include-email --region ${AWS::Region})
