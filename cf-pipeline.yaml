@@ -152,7 +152,8 @@ Resources:
                   export VpcId="${!VPCIDS_SUBNETS[0]}";
                   export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
                   export Subnets="${!VPCIDS_SUBNETS[2]}";
-                - bash hub/build.sh
+                - cd hub;
+                  bash build.sh
           artifacts:
             files:
               - '**/*'
