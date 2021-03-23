@@ -44,6 +44,10 @@ Parameters:
     Description: The subnets actually used by resources in the cluster. Typically only one (e.g., subnet for AZ -d).
     Type: List<AWS::EC2::Subnet::Id>
 
+  HubBuildTag:
+    Description: The image tag of the Hub 
+    Type: String 
+    Default: ''
 
   # The following values require defaults.
   LoadBalancerCidrBlock:
@@ -56,7 +60,7 @@ Parameters:
     Type: Number
     Default: 30052
 
-  NodeImageIdCore:
+  NodeImageId:
     Description: AMI id for the node instances of K8s
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/eks/optimized-ami/1.18/amazon-linux-2/recommended/image_id
@@ -66,35 +70,15 @@ Parameters:
     Type: String
     Default: t3a.medium
 
-  NodeImageIdGEOS626:
-    Description: AMI id for the node instances of K8s
-    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/eks/optimized-ami/1.18/amazon-linux-2/recommended/image_id
-
-  NodeInstanceTypeGEOS626M5aXLarge:
-    Description: EC2 instance type for the large node CPU instances.
+  NodeInstanceTypeSAR1:
+    Description: EC2 instance type for SAR 1.
     Type: String
-    Default: m5a.xlarge
+    Default: m5a.2xlarge
 
-  NodeInstanceTypeGEOS626M5aLarge:
-    Description: EC2 instance type for the large node CPU instances.
+  NodeInstanceTypeSAR2:
+    Description: EC2 instance type for SAR 2.
     Type: String
-    Default: m5a.large
-
-  NodeAutoScalingGroupMinSizeGEOS626:
-    Description: Minimum size of Node Group ASG.
-    Type: Number
-    Default: 1
-
-  NodeAutoScalingGroupMaxSizeGEOS626:
-    Description: Maximum size of Node Group ASG. Set to at least 1 greater than NodeAutoScalingGroupDesiredCapacityCPU.
-    Type: Number
-    Default: 25
-
-  NodeAutoScalingGroupDesiredCapacityGEOS626:
-    Description: Desired capacity of Node Group ASG.
-    Type: Number
-    Default: 1
+    Default: m5a.8xlarge
 
 
 Outputs:
@@ -399,7 +383,7 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageIdCore
+      ImageId: !Ref NodeImageId
       InstanceType: !Ref NodeInstanceTypeCore
       SecurityGroups:
       - !Ref NodeSecurityGroup
@@ -413,13 +397,13 @@ Resources:
           --resource NodeGroup  \
           --region ${AWS::Region}
 
-  AutoScalingGroupGEOS626M5aXLarge:
+  AutoScalingGroupSAR1:
    Type: AWS::AutoScaling::AutoScalingGroup
    Properties:
-     DesiredCapacity: !Ref NodeAutoScalingGroupDesiredCapacityGEOS626
-     LaunchConfigurationName: !Ref LaunchConfigurationGEOS626M5aXLarge
-     MinSize: !Ref NodeAutoScalingGroupMinSizeGEOS626
-     MaxSize: !Ref NodeAutoScalingGroupMaxSizeGEOS626
+     DesiredCapacity: "0"
+     LaunchConfigurationName: !Ref LaunchConfigurationSAR1
+     MinSize: "0"
+     MaxSize: "25"
      VPCZoneIdentifier: !Ref ActiveSubnets
      Tags:
      - Key: Name
@@ -438,32 +422,32 @@ Resources:
        Value: "true"
        PropagateAtLaunch: true
 
-  LaunchConfigurationGEOS626M5aXLarge:
+  LaunchConfigurationSAR1:
    Type: AWS::AutoScaling::LaunchConfiguration
    Properties:
      AssociatePublicIpAddress: true
      IamInstanceProfile: !Ref NodeInstanceProfile
-     ImageId: !Ref NodeImageIdGEOS626
-     InstanceType: !Ref NodeInstanceTypeGEOS626M5aXLarge
+     ImageId: !Ref NodeImageId
+     InstanceType: !Ref NodeInstanceTypeSAR1
      SecurityGroups:
       - !Ref NodeSecurityGroup
      UserData:
        Fn::Base64: !Sub |
          #!/bin/bash
          set -o xtrace
-         /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=geos_626_m5aXLarge'
+         /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_1'
          /opt/aws/bin/cfn-signal --exit-code $? \
          --stack  ${AWS::StackName} \
          --resource NodeGroup  \
          --region ${AWS::Region}
 
-  AutoScalingGroupGEOS626M5aLarge:
+  AutoScalingGroupSAR2:
    Type: AWS::AutoScaling::AutoScalingGroup
    Properties:
-     DesiredCapacity: !Ref NodeAutoScalingGroupDesiredCapacityGEOS626
-     LaunchConfigurationName: !Ref LaunchConfigurationGEOS626M5aLarge
-     MinSize: !Ref NodeAutoScalingGroupMinSizeGEOS626
-     MaxSize: !Ref NodeAutoScalingGroupMaxSizeGEOS626
+     DesiredCapacity: "0"
+     LaunchConfigurationName: !Ref LaunchConfigurationSAR2
+     MinSize: "0"
+     MaxSize: "25"
      VPCZoneIdentifier: !Ref ActiveSubnets
      Tags:
      - Key: Name
@@ -482,20 +466,20 @@ Resources:
        Value: "true"
        PropagateAtLaunch: true
 
-  LaunchConfigurationGEOS626M5aLarge:
+  LaunchConfigurationSAR2:
    Type: AWS::AutoScaling::LaunchConfiguration
    Properties:
      AssociatePublicIpAddress: true
      IamInstanceProfile: !Ref NodeInstanceProfile
-     ImageId: !Ref NodeImageIdGEOS626
-     InstanceType: !Ref NodeInstanceTypeGEOS626M5aLarge
+     ImageId: !Ref NodeImageId
+     InstanceType: !Ref NodeInstanceTypeSAR2
      SecurityGroups:
       - !Ref NodeSecurityGroup
      UserData:
        Fn::Base64: !Sub |
          #!/bin/bash
          set -o xtrace
-         /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=geos_626_m5aLarge'
+         /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_2'
          /opt/aws/bin/cfn-signal --exit-code $? \
          --stack  ${AWS::StackName} \
          --resource NodeGroup  \
@@ -702,6 +686,7 @@ Resources:
                       --set custom.OAUTH_DNS_NAME=${OAuthDNSName}
                       --set custom.CLUSTER_NAME=${Cluster},custom.OAUTH_POOL_NAME=${OAuthPoolName},custom.AZ_NAME=${AWS::Region}d
                       --set hub.image.name=$IMAGE_REPO_URL/hub
+                      --set hub.image.tag=${HubBuildTag}
                   - kubectl -n jupyter rollout status -w deployment.apps/hub
                   - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true
                   - echo "Associate volume provisioner with service account..."

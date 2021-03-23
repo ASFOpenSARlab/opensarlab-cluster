@@ -60,8 +60,8 @@ hub:
 
     image:
       imagePullPolicy: Always
-      name: HUB_IMAGE_NAME
-      tag: 2021-01-26-18-04-50
+      name: HUB_IMAGE_NAME_HERE
+      tag: HUB_IMAGE_TAG_HERE
 
     extraConfig:
         myAuthConfig.py: |
@@ -167,10 +167,10 @@ hub:
                 # Lifecycle snapshot runs at 10 UTC, 1am AKST
 
                 # Setup crontab for force deactivation
-                job1 = cron.new(command='python3 /etc/jupyterhub/custom/force_deactivation.py > /proc/1/fd/1 2>&1')
-                job1.hour.on(11)  # 11:30 UTC, 2:30am AKST
-                job1.minute.on(30)
-                job1.enable()
+                #job1 = cron.new(command='python3 /etc/jupyterhub/custom/force_deactivation.py > /proc/1/fd/1 2>&1')
+                #job1.hour.on(11)  # 11:30 UTC, 2:30am AKST
+                #job1.minute.on(30)
+                #job1.enable()
 
                 # Setup crontab for volume killer
                 job2 = cron.new(command='python3 /etc/jupyterhub/custom/delete_volumes.py > /proc/1/fd/1 2>&1')
@@ -232,73 +232,79 @@ hub:
 
                     profile_list = []
 
-                    if 'geos_626_m5aXLarge' in group_list:
-                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/geos_626:2021-01-26-18-05-05"
+                    # m5a.2xlarge: 8 cpus, 32 GiB RAM
+                    if 'SAR 1' in group_list:
+                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
                         profile = {
-                            'display_name': 'GEOS 626 - m5a.xlarge',
-                            'description': 'Contains python for basic notebook use on a m5a.xlarge',
-                            'default': False,
-                            'kubespawner_override': {
-                                'extra_labels': {
-                                    'server_type': 'geos_626_m5aXLarge'
-                                },
-                                'node_selector': {
-                                    'server_type': 'geos_626_m5aXLarge'
-                                },
-                                'image': image_url,
-                                'lifecycle_hooks': {
-                                    "postStart": {
-                                        "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/geos_626.sh"]
-                                        }
-                                    }
-                                },
-                                'cpu_guarantee': 1.25,
-                                'storage_capacity': '50G'
-                            }
-                        }
-                        profile_list.append(profile)
-
-                    if 'geos_626_m5aLarge' in group_list:
-                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/geos_626:2021-01-26-18-05-05"
-                        profile = {
-                            'display_name': 'GEOS 626 - m5a.large',
-                            'description': 'Contains python for basic notebook use on a m5a.large',
+                            'display_name': 'SAR 1',
+                            'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM guarantee: 6 GiB. RAM limit: 16GiB',
                             'default': True,
                             'kubespawner_override': {
                                 'extra_labels': {
-                                    'server_type': 'geos_626_m5aLarge'
+                                    'server_type': 'sar_1'
                                 },
                                 'node_selector': {
-                                    'server_type': 'geos_626_m5aLarge'
+                                    'server_type': 'sar_1'
                                 },
                                 'image': image_url,
                                 'lifecycle_hooks': {
                                     "postStart": {
                                         "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/geos_626.sh"]
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
                                         }
                                     }
                                 },
-                                'cpu_guarantee': 0.75,
-                                'storage_capacity': '50G'
+                                'mem_limit': '16Gi', 
+                                'mem_guarantee': '6Gi', 
+                                'cpu_guarantee': 1.25,
+                                'storage_capacity': '500Gi'
                             }
                         }
                         profile_list.append(profile)
 
-                    if 'no_smart_git' in group_list:
-                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/geos_626:2021-01-26-02-21-39"
+                    # m5a.8xlarge: 32 cpu, 128 GiB RAM
+                    if 'SAR 2' in group_list:
+                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
                         profile = {
-                            'display_name': 'General SAR processing (without git puller)',
-                            'description': 'Useful for debugging some server timeouts. Contains basic SAR processing and analysis tools. This does not pull in the latest notebooks.',
+                            'display_name': 'SAR 2',
+                            'description': 'Formally UNAVCO. Contains basic SAR processing packages on a bigger machine. RAM guarantee: 32Gi. RAM limit: 96Gi. CPU limit: 8 cpus.',
                             'default': False,
                             'kubespawner_override': {
                                 'extra_labels': {
-                                    'server_type': 'geos_626_m5aLarge',
+                                    'server_type': 'sar_2'
+                                },
+                                'node_selector': {
+                                    'server_type': 'sar_2'
+                                },
+                                'image': image_url,
+                                'lifecycle_hooks': {
+                                    "postStart": {
+                                        "exec": {
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
+                                        }
+                                    }
+                                },
+                                'mem_limit': '96Gi', 
+                                'mem_guarantee': '32Gi', 
+                                'cpu_limit': 8,
+                                'storage_capacity': '500Gi'
+                            }
+                        }
+                        profile_list.append(profile)
+
+                    if 'SAR 1 - No Gitpuller' in group_list:
+                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
+                        profile = {
+                            'display_name': 'SAR 1 - No Gitpuller',
+                            'description': 'Useful for debugging some server timeouts. This does not pull in the latest notebooks.',
+                            'default': False,
+                            'kubespawner_override': {
+                                'extra_labels': {
+                                    'server_type': 'sar_1',
                                     'extra_configs': 'no_smart_git'
                                 },
                                 'node_selector': {
-                                    'server_type': 'geos_626_m5aLarge'
+                                    'server_type': 'sar_1'
                                 },
                                 'image': image_url,
                                 'lifecycle_hooks': {
@@ -308,8 +314,10 @@ hub:
                                         }
                                     }
                                 },
-                                'cpu_guarantee': 2.5,
-                                'storage_capacity': '50G'
+                                'mem_limit': '16Gi', 
+                                'mem_guarantee': '6Gi', 
+                                'cpu_guarantee': 1.25,
+                                'storage_capacity': '500Gi'
                             }
                         }
                         profile_list.append(profile)

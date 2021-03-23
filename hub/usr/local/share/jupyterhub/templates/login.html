@@ -1,0 +1,80 @@
+{% extends "page.html" %}
+{% if announcement_login %}
+  {% set announcement = announcement_login %}
+{% endif %}
+
+{% block login_widget %}
+{% endblock %}
+
+{% block main %}
+
+{% block login %}
+<div id="login-main" class="container">
+{% if login_service %}
+    <div class="service-login">
+      <!--div class="announcement">
+        <p style="color:black; font-size: 18pt;">
+          Outage Notice
+        </p>
+        <p style="color:black; font-size: 14pt;">
+          OpenSARlab was originally scheduled for maintenance on Fri 2 Oct 2020 around 9pm AKDT for about 2 hours. This has been postponed till Weds 7 Oct 2020 around 9pm AKDT. At that time all servers will be stopped. User's home directories will be safe and not touched.    
+        </p>
+      </div-->
+      <div class="main-center">
+        <img style="float: left; max-height: 37px; margin-top: 7px; margin-left: 5px; z-index: 10;" src="{{static_url('images/alaska_satellite_facility_1000.png')}}">
+        <a role="button" class='btn btn-jupyter btn-lg' href='{{authenticator_login_url}}'>
+          Sign in with {{login_service}}
+        </a>
+      </div>
+      <div>
+        <p>By signing into OpenSARlab operated by the Alaska Satellite Facility (ASF), Users agree to be responsible stewards of server resources and data.
+              While ASF will give reasonable effort to keep data safe and resources running, such data and resources are not guaranteed. It is recommended that data be downloaded and backed up often.</p>
+        <br>
+        <p>
+            <b>Please note that user data will be permanently deleted and user accounts will be disabled after 46 days of inactivity.</b> 
+        </p>
+        <br>
+        <p>OpenSARlab is currently only available to a small group of beta testers that have been authorized by NASA.
+              We hope in the near future that we will be able to open up access to the notebooks to a broader audience.</p>
+      </div>
+      <style>
+
+        p {
+            color: grey;
+        }
+
+        .announcement {
+            padding: 15pt 10pt 10pt 10pt;
+            /*border: 3px solid #efff00;*/
+            border: 3px solid #2c7bb6;
+            margin: 70px 0px;
+            color: black;
+            /*visibility: hidden;*/
+        }
+
+        .main-center {
+          padding: 0px 0px 50px 100px;
+        }
+
+      </style>
+
+    </div>
+{% else %}
+    <div>Login service is not valid!!</div>
+{% endif %}
+</div>
+{% endblock login %}
+
+{% endblock %}
+
+{% block script %}
+{{ super() }}
+<script>
+if (window.location.protocol === "http:") {
+  // unhide http warning
+  var warning = document.getElementById('insecure-login-warning');
+  warning.className = warning.className.replace(/\bhidden\b/, '');
+}
+</script>
+
+{% endblock %}
