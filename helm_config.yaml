@@ -216,129 +216,144 @@ hub:
             """
 
             def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
-                try:
-                    from jupyterhub import groups as groups_py
 
-                    user_name = spawner.user.name
+                from jupyterhub import groups as groups_py
 
-                    groups = groups_py.Groups()
-                    group_list = groups.get_all_enabled_group_names_for_user(user_name=user_name)
-                    group_list.extend(groups.get_all_enabled_group_names_set_to_all_users())
-                    
-                    if not group_list:
-                        print("No groups found.")
-                    else:
-                        print(f"Group list: {group_list}")
+                user_name = spawner.user.name
 
-                    profile_list = []
+                groups = groups_py.Groups()
+                group_list = groups.get_all_enabled_group_names_for_user(user_name=user_name)
+                group_list.extend(groups.get_all_enabled_group_names_set_to_all_users())
+                
+                if not group_list:
+                    raise Exception("No groups found")
 
-                    # m5a.2xlarge: 8 cpus, 32 GiB RAM
-                    if 'SAR 1' in group_list:
-                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
-                        profile = {
-                            'display_name': 'SAR 1',
-                            'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16GiB. Storage: 500 GiB.',
-                            'default': True,
-                            'kubespawner_override': {
-                                'extra_labels': {
-                                    'server_type': 'sar_1'
-                                },
-                                'node_selector': {
-                                    'server_type': 'sar_1'
-                                },
-                                'image': image_url,
-                                'lifecycle_hooks': {
-                                    "postStart": {
-                                        "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
-                                        }
+                print(f"Group list: {group_list}")
+
+                profile_list = []
+
+                # m5a.2xlarge: 8 cpus, 32 GiB RAM
+                if 'SAR 1' in group_list:
+                    image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
+                    profile = {
+                        'display_name': 'SAR 1',
+                        'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16GiB. Storage: 500 GiB.',
+                        'default': True,
+                        'kubespawner_override': {
+                            'extra_labels': {
+                                'server_type': 'sar_1'
+                            },
+                            'node_selector': {
+                                'server_type': 'sar_1'
+                            },
+                            'image': image_url,
+                            'lifecycle_hooks': {
+                                "postStart": {
+                                    "exec": {
+                                        "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
                                     }
-                                },
-                                'mem_limit': '16Gi', 
-                                'mem_guarantee': '6Gi',
-                                'storage_capacity': '500Gi'
-                            }
+                                }
+                            },
+                            'mem_limit': '16Gi', 
+                            'mem_guarantee': '6Gi',
+                            'storage_capacity': '500Gi'
                         }
-                        profile_list.append(profile)
+                    }
+                    profile_list.append(profile)
 
-                    # m5a.8xlarge: 32 cpu, 128 GiB RAM
-                    if 'SAR 2' in group_list:
-                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
-                        profile = {
-                            'display_name': 'SAR 2',
-                            'description': 'Formally UNAVCO. Contains basic SAR processing packages on a bigger machine. RAM limit: 96Gi. CPU limit: 8 cpus. Storage: 500 GiB.',
-                            'default': False,
-                            'kubespawner_override': {
-                                'extra_labels': {
-                                    'server_type': 'sar_2'
-                                },
-                                'node_selector': {
-                                    'server_type': 'sar_2'
-                                },
-                                'image': image_url,
-                                'lifecycle_hooks': {
-                                    "postStart": {
-                                        "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
-                                        }
+                # m5a.8xlarge: 32 cpu, 128 GiB RAM
+                if 'SAR 2' in group_list:
+                    image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
+                    profile = {
+                        'display_name': 'SAR 2',
+                        'description': 'Formally UNAVCO. Contains basic SAR processing packages on a bigger machine. RAM limit: 96Gi. CPU limit: 8 cpus. Storage: 500 GiB.',
+                        'default': False,
+                        'kubespawner_override': {
+                            'extra_labels': {
+                                'server_type': 'sar_2'
+                            },
+                            'node_selector': {
+                                'server_type': 'sar_2'
+                            },
+                            'image': image_url,
+                            'lifecycle_hooks': {
+                                "postStart": {
+                                    "exec": {
+                                        "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
                                     }
-                                },
-                                'mem_limit': '96Gi', 
-                                'mem_guarantee': '32Gi', 
-                                'cpu_limit': 8,
-                                'storage_capacity': '500Gi'
-                            }
+                                }
+                            },
+                            'mem_limit': '96Gi', 
+                            'mem_guarantee': '32Gi', 
+                            'cpu_limit': 8,
+                            'storage_capacity': '500Gi'
                         }
-                        profile_list.append(profile)
+                    }
+                    profile_list.append(profile)
 
-                    if 'SAR 1 - No Gitpuller' in group_list:
-                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
-                        profile = {
-                            'display_name': 'SAR 1 - No Gitpuller',
-                            'description': 'Useful for debugging some server timeouts. This does not pull in the latest notebooks.',
-                            'default': False,
-                            'kubespawner_override': {
-                                'extra_labels': {
-                                    'server_type': 'sar_1',
-                                    'extra_configs': 'no_smart_git'
-                                },
-                                'node_selector': {
-                                    'server_type': 'sar_1'
-                                },
-                                'image': image_url,
-                                'lifecycle_hooks': {
-                                    "postStart": {
-                                        "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/no_smart_git.sh"]
-                                        }
+                if 'SAR 1 - No Gitpuller' in group_list:
+                    image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
+                    profile = {
+                        'display_name': 'SAR 1 - No Gitpuller',
+                        'description': 'Useful for debugging some server timeouts. This does not pull in the latest notebooks.',
+                        'default': False,
+                        'kubespawner_override': {
+                            'extra_labels': {
+                                'server_type': 'sar_1',
+                                'extra_configs': 'no_smart_git'
+                            },
+                            'node_selector': {
+                                'server_type': 'sar_1'
+                            },
+                            'image': image_url,
+                            'lifecycle_hooks': {
+                                "postStart": {
+                                    "exec": {
+                                        "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/no_smart_git.sh"]
                                     }
-                                },
-                                'mem_limit': '16Gi', 
-                                'mem_guarantee': '6Gi', 
-                                'cpu_guarantee': 1.25,
-                                'storage_capacity': '500Gi'
-                            }
+                                }
+                            },
+                            'mem_limit': '16Gi', 
+                            'mem_guarantee': '6Gi', 
+                            'cpu_guarantee': 1.25,
+                            'storage_capacity': '500Gi'
                         }
-                        profile_list.append(profile)
+                    }
+                    profile_list.append(profile)
 
-                    # This clause for sudo should always be last
-                    if 'sudo' in group_list:
-                        print("Adding sudo privs...")
-                        spawner.args.append('--allow-root')
-                        spawner.environment["GRANT_SUDO"] = "yes"
-                        spawner.gid = 599
+                # This clause for sudo should always be last
+                if 'sudo' in group_list:
+                    print("Adding sudo privs...")
+                    spawner.args.append('--allow-root')
+                    spawner.environment["GRANT_SUDO"] = "yes"
+                    spawner.gid = 599
 
-                        # Users should know that sudo is enabled in profile before entering
-                        for profile in profile_list:
-                            profile['display_name'] += " (Sudo Enabled)"
-                    else:
-                        print("Sudo privs not given.")
-
-                except Exception as e:
-                    print("Something went wrong with the profiles...")
-                    print(e)
-                    profile_list = []
+                    # Users should know that sudo is enabled in profile before entering
+                    for profile in profile_list:
+                        profile['display_name'] += " (Sudo Enabled)"
+                else:
+                    print("Sudo privs not given.")
 
                 return profile_list
 
-            c.KubeSpawner.profile_list = profile_list_hook
+            try:
+              c.KubeSpawner.profile_list = profile_list_hook
+            except Exception as e:
+              print("Something went wrong with the profiles list...")
+              print(e)
+
+              c.KubeSpawner.profile_form_template = """
+                  <style>
+                    .no-profiles: {
+                        text-align: center;
+                        color: #225f8d;
+                        font-size: 36px;
+                    }
+                    .feedback-container {
+                        display: none;
+                    }
+                  </style>
+                  
+                  <p class="no-profiles"> There are no server profiles assigned</p>
+              """
+
