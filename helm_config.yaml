@@ -359,6 +359,8 @@ hub:
                         <p class="no-profiles"> There are no server profiles assigned for {user}</p>
                     """.format(user=spawner.user.name)
 
+                    profile_list = []
+
                 except Exception as e:            
                     print("Something went wrong with the profiles list...")
                     print(e)
@@ -377,5 +379,7 @@ hub:
 
                         <p class="no-profiles"> Something went wrong with the profile list</p>
                     """
+
+                    profile_list = []
 
             c.KubeSpawner.profile_list = profile_list_hook
