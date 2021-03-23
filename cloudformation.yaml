@@ -372,6 +372,9 @@ Resources:
       - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
         Value: "true"
         PropagateAtLaunch: true
+      - Key: osl-stackname
+        Value: !Sub ${Cluster}
+        PropagateAtLaunch: true
 
   LaunchConfigurationCore:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -416,6 +419,9 @@ Resources:
      - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
        Value: "true"
        PropagateAtLaunch: true
+     - Key: osl-stackname
+       Value: !Sub ${Cluster}
+       PropagateAtLaunch: true
 
   LaunchConfigurationSAR1:
    Type: AWS::AutoScaling::LaunchConfiguration
@@ -459,6 +465,9 @@ Resources:
        PropagateAtLaunch: true
      - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
        Value: "true"
+       PropagateAtLaunch: true
+     - Key: osl-stackname
+       Value: !Sub ${Cluster}
        PropagateAtLaunch: true
 
   LaunchConfigurationSAR2:
