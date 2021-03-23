@@ -241,7 +241,7 @@ hub:
                         image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
                         profile = {
                             'display_name': 'SAR 1',
-                            'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16GiB. Storage: 500 GiB.',
+                            'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G.',
                             'default': True,
                             'kubespawner_override': {
                                 'extra_labels': {
@@ -258,8 +258,8 @@ hub:
                                         }
                                     }
                                 },
-                                'mem_limit': '16Gi', 
-                                'mem_guarantee': '6Gi',
+                                'mem_limit': '16G', 
+                                'mem_guarantee': '6G',
                                 'storage_capacity': '500Gi'
                             }
                         }
@@ -270,7 +270,7 @@ hub:
                         image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-22-21-13-19"
                         profile = {
                             'display_name': 'SAR 2',
-                            'description': 'Formally UNAVCO. Contains basic SAR processing packages on a bigger machine. RAM limit: 96Gi. CPU limit: 8 cpus. Storage: 500 GiB.',
+                            'description': 'Formally UNAVCO. Contains basic SAR processing packages on a bigger machine. RAM limit: 96G. CPU limit: 8 cpus. Storage: 500 GiB.',
                             'default': False,
                             'kubespawner_override': {
                                 'extra_labels': {
@@ -287,8 +287,8 @@ hub:
                                         }
                                     }
                                 },
-                                'mem_limit': '96Gi', 
-                                'mem_guarantee': '32Gi', 
+                                'mem_limit': '96G', 
+                                'mem_guarantee': '32G', 
                                 'cpu_limit': 8,
                                 'storage_capacity': '500Gi'
                             }
@@ -317,8 +317,8 @@ hub:
                                         }
                                     }
                                 },
-                                'mem_limit': '16Gi', 
-                                'mem_guarantee': '6Gi', 
+                                'mem_limit': '16G', 
+                                'mem_guarantee': '6G', 
                                 'cpu_guarantee': 1.25,
                                 'storage_capacity': '500Gi'
                             }
