@@ -222,7 +222,7 @@ Resources:
                       "type": "PLAINTEXT"
                     },
                     {
-                      "value": "${ContainerNamespace}",
+                      "value": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}",
                       "name": "DOCKER_REGISTRY",
                       "type": "PLAINTEXT"
                     }
