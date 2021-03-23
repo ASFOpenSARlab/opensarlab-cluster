@@ -111,6 +111,11 @@ Resources:
         - Key: Description
           Value: Artifact Bucket
 
+  HubRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ContainerNamespace}/hub"
+
   PrebuildCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -137,6 +142,7 @@ Resources:
           phases:
             install:
               runtime-versions:
+                docker: 18
                 python: 3.8
             build:
               commands:
@@ -146,6 +152,7 @@ Resources:
                   export VpcId="${!VPCIDS_SUBNETS[0]}";
                   export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
                   export Subnets="${!VPCIDS_SUBNETS[2]}";
+                - bash hub/build.sh
           artifacts:
             files:
               - '**/*'
@@ -194,6 +201,19 @@ Resources:
                 Version: "1"
               Configuration:
                 ProjectName: !Ref PrebuildCodeBuild
+                EnvironmentVariables: !Sub |
+                  [
+                    {
+                      "value": "true",
+                      "name": "HUB_FORCE_BUILD",
+                      "type": "PLAINTEXT"
+                    },
+                    {
+                      "value": "${ContainerNamespace}",
+                      "name": "DOCKER_REGISTRY",
+                      "type": "PLAINTEXT"
+                    }
+                  ]
               InputArtifacts:
                 - Name: SourceArtifact
               OutputArtifacts:
