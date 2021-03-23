@@ -344,42 +344,12 @@ hub:
                     print(f"No profiles found for user {spawner.user.name}.")
                     print(e)
 
-                    c.Spawner.options_form = """
-                        <style>
-                          .no-profiles: {{
-                              text-align: center;
-                              color: #225f8d;
-                              font-size: 36px;
-                          }}
-                          .feedback-container {{
-                              display: none;
-                          }}
-                        </style>
-
-                        <p class="no-profiles"> There are no server profiles assigned for {user}</p>
-                    """.format(user=spawner.user.name)
-
-                    profile_list = []
+                    return []
 
                 except Exception as e:            
                     print("Something went wrong with the profiles list...")
                     print(e)
 
-                    c.Spawner.options_form = """
-                        <style>
-                          .no-profiles: {{
-                              text-align: center;
-                              color: #225f8d;
-                              font-size: 36px;
-                          }}
-                          .feedback-container {{
-                              display: none;
-                          }}
-                        </style>
-
-                        <p class="no-profiles"> Something went wrong with the profile list</p>
-                    """
-
-                    profile_list = []
+                    return []
 
             c.KubeSpawner.profile_list = profile_list_hook
