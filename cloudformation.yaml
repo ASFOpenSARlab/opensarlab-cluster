@@ -58,7 +58,7 @@ Parameters:
   NodeImageId:
     Description: AMI id for the node instances of K8s
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/eks/optimized-ami/1.18/amazon-linux-2/recommended/image_id
+    Default: /aws/service/eks/optimized-ami/1.19/amazon-linux-2/recommended/image_id
 
   NodeInstanceTypeCore:
     Description: EC2 instance type for the node Core instances.
@@ -149,7 +149,7 @@ Resources:
         SubnetIds: !Ref Subnets
         SecurityGroupIds:
         - !GetAtt ClusterSecurityGroup.GroupId
-      Version: "1.18"
+      Version: "1.19"
 
   UserAccessRole:
     Type: AWS::IAM::Role
@@ -624,8 +624,8 @@ Resources:
                   - pip3 install awscli>=1.16.158 --upgrade
                   - pip3 install boto3 --upgrade
                   - pip3 install kubernetes
-                  - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.9/2020-09-18/bin/linux/amd64/kubectl
-                  - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version v3.5.1
+                  - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/darwin/amd64/kubectl
+                  - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version v3.5.2
                   - export HELM_HOST=127.0.0.1:44134
                   - curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
                   - mv /tmp/eksctl /usr/local/bin
