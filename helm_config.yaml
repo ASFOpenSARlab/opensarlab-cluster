@@ -237,8 +237,37 @@ hub:
                     profile_list = []
 
                     # m5a.2xlarge: 8 cpus, 32 GiB RAM
-                    if 'SAR 1' in group_list:
+                    if 'SAR 1 - Test' in group_list:
                         image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:2021-03-26-20-37-57"
+                        profile = {
+                            'display_name': 'SAR 1 - Test',
+                            'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G.',
+                            'default': True,
+                            'kubespawner_override': {
+                                'extra_labels': {
+                                    'server_type': 'sar_1'
+                                },
+                                'node_selector': {
+                                    'server_type': 'sar_1'
+                                },
+                                'image': image_url,
+                                'lifecycle_hooks': {
+                                    "postStart": {
+                                        "exec": {
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
+                                        }
+                                    }
+                                },
+                                'mem_limit': '16G', 
+                                'mem_guarantee': '6G',
+                                'storage_capacity': '500Gi'
+                            }
+                        }
+                        profile_list.append(profile)
+
+                    # m5a.2xlarge: 8 cpus, 32 GiB RAM
+                    if 'SAR 1' in group_list:
+                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar_old:old"
                         profile = {
                             'display_name': 'SAR 1',
                             'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G.',
@@ -254,7 +283,7 @@ hub:
                                 'lifecycle_hooks': {
                                     "postStart": {
                                         "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/general_cpu.sh"]
                                         }
                                     }
                                 },
