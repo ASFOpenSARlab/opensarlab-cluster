@@ -78,6 +78,42 @@ Resources:
               - lambda:InvokeFunction
             Resource: "*"
 
+  PreAuthFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.8
+      Tags:
+        - Key: osl-stackname
+          Value: !Sub ${AWS::StackName}-lambda
+      Code:
+        ZipFile: !Sub |
+          import secrets
+          import boto3
+
+          def lambda_handler(event, context):
+            print("Pre-auth logging function for cluster ${AWS::StackName}")
+
+            user_pool_id = event['userPoolId']
+            username = event['userName']
+            user_status = event['request']['userAttributes']['cognito:user_status']
+            email_verified = event['request']['userAttributes']['email_verified']
+            print(f"User '{username}' with status '{user_status}' and verified email is '{email_verified}'.")
+
+            if user_status == 'FORCE_CHANGE_PASSWORD' and email_verified == 'true':
+              print("Force user password reset to random password to overcome FORCE_CHANGE_PASSWORD status.")
+              password = f"qQ1!{secrets.token_urlsafe(6)}"
+              cognito = boto3.client('cognito-idp', region_name=${AWS::Region})
+              response = cognito.admin_set_user_password(
+                UserPoolId=user_pool_id,
+                Username=username,
+                Password=password,
+                Permanent=True
+              )
+              # User will need to use the Forgot Password link to finish setting up.
+
+            return event
 
   PostEmailVertificationFunction:
     Type: AWS::Lambda::Function
