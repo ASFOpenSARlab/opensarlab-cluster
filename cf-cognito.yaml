@@ -93,12 +93,23 @@ Resources:
           import boto3
 
           def lambda_handler(event, context):
-            print("Pre-auth logging function for cluster ${AWS::StackName}")
+            print("Pre-auth logging function for cluster '${AWS::StackName}'")
 
             user_pool_id = event['userPoolId']
             username = event['userName']
-            user_status = event['request']['userAttributes']['cognito:user_status']
-            email_verified = event['request']['userAttributes']['email_verified']
+            user_status = 'unknown'
+            email_verified = 'unknown'
+
+            try:
+              user_status = event['request']['userAttributes']['cognito:user_status']
+            except Exception as e:
+              pass
+
+            try:
+              email_verified = event['request']['userAttributes']['email_verified']
+            except Exception as e:
+              pass
+
             print(f"User '{username}' with status '{user_status}' and verified email is '{email_verified}'.")
 
             if user_status == 'FORCE_CHANGE_PASSWORD' and email_verified == 'true':
