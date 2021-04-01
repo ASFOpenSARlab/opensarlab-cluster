@@ -190,7 +190,7 @@ Resources:
       LambdaConfig:
         PostAuthentication: !GetAtt LogFunction.Arn
         PostConfirmation: !GetAtt PostEmailVertificationFunction.Arn
-        PreAuthentication: !GetAtt LogFunction.Arn
+        PreAuthentication: !GetAtt PreAuthFunction.Arn
         PreSignUp: !GetAtt LogFunction.Arn
         PreTokenGeneration: !GetAtt LogFunction.Arn
       MfaConfiguration: 'OFF'
