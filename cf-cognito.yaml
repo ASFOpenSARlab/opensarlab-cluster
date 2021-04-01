@@ -104,7 +104,7 @@ Resources:
             if user_status == 'FORCE_CHANGE_PASSWORD' and email_verified == 'true':
               print("Force user password reset to random password to overcome FORCE_CHANGE_PASSWORD status.")
               password = f"qQ1!{secrets.token_urlsafe(6)}"
-              cognito = boto3.client('cognito-idp', region_name=${AWS::Region})
+              cognito = boto3.client('cognito-idp', region_name="${AWS::Region}")
               response = cognito.admin_set_user_password(
                 UserPoolId=user_pool_id,
                 Username=username,
