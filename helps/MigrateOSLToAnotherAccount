@@ -4,6 +4,8 @@ Create new cluster
 
 Add Banner on old OSL for scheduled downtime
 
+Autorun special snapshot lifecycle manager run.
+
 Stop all servers in Admin.
 Disable Load Balance
     -> Go to EC2 > Target Groups 
@@ -11,15 +13,12 @@ Disable Load Balance
     -> Select Registred Targets and Deregister
 Check for no users via no active attached user EC2 volumes
 
-Run special snapshot lifecycle manager run.
-    -> 
+Export then Import Cognito users. Users will need to reset their passwords.
+    -> Use migrate_old_to_new.py script, migrate_users = True
 
 ** Make sure config values are correct **
 Once lifecycle is done, migrate snapshots.
     -> Use migrate_old_to_new.py script, migrate_snapshots = True 
-
-Export then Import Cognito users. Users will need to reset their passwords.
-    -> Use migrate_old_to_new.py script, migrate_users = True
 
 While waiting for snapshot migration, export hub DB from old account and import hub DB to new account.
     ->  sk opensarlab
@@ -47,6 +46,9 @@ While waiting for snapshot migration, export hub DB from old account and import 
 
 (Already done.) Update Banner on login page in new account.
 
+Check New cluster 
+    -> https://osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com
+
 Update app client config in New Cognito
     ->  https://osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com/hub/oauth_callback   ==> 
         https://opensarlab.asf.alaska.edu/hub/oauth_callback
@@ -58,8 +60,11 @@ If anything goes wrong before this point and a rollback is needed, update the ol
 Otherwise, update Puppet DNS with new Load Balancer URL for "opensarlab.asf.alaska.edu":
     ->  opensarlab                  IN  CNAME  opensarlab-9025836.us-east-1.elb.amazonaws.com.  ==> 
         opensarlab                  IN  CNAME  osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com. 
+Wait for Puppet
 
-Update redirect app client config in Old Cognito to LB DNS.
+Double check cluster 
 
 Reduce Old EC2 to zero.
 After couple days, delete volumes. Daily snapshots will have ran.
+
+(Manually update redirect app client config in Old Cognito to LB DNS.)
