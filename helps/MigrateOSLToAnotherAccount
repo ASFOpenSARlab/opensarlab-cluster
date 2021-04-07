@@ -1,0 +1,65 @@
+
+
+Create new cluster
+
+Add Banner on old OSL for scheduled downtime
+
+Stop all servers in Admin.
+Disable Load Balance
+    -> Go to EC2 > Target Groups 
+    -> Click on wanted cluster LB 
+    -> Select Registred Targets and Deregister
+Check for no users via no active attached user EC2 volumes
+
+Run special snapshot lifecycle manager run.
+    -> 
+
+** Make sure config values are correct **
+Once lifecycle is done, migrate snapshots.
+    -> Use migrate_old_to_new.py script, migrate_snapshots = True 
+
+Export then Import Cognito users. Users will need to reset their passwords.
+    -> Use migrate_old_to_new.py script, migrate_users = True
+
+While waiting for snapshot migration, export hub DB from old account and import hub DB to new account.
+    ->  sk opensarlab
+        OLD_HUB_POD=$(kubectl get pods -l component=hub --no-headers -o custom-columns=":metadata.name")
+        kubectl cp $OLD_HUB_POD:/srv/jupyterhub/jupyterhub.sqlite jupyterhub.sqlite.old-daac
+        sk osl-daac-cluster
+        NEW_HUB_POD=$(kubectl get pods -l component=hub --no-headers -o custom-columns=":metadata.name")
+        kubectl cp jupyterhub.sqlite.old-daac $NEW_HUB_POD:/srv/jupyterhub/jupyterhub.sqlite.old-daac
+        kubectl exec -it $NEW_HUB_POD -- bash
+        cp /srv/jupyterhub/jupyterhub.sqlite /srv/jupyterhub/jupyterhub.sqlite.deprecated
+        cp /srv/jupyterhub/jupyterhub.sqlite.old-daac /srv/jupyterhub/jupyterhub.sqlite
+        kubectl delete pod $NEW_HUB_POD
+
+    In new account Groups page create groups:
+        SAR 1 
+        SAR 1 - Test 
+        SAR 2 
+
+        Make SAR 1 for all
+        Migrate users from UNVACO to SAR 2
+        Keep sudo the same
+        Delete general_cpu, UNAVCO, and all other old groups (but sudo)
+
+    revert: cp /srv/jupyterhub/jupyterhub.sqlite.deprecated /srv/jupyterhub/jupyterhub.sqlite
+
+(Already done.) Update Banner on login page in new account.
+
+Update app client config in New Cognito
+    ->  https://osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com/hub/oauth_callback   ==> 
+        https://opensarlab.asf.alaska.edu/hub/oauth_callback
+
+    ->  https://osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com   ==>
+        https://opensarlab.asf.alaska.edu
+
+If anything goes wrong before this point and a rollback is needed, update the old banner and reenable Load Balancer. Nothing else has been changed.
+Otherwise, update Puppet DNS with new Load Balancer URL for "opensarlab.asf.alaska.edu":
+    ->  opensarlab                  IN  CNAME  opensarlab-9025836.us-east-1.elb.amazonaws.com.  ==> 
+        opensarlab                  IN  CNAME  osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com. 
+
+Update redirect app client config in Old Cognito to LB DNS.
+
+Reduce Old EC2 to zero.
+After couple days, delete volumes. Daily snapshots will have ran.
