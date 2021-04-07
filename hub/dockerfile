@@ -27,6 +27,8 @@ RUN pip3 install --upgrade awscli pyyaml python-crontab
 
 # Copy login page stuff
 COPY /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
+COPY /usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png /usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png
+COPY /usr/local/share/jupyterhub/static/images/NASA_logo.svg /usr/local/share/jupyterhub/static/images/NASA_logo.svg
 COPY /usr/local/lib/python3.8/dist-packages/generic_with_logout.py /usr/local/lib/python3.8/dist-packages/generic_with_logout.py
 COPY /usr/local/share/jupyterhub/templates/login.html /usr/local/share/jupyterhub/templates/login.html
 COPY /usr/local/share/jupyterhub/templates/pending.html /usr/local/share/jupyterhub/templates/pending.html
@@ -47,7 +49,6 @@ COPY /etc/jupyterhub/custom/volume_stopping_tags.py /etc/jupyterhub/custom/volum
 COPY /etc/jupyterhub/custom/volume_from_snapshot.py /etc/jupyterhub/custom/volume_from_snapshot.py
 COPY /etc/jupyterhub/custom/delete_volumes.py /etc/jupyterhub/custom/delete_volumes.py
 COPY /etc/jupyterhub/custom/delete_snapshot.py /etc/jupyterhub/custom/delete_snapshot.py
-COPY /etc/jupyterhub/custom/force_deactivation.py /etc/jupyterhub/custom/force_deactivation.py
 
 RUN chown -R 1000:0 /etc/jupyterhub/custom/
 ENV PYTHONPATH "${PYTHONPATH}:/etc/jupyterhub/custom/"

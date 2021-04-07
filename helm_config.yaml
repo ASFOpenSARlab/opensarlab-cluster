@@ -166,12 +166,6 @@ hub:
 
                 # Lifecycle snapshot runs at 10 UTC, 1am AKST
 
-                # Setup crontab for force deactivation
-                #job1 = cron.new(command='python3 /etc/jupyterhub/custom/force_deactivation.py > /proc/1/fd/1 2>&1')
-                #job1.hour.on(11)  # 11:30 UTC, 2:30am AKST
-                #job1.minute.on(30)
-                #job1.enable()
-
                 # Setup crontab for volume killer
                 job2 = cron.new(command='python3 /etc/jupyterhub/custom/delete_volumes.py > /proc/1/fd/1 2>&1')
                 job2.hour.on(12)  # 12 UTC, 3am AKST
