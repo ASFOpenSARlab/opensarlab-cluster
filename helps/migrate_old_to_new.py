@@ -6,20 +6,20 @@ import colorama
 
 ############ Config Settings #####
 
-migrate_users = False
-migrate_snapshots = True
+migrate_users = True
+migrate_snapshots = False
 
+"""
 old_profile = 'jupyterhub'
 old_cluster = 'opensarlab-test'
 old_region = 'us-east-1'
 old_userpool_id = 'us-east-1_no7VRWUuB'
-
 """
+
 old_profile = 'jupyterhub'
 old_cluster = 'opensarlab'
 old_region = 'us-east-1'
 old_userpool_id = 'us-east-1_SRN0dZC66'
-"""
 
 new_profile = 'osl-e'
 new_cluster = 'osl-daac-cluster'
@@ -141,39 +141,58 @@ if migrate_users:
     response = old_cog.list_users(
         UserPoolId=old_userpool_id
     )
+    print(response)
 
-    for i, user in enumerate(response['Users']):
-
-        username = user['Username']
-        all_attributes = user['Attributes']
-
-        # Remove attributes that are unmutable
-        attributes = []
-        for att in all_attributes:
-            if att['Name'] == 'sub':
-                continue
-            else:
-                attributes.append(att)
-
-        print(colorama.Fore.GREEN + f"\n\n{i+1}. Creating user '{username}' with attributes '{attributes}'.")
+    for dumb in range(1200):
 
         try:
+            next_token = response['PaginationToken']
+        except:
+            next_token = None
+
+        for i, user in enumerate(response['Users']):
+
+            username = user['Username']
+            all_attributes = user['Attributes']
+
+            # Remove attributes that are unmutable
+            attributes = []
+            for att in all_attributes:
+                if att['Name'] == 'sub':
+                    continue
+                else:
+                    attributes.append(att)
+
+            print(colorama.Fore.GREEN + f"\n\n{dumb+1}.{i+1}. Creating user '{username}' with attributes '{attributes}'.")
+
             try:
-                user_exists = new_cog.admin_get_user(
-                    UserPoolId=new_userpool_id,
-                    Username=username
-                )
-            except new_cog.exceptions.UserNotFoundException as e:
-                print(f"User '{username}' not found in new account. Creating user...")
+                try:
+                    user_exists = new_cog.admin_get_user(
+                        UserPoolId=new_userpool_id,
+                        Username=username
+                    )
+                except new_cog.exceptions.UserNotFoundException as e:
+                    print(f"User '{username}' not found in new account. Creating user...")
 
-                response = new_cog.admin_create_user(
-                    UserPoolId=new_userpool_id,
-                    Username=username,
-                    UserAttributes=attributes,
-                    MessageAction='SUPPRESS'
-                )
-            else:
-                print(colorama.Fore.MAGENTA + f"User '{username}' already exists in new account. Skipping user creation.")
+                    response = new_cog.admin_create_user(
+                        UserPoolId=new_userpool_id,
+                        Username=username,
+                        UserAttributes=attributes,
+                        MessageAction='SUPPRESS'
+                    )
+                else:
+                    print(colorama.Fore.MAGENTA + f"User '{username}' already exists in new account. Skipping user creation.")
 
-        except Exception as e:
-            print(colorama.Fore.RED + f"Something went wrong with... {e}")
+            except Exception as e:
+                print(colorama.Fore.RED + f"Something went wrong with... {e}")
+
+        try:
+            print(f"Using next page token: {next_token}")
+            response = old_cog.list_users(
+                UserPoolId=old_userpool_id,
+                PaginationToken=next_token
+            )
+            print(response)
+        except:
+            print(f"No more pagination at batch {dumb}. Exiting...")
+            exit()
