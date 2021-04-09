@@ -33,9 +33,9 @@ While waiting for snapshot migration, export hub DB from old account and import 
         kubectl delete pod $NEW_HUB_POD
 
     In new account Groups page create groups:
-        SAR 1 
-        SAR 1 - Test 
-        SAR 2 
+        SAR_1 
+        SAR_1_-_Test 
+        SAR_2 
 
         Make SAR 1 for all
         Migrate users from UNVACO to SAR 2
@@ -51,7 +51,10 @@ Check New cluster
 
 Update ClusterDomain in Cognito CF to "https://opensarlab.asf.alaska.edu"
 
-If anything goes wrong before this point and a rollback is needed, update the old banner and reenable Load Balancer. Nothing else has been changed.
+Update JupyterHubURL in Cluster CF to "https://opensarlab.asf.alaska.edu"
+
+If anything goes wrong before this point and a rollback is needed, update the old banner and reenable Load Balancer. Nothing else has been changed in the old DAAC.
+
 Otherwise, update Puppet DNS with new Load Balancer URL for "opensarlab.asf.alaska.edu":
     ->  opensarlab                  IN  CNAME  opensarlab-9025836.us-east-1.elb.amazonaws.com.  ==> 
         opensarlab                  IN  CNAME  osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com. 
