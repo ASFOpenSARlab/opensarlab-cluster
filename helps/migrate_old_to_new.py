@@ -24,7 +24,7 @@ old_userpool_id = 'us-east-1_SRN0dZC66'
 new_profile = 'osl-e'
 new_cluster = 'osl-daac-cluster'
 new_region = 'us-east-1'
-new_userpool_id = 'us-east-1_QIFb3nucq'
+new_userpool_id = 'us-east-1_D8vqI6lxr'
 
 ##################################
 

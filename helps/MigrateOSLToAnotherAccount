@@ -49,12 +49,7 @@ While waiting for snapshot migration, export hub DB from old account and import 
 Check New cluster 
     -> https://osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com
 
-Update app client config in New Cognito
-    ->  https://osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com/hub/oauth_callback   ==> 
-        https://opensarlab.asf.alaska.edu/hub/oauth_callback
-
-    ->  https://osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com   ==>
-        https://opensarlab.asf.alaska.edu
+Update ClusterDomain in Cognito CF to "https://opensarlab.asf.alaska.edu"
 
 If anything goes wrong before this point and a rollback is needed, update the old banner and reenable Load Balancer. Nothing else has been changed.
 Otherwise, update Puppet DNS with new Load Balancer URL for "opensarlab.asf.alaska.edu":
