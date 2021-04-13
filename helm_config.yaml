@@ -144,7 +144,7 @@ hub:
                     "days_vol_inactive_till_termination: {days_vol_inactive_till_termination}",
                     "namespace: jupyter",
                     "cluster_name: {cluster_name}",
-                    "cognito_name: {cognito_name},
+                    "cognito_name: {cognito_name}",
                     "region_name: {region_name}",
                     "kubernetes_service_port: '{kubernetes_service_port}'",
                     "kubernetes_service_host: {kubernetes_service_host}"
