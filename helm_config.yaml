@@ -153,7 +153,7 @@ hub:
                     days_vol_inactive_till_termination=days_vol_inactive_till_termination,
                     region_name=z2jh.get_config('custom.AZ_NAME')[:-1],
                     cluster_name=z2jh.get_config('custom.CLUSTER_NAME'),
-                    cognito_name = z2jh.get_config('custom.OAUTH_POOL_NAME'),
+                    cognito_name=z2jh.get_config('custom.OAUTH_POOL_NAME'),
                     kubernetes_service_port=os.environ['KUBERNETES_SERVICE_PORT'],
                     kubernetes_service_host=os.environ['KUBERNETES_SERVICE_HOST']
                 )
