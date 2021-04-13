@@ -12,12 +12,13 @@ from botocore.exceptions import ClientError
 
 class DeleteSnapshot():
 
-    def __init__(self, cluster=None, local=None, dry_run=True):
+    def __init__(self, cluster_name=None, cognito_name=None, local=None, dry_run=True):
         print("Checking for expired snapshots...")
 
         if local:
             session = boto3.Session(profile_name='jupyterhub')
-            self.cluster_name = cluster
+            self.cluster_name = cluster_name
+            self.cognito_name = cognito_name
         else:
             with open("/etc/jupyterhub/custom/meta.yaml", 'r') as f:
                 data = f.read()
@@ -26,7 +27,10 @@ class DeleteSnapshot():
 
             session = boto3.Session(region_name=meta['region_name'])
             self.cluster_name = meta['cluster_name']
+            self.cognito_name = meta['cognito_name']
+
         print(f"Cluster name set to {self.cluster_name}")
+        print(f"Cognito pool name set to {self.cognito_name}")
 
         # List of threshold days since last activity.
         # On all but the last day an email is sent out warning about deletion of data and user deactivation.
@@ -45,10 +49,10 @@ class DeleteSnapshot():
 
         self.cognito = session.client('cognito-idp')
         user_pools = self.cognito.list_user_pools(MaxResults=10)
-        pool_id = [ u['Id'] for u in user_pools['UserPools'] if u['Name'] == self.cluster_name ][0]
+        pool_id = [ u['Id'] for u in user_pools['UserPools'] if u['Name'] == self.cognito_name]
         if not pool_id:
-            raise Exception(f"Cognito user Pool '{self.cluster_name}' does not exist.")
-        self.cognito.user_pool_id = pool_id
+            raise Exception(f"Cognito user Pool '{self.cognito_name}' does not exist.")
+        self.cognito.user_pool_id = pool_id[0]
 
         self.ec2 = session.client('ec2')
 
@@ -364,9 +368,10 @@ def delete_snapshot(cluster='opensarlab', local=False, dry_run=False):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cluster", default="opensarlab")
+    parser.add_argument("--cluster-name", dest="cluster_name", default="opensarlab")
+    parser.add_argument("--cognito-name", dest="cognito_name", default="opensarlab")
     parser.add_argument("--local", action="store_true", dest="local")
     parser.add_argument("--dry-run", action="store_true", dest="dry_run")
     args = parser.parse_args()
 
-    delete_snapshot(args.cluster, args.local, args.dry_run)
+    delete_snapshot(args.cluster_name, args.cognito_name, args.local, args.dry_run)
