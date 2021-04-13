@@ -16,6 +16,10 @@ Check for no users via no active attached user EC2 volumes
 Export then Import Cognito users. Users will need to reset their passwords.
     -> Use migrate_old_to_new.py script, migrate_users = True
 
+Check if Cognito users are properly disabled as needed. If not, run sync_disabled.py script with proper values.
+
+To speed up the password reset process, run the force_pass_start.py script to Confirm users.
+
 ** Make sure config values are correct **
 Once lifecycle is done, migrate snapshots.
     -> Use migrate_old_to_new.py script, migrate_snapshots = True 
@@ -30,6 +34,7 @@ While waiting for snapshot migration, export hub DB from old account and import 
         kubectl exec -it $NEW_HUB_POD -- bash
         cp /srv/jupyterhub/jupyterhub.sqlite /srv/jupyterhub/jupyterhub.sqlite.deprecated
         cp /srv/jupyterhub/jupyterhub.sqlite.old-daac /srv/jupyterhub/jupyterhub.sqlite
+        exit
         kubectl delete pod $NEW_HUB_POD
 
     In new account Groups page create groups:
@@ -50,8 +55,10 @@ Check New cluster
     -> https://osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com
 
 Update ClusterDomain in Cognito CF to "https://opensarlab.asf.alaska.edu"
+    Revert: https://osl-daac-cluster-544079743.us-east-1.elb.amazonaws.com
 
 Update JupyterHubURL in Cluster CF to "https://opensarlab.asf.alaska.edu"
+    Revert: -
 
 If anything goes wrong before this point and a rollback is needed, update the old banner and reenable Load Balancer. Nothing else has been changed in the old DAAC.
 

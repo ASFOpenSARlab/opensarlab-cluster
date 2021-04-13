@@ -24,7 +24,7 @@ old_userpool_id = 'us-east-1_SRN0dZC66'
 new_profile = 'osl-e'
 new_cluster = 'osl-daac-cluster'
 new_region = 'us-east-1'
-new_userpool_id = 'us-east-1_D8vqI6lxr'
+new_userpool_id = 'us-east-1_bw1NialdW'
 
 ##################################
 
@@ -49,10 +49,6 @@ if migrate_snapshots:
                 {
                     'Name': 'status',
                     'Values': ['completed']
-                }, 
-                {
-                    'Name': 'tag:migration',
-                    'Values': ['true']
                 }
             ],
             OwnerIds=['self']
