@@ -241,7 +241,7 @@ Resources:
       #SmsAuthenticationMessage: 'Your authentication code is {####}. '
       #SmsVerificationMessage: 'Your verification code is {####}. '
       UsernameConfiguration:
-        CaseSensitive: False
+        CaseSensitive: True
       UserPoolName: !Sub ${AWS::StackName}
       UserPoolTags:
         osl-stackname: !Sub ${AWS::StackName}-cognito
