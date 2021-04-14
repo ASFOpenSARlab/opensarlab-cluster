@@ -308,7 +308,7 @@ hub:
                                 'lifecycle_hooks': {
                                     "postStart": {
                                         "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/unavco.sh"]
                                         }
                                     }
                                 },
@@ -338,7 +338,7 @@ hub:
                                 'lifecycle_hooks': {
                                     "postStart": {
                                         "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/unavco.sh"]
                                         }
                                     }
                                 },
