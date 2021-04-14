@@ -355,7 +355,7 @@ class DeleteSnapshot():
                     # ses.sendEmail is rated to 14 emails per second. Let's make sure we stay below that limit. Even if we don't always get there.
                     time.sleep(0.2)
 
-def delete_snapshot(cluster_name='opensarlab', cognito_name='opensarlab' local=False, dry_run=False):
+def delete_snapshot(cluster_name='opensarlab', cognito_name='opensarlab', local=False, dry_run=False):
     try:
         ds = DeleteSnapshot(cluster, local, dry_run)
         snaps = ds.get_snapshots()
