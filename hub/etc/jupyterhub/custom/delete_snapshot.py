@@ -357,7 +357,7 @@ class DeleteSnapshot():
 
 def delete_snapshot(cluster_name='opensarlab', cognito_name='opensarlab', local=False, dry_run=False):
     try:
-        ds = DeleteSnapshot(cluster, local, dry_run)
+        ds = DeleteSnapshot(cluster_name, cognito_name, local, dry_run)
         snaps = ds.get_snapshots()
         ds.delete_unneeded_snapshots(snaps)
 
