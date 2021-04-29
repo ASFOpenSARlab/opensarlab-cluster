@@ -6,8 +6,8 @@ import colorama
 
 ############ Config Settings #####
 
-migrate_users = True
-migrate_snapshots = False
+migrate_users = False
+migrate_snapshots = True
 
 """
 old_profile = 'jupyterhub'
@@ -54,7 +54,7 @@ if migrate_snapshots:
             OwnerIds=['self']
         )
     old_snaps = old_snap['Snapshots']
-
+    import pdb; pdb.set_trace()
     for i, snap in enumerate(old_snaps):
 
         try:
@@ -64,8 +64,14 @@ if migrate_snapshots:
             vol_size = snap['VolumeSize']
 
             print(colorama.Fore.GREEN + f"\n\n{i+1} ****** Trying '{snap_id}'")
-            print(tags)
+            #print(tags)
+            if snap_id != 'snap-0b390605330381997':
+                continue
+            else:
+                print(" claim-boukamass ")
 
+            exit()
+            
             # Replace cluster name with new cluster name.
             new_tags = []
             for tag in tags:
