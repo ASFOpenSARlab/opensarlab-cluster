@@ -31,6 +31,11 @@ Parameters:
     Type: String
     Default: ''
 
+  CostTagValue:
+    Type: String
+    Description: "The value of the cost tag used for filtering the budget, etc."
+    Default: "osl-daac"
+
   # The following are dynamically added by the pipeline
   VpcId:
     Description: The VPC of the worker instances
@@ -139,6 +144,9 @@ Resources:
       GroupName: !Sub ${AWS::StackName}
       GroupDescription: !Sub Security group for the ${AWS::StackName} EKS cluster
       VpcId: !Ref VpcId
+      Tags:
+        - Key: osl-stackname
+          Value: !Sub ${CostTagValue}
 
   Cluster:
     Type: AWS::EKS::Cluster
@@ -275,6 +283,9 @@ Resources:
       GroupName: !Sub ${Cluster}-instance
       GroupDescription: !Sub Security group for instances in the ${Cluster} EKS cluster
       VpcId: !Ref VpcId
+      Tags:
+        - Key: osl-stackname
+          Value: !Sub ${CostTagValue}
 
   NodeSecurityGroupIngress:
     Type: AWS::EC2::SecurityGroupIngress
@@ -373,7 +384,7 @@ Resources:
         Value: "true"
         PropagateAtLaunch: true
       - Key: osl-stackname
-        Value: !Sub ${Cluster}
+        Value: !Sub ${CostTagValue}
         PropagateAtLaunch: true
 
   LaunchConfigurationCore:
@@ -420,7 +431,7 @@ Resources:
        Value: "true"
        PropagateAtLaunch: true
      - Key: osl-stackname
-       Value: !Sub ${Cluster}
+       Value: !Sub ${CostTagValue}
        PropagateAtLaunch: true
 
   LaunchConfigurationSAR1:
@@ -467,7 +478,7 @@ Resources:
        Value: "true"
        PropagateAtLaunch: true
      - Key: osl-stackname
-       Value: !Sub ${Cluster}
+       Value: !Sub ${CostTagValue}
        PropagateAtLaunch: true
 
   LaunchConfigurationSAR2:
@@ -499,6 +510,9 @@ Resources:
       HealthCheckPath: /hub/health
       HealthCheckIntervalSeconds: 120
       HealthyThresholdCount: 2
+      Tags:
+        - Key: osl-stackname
+          Value: !Sub ${CostTagValue}
 
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -523,6 +537,9 @@ Resources:
       Subnets: !Ref Subnets
       SecurityGroups:
       - !GetAtt LoadBalancerSecurityGroup.GroupId
+      Tags:
+        - Key: osl-stackname
+          Value: !Sub ${CostTagValue}
 
   HttpListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -569,6 +586,9 @@ Resources:
       Description: !Sub "Lifecycle Policy for ${Cluster}"
       State: "ENABLED"
       ExecutionRoleArn: !GetAtt BasicLifecycleRole.Arn
+      Tags:
+        - Key: osl-stackname
+          Value: !Sub ${CostTagValue}
       PolicyDetails:
         ResourceTypes:
           - "VOLUME"
@@ -607,6 +627,9 @@ Resources:
         Type: CODEPIPELINE
       ServiceRole: !Ref ClusterRole
       TimeoutInMinutes: 45
+      Tags:
+        - Key: osl-stackname
+          Value: !Sub ${CostTagValue}
       Source:
         Type: CODEPIPELINE
         BuildSpec:
@@ -670,7 +693,7 @@ Resources:
                       --set enableVolumeSnapshot=false
                       --set extraCreateMetadata=true
                       --set k8sTagClusterId=${Cluster}
-                      --set extraVolumeTags.osl-stackname=${Cluster}
+                      --set extraVolumeTags.osl-stackname=${CostTagValue}
                   - echo "Associate IAM and OIDC for service accounts..."
                   - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
                   - echo "Install JupyterHub cluster..."
@@ -689,6 +712,7 @@ Resources:
                       --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
                       --set custom.OAUTH_DNS_NAME=${OAuthDNSName}
                       --set custom.CLUSTER_NAME=${Cluster},custom.OAUTH_POOL_NAME=${OAuthPoolName},custom.AZ_NAME=${AWS::Region}d
+                      --set custom.COST_TAG_VALUE=${CostTagValue}
                       --set hub.image.name=$IMAGE_REPO_URL/hub
                   - kubectl -n jupyter rollout status -w deployment.apps/hub
                   - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true

@@ -31,6 +31,11 @@ Parameters:
     Type: String
     Default: ''
 
+  CostTagValue:
+    Type: String
+    Description: "The value of the cost tag used for filtering the budget, etc."
+    Default: "osl-daac"
+
 Outputs:
 
   CommonRoleArn:
@@ -110,11 +115,16 @@ Resources:
       Tags:
         - Key: Description
           Value: Artifact Bucket
+        - Key: osl-stackname
+          Value: !Sub ${CostTagValue}
 
   HubRepository:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Sub "${ContainerNamespace}/hub"
+      Tags:
+        - Key: osl-stackname
+          Value: !Sub ${CostTagValue}
 
   PrebuildCodeBuild:
     Type: AWS::CodeBuild::Project
@@ -128,6 +138,9 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         PrivilegedMode: True
       ServiceRole: !GetAtt CommonRole.Arn
+      Tags:
+        - Key: osl-stackname
+          Value: !Sub ${CostTagValue}
       Source:
         Type: CODEPIPELINE
         BuildSpec: !Sub |
@@ -252,10 +265,11 @@ Resources:
                       "ContainerNamespace": "${ContainerNamespace}",
                       "OAuthPoolName": "${OAuthPoolName}",
                       "OAuthDNSName": "https://${OAuthPoolName}.auth.us-east-1.amazoncognito.com",
-                      "JupyterHubURL": "${JupyterHubURL}", 
-                      "CertificateArn": "${CertificateArn}", 
-                      "VpcId": "${myVpcId}", 
-                      "ActiveSubnets": "${myActiveSubnets}", 
+                      "JupyterHubURL": "${JupyterHubURL}",
+                      "CostTagValue": "${CostTagValue}",
+                      "CertificateArn": "${CertificateArn}",
+                      "VpcId": "${myVpcId}",
+                      "ActiveSubnets": "${myActiveSubnets}",
                       "Subnets": "${mySubnets}"
                     }
                   - myVpcId: "#{prebuild.VpcId}"
@@ -278,4 +292,6 @@ Resources:
               InputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
-
+      Tags: 
+        - Key: osl-stackname
+          Value: !Sub ${CostTagValue}
