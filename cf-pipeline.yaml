@@ -2,34 +2,35 @@ AWSTemplateFormatVersion: '2010-09-09'
 
 Parameters:
   AdminUserName:
-    Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
+    Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console.
     Type: String
+    Default: 'emlundell_test1'
 
   CertificateArn:
     Type: String
-    Default: ''
+    Default: 'arn:aws:acm:us-east-1:701288258305:certificate/422b7903-0b13-4d69-b74a-8f48e4b3a6f1'
 
   CodeCommitRepoName:
     Type: String
-    Default: ''
+    Default: 'osl-daac'
 
   CodeCommitBranchName:
     Type: String
-    Default: ''
+    Default: 'main'
 
   ContainerNamespace:
     Type: String
-    Default: ''
+    Default: 'osl-daac-container'
 
   OAuthPoolName:
     Description: AWS Cognito User Pool name
     Type: String
-    Default: ''
+    Default: 'osl-daac-auth'
 
   JupyterHubURL:
     Description: Jupyterhub URL A record used by AWS Cognito authentication. If not given, the default is the load balancer URL
     Type: String
-    Default: ''
+    Default: 'https://opensarlab.asf.alaska.edu'
 
   CostTagValue:
     Type: String
@@ -184,7 +185,6 @@ Resources:
               - '**/*'
             secondary-artifacts:
               PreBuildArtifact:
-          #      base-directory: $CODEBUILD_SRC_DIR
                 files:
                   - '**/*'
 
