@@ -586,9 +586,6 @@ Resources:
       Description: !Sub "Lifecycle Policy for ${Cluster}"
       State: "ENABLED"
       ExecutionRoleArn: !GetAtt BasicLifecycleRole.Arn
-      Tags:
-        - Key: osl-stackname
-          Value: !Sub ${CostTagValue}
       PolicyDetails:
         ResourceTypes:
           - "VOLUME"
