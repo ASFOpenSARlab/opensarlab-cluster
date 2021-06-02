@@ -236,7 +236,7 @@ hub:
 
                     # m5a.2xlarge: 8 cpus, 32 GiB RAM
                     if 'SAR_1_-_Test' in group_list:
-                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:a1569e5"
+                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:49320d9"
                         profile = {
                             'display_name': 'SAR 1 - Test',
                             'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G.',
@@ -294,7 +294,7 @@ hub:
 
                     # m5a.2xlarge: 8 cpus, 32 GiB RAM
                     if 'SAR_1_-_Dev' in group_list:
-                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:1b851fa"
+                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:49320d9"
                         profile = {
                             'display_name': 'SAR 1 - Dev',
                             'description': 'Development profile. CPU limit: 8. RAM limit: 16G. Storage: 500G.',
