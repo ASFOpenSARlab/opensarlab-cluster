@@ -299,7 +299,7 @@ hub:
                                 'lifecycle_hooks': {
                                     "postStart": {
                                         "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/general_cpu.sh"]
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
                                         }
                                     }
                                 },
@@ -363,7 +363,7 @@ hub:
                                 'lifecycle_hooks': {
                                     "postStart": {
                                         "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/unavco.sh"]
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
                                         }
                                     }
                                 },
@@ -396,7 +396,7 @@ hub:
                                 'lifecycle_hooks': {
                                     "postStart": {
                                         "exec": {
-                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/unavco.sh"]
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/sar.sh"]
                                         }
                                     }
                                 },
