@@ -181,6 +181,7 @@ Resources:
                 - dh_username=$(echo $dh_creds | cut -f1 -d' ')
                 - echo $dh_creds | cut -f2 -d' ' > dh.pass
                 - cat dh.pass | docker login -u $dh_username --password-stdin
+                - echo "End prebuild"
             build:
               commands:
                 - echo "Getting VpcId and Subnets...";
