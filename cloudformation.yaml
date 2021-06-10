@@ -36,6 +36,11 @@ Parameters:
     Description: "The value of the cost tag used for filtering the budget, etc."
     Default: "osl-daac"
 
+  ICALUrl:
+    Type: String
+    Description: "The URL of the Google Calendar used for notifications."
+    Default: ''
+
   # The following are dynamically added by the pipeline
   VpcId:
     Description: The VPC of the worker instances
@@ -727,6 +732,16 @@ Resources:
                       --atomic
                       --timeout=2m0s
                       --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
+                  - echo "Install notifications service..."
+                  - cp notifications/k8s/deployment.example.yaml notifications/k8s/deployment.yaml;
+                    sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_REPO_URL/notifications:latest|" notifications/k8s/deployment.yaml;
+                    sed -i "s|ICAL_URL_PLACEHOLDER|${ICALUrl}|" notifications/k8s/deployment.yaml;
+                    kubectl apply -f notifications/k8s/namespace.yaml;
+                    kubectl apply -f notifications/k8s/service.yaml;
+                    kubectl apply -f notifications/k8s/deployment.yaml; 
+                    kubectl -n notifications rollout status deployment/notifications -w;
+                    kubectl -n notifications scale deployment notifications --replicas=0;
+                    kubectl -n notifications scale deployment notifications --replicas=1
                   - echo "Install Fluent Bit for AWS Container Insights..."
                   - export FluentBitHttpPort='2020';
                     export FluentBitReadFromHead='Off';

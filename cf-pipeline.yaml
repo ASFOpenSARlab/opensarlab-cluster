@@ -37,6 +37,11 @@ Parameters:
     Description: "The value of the cost tag used for filtering the budget, etc."
     Default: "osl-daac"
 
+  ICALUrl:
+    Type: String
+    Description: "The URL of the Google Calendar used for notifications."
+    Default: ''
+
 Outputs:
 
   CommonRoleArn:
@@ -127,6 +132,14 @@ Resources:
         - Key: osl-stackname
           Value: !Sub ${CostTagValue}
 
+  NotificationsRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ContainerNamespace}/notifications"
+      Tags:
+        - Key: osl-stackname
+          Value: !Sub ${CostTagValue}
+
   PrebuildCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -168,18 +181,25 @@ Resources:
                 - dh_username=$(echo $dh_creds | cut -f1 -d' ')
                 - echo $dh_creds | cut -f2 -d' ' > dh.pass
                 - cat dh.pass | docker login -u $dh_username --password-stdin
-            build:
+             build:
               commands:
-                - echo "Getting VpcId and Subnets..."
-                - python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}-cluster
-                - export VPCIDS_SUBNETS=( $(cat get_vpcid_and_subnets.tmp) );
+                - echo "Getting VpcId and Subnets...";
+                  python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}-cluster;
+                  export VPCIDS_SUBNETS=( $(cat get_vpcid_and_subnets.tmp) );
                   echo ${!VPCIDS_SUBNETS[@]};
                   export VpcId="${!VPCIDS_SUBNETS[0]}";
                   export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
                   export Subnets="${!VPCIDS_SUBNETS[2]}";
-                - echo "Build hub image..."
-                - cd hub;
-                  bash build.sh
+                - echo "Build hub image...";
+                  PrevWD=$(pwd); 
+                  cd hub;
+                  bash build.sh;
+                  cd $PrevWD
+                - echo "Build notification image...";
+                  PrevWD=$(pwd); 
+                  cd notifications;
+                  bash build.sh;
+                  cd $PrevWD
           artifacts:
             files:
               - '**/*'
@@ -235,6 +255,11 @@ Resources:
                       "type": "PLAINTEXT"
                     },
                     {
+                      "value": "true",
+                      "name": "NOTIFICATIONS_FORCE_BUILD",
+                      "type": "PLAINTEXT"
+                    },
+                    {
                       "value": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}",
                       "name": "DOCKER_REGISTRY",
                       "type": "PLAINTEXT"
@@ -270,7 +295,8 @@ Resources:
                       "CertificateArn": "${CertificateArn}",
                       "VpcId": "${myVpcId}",
                       "ActiveSubnets": "${myActiveSubnets}",
-                      "Subnets": "${mySubnets}"
+                      "Subnets": "${mySubnets}",
+                      "ICALUrl": "${ICALUrl}"
                     }
                   - myVpcId: "#{prebuild.VpcId}"
                     myActiveSubnets: "#{prebuild.ActiveSubnets}"
