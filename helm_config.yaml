@@ -272,8 +272,8 @@ hub:
                                     }
                                 },
                                 'args': [
-  		                              "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 1 - Test'}"
-  		                          ],
+                                    "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 1 - Test'}"
+                                ],
                                 'mem_limit': '16G', 
                                 'mem_guarantee': '6G',
                                 'storage_capacity': '500Gi'
@@ -304,8 +304,8 @@ hub:
                                     }
                                 },
                                 'args': [
-  		                              "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 1'}"
-  		                          ],
+                                    "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 1'}"
+                                ],
                                 'mem_limit': '16G', 
                                 'mem_guarantee': '6G',
                                 'storage_capacity': '500Gi'
@@ -336,8 +336,8 @@ hub:
                                     }
                                 },
                                 'args': [
-  		                              "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 1 - Dev'}"
-  		                          ],
+                                    "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 1 - Dev'}"
+                                ],
                                 'mem_limit': '16G', 
                                 'mem_guarantee': '6G',
                                 'storage_capacity': '500Gi'
@@ -368,8 +368,8 @@ hub:
                                     }
                                 },
                                 'args': [
-  		                              "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 2'}"
-  		                          ],
+                                    "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 2'}"
+                                ],
                                 'mem_limit': '96G', 
                                 'mem_guarantee': '32G', 
                                 'cpu_limit': 8,
@@ -401,8 +401,8 @@ hub:
                                     }
                                 },
                                 'args': [
-  		                              "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 2 - Max'}"
-  		                          ],
+                                    "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 2 - Max'}"
+                                ],
                                 'cpu_guarantee': 30,
                                 'storage_capacity': '500Gi'
                             }
@@ -432,8 +432,8 @@ hub:
                                     }
                                 },
                                 'args': [
-  		                              "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 1 - No Gitpuller'}"
-  		                          ],
+                                    "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 1 - No Gitpuller'}"
+                                ],
                                 'mem_limit': '16G', 
                                 'mem_guarantee': '6G', 
                                 'cpu_guarantee': 1.25,
