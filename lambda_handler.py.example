@@ -1,6 +1,6 @@
 '''
 A template for how you might build your lambda_handler.py, used by Cognito triggers to generate emails.
-Note:
+Note: TODO
  - email messages in this template refer to the Alaska Satellite Facility's deployment and should be edited
  - zip lambda_handler.py before storing it in S3
  - care must be taken when updating this file

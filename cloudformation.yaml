@@ -76,7 +76,7 @@ Parameters:
     Type: String
     Default: t3a.medium
 
-  # Add additional NodeInstanceType parameters for every profile except "sudo"
+  # TODO Add additional NodeInstanceType parameters for every profile except "sudo"
   NodeInstanceTypePROFILE1:
     Description: EC2 instance type for Profile 1.
     Type: String
@@ -408,12 +408,12 @@ Resources:
           --resource NodeGroup  \
           --region ${AWS::Region}
 
-  # Add an AutoScalingGroup for every profile except "sudo"
+  # TODO Add an AutoScalingGroup for every profile except "sudo"
   AutoScalingGroupPROFILE1:
    Type: AWS::AutoScaling::AutoScalingGroup
    Properties:
      DesiredCapacity: "0"
-     LaunchConfigurationName: !Ref LaunchConfigurationSAR1
+     LaunchConfigurationName: !Ref LaunchConfigurationPROFILE1
      MinSize: "0"
      MaxSize: "25"
      VPCZoneIdentifier: !Ref ActiveSubnets
@@ -437,7 +437,7 @@ Resources:
        Value: !Sub ${CostTagValue}
        PropagateAtLaunch: true
 
-  # Add a LaunchConfiguration for every profile except "sudo"
+  # TODO Add a LaunchConfiguration for every profile except "sudo"
   LaunchConfigurationPROFILE1:
    Type: AWS::AutoScaling::LaunchConfiguration
    Properties:
@@ -447,7 +447,7 @@ Resources:
      InstanceType: !Ref NodeInstanceTypePROFILE1
      SecurityGroups:
       - !Ref NodeSecurityGroup
-     UserData: # The server_type in the script code below must match profile's server_type defined in helm_config.yaml
+     UserData: # TODO The server_type in the script code below must match profile's server_type defined in helm_config.yaml
        Fn::Base64: !Sub |
          #!/bin/bash
          set -o xtrace

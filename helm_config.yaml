@@ -200,7 +200,7 @@ hub:
             except Exception as e:
               print("Something went wrong with starting the services...")
               print(e)
-
+        # TODO adjust profiles for your deployment
         myProfiles.py: |
 
             from typing import List, Dict
@@ -249,7 +249,6 @@ hub:
                     profile_list = []
 
                     # Adjust the example profile below and add additional profiles using it as a template
-
                     ################################ Add a Profile #################################
                     # After deployment, add a group named 'PROFILE_1' in the admin console
                     # so it appears as a server option at login and so you can add users to it
