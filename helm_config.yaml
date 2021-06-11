@@ -1,0 +1,318 @@
+# This helm config file modifies the defaults found in zero-to-jupyterhub-k8s/jupyterhub/
+# Explanations and additional modifications can be found in the "Setup Jupyterhub" docs here: https://z2jh.jupyter.org/en/latest/setup-jupyterhub.html
+
+proxy:
+  https:
+    enabled: false
+  secretToken: SECRET_TOKEN
+  service:
+    nodePorts:
+      http: NODE_PORT
+    type: NodePort
+
+singleuser:
+  startTimeout: 600
+  storage:
+    dynamic:
+      storageClass: gp2
+      pvcNameTemplate: claim-{username}
+
+prePuller:
+  continuous:
+    enabled: false
+  hook:
+    enabled: false
+
+cull:
+  enabled: true
+  timeout: 3600
+  every: 300
+
+scheduling:
+  userPlaceholder:
+    enabled: false
+  userScheduler:
+    enabled: true
+  corePods:
+    nodeAffinity:
+      matchNodePurpose: require
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: require
+
+custom:
+  OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
+  OAUTH_DNS_NAME: OAUTH_DNS_NAME
+  OAUTH_POOL_NAME: OAUTH_POOL_NAME
+  CLUSTER_NAME: CLUSTER_NAME
+  COST_TAG_VALUE: COST_TAG_VALUE
+  AZ_NAME: AZ_NAME
+  IMAGE_REPO_URL: IMAGE_REPO_URL
+
+hub:
+    config:
+      JupyterHub:
+        admin_access: true
+      Authenticator:
+        admin_users:
+         - ADMIN_USER
+
+    image:
+      imagePullPolicy: Always
+      name: HUB_IMAGE_NAME_HERE
+      tag: latest
+
+    extraConfig:
+        myAuthConfig.py: |
+            try:
+                import os
+                import z2jh
+
+                os.environ["OAUTH_DNS_NAME"] = z2jh.get_config("custom.OAUTH_DNS_NAME")
+                os.environ["OAUTH_JUPYTER_URL"] = z2jh.get_config("custom.OAUTH_JUPYTER_URL")
+                os.environ['OAUTH_POOL_NAME'] = z2jh.get_config("custom.OAUTH_POOL_NAME")
+                os.environ['REGION_NAME'] = z2jh.get_config('custom.AZ_NAME')[:-1]
+
+                from generic_with_logout import GenericOAuthenticator
+                c.JupyterHub.authenticator_class = GenericOAuthenticator
+
+            except Exception as e:
+                print(e)
+
+        myHooks.py: |
+            import z2jh
+
+            # Before mounting the home directory, check to see if a volume exists.
+            # If it doesn't, check for any EBS snapshots.
+            # If a snapshot exists, create a volume from the snapshot.
+            # Otherwise, JupyterHub will do the mounting and other volume handling.
+            def my_pre_hook(spawner):
+                try:
+                    from volume_from_snapshot import volume_from_snapshot
+
+                    meta = {
+                        'username': spawner.user.name,
+                        'pvc_name': spawner.pvc_name,
+                        'namespace': 'jupyter',
+                        'cluster_name': z2jh.get_config('custom.CLUSTER_NAME'),
+                        'cost_tag_value': z2jh.get_config('custom.COST_TAG_VALUE'),
+                        'az_name': z2jh.get_config('custom.AZ_NAME'),
+                        'vol_size': spawner.storage_capacity,
+                        'spawn_pvc': spawner.get_pvc_manifest()
+                    }
+
+                    volume_from_snapshot(meta)
+
+                except Exception as e:
+                    print(e)
+                    raise
+
+            c.Spawner.pre_spawn_hook = my_pre_hook
+
+
+            # After stopping the notebook server, tag the volume with the current "stopping" time. This will help determine which volumes are active.
+            def my_post_hook(spawner):
+                try:
+                    from volume_stopping_tags import volume_stopping_tags
+
+                    meta = {
+                        'pvc_name': spawner.pvc_name,
+                        'cluster_name': z2jh.get_config('custom.CLUSTER_NAME'),
+                        'az_name': z2jh.get_config('custom.AZ_NAME')
+                    }
+
+                    volume_stopping_tags(meta)
+
+                except Exception as e:
+                    print("Something went wrong with the volume stopping tag post hook...")
+                    print(e)
+                    raise
+
+            c.Spawner.post_stop_hook = my_post_hook
+
+        myHubCron.py: |
+            import os
+            import z2jh
+            try:
+                from crontab import CronTab
+
+                # After a volume is deleted due to inactivity, userdata remains safely stored in a snapshot
+                days_vol_inactive_till_termination = 5 # adjust to suit your needs
+
+                # Set metadata for use by cron scripts
+                meta = [
+                    "---",
+                    "days_vol_inactive_till_termination: {days_vol_inactive_till_termination}",
+                    "namespace: jupyter",
+                    "cluster_name: {cluster_name}",
+                    "cognito_name: {cognito_name}",
+                    "region_name: {region_name}",
+                    "kubernetes_service_port: '{kubernetes_service_port}'",
+                    "kubernetes_service_host: {kubernetes_service_host}"
+                ]
+                meta = "\n".join(meta).format(
+                    days_vol_inactive_till_termination=days_vol_inactive_till_termination,
+                    region_name=z2jh.get_config('custom.AZ_NAME')[:-1],
+                    cluster_name=z2jh.get_config('custom.CLUSTER_NAME'),
+                    cognito_name=z2jh.get_config('custom.OAUTH_POOL_NAME'),
+                    kubernetes_service_port=os.environ['KUBERNETES_SERVICE_PORT'],
+                    kubernetes_service_host=os.environ['KUBERNETES_SERVICE_HOST']
+                )
+                with open("/etc/jupyterhub/custom/meta.yaml", mode='w') as f:
+                    f.write(meta)
+
+                # Make file executable
+                os.chmod('/etc/jupyterhub/custom/meta.yaml', 0o755)
+
+                # Setup crontab for volume killer
+                cron = CronTab(user='jovyan')
+
+                # Lifecycle snapshot runs at 10 UTC, 3am AKST
+
+                # Setup crontab for volume killer
+                job2 = cron.new(command='python3 /etc/jupyterhub/custom/delete_volumes.py > /proc/1/fd/1 2>&1')
+                job2.hour.on(12)  # 12 UTC, 3am AKST
+                job2.minute.on(0)
+                job2.enable()
+
+                # Setup crontab for snapshot killer
+                job3 = cron.new(command='python3 /etc/jupyterhub/custom/delete_snapshot.py > /proc/1/fd/1 2>&1')
+                job3.hour.on(13)  # 13 UTC, 4am AKST
+                job3.minute.on(0)
+                job3.enable()
+
+                cron.write()
+
+            except Exception as e:
+                print(e)
+
+        myServices: |
+            import z2jh
+  
+            try:
+                c.JupyterHub.services.append(
+                    {
+                        'name': 'notifications',
+                        'url': 'http://notifications.notifications'
+                    }
+                )
+  
+            except Exception as e:
+              print("Something went wrong with starting the services...")
+              print(e)
+
+        myProfiles.py: |
+
+            from typing import List, Dict
+
+            import z2jh
+
+            # Profile list programmatically
+            # Ideally, if/else statements based on permissions would determine the final choices.
+            # https://jupyterhub-kubespawner.readthedocs.io/en/latest/spawner.html#kubespawner.KubeSpawner
+            # Other singleuser server params can be taken from docs linked above to use below as needed.
+
+            """
+            To manually add some Groups and names to Groups, `kubectl` into the hub, python3 and
+
+            from jupyterhub import groups
+
+            g = groups.Groups()
+            g.add_group('general_cpu')
+            g.get_users_in_group('general_cpu')
+            g.add_user_to_group('emlundell_test1', 'general_cpu')
+            g.get_users_in_group('general_cpu')
+
+
+            The `server_type` found in the profiles (e.g. general_cpu_large) are defined in cloudformation.yaml
+            """
+
+            class NoProfileException(Exception):
+                """No Profiles found"""
+
+            def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
+
+                try:
+                    from jupyterhub import groups as groups_py
+
+                    user_name = spawner.user.name
+
+                    groups = groups_py.Groups()
+                    group_list = groups.get_all_enabled_group_names_for_user(user_name=user_name)
+                    group_list.extend(groups.get_all_enabled_group_names_set_to_all_users())
+                    
+                    if not group_list:
+                        raise NoProfileException()
+
+                    print(f"Group list: {group_list}")
+
+                    profile_list = []
+
+                    # Adjust the example profile below and add additional profiles using it as a template
+
+                    ################################ Add a Profile #################################
+                    # After deployment, add a group named 'PROFILE_1' in the admin console
+                    # so it appears as a server option at login and so you can add users to it
+                    if 'PROFILE_1' in group_list:
+                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:a18e690"
+                        profile = {
+                            'display_name': 'SAR 1',
+                            'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G.',
+                            'default': True,
+                            'kubespawner_override': {
+                                'extra_labels': {
+                                    'server_type': 'profile_1'
+                                },
+                                'node_selector': {
+                                    'server_type': 'profile_1'
+                                },
+                                'image': image_url,
+                                'lifecycle_hooks': {
+                                    "postStart": {
+                                        "exec": {
+                                            "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/profile_1.sh"]
+                                        }
+                                    }
+                                },
+                                'args': [
+                                    "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'PROFILE 1'}"
+                                ],
+                                'mem_limit': '16G', 
+                                'mem_guarantee': '6G', # autoscaler will share EC2s among users (or not) based on this value
+                                # 'cpu_guarantee': '3', # you can also control EC2 sharing with a cpu guarantee
+                                'storage_capacity': '500Gi'
+                            }
+                        }
+                        profile_list.append(profile)
+                    ###############################################################################
+
+                    # This clause for sudo should be added after all other profiles
+                    # After deployment, create a group called 'sudo' in the admin console
+                    # It is best practice to avoid giving users root privileges unless absolutely necessary
+                    if 'sudo' in group_list:
+                        print("Adding sudo privs...")
+                        spawner.args.append('--allow-root')
+                        spawner.environment["GRANT_SUDO"] = "yes"
+                        spawner.gid = 599
+
+                        # Users should know that sudo is enabled in profile before entering
+                        for profile in profile_list:
+                            profile['display_name'] += " (Sudo Enabled)"
+                    else:
+                        print("Sudo privs not given.")
+
+                    return profile_list 
+
+                except NoProfileException as e:
+                    print(f"No profiles found for user {spawner.user.name}.")
+                    print(e)
+
+                    return []
+
+                except Exception as e:            
+                    print("Something went wrong with the profiles list...")
+                    print(e)
+
+                    return []
+
+            c.KubeSpawner.profile_list = profile_list_hook
