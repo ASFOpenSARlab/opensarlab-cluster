@@ -1,5 +1,8 @@
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8
 
+# enter your organization's name below
+LABEL MAINTAINER=""
+
 RUN python3 -m pip install \
     pyyaml \
     ics \

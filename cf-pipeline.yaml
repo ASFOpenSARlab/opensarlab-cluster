@@ -45,7 +45,7 @@ Parameters:
   ICALUrl:
     Type: String
     Description: "The iCal formatted URL of the Google Calendar used for notifications."
-    Default: '' # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cloudformation.yaml
+    Default: '' # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cloudformation.yaml and notifications/dock
 
 Outputs:
 

@@ -40,7 +40,7 @@ Parameters:
   ICALUrl:
     Type: String
     Description: "The iCal formatted URL of the Google Calendar used for notifications."
-    Default: '' # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cf-pipeline.yaml
+    Default: '' # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cf-pipeline.yaml and notifications/dock
 
   # The following parameters are dynamically added by the pipeline
   VpcId:
