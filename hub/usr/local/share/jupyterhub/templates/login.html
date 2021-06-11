@@ -1,0 +1,77 @@
+{% extends "page.html" %}
+{% if announcement_login %}
+  {% set announcement = announcement_login %}
+{% endif %}
+
+{% block login_widget %}
+{% endblock %}
+
+{% block main %}
+
+{% block login %}
+<div id="login-main" class="container">
+{% if login_service %}
+<div class="service-login">
+  <!--div class="announcement">
+        <p style="color:black; font-size: 18pt;">
+            Title
+        </p>
+        <p style="color:black; font-size: 14pt;">
+            An announcement message to appear on the login page.
+        </p>
+  </div-->
+  <div class="main-center" style="margin: 50px 0 50px 0;">
+    <div style="float: left;margin-left: 7%;">
+        <img style="float: left;max-height: 50px;z-index: 10;" src="{{static_url('images/NASA_logo.svg')}}">
+    </div>
+    <div style="float: left;margin-left: 5%;">
+        <img style="float: left;max-height: 50px;z-index: 10;" src="{{static_url('images/ASFLogo-Blue2.png')}}">
+    </div>
+    <div style="float: right;margin-right: 24%;">
+        <a role="button" class="btn btn-jupyter btn-lg" href="{{authenticator_login_url}}">
+        Sign in
+        </a>
+    </div>
+  </div>
+  <div>
+    <p>Messages appear at the bottom of the login page</p>
+  </div>
+  <style>
+
+    p {
+        color: grey;
+    }
+
+    .announcement {
+        padding: 15pt 10pt 10pt 10pt;
+        border: 3px solid #2c7bb6;
+        margin: 70px 0px;
+        color: black;
+    }
+
+    .main-center {
+      padding: 0px 0px 50px 100px;
+    }
+
+  </style>
+
+</div>
+{% else %}
+    <div>Login service is not valid!!</div>
+{% endif %}
+</div>
+{% endblock login %}
+
+{% endblock %}
+
+{% block script %}
+{{ super() }}
+<script>
+if (window.location.protocol === "http:") {
+  // unhide http warning
+  var warning = document.getElementById('insecure-login-warning');
+  warning.className = warning.className.replace(/\bhidden\b/, '');
+}
+</script>
+
+{% endblock %}

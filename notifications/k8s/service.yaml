@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: notifications
+  namespace: notifications
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    run: notifications
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}

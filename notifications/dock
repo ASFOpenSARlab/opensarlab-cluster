@@ -1,0 +1,28 @@
+#!/bin/bash 
+
+echo "$1"
+
+
+export DOCKER_REGISTRY=localhost:5000
+
+ICAL_URL="" # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cloudformation.yaml and cf-pipeline.yaml
+
+if [[ "$1" == 'build' ]]; then
+
+    export NOTIFICATIONS_FORCE_BUILD=true
+    
+    cp dockerfile dockerfile.build
+
+    BUILD_TAG=$(date +"%F-%H-%M-%S")
+
+    time docker build -f dockerfile.build -t $DOCKER_REGISTRY/notifications:$BUILD_TAG -t $DOCKER_REGISTRY/notifications:latest .
+
+    # Push to registry
+    docker push $DOCKER_REGISTRY/notifications:$BUILD_TAG
+    docker push $DOCKER_REGISTRY/notifications:latest
+
+elif [[ "$1" == 'run' ]]; then
+
+    docker run -it --rm -v $(pwd)/app:/app -p 80:80 -e ICAL_URL=$ICAL_URL $DOCKER_REGISTRY/notifications:latest /start-reload.sh
+
+fi

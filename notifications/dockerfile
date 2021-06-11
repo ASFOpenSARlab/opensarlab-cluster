@@ -1,0 +1,10 @@
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.8
+
+RUN python3 -m pip install \
+    pyyaml \
+    ics \
+    requests \
+    html2text \
+    markdown
+
+COPY ./app /app
