@@ -30,7 +30,7 @@ Parameters:
   CostTagValue:
     Type: String
     Description: "The value of the cost tag used for filtering the budget, etc."
-    Default: "" # should match CostTagValue used in cloudformation.yaml
+    Default: "" # should match CostTagValue used in cloudformation.yaml and cf-pipeline.yaml
 
 Outputs:
 

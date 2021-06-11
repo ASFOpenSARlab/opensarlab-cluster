@@ -35,12 +35,12 @@ Parameters:
   CostTagValue:
     Type: String
     Description: "The value of the cost tag used for filtering the budget, etc."
-    Default: '' # should match CostTagValue used in cf-cognito.yaml
+    Default: '' # should match CostTagValue used in cf-cognito.yaml and cf-pipeline.yaml
 
   ICALUrl:
     Type: String
     Description: "The iCal formatted URL of the Google Calendar used for notifications."
-    Default: '' # found in Google calendar's settings (choose url in iCal format)
+    Default: '' # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cf-pipeline.yaml
 
   # The following parameters are dynamically added by the pipeline
   VpcId:
