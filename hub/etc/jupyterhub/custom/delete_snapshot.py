@@ -226,7 +226,7 @@ class DeleteSnapshot():
                 if num_days_left < 0:
                     num_days_left = 0
 
-                # Note that the email below needs to be updated with your deployment name and admin email address
+                # TODO Note that the email below needs to be updated with your deployment name and admin email address
                 email_meta = {
                     'SENDER': "uaf-jupyterhub-asf@alaska.edu",
                     'RECIPIENT': '<{user_email_address}>'.format(user_email_address=user_email_address),
@@ -251,7 +251,7 @@ class DeleteSnapshot():
                 # Delete remaining snapshot
                 self._delete_snapshot(snapshot)
 
-                # Note that the email below needs to be updated with your deployment name and admin email address
+                # TODO Note that the email below needs to be updated with your deployment name and admin email address
                 email_meta = {
                     'SENDER': "uaf-jupyterhub-asf@alaska.edu",
                     'RECIPIENT': '<{user_email_address}>'.format(user_email_address=user_email_address),

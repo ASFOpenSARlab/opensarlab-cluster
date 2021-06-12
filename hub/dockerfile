@@ -1,6 +1,6 @@
 FROM jupyterhub/k8s-hub:0.11.1 as release
 
-# enter your organization's name below
+# TODO enter your organization's name below
 LABEL MAINTAINER=""
 
 # By default, the notebook base image is set to non-sudo user joyvan. This makes root-ful actions difficult.
@@ -26,7 +26,7 @@ RUN apt install --no-install-recommends -y \
 RUN pip3 install --upgrade awscli pyyaml python-crontab
 
 # Copy login page stuff
-# Edit login page images and html templates to suit your deployment
+# TODO Edit login page images and html templates to suit your deployment
 COPY /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
 COPY /usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png /usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png
 COPY /usr/local/share/jupyterhub/static/images/NASA_logo.svg /usr/local/share/jupyterhub/static/images/NASA_logo.svg

@@ -1,7 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
-# The following parameters can be entered in AWS when creating the cluster stack and do not need defaults here
+
 Parameters:
+# The following parameters can be entered in AWS when creating the cluster stack. Adding them here is optional.
   AdminUserName:
     Description: User name of main admin. This name is also whitelisted. Other admins are granted permsissions via the Jupyter Hub admin console.
     Type: String

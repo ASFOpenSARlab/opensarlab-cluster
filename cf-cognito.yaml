@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
 Parameters:
-  
+# The following parameters can be entered in AWS when creating the cognito stack. Adding them here is optional.
   ClusterDomain:
     Type: String
     Description: "FQDN of cluster (including https://). If the domain isn't known at the time, use the default and change it later."
