@@ -14,11 +14,13 @@ Parameters:
 
   CodeCommitRepoName:
     Type: String
-    Default: '' # the name of the code commit repo holding your opensarlab-cluster code
+    Description: "Name of the code commit repo holding your opensarlab-cluster code"
+    Default: ''
 
   CodeCommitBranchName:
     Type: String
-    Default: '' # The name of the branch holding this deployment's cluster code
+    Description: "Name of the branch holding this deployment's cluster code"
+    Default: ''
 
   ContainerNamespace: # this namespaces your your ECR repos to distinguish containers belonging to different deployments
     Type: String
