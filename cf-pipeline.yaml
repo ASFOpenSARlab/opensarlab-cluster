@@ -4,17 +4,18 @@ AWSTemplateFormatVersion: '2010-09-09'
 Parameters:
 # The following parameters can be entered in AWS when creating the cluster stack. Adding them here is optional.
   AdminUserName:
-    Description: User name of main admin. This name is also whitelisted. Other admins are granted permsissions via the Jupyter Hub admin console.
+    Description: "User name of main admin. This name is also whitelisted. Other admins are granted permsissions via the Jupyter Hub admin console."
     Type: String
     Default: '' # create a Cognito user with the AdminUserName in the AWS Cognito console
 
-  CertificateArn: # create or import your certificate in the AWS Certificate Manager console
+  CertificateArn:
     Type: String
+    Description: "Arn associated with the CA certificate you stored in AWS Certificate Manager"
     Default: '' # arn:aws:acm:<region>:<account_#>:certificate/<certificate_id>'
 
   CodeCommitRepoName:
     Type: String
-    Description: "Name of the code commit repo holding your opensarlab-cluster code"
+    Description: "Name of the code commit repo holding your <deployment_name>-cluster code"
     Default: ''
 
   CodeCommitBranchName:
@@ -24,7 +25,7 @@ Parameters:
 
   ContainerNamespace: # this namespaces your your ECR repos to distinguish containers belonging to different deployments
     Type: String
-    Default: '' # '<deployment_name>-container'
+    Default: '' # '<deployment_name>'
 
   OAuthPoolName:
     Description: AWS Cognito User Pool name
@@ -32,7 +33,7 @@ Parameters:
     Default: '' # '<deployment_name>-auth'
 
   JupyterHubURL:
-    Description: Used for Cognito authentication. If not using a custom URL, use the load balancer URL, found in the 'Outputs' tab of the cloudformation stack.
+    Description: "Used for Cognito authentication. If not using a custom URL, use the load balancer URL, found in the 'Outputs' tab of the cloudformation stack."
     Type: String
     Default: '' # load balancer URL found in the "Outputs" tab of <deployment_name>-cluster cloudformation stack
 

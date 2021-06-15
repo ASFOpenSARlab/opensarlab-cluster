@@ -2,11 +2,12 @@
 Deploying OpenSARlab to an AWS account
 =====================
 
+1. [Create an AWS Cost Allocation Tag](#Create an AWS Cost Allocation Tag)
+1. [Store your CA certificate](#Store your CA certificate)
 1. [Prepare CodeCommit Repos](#Prepre CodeCommit repos)
 1. [Create an S3 bucket to hold the lambda handler script](#Create an S3 bucket to hold the lambda handler script)
 1. [Customize opensarlab_container code for deployment](#Customize opensarlab_container code for deployment)
 1. [Customize opensarlab_cluster code for deployment](#Customize opensarlab_cluster code for deployment)
-1. [Prepare Lambdas for Cognito](#Prepare Lambdas for Cognito)
 1. [Build the Cognito CloudFormation stack](#Build the Cognito CloudFormation stack)
 1. [Build the container CloudFormation stack](#Build the container CloudFormation stack)
 1. [Build the cluster CloudFormation stack](#Build the cluster CloudFormation stack)
@@ -17,6 +18,19 @@ If you are setting up OpenSARlab for several classes and/or collaborative groups
 it may be useful to give them each their own standalone deployment. This separates user group authentication, 
 simplifies billing for each group, and allows for easy cleanup at the end of a project or class (just delete the deployment).
 In the following instructions, replace any occurrence of "<deployment_name>" with the deployment name you have chosen.    
+
+Create an AWS Cost Allocation Tag
+--------------------
+**Note: only management accounts can create cost allocation tags**
+
+1. Create a cost allocation tag or have one created by someone with access
+    1. Give it an available name that makes sense for tracking deployment names associated with AWS resources
+        1. i.e. "deployment_name"
+
+Store your CA certificate
+--------------------
+
+1. Import your CA certificate into the AWS Certificate Manager
 
 Prepare CodeCommit Repos
 --------------------
@@ -35,7 +49,7 @@ Prepare CodeCommit Repos
 Create an S3 bucket to hold the lambda handler script
 --------------------
 
-1. Create an S3 bucket in your AWS account called <deployment_name>-lambda 
+1. Create an S3 bucket in your AWS account called <deployment_name>-lambda
 
 Customize opensarlab_container code for deployment
 --------------------
@@ -59,6 +73,7 @@ Customize opensarlab_container code for deployment
             1. RUN conda env create -f /etc/jupyter-hooks/envs/<environment_name>_env.yml --prefix /etc/jupyter-hooks/envs/<environment_name>
     1. Run any tests for this profile that you added to the tests directory
 1. Remove the profiles/sar directory and sar.sh test script, unless you plan to use the sar profile
+1. Add, commit, and push changes to the remote CodeCommit repo
 
 Customize opensarlab_cluster code for deployment
 --------------------
@@ -107,6 +122,7 @@ Note: Most IDEs have functionality to easily locate and organize TODOs. Searchin
             1. Reducing volume sizes is not advised due to a high likelihood of data loss
     1. Remove the example PROFILE_1
 1. lambda_handler.py
+    1. Lambdas are used by Cognito event triggers for logging and emailing notifications to users and administrators
     1. Create a lambda_handler.py file based on lambda_handler.py.example
     1. Adjust email messages to suit the needs of the deployment
     1. zip the file, creating lambda_handler.py.zip
@@ -116,26 +132,125 @@ Note: Most IDEs have functionality to easily locate and organize TODOs. Searchin
             1. Upload it to the <deployment_name>-lambda S3 bucket
             1. Update the EmailLambdaKeyName parameter in the cognito CloudFormation template to match the new filename
             1. After updating the pipeline, set all Cognito triggers to 'None', save them, set them back to the correct lambdas, and save them again
-
-Prepare Lambdas for Cognito
---------------------
-
-
+1. Add, commit, and push changes to the remote CodeCommit repo
 
 Build the Cognito CloudFormation stack
 --------------------
 
+1. Open CloudFormation in the AWS console
+    1. Page 1 : **Create stack**
+        1. Click the "Create stack" button and select "With new resources (standard)"
+        1. Under "Specify template", check "Upload a template file"
+        1. Use the file chooser to select **cf-cognito.py** from your local branch of the <deployment_name>-cluster repo 
+        1. Click the "Next" button
+    1. Page 2: **Specify stack details**
+        1. Stack name:
+            1. <deployment_name>-auth
+        1. AdminEmailAddress:
+            1. email address of the primary administrator
+        1. AdminEmailSNSArn:
+            1. Arn of the admin email address
+                1. Must be AWS SES verified (easy to do in the Amazon Simple Email Service console)
+        1. ClusterDomain
+            1. Enter the deployment domain, if known
+                1. The placeholder domain can be left in place if the actual domain is not yet known
+        1. CostTagValue
+            1. <deployment_name>
+        1. EmailLambdaBucketName
+            1. <deployment_name>-lambda
+        1. EmailLambdaKeyName
+            1. lambda_handler.py.zip
+        1. Click the "Next" button
+    1. Page 3: **Configure stack options**
+        1. Tags:
+            1. Key: 
+                1. Cost allocation tag
+            1. Value:
+                1. <deployment_name>
+        1. Click the "Next" button
+    1. Page 4: **Review <deployment_name>-auth**
+        1. Review and confirm correctness
+        1. Check the box next to "I acknowledge that AWS CloudFormation might create IAM resources"
+        1. Click the "Create Stack Button" 
+       
 
 Build the container CloudFormation stack
 --------------------
+**This will create the hub image, images for each profile, and store them in namespaced ECR repos**
+
+1. Open CloudFormation in the AWS console
+    1. Page 1 : **Create stack**
+        1. Click the "Create stack" button and select "With new resources (standard)"
+        1. Under "Specify template", check "Upload a template file"
+        1. Use the file chooser to select **cf-container.py** from your local branch of the <deployment_name>-container repo 
+        1. Click the "Next" button
+    1. Page 2: **Specify stack details**
+        1. Stack name:
+            1. <deployment_name>-container
+        1. CodeCommitSourceBranch:
+            1. The name of the production branch of the <deloyment_name>-container CodeCommit repo
+        1. CodeCommitSourceRepo:
+            1. <deployment_name>-container
+        1. CostTagValue
+            1. <deployment_name>
+    1. Page 3: **Configure stack options**
+        1. Tags:
+            1. Key: Cost allocation tag
+            1. Value: <deployment_name>
+        1. Click the "Next" button
+    1. Page 4: **Review <deployment_name>-auth**
+        1. Review and confirm correctness
+        1. Check the box next to "I acknowledge that AWS CloudFormation might create IAM resources"
+        1. Click the "Create Stack Button" 
+
 
 
 Build the cluster CloudFormation stack
 --------------------
 
+1. Open CloudFormation in the AWS console
+    1. Page 1 : **Create stack**
+        1. Click the "Create stack" button and select "With new resources (standard)"
+        1. Under "Specify template", check "Upload a template file"
+        1. Use the file chooser to select **cf-pipeline.py** from your local branch of the <deployment_name>-cluster repo 
+        1. Click the "Next" button
+    1. Page 2: **Specify stack details**
+        1. Stack name:
+            1. <deployment_name>-cluster
+        1. AdminUserName:
+            1. Admin username that you will create in Cognito
+        1. CertificateArn:
+            1. Arn associated with the CA certificate you stored in AWS Certificate Manager
+        1. CodeCommitRepoName:
+            1. Name of the CodeCommit repo holding your <deployment_name>-cluster code
+        1. CodeCommitBranchName:
+            1. Name of the branch holding this deployment's cluster code
+        1. ContainerNamespace:
+            1. <deployment_name>
+        1. CostTagKey:
+            1. Cost allocation tag
+        1. CostTagValue:
+            1. <deployment_name>
+        1. ICALUrl:
+            1. The iCal formatted URL of the Google Calendar used for notifications
+        1. JupyterHubURL:
+            1. Your custom URL, or leave blank for now.
+                1. Can be updated later           
+        1. OAuthPoolName:
+            1. <deployment_name>-auth 
+    1. Page 3: **Configure stack options**
+        1. Tags:
+            1. Key: Cost allocation tag
+            1. Value: <deployment_name>
+        1. Click the "Next" button
+    1. Page 4: **Review <deployment_name>-auth**
+        1. Review and confirm correctness
+        1. Check the box next to "I acknowledge that AWS CloudFormation might create IAM resources"
+        1. Click the "Create Stack Button" 
 
 Take care of odds and ends
 --------------------
+1. Create Cognito admin user
 1. Tag EKS
 
 
