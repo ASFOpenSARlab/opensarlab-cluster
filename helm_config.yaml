@@ -276,7 +276,7 @@ hub:
                                 'args': [
                                     "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'PROFILE 1'}"
                                 ],
-                                'mem_limit': '16G', 
+                                'mem_limit': '16G', # these values can also be expressed as percentages, i.e. "50%"
                                 'mem_guarantee': '6G', # autoscaler will share EC2s among users (or not) based on this value
                                 # 'cpu_guarantee': '3', # you can also control EC2 sharing with a cpu guarantee
                                 'storage_capacity': '500Gi'

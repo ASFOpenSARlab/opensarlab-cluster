@@ -11,7 +11,7 @@ Parameters:
   CertificateArn:
     Type: String
     Description: "Arn associated with the CA certificate you stored in AWS Certificate Manager"
-    Default: '' # arn:aws:acm:<region>:<account_#>:certificate/<certificate_id>'
+    Default: '' # arn:aws:acm:<region>:<account_#>:certificate/<certificate_id>
 
   CodeCommitRepoName:
     Type: String
