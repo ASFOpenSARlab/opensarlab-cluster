@@ -442,6 +442,32 @@ hub:
                         }
                         profile_list.append(profile)
 
+                    if 'SAR_1_-_No_Hook' in group_list:
+                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:a18e690"
+                        profile = {
+                            'display_name': 'SAR 1 - No Hook',
+                            'description': 'Useful for debugging some server timeouts. This does not run the post-hook.',
+                            'default': False,
+                            'kubespawner_override': {
+                                'extra_labels': {
+                                    'server_type': 'sar_1',
+                                    'extra_configs': 'no_hook'
+                                },
+                                'node_selector': {
+                                    'server_type': 'sar_1'
+                                },
+                                'image': image_url,
+                                'args': [
+                                    "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 1 - No Hook'}"
+                                ],
+                                'mem_limit': '16G',
+                                'mem_guarantee': '6G',
+                                'cpu_guarantee': 1.25,
+                                'storage_capacity': '500Gi'
+                            }
+                        }
+                        profile_list.append(profile)
+
                     # This clause for sudo should always be last
                     if 'sudo' in group_list:
                         print("Adding sudo privs...")
