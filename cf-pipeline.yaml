@@ -32,7 +32,7 @@ Parameters:
     Type: String
     Default: '' # '<deployment_name>-auth'
 
-  JupyterHubURL:
+  DeploymentURL:
     Description: "Used for Cognito authentication. If not using a custom URL, use the load balancer URL, found in the 'Outputs' tab of the cloudformation stack."
     Type: String
     Default: '' # load balancer URL found in the "Outputs" tab of <deployment_name>-cluster cloudformation stack
@@ -301,7 +301,7 @@ Resources:
                       "ContainerNamespace": "${ContainerNamespace}",
                       "OAuthPoolName": "${OAuthPoolName}",
                       "OAuthDNSName": "https://${OAuthPoolName}.auth.us-east-1.amazoncognito.com",
-                      "JupyterHubURL": "${JupyterHubURL}",
+                      "DeploymentURL": "${DeploymentURL}",
                       "CostTagKey": "${CostTagKey}",
                       "CostTagValue": "${CostTagValue}",
                       "CertificateArn": "${CertificateArn}",

@@ -5,7 +5,7 @@ echo "$1"
 
 export DOCKER_REGISTRY=localhost:5000
 
-ICAL_URL="" # TODO Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cloudformation.yaml and cf-pipeline.yaml
+ICAL_URL="" # TODO Found in Google calendar's settings (use url in iCal format).
 
 if [[ "$1" == 'build' ]]; then
 

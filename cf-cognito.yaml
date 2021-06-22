@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 
 Parameters:
 # The following parameters can be entered in AWS when creating the cognito stack. Adding them here is optional.
-  ClusterDomain:
+  DeploymentURL:
     Type: String
     Description: "FQDN of cluster (including https://). If the domain isn't known at the time, use the default and change it later."
     Default: "https://placeholder.example"
@@ -147,7 +147,7 @@ Resources:
         Variables:
           region_name: !Sub "${AWS::Region}"
           stackname: !Sub "${AWS::StackName}"
-          cluster_domain: !Sub "${ClusterDomain}"
+          deployment_url: !Sub "${DeploymentURL}"
           admin_email_address: !Sub "${AdminEmailAddress}"
 
   LogFunction:
@@ -271,7 +271,7 @@ Resources:
       AllowedOAuthScopes: 
         - openid
       CallbackURLs: 
-        - !Sub "${ClusterDomain}/hub/oauth_callback"
+        - !Sub "${DeploymentURL}/hub/oauth_callback"
       ClientName: !Sub ${AWS::StackName}
       ExplicitAuthFlows: 
         - ALLOW_CUSTOM_AUTH
@@ -279,7 +279,7 @@ Resources:
         - ALLOW_USER_SRP_AUTH
       GenerateSecret: True
       LogoutURLs:
-        - !Sub "${ClusterDomain}"
+        - !Sub "${DeploymentURL}"
       PreventUserExistenceErrors: ENABLED
       RefreshTokenValidity: 1
       SupportedIdentityProviders: 

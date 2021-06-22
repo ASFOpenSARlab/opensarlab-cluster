@@ -77,9 +77,9 @@ def email_reset(userName, userEmail, fullName, env):
         'BODY_HTML': """<html>
             <head></head>
             <body>
-                <p>{fullName} ({userName}) at {userEmail} just reset their password for access to {clusterDomain}. No admin action is required at this time.</p>
+                <p>{fullName} ({userName}) at {userEmail} just reset their password for access to {deploymentURL}. No admin action is required at this time.</p>
             </body>
-            </html>""".format(userName=userName, userEmail=userEmail, fullName=fullName, clusterDomain=env['cluster_domain'], adminEmailAddress=env['admin_email_address']) 
+            </html>""".format(userName=userName, userEmail=userEmail, fullName=fullName, deploymentURL=env['deployment_url'], adminEmailAddress=env['admin_email_address'])
     }
     
     send_email(email_meta, env)
@@ -104,9 +104,9 @@ def email_signup(userName, userEmail, fullName, env):
         'BODY_HTML': """<html>
             <head></head>
             <body>
-                <p>{fullName} ({userName}) at {userEmail} just signed up for access to {clusterDomain}. Please verify and <i>enable</i> their account.</p>
+                <p>{fullName} ({userName}) at {userEmail} just signed up for access to {deploymentURL}. Please verify and <i>enable</i> their account.</p>
             </body>
-            </html>""".format(userName=userName, userEmail=userEmail, fullName=fullName, clusterDomain=env['cluster_domain'], adminEmailAddress=env['admin_email_address']) 
+            </html>""".format(userName=userName, userEmail=userEmail, fullName=fullName, deploymentURL=env['deployment_url'], adminEmailAddress=env['admin_email_address'])
     }
 
     send_email(email_meta, env)
@@ -120,7 +120,7 @@ def email_signup(userName, userEmail, fullName, env):
             <head></head>
             <body>
                 <p>
-                You recently have applied for access to {clusterDomain} operated by the Alaska Satellite Facility (ASF). 
+                You recently have applied for access to {deploymentURL} operated by the Alaska Satellite Facility (ASF). 
                 You are using the username '{userName}'. 
                 This email confirms that your email is verified.  
                 </p>
@@ -131,7 +131,7 @@ def email_signup(userName, userEmail, fullName, env):
                 Confirmation may take up to a day. 
                 </p>
             </body>
-            </html>""".format(userName=userName, clusterDomain=env['cluster_domain'], adminEmailAddress=env['admin_email_address'])
+            </html>""".format(userName=userName, deploymentURL=env['deployment_url'], adminEmailAddress=env['admin_email_address'])
     }
     
     send_email(email_meta, env)
@@ -141,7 +141,7 @@ def lambda_handler(event, context):
     env = {
         "region_name": os.environ['region_name'],
         "stackname": os.environ['stackname'],
-        "cluster_domain": os.environ['cluster_domain'],
+        "deployment_url": os.environ['deployment_url'],
         "admin_email_address": os.environ['admin_email_address']
     }
     

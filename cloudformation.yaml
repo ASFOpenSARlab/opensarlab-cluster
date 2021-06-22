@@ -26,10 +26,15 @@ Parameters:
     Type: String
     Default: ''
 
-  JupyterHubURL:
+  DeploymentURL:
     Description: Jupyterhub URL used by AWS Cognito authentication. If not given, the default is the load balancer URL
     Type: String
     Default: ''
+
+  CostTagKey:
+    Type: String
+    Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
+    Default: ""
 
   CostTagValue:
     Type: String
@@ -662,7 +667,7 @@ Resources:
                       --set hub.config.Authenticator.admin_users[0]=${AdminUserName}
                       --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
                       --set custom.IMAGE_REPO_URL=$IMAGE_REPO_URL
-                      --set custom.OAUTH_JUPYTER_URL=$( [ -n '${JupyterHubURL}' ] && echo '${JupyterHubURL}' || echo 'https://${LoadBalancer.DNSName}' )
+                      --set custom.OAUTH_JUPYTER_URL=$( [ -n '${DeploymentURL}' ] && echo '${DeploymentURL}' || echo 'https://${LoadBalancer.DNSName}' )
                       --set custom.OAUTH_DNS_NAME=${OAuthDNSName}
                       --set custom.CLUSTER_NAME=${Cluster},custom.OAUTH_POOL_NAME=${OAuthPoolName},custom.AZ_NAME=${AWS::Region}d
                       --set custom.COST_TAG_VALUE=${CostTagValue}
