@@ -220,10 +220,10 @@ hub:
             from jupyterhub import groups
 
             g = groups.Groups()
-            g.add_group('general_cpu')
-            g.get_users_in_group('general_cpu')
-            g.add_user_to_group('emlundell_test1', 'general_cpu')
-            g.get_users_in_group('general_cpu')
+            g.add_group('example_group_name')
+            g.get_users_in_group('example_group_name')
+            g.add_user_to_group('example_username', 'example_group_name')
+            g.get_users_in_group('example_group_name')
 
 
             The `server_type` found in the profiles (e.g. general_cpu_large) are defined in cloudformation.yaml
