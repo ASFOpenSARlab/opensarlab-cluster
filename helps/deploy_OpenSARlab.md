@@ -247,6 +247,7 @@ Note: Most IDEs have functionality to easily locate and organize TODOs. Searchin
     1. Upload the zip to the <deployment_name>-lambda S3 bucket
         1. After setting up Cognito for the first time, anytime you make changes to this file you will need to:
             1. Change the name of the zip file
+                1. **Do not change the name of the lambda_handler.py file it contains**
             1. Upload it to the lambda S3 bucket
             1. Update the EmailLambdaKeyName parameter in the cognito CloudFormation template to match the new filename
             1. After updating the pipeline, set all Cognito triggers to 'None', save them, set them back to the correct lambdas, and save them again
@@ -454,26 +455,6 @@ Take care of odds and ends
                         1. select the <deployment_name>-auth-LogFunction-<random hash> lambda
                     1. Leave the remaining triggers set to "none"
                     1. Click the "Save changes" button
-        1. Add an admin user
-            1. Click the "Users and groups" sidebar menu link
-            1. Click the "Create user" button
-                1. Username:
-                    1. enter the name used for the AdminUserName parameter of the <deployment_name> CloudFormation stack
-                1. Send an invitation to this new user?:
-                    1. leave its box checked
-                    1. check the "Email" box
-                    1. Do not check the "SMS (default)" box
-                1. Temporary password:
-                    1. enter a temporary password
-                1. Phone Number:
-                    1. leave blank
-                    1. uncheck the "Mark phone number as verified?" box
-                1. Email:
-                    1. enter the email address used for the AdminEmailAddress parameter in the <deployment_name>-auth CloudFormation stack
-                    1. leave the "Mark email as verified?" box checked
-                1. Click the "Create user" button
-                                    
-
 1. Update image tags for every profile in helm_config.yml (<deployment_name>-cluster repository)
     1. hub:image:tag
         1. 'latest' will only work for the hub:image:tag on the first build
@@ -500,17 +481,163 @@ Take care of odds and ends
                         1. Desired capacity:
                             1. Set to 1
                         1. Click the "Update" button
-1. Sign in with your admin account and add groups for each profile and sudo
+1. Create a test notification
+    1. Navigate to your notification calendar
+    1. Create an event
+        1. Set the event to last as long as you wish the notification to display
+        1. The event title will appear as the notification title
+        1. The description includes a metadata and message section
+            1. Example:
+                1. ```
+                      <meta>
+                      profile: MY PROFILE, OTHER PROFILE
+                      type: info
+
+                      <message>
+                      This is a notification
+            1. \<meta\>
+                1. profile:
+                    1. Holds the name or names (comma separated) of the profiles where the notification will be displayed
+                1. type:
+                    1. info
+                        1. blue notification
+                    1. success
+                        1. green notification
+                    1. warning
+                        1. yellow notification
+                    1. error
+                        1. red notification
+            1. \<message\>
+                1. Your notification message
+1. Sign up with your admin account, sign in,  and add groups for each profile and sudo
     1. Open the DeploymentURL in a web browser
-        1. Sign in with your admin account
-            1. Change your password when prompted
-            
+        1. Click the "Sign in" button
+            1. Click the "Sign up" link
+            1. Username:
+                1. The name used for the AdminUserName parameter of the <deployment_name> CloudFormation stack
+            1. Name:
+                1. Your name
+            1. Email:
+                1. Enter the email address used for the AdminEmailAddress parameter in the <deployment_name>-auth CloudFormation stack
+            1. Password:
+                1. A password
+            1. Click the "Sign up" button
+                1. Verification Code:
+                    1. The verification code sent to your email address
+                1. Click the "Confirm Account" button
+    1. Add a group for each profile and for sudo
+        1. After confirming your account you should be redirected to the Server Options page
+        1. Click the "Groups" link at the top of the screen
+        1. Click the "Add New Group" button
+            1. Group Name:
+                1. The group name as it appears in the helm_config.yaml group_list
+                    1. Note that this is not the display name and it contains underscores
+            1. Group Description:
+                1. (optional) Enter a group description
+            1. Group Type:
+                1. check "action"
+                    1. This has no effect, but is useful for tracking user groups vs. profile groups
+            1. All Users?:
+                1. Check if you wish the profile to be accessible to all users
+            1. Is Enabled?:
+                1. check the box
+            1. Click the "Add Group" button
+            1. Repeat for all profiles
+            1. Repeat for a group named "sudo"
+                1. Do not enable sudo for all users!
+                1. This is useful for developers but avoid giving root privileges to regular users
+            1. Click the "Home" link at the top of the screen
+    1. Start up and test each profile
+        1. Click the "Start My Server" button
+        1. Select a profile
+            1. Click the "Start" button
+        1. Confirm that the profile runs as expected
+            1. Test notebooks as needed
+            1. Confirm that notifications appear
+        1. Repeat for each profile
+                
+Destroy Deployments
+--------------------
 
-     
+Deleting the <deployment_name>-container, <deployment_name>-auth, <deployment_name>-cluster, and <deployment_name> 
+CloudFormation stacks will kill the deployment and remove its resources but there are a couple of prerequisite steps 
+to prepare for proper deletion.
 
+Note: In the steps below, **do not manually delete any S3 buckets after emptying them.** If you delete the buckets, the
+CloudFormation stack deletions associated with those buckets will fail and you will have to recreate the empty buckets 
+to proceed. Let CloudFormation delete them for you.
 
-
-TODO Add sections for destroying a deployment and creating dockerhub creds in Secret Manager
-
-
-
+1. Delete the <deployment_name>-container CloudFormation stack
+    1. Empty the codepipeline-<region>-<deployment_name>-container-container S3 bucket
+        1. Navigate to the AWS S3 console
+            1. Check the box next to the codepipeline-<region>-<deployment_name>-container-container S3 bucket
+            1. Click the "Empty" button
+                1. Confirm the deletion of bucket contents by typing "permanently delete" in the provided field
+                1. Click the "Empty" button
+    1. Delete ECR repos for each profile
+        1. Navigate to the AWS Elastic Container Registry
+        1. Click the box next to the <deployment_name>/<profile_namespace> repository
+        1. Click the "Delete" button
+            1. Confirm the deletion by typing "delete" in the provided field
+            1. Click the "Delete" button
+        1. Repeat for each profile
+    1. Delete the <deployment_name>-container CloudFormation stack
+        1. Navigate to the AWS CloudFormation console
+            1. Click the box next to the <deployment_name>-container stack
+            1. Click the "Delete" button
+                1. Click the "Delete stack" button
+            1. Click the <deployment_name>-container stack name
+                1. Click the "Events" tab
+                1. Monitor the stack deletion progress
+                    1. Click the refresh button periodically since the console doesn't update events automatically
+1. Delete the <deployment_name>-auth CloudFormation stack
+    1. Navigate to the AWS CloudFormation console
+        1. Click the box next to the <deployment_name>-auth stack
+        1. Click the "Delete" button
+                1. Click the "Delete stack" button
+        1. Click the <deployment_name>-auth stack name
+            1. Click the "Events" tab
+            1. Monitor the stack deletion progress
+                1. Click the refresh button periodically since the console doesn't update events automatically
+1. Delete the <deployment_name>-cluster CloudFormation stack
+    1. Navigate to the AWS CloudFormation console
+        1. Click the box next to the <deployment_name>-cluster stack
+        1. Click the "Delete" button
+                1. Click the "Delete stack" button
+        1. Click the <deployment_name>-cluster stack name
+            1. Click the "Events" tab
+            1. Monitor the stack deletion progress
+                1. Click the refresh button periodically since the console doesn't update events automatically
+1. Delete the <deployment_name> CloudFormation stack
+    1. Delete hub and notifications ECR repos
+        1. Navigate to the AWS Elastic Container Registry
+        1. Click the box next to the <deployment_name>/hub repository
+        1. Click the "Delete" button
+            1. Confirm the deletion by typing "delete" in the provided field
+            1. Click the "Delete" button 
+        1. Repeat the above steps for the <deployment_name>/notifications repository
+    1. Empty the codepipeline-<region>-<deployment_name> S3 bucket
+        1. Navigate to the AWS S3 console
+            1. Check the box next to the codepipeline-<region>-<deployment_name> S3 bucket
+            1. Click the "Empty" button
+                1. Confirm the deletion of bucket contents by typing "permanently delete" in the provided field
+                1. Click the "Empty" button
+    1. Delete the <deployment_name> CloudFormation stack
+        1. Navigate to the AWS CloudFormation console
+            1. Click the box next to the <deployment_name> stack
+            1. Click the "Delete" button
+                    1. Click the "Delete stack" button
+            1. Click the <deployment_name> stack name
+                1. Click the "Events" tab
+                1. Monitor the stack deletion progress
+                    1. Click the refresh button periodically since the console doesn't update events automatically
+1. (Optional) Delete the <deployment_name>-cluster and <deployment_name>-container CodeCommit repositories
+    1. CodeCommit repos are cheap
+        1. If you think you may re-deploy the same deployment, you may want to ease future work by leaving these repos in place
+    1. Navigate to the AWS CodeCommit console
+        1. Check the box next to the <deployment_name>-container repo
+        1. Click the "Delete repository" button
+            1. Confirm the deletion by typing "delete" in the provided field     
+            1. Click the "Delete" button
+        1. Repeat the above steps for the <deployment_name>-cluster repo
+                              
