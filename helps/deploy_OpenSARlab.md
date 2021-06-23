@@ -15,6 +15,7 @@ Deploying OpenSARlab to an AWS account
 1. [Build the container CloudFormation stack](#Build the container CloudFormation stack)
 1. [Build the cluster CloudFormation stack](#Build the cluster CloudFormation stack)
 1. [Take care of odds and ends](#Take care of odds and ends)
+1. [Destroy Deployments](#Destroy Deployments)
 
 **A note about deployments:** A deployment of OpenSARlab refers to a standalone instance of OpenSARlab.
 If you are setting up OpenSARlab for several classes and/or collaborative groups with disparate needs or funding sources,
@@ -559,13 +560,16 @@ Take care of odds and ends
 Destroy Deployments
 --------------------
 
+At the end of a deployment's lifecycle, it is important to destroy it properly so no resources are left in place, 
+costing you money.
+
 Deleting the <deployment_name>-container, <deployment_name>-auth, <deployment_name>-cluster, and <deployment_name> 
 CloudFormation stacks will kill the deployment and remove its resources but there are a couple of prerequisite steps 
 to prepare for proper deletion.
 
 Note: In the steps below, **do not manually delete any S3 buckets after emptying them.** If you delete the buckets, the
 CloudFormation stack deletions associated with those buckets will fail and you will have to recreate the empty buckets 
-to proceed. Let CloudFormation delete them for you.
+to proceed. Empty them and let CloudFormation delete them for you.
 
 1. Delete the <deployment_name>-container CloudFormation stack
     1. Empty the codepipeline-<region>-<deployment_name>-container-container S3 bucket
