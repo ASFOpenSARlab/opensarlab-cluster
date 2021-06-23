@@ -45,6 +45,7 @@ custom:
   OAUTH_DNS_NAME: OAUTH_DNS_NAME
   OAUTH_POOL_NAME: OAUTH_POOL_NAME
   CLUSTER_NAME: CLUSTER_NAME
+  COST_TAG_KEY: COST_TAG_KEY
   COST_TAG_VALUE: COST_TAG_VALUE
   AZ_NAME: AZ_NAME
   IMAGE_REPO_URL: IMAGE_REPO_URL
@@ -95,6 +96,7 @@ hub:
                         'pvc_name': spawner.pvc_name,
                         'namespace': 'jupyter',
                         'cluster_name': z2jh.get_config('custom.CLUSTER_NAME'),
+                        'cost_tag_key': z2jh.get_config('custom.COST_TAG_KEY'),
                         'cost_tag_value': z2jh.get_config('custom.COST_TAG_VALUE'),
                         'az_name': z2jh.get_config('custom.AZ_NAME'),
                         'vol_size': spawner.storage_capacity,

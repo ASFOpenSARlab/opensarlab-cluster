@@ -151,7 +151,7 @@ Resources:
       GroupDescription: !Sub Security group for the ${AWS::StackName} EKS cluster
       VpcId: !Ref VpcId
       Tags:
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
   Cluster:
@@ -290,7 +290,7 @@ Resources:
       GroupDescription: !Sub Security group for instances in the ${Cluster} EKS cluster
       VpcId: !Ref VpcId
       Tags:
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
   NodeSecurityGroupIngress:
@@ -389,7 +389,7 @@ Resources:
       - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
         Value: "true"
         PropagateAtLaunch: true
-      - Key: osl-stackname
+      - Key: !Sub ${CostTagKey}
         Value: !Sub ${CostTagValue}
         PropagateAtLaunch: true
 
@@ -437,7 +437,7 @@ Resources:
      - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
        Value: "true"
        PropagateAtLaunch: true
-     - Key: osl-stackname
+     - Key: !Sub ${CostTagKey}
        Value: !Sub ${CostTagValue}
        PropagateAtLaunch: true
 
@@ -472,7 +472,7 @@ Resources:
       HealthCheckIntervalSeconds: 120
       HealthyThresholdCount: 2
       Tags:
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
   LoadBalancerSecurityGroup:
@@ -499,7 +499,7 @@ Resources:
       SecurityGroups:
       - !GetAtt LoadBalancerSecurityGroup.GroupId
       Tags:
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
   HttpListener:
@@ -586,7 +586,7 @@ Resources:
       ServiceRole: !Ref ClusterRole
       TimeoutInMinutes: 45
       Tags:
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
       Source:
         Type: CODEPIPELINE
@@ -651,7 +651,7 @@ Resources:
                       --set enableVolumeSnapshot=false
                       --set extraCreateMetadata=true
                       --set k8sTagClusterId=${Cluster}
-                      --set extraVolumeTags.osl-stackname=${CostTagValue}
+                      --set extraVolumeTags.${CostTagKey}=${CostTagValue}
                   - echo "Associate IAM and OIDC for service accounts..."
                   - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
                   - echo "Install JupyterHub cluster..."
@@ -671,6 +671,7 @@ Resources:
                       --set custom.OAUTH_DNS_NAME=${OAuthDNSName}
                       --set custom.CLUSTER_NAME=${Cluster},custom.OAUTH_POOL_NAME=${OAuthPoolName},custom.AZ_NAME=${AWS::Region}d
                       --set custom.COST_TAG_VALUE=${CostTagValue}
+                      --set custom.COST_TAG_KEY=${CostTagKey}
                       --set hub.image.name=$IMAGE_REPO_URL/hub
                   - kubectl -n jupyter rollout status -w deployment.apps/hub
                   - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true

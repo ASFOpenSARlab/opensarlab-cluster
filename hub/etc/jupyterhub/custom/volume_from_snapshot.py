@@ -21,6 +21,7 @@ def volume_from_snapshot(meta):
         pvc_name = meta['pvc_name']
         namespace = meta['namespace']
         cluster_name = meta['cluster_name']
+        cost_tag_key = meta['cost_tag_key']
         cost_tag_value = meta['cost_tag_value']
         az_name = meta['az_name']
         vol_size = meta['vol_size']
@@ -120,7 +121,7 @@ def volume_from_snapshot(meta):
                                 {'Key': 'kubernetes.io/created-for/pvc/namespace', 'Value': namespace},
                                 {'Key': 'kubernetes.io/created-for/pvc/name', 'Value': pvc_name},
                                 {'Key': 'RestoredFromSnapshot', 'Value': 'True'},
-                                {'Key': 'osl-stackname', 'Value': cost_tag_value}
+                                {'Key': cost_tag_key, 'Value': cost_tag_value}
                             ]
                         },
                     ]

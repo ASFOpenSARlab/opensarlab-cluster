@@ -438,6 +438,14 @@ Take care of odds and ends
     1. Navigate to the AWS Cognito console
     1. Click the "Manage User Pools" button
         1. Click the "<deployment_name>-auth" user pool button
+        1. Add the cost allocation tag to the Cognito user pool
+            1. Click the "Tags" sidebar menu link
+                1. Click the "Add tag" link
+                1. Tag Key:
+                    1. Cost allocation tag
+                1. Tag Value:
+                    1. <deployment_name>
+                1. Click the "Save changes" button
         1. Reset triggers
             1. Cognito triggers can fall out of sync with email and logging lambdas so it is safest to reset them
             1. Click the "Triggers" sidebar menu link
