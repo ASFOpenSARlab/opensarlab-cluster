@@ -58,7 +58,7 @@ you will need to set up a dockerhub account. A free-tier account will suffice. C
 users and you will likely hit the rate limit as an anonymous user 
 ([details here](https://aws.amazon.com/blogs/containers/advice-for-customers-dealing-with-docker-hub-rate-limits-and-a-coming-soon-announcement/)).**
 
-Note: By default this secret will be used for multiple deployments. Optionally, you could edit the codebuild section in the cloudformation.yml to 
+Note: By default this secret will be used for multiple deployments. Optionally, you could edit the codebuild section in the cf-cluster.yml to 
 point to a different secret.
 
 1. If you don't have a dockerhub account, create one [here](https://hub.docker.com/signup)
