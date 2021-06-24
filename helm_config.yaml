@@ -226,7 +226,7 @@ hub:
             g.get_users_in_group('example_group_name')
 
 
-            The `server_type` found in the profiles (e.g. general_cpu_large) are defined in cloudformation.yaml
+            The `server_type` found in the profiles are defined in cf-cluster.yaml
             """
 
             class NoProfileException(Exception):
@@ -255,9 +255,9 @@ hub:
                     # After deployment, add a group named 'PROFILE_1' in the admin console
                     # so it appears as a server option at login and so you can add users to it
                     if 'PROFILE_1' in group_list:
-                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/profile_1:xxxxxxx"
+                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/profile_1:profile_1_tag"
                         profile = {
-                            'display_name': 'SAR 1',
+                            'display_name': 'PROFILE 1',
                             'description': 'A description of the profile's resources' ,
                             'default': True,
                             'kubespawner_override': {

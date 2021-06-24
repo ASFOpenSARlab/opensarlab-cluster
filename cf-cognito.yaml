@@ -194,7 +194,7 @@ Resources:
       EmailConfiguration:
         SourceArn: !Sub '${AdminEmailSNSArn}'
         EmailSendingAccount: DEVELOPER
-      EmailVerificationMessage: !Sub | 
+      EmailVerificationMessage: | 
         <p style="padding: 3px; border: 3px solid grey;">
           Add a custom email verification message here
         </p>
@@ -249,7 +249,7 @@ Resources:
       UserPoolName: !Sub ${AWS::StackName}
       VerificationMessageTemplate:
         #SmsMessage: 'Your verification code is {####}. '
-        EmailMessage: !Sub |
+        EmailMessage: |
           <p style="padding: 3px; border: 3px solid grey;">
             Add a custom email verification message here
           </p>
