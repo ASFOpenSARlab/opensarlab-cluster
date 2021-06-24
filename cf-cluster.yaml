@@ -1,0 +1,715 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+
+  AdminUserName:
+    Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
+    Type: String
+
+  CertificateArn:
+    Description: The ARN of the SSL certificate attached to the load balancer.
+    Type: String
+    Default: ''
+
+  ContainerNamespace:
+    Description: OVERRIDE in child. The full url of the container ECR. Example-- osl-e-dev-container
+    Type: String
+    Default: ''
+
+  OAuthPoolName:
+    Description: AWS Cognito User Pool name
+    Type: String
+    Default: ''
+
+  OAuthDNSName:
+    Description: AWS Cognito User Pool DNS Url
+    Type: String
+    Default: ''
+
+  DeploymentURL:
+    Description: Jupyterhub URL used by AWS Cognito authentication. If not given, the default is the load balancer URL
+    Type: String
+    Default: ''
+
+  CostTagKey:
+    Type: String
+    Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
+    Default: ""
+
+  CostTagValue:
+    Type: String
+    Description: "The value of the cost tag used for filtering the budget, etc."
+    Default: ''
+
+  ICALUrl:
+    Type: String
+    Description: "The iCal formatted URL of the Google Calendar used for notifications."
+    Default: ''
+
+  # The following parameters are dynamically added by the pipeline
+  VpcId:
+    Description: The VPC of the worker instances
+    Type: AWS::EC2::VPC::Id
+
+  Subnets:
+    Description: The subnets where workers can be created.
+    Type: List<AWS::EC2::Subnet::Id>
+
+  ActiveSubnets:
+    Description: The subnets actually used by resources in the cluster. Typically only one (e.g., subnet for AZ -d).
+    Type: List<AWS::EC2::Subnet::Id>
+
+  # The following values require defaults.
+  LoadBalancerCidrBlock:
+    Description: The range of allowed IPv4 addresses for the load balancer. This only firewalls the load balancer URL and not the cluster in general.
+    Type: String
+    Default: 0.0.0.0/0
+
+  NodeProxyPort:
+    Description: The port of the hub proxy service opened to the load balancer.
+    Type: Number
+    Default: 30052
+
+  NodeImageId:
+    Description: AMI id for the node instances of K8s
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/eks/optimized-ami/1.19/amazon-linux-2/recommended/image_id
+
+  NodeInstanceTypeCore:
+    Description: EC2 instance type for the node Core instances.
+    Type: String
+    Default: t3a.medium
+
+  # TODO Add additional NodeInstanceType parameters for every profile except "sudo"
+  NodeInstanceTypePROFILE1:
+    Description: EC2 instance type for Profile 1.
+    Type: String
+    Default: m5a.2xlarge # change instance type to suit your needs https://aws.amazon.com/ec2/instance-types/
+
+
+Outputs:
+
+  AppUrl:
+    Value: !GetAtt LoadBalancer.DNSName
+
+Resources:
+
+  ClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+                - codebuild.amazonaws.com
+                - cloudformation.amazonaws.com
+                - codepipeline.amazonaws.com
+                - iam.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              AWS:
+                Fn::ImportValue:
+                  !Sub ${AWS::StackName}-${AWS::AccountId}-common-role-arn
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+      Policies:
+        - PolicyName: !Sub ${AWS::StackName}-hub-build
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codestar-connections:*"
+                  - "s3:*"
+                  - "dlm:*"
+                  - "logs:*"
+                  - "cloudformation:*"
+                  - "elasticloadbalancing:*"
+                  - "autoscaling:*"
+                  - "codebuild:*"
+                  - "iam:*"
+                  - "secretsmanager:*"
+                  - "ssm:*"
+                  - "ecr:*"
+                  - "ec2:*"
+                  - "eks:*"
+                  - "sts:AssumeRole"
+                Resource: '*'
+
+  ClusterSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${AWS::StackName}
+      GroupDescription: !Sub Security group for the ${AWS::StackName} EKS cluster
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  Cluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Ref AWS::StackName
+      RoleArn: !GetAtt ClusterRole.Arn
+      ResourcesVpcConfig:
+        SubnetIds: !Ref Subnets
+        SecurityGroupIds:
+        - !GetAtt ClusterSecurityGroup.GroupId
+      Version: "1.19"
+
+  UserAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${Cluster}-access
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Deny
+          Principal:
+            AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+          Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${Cluster}-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "eks:*"
+                Resource: '*'
+
+  NodeInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${Cluster}-instance
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+      - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+      - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      - arn:aws:iam::aws:policy/AutoScalingFullAccess
+      - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: Service_Account_Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: SAHubDeleteVolumes
+                Effect: Allow
+                Action:
+                  - ec2:DescribeSnapshots
+                  - ec2:DescribeVolumes
+                Resource: "*"
+              - Sid: SAHubDeleteSnapshots
+                Effect: Allow
+                Action:
+                  - ec2:DescribeSnapshots
+                  - ec2:DeleteSnapshot
+                  - ec2:DescribeVolumes
+                  - cognito-idp:ListUserPools
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminDisableUser
+                  - cognito-idp:ListUsers
+                  - ses:SendEmail
+                Resource: "*"
+              - Sid: SAHubForceDeactivation
+                Effect: Allow
+                Action:
+                  - ec2:DescribeSnapshots
+                  - ec2:DeleteSnapshot
+                  - cognito-idp:ListUserPools
+                  - cognito-idp:ListUsers
+                  - cognito-idp:AdminDisableUser
+                Resource: "*"
+              - Sid: SAHubVolumeFromSnapshot
+                Effect: Allow
+                Action:
+                  - ec2:DescribeSnapshots
+                  - ec2:CreateVolume
+                  - ec2:CreateTags
+                Resource: "*"
+              - Sid: SAHubVolumeStoppingTags
+                Effect: Allow
+                Action:
+                  - ec2:DescribeVolumes
+                  - ec2:CreateTags
+                Resource: "*"
+              - Sid: SAHubGenericWithLogout
+                Effect: Allow
+                Action:
+                  - cognito-idp:ListUserPools
+                  - cognito-idp:ListUserPoolClients
+                  - cognito-idp:DescribeUserPoolClient
+                Resource: "*"
+        - PolicyName: EKS_CSI_EBS_Policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:AttachVolume
+                  - ec2:CreateSnapshot
+                  - ec2:CreateTags
+                  - ec2:CreateVolume
+                  - ec2:DeleteSnapshot
+                  - ec2:DeleteTags
+                  - ec2:DeleteVolume
+                  - ec2:DescribeAvailabilityZones
+                  - ec2:DescribeInstances
+                  - ec2:DescribeSnapshots
+                  - ec2:DescribeTags
+                  - ec2:DescribeVolumes
+                  - ec2:DescribeVolumesModifications
+                  - ec2:DetachVolume
+                  - ec2:ModifyVolume
+                Resource: '*'
+
+  NodeInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Ref NodeInstanceRole
+      Roles:
+      - !Ref NodeInstanceRole
+
+  NodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${Cluster}-instance
+      GroupDescription: !Sub Security group for instances in the ${Cluster} EKS cluster
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  NodeSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow instances to communicate with each other
+      GroupId: !Ref NodeSecurityGroup
+      SourceSecurityGroupId: !Ref NodeSecurityGroup
+      IpProtocol: "-1"
+      FromPort: 0
+      ToPort: 65535
+
+  NodeSecurityGroupFromControlPlaneIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
+      GroupId: !Ref NodeSecurityGroup
+      SourceSecurityGroupId: !GetAtt ClusterSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 1025
+      ToPort: 65535
+
+  NodeSecurityGroupFromLoadBalancer:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow worker Kubelets and pods to receive communication from the load balancer
+      GroupId: !Ref NodeSecurityGroup
+      SourceSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: !Ref NodeProxyPort
+      ToPort: !Ref NodeProxyPort
+
+  ControlPlaneEgressToNodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow the cluster control plane to communicate with worker Kubelet and pods
+      GroupId: !GetAtt ClusterSecurityGroup.GroupId
+      DestinationSecurityGroupId: !Ref NodeSecurityGroup
+      IpProtocol: tcp
+      FromPort: 1025
+      ToPort: 65535
+
+  NodeSecurityGroupFromControlPlaneOn443Ingress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
+      GroupId: !Ref NodeSecurityGroup
+      SourceSecurityGroupId: !GetAtt ClusterSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+
+  ControlPlaneEgressToNodeSecurityGroupOn443:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow the cluster control plane to communicate with pods running extension API servers on port 443
+      GroupId: !GetAtt ClusterSecurityGroup.GroupId
+      DestinationSecurityGroupId: !Ref NodeSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+
+  ClusterControlPlaneSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow pods to communicate with the cluster API Server
+      GroupId: !GetAtt ClusterSecurityGroup.GroupId
+      SourceSecurityGroupId: !Ref NodeSecurityGroup
+      IpProtocol: tcp
+      ToPort: 443
+      FromPort: 443
+
+  AutoScalingGroupCore:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: "1"
+      LaunchConfigurationName: !Ref LaunchConfigurationCore
+      MinSize: "1"
+      MaxSize: "2"
+      VPCZoneIdentifier: !Ref ActiveSubnets
+      TargetGroupARNs:
+      - !Ref TargetGroup
+      Tags:
+      - Key: Name
+        Value: !Sub ${Cluster}-instance
+        PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster/${Cluster}
+        Value: owned
+        PropagateAtLaunch: true
+      - Key: !Sub kubernetes.io/cluster/${Cluster}
+        Value: owned
+        PropagateAtLaunch: true
+      - Key: k8s.io/cluster-autoscaler/enabled
+        Value: "true"
+        PropagateAtLaunch: true
+      - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+        Value: "true"
+        PropagateAtLaunch: true
+      - Key: !Sub ${CostTagKey}
+        Value: !Sub ${CostTagValue}
+        PropagateAtLaunch: true
+
+  LaunchConfigurationCore:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref NodeInstanceProfile
+      ImageId: !Ref NodeImageId
+      InstanceType: !Ref NodeInstanceTypeCore
+      SecurityGroups:
+      - !Ref NodeSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=core,server_type=core'
+          /opt/aws/bin/cfn-signal --exit-code $? \
+          --stack  ${Cluster} \
+          --resource NodeGroup  \
+          --region ${AWS::Region}
+
+  # TODO Add an AutoScalingGroup for every profile except "sudo"
+  AutoScalingGroupPROFILE1:
+   Type: AWS::AutoScaling::AutoScalingGroup
+   Properties:
+     DesiredCapacity: "0"
+     LaunchConfigurationName: !Ref LaunchConfigurationPROFILE1
+     MinSize: "0"
+     MaxSize: "25"
+     VPCZoneIdentifier: !Ref ActiveSubnets
+     Tags:
+     - Key: Name
+       Value: !Sub ${AWS::StackName}-instance
+       PropagateAtLaunch: true
+     - Key: !Sub k8s.io/cluster/${Cluster}
+       Value: owned
+       PropagateAtLaunch: true
+     - Key: !Sub kubernetes.io/cluster/${Cluster}
+       Value: owned
+       PropagateAtLaunch: true
+     - Key: k8s.io/cluster-autoscaler/enabled
+       Value: "true"
+       PropagateAtLaunch: true
+     - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+       Value: "true"
+       PropagateAtLaunch: true
+     - Key: !Sub ${CostTagKey}
+       Value: !Sub ${CostTagValue}
+       PropagateAtLaunch: true
+
+  # TODO Add a LaunchConfiguration for every profile except "sudo"
+  LaunchConfigurationPROFILE1:
+   Type: AWS::AutoScaling::LaunchConfiguration
+   Properties:
+     AssociatePublicIpAddress: true
+     IamInstanceProfile: !Ref NodeInstanceProfile
+     ImageId: !Ref NodeImageId
+     InstanceType: !Ref NodeInstanceTypePROFILE1
+     SecurityGroups:
+      - !Ref NodeSecurityGroup
+     UserData: # TODO The server_type in the script code below must match profile's server_type defined in helm_config.yaml
+       Fn::Base64: !Sub |
+         #!/bin/bash
+         set -o xtrace
+         /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=profile_1'
+         /opt/aws/bin/cfn-signal --exit-code $? \
+         --stack  ${AWS::StackName} \
+         --resource NodeGroup  \
+         --region ${AWS::Region}
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Ref AWS::StackName
+      VpcId: !Ref VpcId
+      Protocol: HTTP
+      Port: !Ref NodeProxyPort
+      HealthCheckPath: /hub/health
+      HealthCheckIntervalSeconds: 120
+      HealthyThresholdCount: 2
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${Cluster}-load-balancer
+      GroupDescription: !Sub Security group for ${Cluster} load balancer
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+      - CidrIp: !Ref LoadBalancerCidrBlock
+        IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+      - CidrIp: !Ref LoadBalancerCidrBlock
+        IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Ref AWS::StackName
+      Subnets: !Ref Subnets
+      SecurityGroups:
+      - !GetAtt LoadBalancerSecurityGroup.GroupId
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Protocol: HTTP
+      Port: 80
+      DefaultActions:
+      - Type: redirect
+        RedirectConfig:
+          StatusCode: HTTP_301
+          Protocol: HTTPS
+          Port: "443"
+
+  HttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Protocol: HTTPS
+      Port: 443
+      Certificates:
+      - CertificateArn: !Ref CertificateArn
+      DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref TargetGroup
+
+  BasicLifecycleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub SnapshotPolicyRole-${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: dlm.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSDataLifecycleManagerServiceRole
+
+  BasicLifecyclePolicy:
+    Type: "AWS::DLM::LifecyclePolicy"
+    Properties:
+      Description: !Sub "Lifecycle Policy for ${Cluster}"
+      State: "ENABLED"
+      ExecutionRoleArn: !GetAtt BasicLifecycleRole.Arn
+      PolicyDetails:
+        ResourceTypes:
+          - "VOLUME"
+        TargetTags:
+          -
+            Key: !Sub "kubernetes.io/cluster/${Cluster}"
+            Value: "owned"
+        Schedules:
+          -
+            Name: "Daily Snapshots"
+            CreateRule:
+              Interval: 24
+              IntervalUnit: "HOURS"
+              Times:
+                - "10:00"
+            RetainRule:
+              Count: 1
+            CopyTags: true
+
+  HubGroupLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${Cluster}-hub-group"
+      RetentionInDays: 30
+
+  HubProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${Cluster}-jupyterhub
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:3.0
+        PrivilegedMode: True
+      Artifacts:
+        Type: CODEPIPELINE
+      ServiceRole: !Ref ClusterRole
+      TimeoutInMinutes: 45
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec:
+          Fn::Sub:
+          - |-
+            version: 0.2
+            env:
+              shell: bash
+            phases:
+              install:
+                runtime-versions:
+                  docker: 18
+                  python: 3.8
+                commands:
+                  - pip3 install awscli>=1.16.158 --upgrade
+                  - pip3 install boto3 --upgrade
+                  - pip3 install kubernetes
+                  - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/darwin/amd64/kubectl
+                  - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version v3.5.2
+                  - export HELM_HOST=127.0.0.1:44134
+                  - curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+                  - mv /tmp/eksctl /usr/local/bin
+                  - eksctl version
+              pre_build:
+                commands:
+                  - echo "Logging into AWS ECR..."
+                  - $(aws ecr get-login --no-include-email --region ${AWS::Region})
+                  - echo "Logging into Docker Hub user to get latest jupyter image..."
+                  - dh_creds=$(aws secretsmanager get-secret-value --secret-id dockerhub/creds --query 'SecretString' | sed 's/\"//g' )
+                  - dh_username=$(echo $dh_creds | cut -f1 -d' ')
+                  - echo $dh_creds | cut -f2 -d' ' > dh.pass
+                  - cat dh.pass | docker login -u $dh_username --password-stdin
+                  - echo "Install helm charts and update..."
+                  - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
+                  - helm repo add autoscaler https://kubernetes.github.io/autoscaler
+                  - helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+                  - helm repo update
+              build:
+                commands:
+                  - echo "Update assume role of Common role..."
+                  - sed -i "s|CLUSTER_ROLE_ARN|${ClusterRole.Arn}|" common-role-assumerolepolicy-template.json;
+                    export commonrolearn=${CommonRoleArn}; echo $commonrolearn;
+                    aws iam update-assume-role-policy --role-name ${!commonrolearn##*/} --policy-document file://common-role-assumerolepolicy-template.json;
+                    sleep 5
+                  - echo "Update kubeconfig and config files..."
+                  - aws eks update-kubeconfig --name ${Cluster} --role-arn ${CommonRoleArn}
+                  - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" configs/aws-auth-cm.yaml
+                  - sed -i "s|USER_ACCESS_ROLE_ARN|${UserAccessRole.Arn}|" configs/aws-auth-cm.yaml
+                  - kubectl apply -f configs/aws-auth-cm.yaml
+                  - echo "Reapply storage class..."
+                  - kubectl delete sc gp2 || true
+                  - echo "Install EBS CSI driver for enhanced volume management..."
+                  - kubectl apply -f configs/csi-sc.yaml
+                  - helm upgrade aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver
+                      --install
+                      --namespace kube-system
+                      --timeout=6m0s
+                      --atomic
+                      --set enableVolumeScheduling=true
+                      --set enableVolumeResizing=true
+                      --set enableVolumeSnapshot=false
+                      --set extraCreateMetadata=true
+                      --set k8sTagClusterId=${Cluster}
+                      --set extraVolumeTags.${CostTagKey}=${CostTagValue}
+                  - echo "Associate IAM and OIDC for service accounts..."
+                  - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
+                  - echo "Install JupyterHub cluster..."
+                  - export IMAGE_REPO_URL='${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}' && echo $IMAGE_REPO_URL
+                  - helm upgrade jupyter jupyterhub/jupyterhub
+                      --install
+                      --create-namespace
+                      --namespace jupyter
+                      --version 0.11.1
+                      --values helm_config.yaml
+                      --timeout=6m0s
+                      --atomic
+                      --set hub.config.Authenticator.admin_users[0]=${AdminUserName}
+                      --set proxy.secretToken=$(openssl rand -hex 32),proxy.service.nodePorts.http='${NodeProxyPort}'
+                      --set custom.IMAGE_REPO_URL=$IMAGE_REPO_URL
+                      --set custom.OAUTH_JUPYTER_URL=$( [ -n '${DeploymentURL}' ] && echo '${DeploymentURL}' || echo 'https://${LoadBalancer.DNSName}' )
+                      --set custom.OAUTH_DNS_NAME=${OAuthDNSName}
+                      --set custom.CLUSTER_NAME=${Cluster},custom.OAUTH_POOL_NAME=${OAuthPoolName},custom.AZ_NAME=${AWS::Region}d
+                      --set custom.COST_TAG_VALUE=${CostTagValue}
+                      --set custom.COST_TAG_KEY=${CostTagKey}
+                      --set hub.image.name=$IMAGE_REPO_URL/hub
+                  - kubectl -n jupyter rollout status -w deployment.apps/hub
+                  - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true
+                  - echo "Associate volume provisioner with service account..."
+                  - kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
+                  - echo "Apply CNI. This must be updated on every upgrade..."
+                  - curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/v1.7.5/config/v1.7/aws-k8s-cni.yaml
+                  - sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml
+                  - kubectl apply -f aws-k8s-cni.yaml
+                  - echo "Install autoscaler..."
+                  - helm upgrade autoscaler autoscaler/cluster-autoscaler-chart
+                      --install
+                      --create-namespace
+                      --namespace autoscaler
+                      --atomic
+                      --timeout=2m0s
+                      --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
+                  - echo "Install notifications service..."
+                  - cp notifications/k8s/deployment.example.yaml notifications/k8s/deployment.yaml;
+                    sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_REPO_URL/notifications:latest|" notifications/k8s/deployment.yaml;
+                    sed -i "s|ICAL_URL_PLACEHOLDER|${ICALUrl}|" notifications/k8s/deployment.yaml;
+                    kubectl apply -f notifications/k8s/namespace.yaml;
+                    kubectl apply -f notifications/k8s/service.yaml;
+                    kubectl apply -f notifications/k8s/deployment.yaml; 
+                    kubectl -n notifications rollout status deployment/notifications -w;
+                    kubectl -n notifications scale deployment notifications --replicas=0;
+                    kubectl -n notifications scale deployment notifications --replicas=1
+                  - echo "Install Fluent Bit for AWS Container Insights..."
+                  - export FluentBitHttpPort='2020';
+                    export FluentBitReadFromHead='Off';
+                    [[ $FluentBitReadFromHead = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On';
+                    [[ -z $FluentBitHttpPort ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On';
+                    curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml | sed 's/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/;s/{{http_server_toggle}}/"'$FluentBitHttpServer'"/;s/{{http_server_port}}/"'$FluentBitHttpPort'"/;s/{{read_from_head}}/"'$FluentBitReadFromHead'"/;s/{{read_from_tail}}/"'$FluentBitReadFromTail'"/' | kubectl apply -f -
+          - CommonRoleArn:
+              Fn::ImportValue:
+                !Sub ${AWS::StackName}-${AWS::AccountId}-common-role-arn
+
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Ref HubGroupLogs

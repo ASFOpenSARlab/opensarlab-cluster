@@ -1,0 +1,63 @@
+FROM jupyterhub/k8s-hub:0.11.1 as release
+
+# TODO enter your organization's name below
+LABEL MAINTAINER=""
+
+# By default, the notebook base image is set to non-sudo user joyvan. This makes root-ful actions difficult.
+# Perform those actions here, before "USER jovyan"
+USER root
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt update && \
+    apt install --no-install-recommends -y \
+    tzdata
+RUN ln -fs /usr/share/zoneinfo/America/Alaska /etc/localtime
+RUN dpkg-reconfigure --frontend noninteractive tzdata
+RUN apt install --no-install-recommends -y \
+    python3.8 \
+    python3-pip \
+    python3-boto3 \
+    cron \
+    less \
+    vim \
+    sudo \
+    mailutils
+
+RUN pip3 install --upgrade awscli pyyaml python-crontab
+
+# Copy login page stuff
+# TODO Edit login page images and html templates to suit your deployment
+COPY /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
+COPY /usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png /usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png
+COPY /usr/local/share/jupyterhub/static/images/NASA_logo.svg /usr/local/share/jupyterhub/static/images/NASA_logo.svg
+COPY /usr/local/lib/python3.8/dist-packages/generic_with_logout.py /usr/local/lib/python3.8/dist-packages/generic_with_logout.py
+COPY /usr/local/share/jupyterhub/templates/login.html /usr/local/share/jupyterhub/templates/login.html
+COPY /usr/local/share/jupyterhub/templates/pending.html /usr/local/share/jupyterhub/templates/pending.html
+
+# Copy custom group page stuff over to jupyterhub module
+RUN sed -i 's|{% if user.admin %}|{% if user.admin %} <li><a href="{{base_url}}groups">Groups</a></li>|' /usr/local/share/jupyterhub/templates/page.html
+COPY /usr/local/share/jupyterhub/static/js/groups.js /usr/local/share/jupyterhub/static/js/groups.js
+COPY /usr/local/share/jupyterhub/templates/groups.html /usr/local/share/jupyterhub/templates/groups.html
+COPY /usr/local/lib/python3.8/dist-packages/jupyterhub/groups.py /usr/local/lib/python3.8/dist-packages/jupyterhub/groups.py
+COPY /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/groups.py /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/groups.py
+COPY /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/__init__.py /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/__init__.py
+
+# Copy volume handling
+RUN mkdir -p /etc/jupyterhub/custom
+COPY /etc/jupyterhub/custom/pv.yaml /etc/jupyterhub/custom/pv.yaml
+COPY /etc/jupyterhub/custom/pvc.yaml /etc/jupyterhub/custom/pvc.yaml
+COPY /etc/jupyterhub/custom/volume_stopping_tags.py /etc/jupyterhub/custom/volume_stopping_tags.py
+COPY /etc/jupyterhub/custom/volume_from_snapshot.py /etc/jupyterhub/custom/volume_from_snapshot.py
+COPY /etc/jupyterhub/custom/delete_volumes.py /etc/jupyterhub/custom/delete_volumes.py
+COPY /etc/jupyterhub/custom/delete_snapshot.py /etc/jupyterhub/custom/delete_snapshot.py
+
+RUN chown -R 1000:0 /etc/jupyterhub/custom/
+ENV PYTHONPATH "${PYTHONPATH}:/etc/jupyterhub/custom/"
+
+# Allow joyvan user some sudo privileges
+RUN echo 'jovyan ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+USER jovyan 
+
+
+FROM release as testing

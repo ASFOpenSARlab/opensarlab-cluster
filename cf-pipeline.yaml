@@ -1,0 +1,335 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+
+Parameters:
+# The following parameters can be entered in AWS when creating the cluster stack. Adding them here is optional.
+  AdminUserName:
+    Description: "User name of main admin. This name is also whitelisted. Other admins are granted permsissions via the Jupyter Hub admin console."
+    Type: String
+    Default: '' # create a Cognito user with the AdminUserName in the AWS Cognito console
+
+  CertificateArn:
+    Type: String
+    Description: "Arn associated with the CA certificate you stored in AWS Certificate Manager"
+    Default: '' # arn:aws:acm:<region>:<account_#>:certificate/<certificate_id>
+
+  CodeCommitRepoName:
+    Type: String
+    Description: "Name of the code commit repo holding your <deployment_name>-cluster code"
+    Default: ''
+
+  CodeCommitBranchName:
+    Type: String
+    Description: "Name of the branch holding this deployment's cluster code"
+    Default: ''
+
+  ContainerNamespace: # this namespaces your your ECR repos to distinguish containers belonging to different deployments
+    Type: String
+    Default: '' # '<deployment_name>'
+
+  OAuthPoolName:
+    Description: AWS Cognito User Pool name
+    Type: String
+    Default: '' # '<deployment_name>-auth'
+
+  DeploymentURL:
+    Description: "Used for Cognito authentication. If not using a custom URL, use the load balancer URL, found in the 'Outputs' tab of the cloudformation stack."
+    Type: String
+    Default: '' # load balancer URL found in the "Outputs" tab of <deployment_name>-cluster cloudformation stack
+
+  CostTagKey:
+    Type: String
+    Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
+    Default: ""
+
+  CostTagValue:
+    Type: String
+    Description: "The value of the cost tag used for filtering the budget, etc."
+    Default: "" # should match CostTagValue used in cf-cognito.yaml and cf-cluster.yaml
+
+  ICALUrl:
+    Type: String
+    Description: "The iCal formatted URL of the Google Calendar used for notifications."
+    Default: '' # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cf-cluster.yaml and notifications/dock
+
+Outputs:
+
+  CommonRoleArn:
+    Description: "Common role arn"
+    Value: !GetAtt CommonRole.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-cluster-${AWS::AccountId}-common-role-arn
+
+Resources:
+
+  CommonRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::StackName}-common-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+                - codebuild.amazonaws.com
+                - codepipeline.amazonaws.com
+                - eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+      Policies:
+        - PolicyName: GetPassRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "iam:GetRole"
+                  - "iam:PassRole"
+                Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/*
+                Condition:
+                  "StringEquals":
+                    "iam:PassedToService":
+                      - "eks.amazonaws.com"
+                      - "cloudformation.amazonaws.com"
+                      - "codepipeline.amazonaws.com"
+                      - "codebuild.amazonaws.com"
+        - PolicyName: !Sub ${AWS::StackName}-hub-build
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codestar-connections:*"
+                  - "s3:*"
+                  - "dlm:*"
+                  - "logs:*"
+                  - "cloudformation:*"
+                  - "elasticloadbalancing:*"
+                  - "autoscaling:*"
+                  - "codebuild:*"
+                  - "iam:*"
+                  - "secretsmanager:*"
+                  - "ssm:*"
+                  - "ecr:*"
+                  - "ec2:*"
+                  - "eks:*"
+                  - "codepipeline:*"
+                  - "sts:AssumeRole"
+                Resource: '*'
+
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub codepipeline-${AWS::Region}-${AWS::StackName}
+      AccessControl: PublicRead
+      Tags:
+        - Key: Description
+          Value: Artifact Bucket
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  HubRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ContainerNamespace}/hub"
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  NotificationsRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ContainerNamespace}/notifications"
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PrebuildCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${AWS::StackName}-prebuild-codebuild
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:4.0
+        ComputeType: BUILD_GENERAL1_SMALL
+        PrivilegedMode: True
+      ServiceRole: !GetAtt CommonRole.Arn
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+
+          env:
+            shell: bash
+            exported-variables:
+              - VpcId
+              - ActiveSubnets
+              - Subnets
+              
+          phases:
+            install:
+              runtime-versions:
+                docker: 18
+                python: 3.8
+            pre_build:
+              commands:
+                - echo "Logging into AWS ECR..."
+                - $(aws ecr get-login --no-include-email --region ${AWS::Region})
+                - echo "Logging into Docker Hub user..."
+                - dh_creds=$(aws secretsmanager get-secret-value --secret-id dockerhub/creds --query 'SecretString' | sed 's/\"//g' )
+                - dh_username=$(echo $dh_creds | cut -f1 -d' ')
+                - echo $dh_creds | cut -f2 -d' ' > dh.pass
+                - cat dh.pass | docker login -u $dh_username --password-stdin
+                - echo "End prebuild"
+            build:
+              commands:
+                - echo "Getting VpcId and Subnets...";
+                  python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}-cluster;
+                  export VPCIDS_SUBNETS=( $(cat get_vpcid_and_subnets.tmp) );
+                  echo ${!VPCIDS_SUBNETS[@]};
+                  export VpcId="${!VPCIDS_SUBNETS[0]}";
+                  export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
+                  export Subnets="${!VPCIDS_SUBNETS[2]}";
+                - echo "Build hub image...";
+                  PrevWD=$(pwd); 
+                  cd hub;
+                  bash build.sh;
+                  cd $PrevWD
+                - echo "Build notification image...";
+                  PrevWD=$(pwd); 
+                  cd notifications;
+                  bash build.sh;
+                  cd $PrevWD
+          artifacts:
+            files:
+              - '**/*'
+            secondary-artifacts:
+              PreBuildArtifact:
+                files:
+                  - '**/*'
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties: 
+      ArtifactStore: 
+        Type: S3
+        Location: !Sub codepipeline-${AWS::Region}-${AWS::StackName}
+      Name: !Sub ${AWS::StackName}-Pipeline
+      RestartExecutionOnUpdate: True
+      RoleArn: !GetAtt CommonRole.Arn
+      Stages:
+        - Name: !Sub ${AWS::StackName}-Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeCommit
+                Version: "1"
+              Configuration:
+                BranchName: !Sub ${CodeCommitBranchName}
+                OutputArtifactFormat: CODE_ZIP
+                PollForSourceChanges: "false"
+                RepositoryName: !Sub ${CodeCommitRepoName}
+              OutputArtifacts:
+                - Name: SourceArtifact
+              Region: !Sub ${AWS::Region}
+              Namespace: SourceVariables
+        - Name: !Sub ${AWS::StackName}-Build-Cluster
+          Actions:
+            - Name: PreBuild
+              RunOrder: 1
+              Namespace: prebuild
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref PrebuildCodeBuild
+                EnvironmentVariables: !Sub |
+                  [
+                    {
+                      "value": "true",
+                      "name": "HUB_FORCE_BUILD",
+                      "type": "PLAINTEXT"
+                    },
+                    {
+                      "value": "true",
+                      "name": "NOTIFICATIONS_FORCE_BUILD",
+                      "type": "PLAINTEXT"
+                    },
+                    {
+                      "value": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}",
+                      "name": "DOCKER_REGISTRY",
+                      "type": "PLAINTEXT"
+                    }
+                  ]
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: PreBuildArtifact
+              Region: !Sub ${AWS::Region}
+            - Name: BuildCluster
+              RunOrder: 2
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt CommonRole.Arn
+                StackName: !Sub ${AWS::StackName}-cluster
+                TemplatePath: PreBuildArtifact::cf-cluster.yaml
+                ParameterOverrides: !Sub
+                  - | 
+                    {
+                      "AdminUserName": "${AdminUserName}",
+                      "ContainerNamespace": "${ContainerNamespace}",
+                      "OAuthPoolName": "${OAuthPoolName}",
+                      "OAuthDNSName": "https://${OAuthPoolName}.auth.us-east-1.amazoncognito.com",
+                      "DeploymentURL": "${DeploymentURL}",
+                      "CostTagKey": "${CostTagKey}",
+                      "CostTagValue": "${CostTagValue}",
+                      "CertificateArn": "${CertificateArn}",
+                      "VpcId": "${myVpcId}",
+                      "ActiveSubnets": "${myActiveSubnets}",
+                      "Subnets": "${mySubnets}",
+                      "ICALUrl": "${ICALUrl}"
+                    }
+                  - myVpcId: "#{prebuild.VpcId}"
+                    myActiveSubnets: "#{prebuild.ActiveSubnets}"
+                    mySubnets: "#{prebuild.Subnets}"
+              InputArtifacts:
+                - Name: PreBuildArtifact
+              Region: !Sub ${AWS::Region}
+              RoleArn: !GetAtt CommonRole.Arn
+        - Name: !Sub ${AWS::StackName}-BuildJupyterHub
+          Actions:
+            - Name: BuildJupyterHub
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Sub ${AWS::StackName}-cluster-jupyterhub
+              InputArtifacts:
+                - Name: PreBuildArtifact
+              Region: !Sub ${AWS::Region}
+      Tags: 
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}

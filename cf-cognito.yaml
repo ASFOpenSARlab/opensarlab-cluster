@@ -1,0 +1,290 @@
+AWSTemplateFormatVersion: '2010-09-09'
+
+Parameters:
+# The following parameters can be entered in AWS when creating the cognito stack. Adding them here is optional.
+  DeploymentURL:
+    Type: String
+    Description: "FQDN of cluster (including https://). If the domain isn't known at the time, use the default and change it later."
+    Default: "https://placeholder.example"
+
+  AdminEmailAddress:
+    Type: String
+    Description: "Email address of AWS SES verified Admin. https://docs.aws.amazon.com/ses/latest/DeveloperGuide/verify-email-addresses.html"
+    Default: ""
+
+  AdminEmailSNSArn:
+    Type: String
+    Description: "Arn of AWS SES verified AdminEmailAddress, found in the AWS SES console"
+    Default: '' # 'arn:aws:ses:<region>:<account_#>:identity/<email_address>'
+
+  EmailLambdaBucketName:
+    Type: String
+    Description: "Full name of bucket that contains the python script for the email lambda handler. The key is assumed to be lambda_handler.py"
+    Default: "" # "<your_deployment_name>-lambda"
+
+  EmailLambdaKeyName:
+    Type: String 
+    Description: "The name of the lambda py file. This needs to be changed for subsequent builds to take affect."
+    Default: "lambda_handler.py.zip" # If lambda has been edited, change EmailLambdaKeyName before rebuilding
+
+  CostTagKey:
+    Type: String
+    Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
+    Default: ""
+    
+  CostTagValue:
+    Type: String
+    Description: "The value of the cost tag used for filtering the budget, etc."
+    Default: "" # should match CostTagValue used in cf-cluster.yaml and cf-pipeline.yaml
+
+Outputs:
+
+  OAuthPoolName:
+    Description: "Name of Cognito Pool Name"
+    Value: !Sub ${AWS::StackName}
+
+  OAuthDNSName:
+    Description: "Domain of User Pool"
+    Value: !Sub https://${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com
+
+Resources:
+
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Sid: Logs
+            Effect: Allow
+            Action:
+              - logs:*
+            Resource: arn:aws:logs:*:*:*
+          - Sid: Cognito
+            Effect: Allow
+            Action:
+              - cognito-idp:*
+            Resource: "*"
+          - Sid: SES
+            Effect: Allow
+            Action:
+              - ses:*
+            Resource: "*"
+          - Sid: Lambda
+            Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: "*"
+
+  PreAuthFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.8
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+      Code:
+        ZipFile: !Sub |
+          import secrets
+          import boto3
+
+          def lambda_handler(event, context):
+            print("Pre-auth logging function for cluster '${AWS::StackName}'")
+
+            user_pool_id = event['userPoolId']
+            username = event['userName']
+            user_status = 'unknown'
+            email_verified = 'unknown'
+
+            try:
+              user_status = event['request']['userAttributes']['cognito:user_status']
+            except Exception as e:
+              pass
+
+            try:
+              email_verified = event['request']['userAttributes']['email_verified']
+            except Exception as e:
+              pass
+
+            print(f"User '{username}' with status '{user_status}' and verified email is '{email_verified}'.")
+
+            if user_status == 'FORCE_CHANGE_PASSWORD' and email_verified == 'true':
+              print("Force user password reset to random password to overcome FORCE_CHANGE_PASSWORD status.")
+              password = f"qQ1!{secrets.token_urlsafe(6)}"
+              cognito = boto3.client('cognito-idp', region_name="${AWS::Region}")
+              response = cognito.admin_set_user_password(
+                UserPoolId=user_pool_id,
+                Username=username,
+                Password=password,
+                Permanent=True
+              )
+              # User will need to use the Forgot Password link to finish setting up.
+
+            return event
+
+  PostEmailVertificationFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: lambda_handler.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.8
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+      Code:
+        S3Bucket: !Sub ${EmailLambdaBucketName}
+        S3Key: !Sub ${EmailLambdaKeyName}
+      Environment:
+        Variables:
+          region_name: !Sub "${AWS::Region}"
+          stackname: !Sub "${AWS::StackName}"
+          deployment_url: !Sub "${DeploymentURL}"
+          admin_email_address: !Sub "${AdminEmailAddress}"
+
+  LogFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Runtime: python3.8
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+      Code:
+        ZipFile: !Sub |
+          def lambda_handler(event, context):
+      
+            print("Generic logging function for cluster ${AWS::StackName}")
+            print(event)
+            
+            return event
+
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+          #- Name: verified_phone_number
+          #  Priority: 2
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+        InviteMessageTemplate:
+          EmailMessage: Your username is {username} and temporary password is {####}.
+          EmailSubject: Your temporary password
+          #SMSMessage: 'Your username is {username} and temporary password is {####}. '
+        #UnusedAccountValidityDays: 1
+      AutoVerifiedAttributes:
+        - email
+      EmailConfiguration:
+        SourceArn: !Sub '${AdminEmailSNSArn}'
+        EmailSendingAccount: DEVELOPER
+      EmailVerificationMessage: | 
+        <p style="padding: 3px; border: 3px solid grey;">
+          Add a custom email verification message here
+        </p>
+        <p></p>
+        <p></p>
+        Your verification code is <b>{####}</b>.
+      EmailVerificationSubject: Your verification code
+      LambdaConfig:
+        PostAuthentication: !GetAtt LogFunction.Arn
+        PostConfirmation: !GetAtt PostEmailVertificationFunction.Arn
+        PreAuthentication: !GetAtt PreAuthFunction.Arn
+        PreSignUp: !GetAtt LogFunction.Arn
+        PreTokenGeneration: !GetAtt LogFunction.Arn
+      MfaConfiguration: 'OFF'
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          RequireUppercase: true
+          TemporaryPasswordValidityDays: 1
+      Schema:
+        - AttributeDataType: String
+          DeveloperOnlyAttribute: false
+          Mutable: false
+          Name: sub
+          Required: true
+          StringAttributeConstraints:
+            MaxLength: '2048'
+            MinLength: '1'
+        - AttributeDataType: String
+          DeveloperOnlyAttribute: false
+          Mutable: true
+          Name: name
+          Required: true
+          StringAttributeConstraints:
+            MaxLength: '2048'
+            MinLength: '0'
+        - AttributeDataType: String
+          DeveloperOnlyAttribute: false
+          Mutable: true
+          Name: email
+          Required: true
+          StringAttributeConstraints:
+            MaxLength: '2048'
+            MinLength: '0'
+      #SmsAuthenticationMessage: 'Your authentication code is {####}. '
+      #SmsVerificationMessage: 'Your verification code is {####}. '
+      UsernameConfiguration:
+        CaseSensitive: True
+      UserPoolName: !Sub ${AWS::StackName}
+      VerificationMessageTemplate:
+        #SmsMessage: 'Your verification code is {####}. '
+        EmailMessage: |
+          <p style="padding: 3px; border: 3px solid grey;">
+            Add a custom email verification message here
+          </p>
+          <p></p>
+          <p></p>
+          Your verification code is <b>{####}</b>.
+        EmailSubject: Your verification code
+        DefaultEmailOption: CONFIRM_WITH_CODE
+
+  CognitoUserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties: 
+      Domain: !Sub ${AWS::StackName}
+      UserPoolId: !Ref CognitoUserPool
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      AllowedOAuthFlows: 
+        - code
+      AllowedOAuthFlowsUserPoolClient: True
+      AllowedOAuthScopes: 
+        - openid
+      CallbackURLs: 
+        - !Sub "${DeploymentURL}/hub/oauth_callback"
+      ClientName: !Sub ${AWS::StackName}
+      ExplicitAuthFlows: 
+        - ALLOW_CUSTOM_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+      GenerateSecret: True
+      LogoutURLs:
+        - !Sub "${DeploymentURL}"
+      PreventUserExistenceErrors: ENABLED
+      RefreshTokenValidity: 1
+      SupportedIdentityProviders: 
+        - COGNITO
+      UserPoolId: !Ref CognitoUserPool
