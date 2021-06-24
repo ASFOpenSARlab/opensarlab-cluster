@@ -255,7 +255,7 @@ hub:
                     # After deployment, add a group named 'PROFILE_1' in the admin console
                     # so it appears as a server option at login and so you can add users to it
                     if 'PROFILE_1' in group_list:
-                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/profile_1:profile_1_tag"
+                        image_url = f"{z2jh.get_config('custom.IMAGE_REPO_URL')}/sar:ecr_sar_image_tag"
                         profile = {
                             'display_name': 'PROFILE 1',
                             'description': 'A description of the profile's resources' ,
