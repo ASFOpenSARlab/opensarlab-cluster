@@ -4,7 +4,7 @@
 # In order to locally manage a remote EKS cluster, a K8s config must be configured properly.
 # This script makes the configuring simpler. 
 # You need to rerun after the AWS session expires (hourly)
-# Usage: kubectl-temp.sh {cluster-name}
+# Usage: get_eks_kubeconfig.sh {cluster-name}
 #
 # Users will need to be added as Trusted to the <deployment_name>-cluster-access role for this to work.
 # Example trust relationship json:
@@ -24,7 +24,7 @@
 # }
 #
 #
-# For ease, an alias works well: alias sk=/path/kubectl-temp.sh
+# For ease, an alias works well: alias sk=/path/get_eks_kubeconfig.sh
 #
 
 CLUSTER_NAME=$1
