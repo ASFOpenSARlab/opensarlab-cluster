@@ -16,7 +16,6 @@ Output: user_notebooks.csv
 """
 
 
-from os import WNOWAIT
 import boto3
 from datetime import datetime, timedelta
 import time
