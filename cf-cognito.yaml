@@ -175,6 +175,7 @@ Resources:
 
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
+    DeletionPolicy: "Retain"
     Properties:
       AccountRecoverySetting:
         RecoveryMechanisms:
