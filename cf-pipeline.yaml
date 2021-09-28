@@ -1,46 +1,55 @@
 AWSTemplateFormatVersion: '2010-09-09'
 
 Parameters:
+# The following parameters can be entered in AWS when creating the cluster stack. Adding them here is optional.
   AdminUserName:
-    Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console.
+    Description: "User name of main admin. This name is also whitelisted. Other admins are granted permsissions via the Jupyter Hub admin console."
     Type: String
-    Default: 'emlundell_test1'
+    Default: '' # create a Cognito user with the AdminUserName in the AWS Cognito console
 
   CertificateArn:
     Type: String
-    Default: 'arn:aws:acm:us-east-1:701288258305:certificate/422b7903-0b13-4d69-b74a-8f48e4b3a6f1'
+    Description: "Arn associated with the CA certificate you stored in AWS Certificate Manager"
+    Default: '' # arn:aws:acm:<region>:<account_#>:certificate/<certificate_id>
 
   CodeCommitRepoName:
     Type: String
-    Default: 'osl-daac'
+    Description: "Name of the code commit repo holding your <deployment_name>-cluster code"
+    Default: ''
 
   CodeCommitBranchName:
     Type: String
-    Default: 'main'
+    Description: "Name of the branch holding this deployment's cluster code"
+    Default: ''
 
-  ContainerNamespace:
+  ContainerNamespace: # this namespaces your your ECR repos to distinguish containers belonging to different deployments
     Type: String
-    Default: 'osl-daac-container'
+    Default: '' # '<deployment_name>'
 
   OAuthPoolName:
     Description: AWS Cognito User Pool name
     Type: String
-    Default: 'osl-daac-auth'
+    Default: '' # '<deployment_name>-auth'
 
-  JupyterHubURL:
-    Description: Jupyterhub URL A record used by AWS Cognito authentication. If not given, the default is the load balancer URL
+  DeploymentURL:
+    Description: "Used for Cognito authentication. If not using a custom URL, use the load balancer URL, found in the 'Outputs' tab of the cloudformation stack."
     Type: String
-    Default: 'https://opensarlab.asf.alaska.edu'
+    Default: '' # load balancer URL found in the "Outputs" tab of <deployment_name>-cluster cloudformation stack
+
+  CostTagKey:
+    Type: String
+    Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
+    Default: ""
 
   CostTagValue:
     Type: String
     Description: "The value of the cost tag used for filtering the budget, etc."
-    Default: "osl-daac"
+    Default: "" # should match CostTagValue used in cf-cognito.yaml and cf-cluster.yaml
 
   ICALUrl:
     Type: String
-    Description: "The URL of the Google Calendar used for notifications."
-    Default: ''
+    Description: "The iCal formatted URL of the Google Calendar used for notifications."
+    Default: '' # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cf-cluster.yaml and notifications/dock
 
 Outputs:
 
@@ -121,7 +130,7 @@ Resources:
       Tags:
         - Key: Description
           Value: Artifact Bucket
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
   HubRepository:
@@ -129,7 +138,7 @@ Resources:
     Properties:
       RepositoryName: !Sub "${ContainerNamespace}/hub"
       Tags:
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
   NotificationsRepository:
@@ -137,7 +146,7 @@ Resources:
     Properties:
       RepositoryName: !Sub "${ContainerNamespace}/notifications"
       Tags:
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
   PrebuildCodeBuild:
@@ -153,7 +162,7 @@ Resources:
         PrivilegedMode: True
       ServiceRole: !GetAtt CommonRole.Arn
       Tags:
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
       Source:
         Type: CODEPIPELINE
@@ -166,7 +175,8 @@ Resources:
               - VpcId
               - ActiveSubnets
               - Subnets
-              
+              - HubImageTag
+
           phases:
             install:
               runtime-versions:
@@ -195,6 +205,9 @@ Resources:
                   PrevWD=$(pwd); 
                   cd hub;
                   bash build.sh;
+                  export HubImageBuild=( $(cat get_hub_image_build.tmp) );
+                  echo ${!HubImageBuild[@]};
+                  export HubImageTag="${!HubImageBuild[0]}";
                   cd $PrevWD
                 - echo "Build notification image...";
                   PrevWD=$(pwd); 
@@ -291,17 +304,20 @@ Resources:
                       "ContainerNamespace": "${ContainerNamespace}",
                       "OAuthPoolName": "${OAuthPoolName}",
                       "OAuthDNSName": "https://${OAuthPoolName}.auth.us-east-1.amazoncognito.com",
-                      "JupyterHubURL": "${JupyterHubURL}",
+                      "DeploymentURL": "${DeploymentURL}",
+                      "CostTagKey": "${CostTagKey}",
                       "CostTagValue": "${CostTagValue}",
                       "CertificateArn": "${CertificateArn}",
                       "VpcId": "${myVpcId}",
                       "ActiveSubnets": "${myActiveSubnets}",
                       "Subnets": "${mySubnets}",
-                      "ICALUrl": "${ICALUrl}"
+                      "ICALUrl": "${ICALUrl}",
+                      "HubImageTag": "${myHubImageTag}"
                     }
                   - myVpcId: "#{prebuild.VpcId}"
                     myActiveSubnets: "#{prebuild.ActiveSubnets}"
                     mySubnets: "#{prebuild.Subnets}"
+                    myHubImageTag: "#{prebuild.HubImageTag}"
               InputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
@@ -320,5 +336,5 @@ Resources:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
       Tags: 
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
