@@ -17,4 +17,6 @@ if [ "$HUB_FORCE_BUILD" = 'true' ]; then
     # Push to registry
     docker push $DOCKER_REGISTRY/hub:$BUILD_TAG
     docker push $DOCKER_REGISTRY/hub:latest
+    
+    echo -n ${BUILD_TAG:-latest} > get_hub_image_build.tmp
 fi
