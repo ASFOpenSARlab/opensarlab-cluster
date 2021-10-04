@@ -156,7 +156,7 @@ def volume_from_snapshot(meta):
                 ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
                         {
                             'Key': 'osl-stackname',
-                            'Value': str(this_val[0])
+                            'Value': this_val
                         },])
 
                 annotations = spawn_pvc.metadata.annotations
