@@ -10,6 +10,11 @@ from kubernetes import config as k8s_config
 from kubernetes.client.rest import ApiException
 
 
+def get_tag_value(resource, key):
+    
+    val = [s['Value'] for s in resource['Tags'] if s['Key'] == key]
+    return str(val[0])
+
 def volume_from_snapshot(meta):
     try:
         pwd = os.path.dirname(os.path.abspath(__file__))
@@ -27,7 +32,7 @@ def volume_from_snapshot(meta):
         spawn_pvc = meta['spawn_pvc']
         region_name = az_name[:-1]
 
-        print(f"Spawner gives storage as {vol_size}")
+        print(f"Spawner gives storage as {vol_size}. If restoring from a snapshot, the size may be different.")
 
         alpha = " ".join(re.findall("[a-zA-Z]+", vol_size)).lower()
         number = int(" ".join(re.findall("[0-9]+", vol_size)))
@@ -119,8 +124,7 @@ def volume_from_snapshot(meta):
                                 {'Key': 'kubernetes.io/cluster/{cluster_name}'.format(cluster_name=cluster_name), 'Value': 'owned'},
                                 {'Key': 'kubernetes.io/created-for/pvc/namespace', 'Value': namespace},
                                 {'Key': 'kubernetes.io/created-for/pvc/name', 'Value': pvc_name},
-                                {'Key': 'RestoredFromSnapshot', 'Value': 'True'},
-                                {'Key': 'osl-stackname', 'Value': cost_tag_value}
+                                {'Key': 'RestoredFromSnapshot', 'Value': 'True'}
                             ]
                         },
                     ]
@@ -128,21 +132,32 @@ def volume_from_snapshot(meta):
                 vol_id = vol['VolumeId']
                 print(f"Volume {vol_id} created.")
 
-                this_val = [v['Value'] for v in snapshot['Tags'] if v['Key'] == 'jupyter-volume-stopping-time']
+                this_val = get_tag_value(snapshot, 'jupyter-volume-stopping-time')
                 if this_val:
                     ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
                             {
                                 'Key': 'jupyter-volume-stopping-time',
-                                'Value': str(this_val[0])
+                                'Value': this_val
                             },])
 
                 # If do-not-delete tag was present in snapshot, add to volume tags
-                if [v['Value'] for v in snapshot['Tags'] if v['Key'] == 'do-not-delete']:
+                if [s['Value'] for s in snapshot['Tags'] if s['Key'] == 'do-not-delete']:
                     ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
                             {
                                 'Key': 'do-not-delete',
                                 'Value': 'True'
                             },])
+
+                # If osl-stackname tag was present in snapshot, add to volume tags
+                # If the tag doesn't exist in the snapshot, the default is `cost_tag_value`
+                this_val = [s['Value'] for s in snapshot['Tags'] if s['Key'] == 'osl-stackname']
+                if not this_val:
+                    this_val = [cost_tag_value]
+                ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
+                        {
+                            'Key': 'osl-stackname',
+                            'Value': str(this_val[0])
+                        },])
 
                 annotations = spawn_pvc.metadata.annotations
                 labels = spawn_pvc.metadata.labels
