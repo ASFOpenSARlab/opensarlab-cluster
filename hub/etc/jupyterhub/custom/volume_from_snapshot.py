@@ -152,7 +152,7 @@ def volume_from_snapshot(meta):
                 # If the tag doesn't exist in the snapshot, the default is `cost_tag_value`
                 this_val = get_tag_value(snapshot, 'osl-stackname')
                 if not this_val:
-                    this_val = [cost_tag_value]
+                    this_val = cost_tag_value
                 ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
                         {
                             'Key': 'osl-stackname',
