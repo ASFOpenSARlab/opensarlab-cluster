@@ -141,16 +141,16 @@ def volume_from_snapshot(meta):
                             },])
 
                 # If do-not-delete tag was present in snapshot, add to volume tags
-                if [s['Value'] for s in snapshot['Tags'] if s['Key'] == 'do-not-delete']:
+                if get_tag_value(snapshot, 'do-not-delete'):
                     ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
-                            {
-                                'Key': 'do-not-delete',
-                                'Value': 'True'
-                            },])
+                        {
+                            'Key': 'do-not-delete',
+                            'Value': 'True'
+                        },])
 
                 # If osl-stackname tag was present in snapshot, add to volume tags
                 # If the tag doesn't exist in the snapshot, the default is `cost_tag_value`
-                this_val = [s['Value'] for s in snapshot['Tags'] if s['Key'] == 'osl-stackname']
+                this_val = get_tag_value(snapshot, 'osl-stackname')
                 if not this_val:
                     this_val = [cost_tag_value]
                 ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
