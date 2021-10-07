@@ -15,22 +15,27 @@ Parameters:
   AdminEmailSNSArn:
     Type: String
     Description: "Arn of AWS SES vertified email address"
-    Default: 'arn:aws:ses:us-east-1:701288258305:identity/emlundell@alaska.edu'
+    Default: 'arn:aws:ses:us-west-2:701288258305:identity/emlundell@alaska.edu'
 
   EmailLambdaBucketName:
     Type: String
     Description: "Full name of bucket that contains the python script for the email lambda handler. The key is assumed to be lambda_handler.py"
-    Default: "osl-e-lambda"
+    Default: "osl-e-west-lambda"
 
   EmailLambdaKeyName:
     Type: String 
     Description: "The name of the lambda py file. This needs to be changed for subsequent builds to take affect."
-    Default: "lambda_handler.py.zip"
+    Default: "lambda_handler.py.1.1.zip"
     
+  CostTagKey:
+    Type: String
+    Description: "The key of the cost tag used for filtering the budget, etc. Note that one part of the cloudformation file needs to be hardcoded."
+    Default: "osl-billing"
+
   CostTagValue:
     Type: String
     Description: "The value of the cost tag used for filtering the budget, etc."
-    Default: "osl-daac"
+    Default: "osl-daac-test"
 
 Outputs:
 
@@ -58,7 +63,7 @@ Resources:
           - sts:AssumeRole
       Path: "/"
       Policies:
-      - PolicyName: root
+      - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-cognito-lambda-role
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -90,7 +95,7 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Runtime: python3.8
       Tags:
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
       Code:
         ZipFile: !Sub |
@@ -138,7 +143,7 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Runtime: python3.8
       Tags:
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
       Code:
         S3Bucket: !Sub ${EmailLambdaBucketName}
@@ -157,7 +162,7 @@ Resources:
       Role: !GetAtt LambdaExecutionRole.Arn
       Runtime: python3.8
       Tags:
-        - Key: osl-stackname
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
       Code:
         ZipFile: !Sub |
@@ -249,7 +254,7 @@ Resources:
         CaseSensitive: True
       UserPoolName: !Sub ${AWS::StackName}
       UserPoolTags:
-        osl-stackname: !Sub ${CostTagValue}
+        osl-billing: !Sub ${CostTagValue}
       VerificationMessageTemplate:
         #SmsMessage: 'Your verification code is {####}. '
         EmailMessage: !Sub |

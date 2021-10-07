@@ -151,14 +151,14 @@ def volume_from_snapshot(meta):
                         'Value': 'True'
                     },])
 
-            # If osl-stackname tag was present in snapshot, add to volume tags
+            # If osl-billing tag was present in snapshot, add to volume tags
             # If the tag doesn't exist in the snapshot, the default is `cost_tag_value`
-            this_val = get_tag_value(snapshot, 'osl-stackname')
+            this_val = get_tag_value(snapshot, 'osl-billing')
             if not this_val:
                 this_val = cost_tag_value
             ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
                     {
-                        'Key': 'osl-stackname',
+                        'Key': 'osl-billing',
                         'Value': this_val
                     },])
 
