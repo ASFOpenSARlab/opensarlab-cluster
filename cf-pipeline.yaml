@@ -57,7 +57,7 @@ Outputs:
     Description: "Common role arn"
     Value: !GetAtt CommonRole.Arn
     Export:
-      Name: !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
+      Name: !Sub ${AWS::Region}-${AWS::StackName}-cluster-${AWS::AccountId}-common-role-arn
 
 Resources:
 
