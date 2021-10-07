@@ -106,7 +106,7 @@ Resources:
   ClusterRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::StackName}
+      RoleName: !Sub ${AWS::Region}-${AWS::StackName}
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -123,14 +123,14 @@ Resources:
             Principal:
               AWS:
                 Fn::ImportValue:
-                  !Sub ${AWS::StackName}-${AWS::AccountId}-common-role-arn
+                  !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
       Policies:
-        - PolicyName: !Sub ${AWS::StackName}-hub-build
+        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-hub-build
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -177,7 +177,7 @@ Resources:
   UserAccessRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${Cluster}-access
+      RoleName: !Sub ${AWS::Region}-${Cluster}-access
       AssumeRolePolicyDocument:
         Statement:
           Effect: Deny
@@ -185,7 +185,7 @@ Resources:
             AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
           Action: sts:AssumeRole
       Policies:
-        - PolicyName: !Sub ${Cluster}-access
+        - PolicyName: !Sub ${AWS::Region}-${Cluster}-access
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -197,7 +197,7 @@ Resources:
   NodeInstanceRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${Cluster}-instance
+      RoleName: !Sub ${AWS::Region}-${Cluster}-instance
       AssumeRolePolicyDocument:
         Statement:
           Effect: Allow
@@ -211,7 +211,7 @@ Resources:
       - arn:aws:iam::aws:policy/AutoScalingFullAccess
       - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
       Policies:
-        - PolicyName: Service_Account_Policy
+        - PolicyName: !Sub ${AWS::Region}-${Cluster}-Service_Account_Policy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -262,7 +262,7 @@ Resources:
                   - cognito-idp:ListUserPoolClients
                   - cognito-idp:DescribeUserPoolClient
                 Resource: "*"
-        - PolicyName: EKS_CSI_EBS_Policy
+        - PolicyName: !Sub ${AWS::Region}-${Cluster}-EKS_CSI_EBS_Policy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
@@ -584,7 +584,7 @@ Resources:
   BasicLifecycleRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub SnapshotPolicyRole-${AWS::StackName}
+      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-SnapshotPolicyRole
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -763,7 +763,7 @@ Resources:
                     curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml | sed 's/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/;s/{{http_server_toggle}}/"'$FluentBitHttpServer'"/;s/{{http_server_port}}/"'$FluentBitHttpPort'"/;s/{{read_from_head}}/"'$FluentBitReadFromHead'"/;s/{{read_from_tail}}/"'$FluentBitReadFromTail'"/' | kubectl apply -f -
           - CommonRoleArn:
               Fn::ImportValue:
-                !Sub ${AWS::StackName}-${AWS::AccountId}-common-role-arn
+                !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
 
       LogsConfig:
         CloudWatchLogs:

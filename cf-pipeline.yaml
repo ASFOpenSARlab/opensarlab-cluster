@@ -57,14 +57,14 @@ Outputs:
     Description: "Common role arn"
     Value: !GetAtt CommonRole.Arn
     Export:
-      Name: !Sub ${AWS::StackName}-cluster-${AWS::AccountId}-common-role-arn
+      Name: !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
 
 Resources:
 
   CommonRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::StackName}-common-role
+      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-common-role
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -82,7 +82,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
       Policies:
-        - PolicyName: GetPassRole
+        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-GetPassRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -98,7 +98,7 @@ Resources:
                       - "cloudformation.amazonaws.com"
                       - "codepipeline.amazonaws.com"
                       - "codebuild.amazonaws.com"
-        - PolicyName: !Sub ${AWS::StackName}-hub-build
+        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-hub-build
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -303,7 +303,7 @@ Resources:
                       "AdminUserName": "${AdminUserName}",
                       "ContainerNamespace": "${ContainerNamespace}",
                       "OAuthPoolName": "${OAuthPoolName}",
-                      "OAuthDNSName": "https://${OAuthPoolName}.auth.us-east-1.amazoncognito.com",
+                      "OAuthDNSName": "https://${OAuthPoolName}.auth.${AWS::Region}.amazoncognito.com",
                       "DeploymentURL": "${DeploymentURL}",
                       "CostTagKey": "${CostTagKey}",
                       "CostTagValue": "${CostTagValue}",
