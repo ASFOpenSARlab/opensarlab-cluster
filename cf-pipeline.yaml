@@ -296,7 +296,7 @@ Resources:
                 Capabilities: CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt CommonRole.Arn
                 StackName: !Sub ${AWS::StackName}-cluster
-                TemplatePath: PreBuildArtifact::cloudformation.yaml
+                TemplatePath: PreBuildArtifact::cf-cluster.yaml
                 ParameterOverrides: !Sub
                   - | 
                     {
