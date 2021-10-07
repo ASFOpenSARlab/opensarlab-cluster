@@ -736,7 +736,7 @@ Resources:
                   - echo "Apply CNI. This must be updated on every upgrade...";
                     curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/v1.9/config/v1.9/aws-k8s-cni.yaml;
                     sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml;
-                    kubectl apply -f aws-k8s-cni.yaml
+                    kubectl apply -f aws-k8s-cni.yaml --validate=false
                   - echo "Install autoscaler..."
                   - helm upgrade autoscaler autoscaler/cluster-autoscaler-chart
                       --install
