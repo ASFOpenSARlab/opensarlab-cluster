@@ -78,7 +78,7 @@ Parameters:
   NodeImageId:
     Description: AMI id for the node instances of K8s
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/eks/optimized-ami/1.19/amazon-linux-2/recommended/image_id
+    Default: /aws/service/eks/optimized-ami/1.21/amazon-linux-2/recommended/image_id
 
   NodeInstanceTypeCore:
     Description: EC2 instance type for the node Core instances.
