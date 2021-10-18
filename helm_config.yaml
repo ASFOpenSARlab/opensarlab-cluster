@@ -278,7 +278,8 @@ hub:
                                 ],
                                 'mem_limit': '16G', 
                                 'mem_guarantee': '6G',
-                                'storage_capacity': '500Gi'
+                                'storage_capacity': '500Gi', 
+                                'delete_pvc': False
                             }
                         }
                         profile_list.append(profile)
@@ -310,7 +311,8 @@ hub:
                                 ],
                                 'mem_limit': '16G', 
                                 'mem_guarantee': '6G',
-                                'storage_capacity': '500Gi'
+                                'storage_capacity': '500Gi', 
+                                'delete_pvc': False
                             }
                         }
                         profile_list.append(profile)
@@ -342,7 +344,8 @@ hub:
                                 ],
                                 'mem_limit': '16G', 
                                 'mem_guarantee': '6G',
-                                'storage_capacity': '500Gi'
+                                'storage_capacity': '500Gi', 
+                                'delete_pvc': False
                             }
                         }
                         profile_list.append(profile)
@@ -375,7 +378,8 @@ hub:
                                 'mem_limit': '96G', 
                                 'mem_guarantee': '32G', 
                                 'cpu_limit': 8,
-                                'storage_capacity': '500Gi'
+                                'storage_capacity': '500Gi', 
+                                'delete_pvc': False
                             }
                         }
                         profile_list.append(profile)
@@ -406,7 +410,8 @@ hub:
                                     "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'SAR 2 - Max'}"
                                 ],
                                 'cpu_guarantee': 30,
-                                'storage_capacity': '500Gi'
+                                'storage_capacity': '500Gi', 
+                                'delete_pvc': False
                             }
                         }
                         profile_list.append(profile)
@@ -439,7 +444,8 @@ hub:
                                 'mem_limit': '16G', 
                                 'mem_guarantee': '6G', 
                                 'cpu_guarantee': 1.25,
-                                'storage_capacity': '500Gi'
+                                'storage_capacity': '500Gi', 
+                                'delete_pvc': False
                             }
                         }
                         profile_list.append(profile)
@@ -465,7 +471,8 @@ hub:
                                 'mem_limit': '16G',
                                 'mem_guarantee': '6G',
                                 'cpu_guarantee': 1.25,
-                                'storage_capacity': '500Gi'
+                                'storage_capacity': '500Gi', 
+                                'delete_pvc': False
                             }
                         }
                         profile_list.append(profile)
