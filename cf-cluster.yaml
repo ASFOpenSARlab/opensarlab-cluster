@@ -697,7 +697,7 @@ Resources:
                   - kubectl apply -f configs/csi-sc.yaml
                   - helm upgrade aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver
                       --install
-                      --version 2.3.0
+                      --version 2.4.0
                       --namespace kube-system
                       --timeout=6m0s
                       --atomic
@@ -715,7 +715,7 @@ Resources:
                       --install
                       --create-namespace
                       --namespace jupyter
-                      --version 0.11.1
+                      --version 1.1.3
                       --values helm_config.yaml
                       --timeout=6m0s
                       --atomic
