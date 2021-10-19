@@ -160,11 +160,11 @@ hub:
                     kubernetes_service_port=os.environ['KUBERNETES_SERVICE_PORT'],
                     kubernetes_service_host=os.environ['KUBERNETES_SERVICE_HOST']
                 )
-                with open("/etc/jupyterhub/custom/meta.yaml", mode='w') as f:
+                with open("/usr/local/etc/jupyterhub/custom/meta.yaml", mode='w') as f:
                     f.write(meta)
 
                 # Make file executable
-                os.chmod('/etc/jupyterhub/custom/meta.yaml', 0o755)
+                os.chmod('/usr/local/etc/jupyterhub/custom/meta.yaml', 0o755)
 
                 # Setup crontab for volume killer
                 cron = CronTab(user='jovyan')
@@ -172,13 +172,13 @@ hub:
                 # Lifecycle snapshot runs at 10 UTC, 1am AKST
 
                 # Setup crontab for volume killer
-                job2 = cron.new(command='python3 /etc/jupyterhub/custom/delete_volumes.py > /proc/1/fd/1 2>&1')
+                job2 = cron.new(command='python3 /usr/local/etc/jupyterhub/custom/delete_volumes.py > /proc/1/fd/1 2>&1')
                 job2.hour.on(12)  # 12 UTC, 3am AKST
                 job2.minute.on(0)
                 job2.enable()
 
                 # Setup crontab for snapshot killer
-                job3 = cron.new(command='python3 /etc/jupyterhub/custom/delete_snapshot.py > /proc/1/fd/1 2>&1')
+                job3 = cron.new(command='python3 /usr/local/etc/jupyterhub/custom/delete_snapshot.py > /proc/1/fd/1 2>&1')
                 job3.hour.on(13)  # 13 UTC, 4am AKST
                 job3.minute.on(0)
                 job3.enable()
