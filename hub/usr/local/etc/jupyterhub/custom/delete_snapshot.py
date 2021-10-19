@@ -20,7 +20,7 @@ class DeleteSnapshot():
             self.cluster_name = cluster_name
             self.cognito_name = cognito_name
         else:
-            with open("/etc/jupyterhub/custom/meta.yaml", 'r') as f:
+            with open("/usr/local/etc/jupyterhub/custom/meta.yaml", 'r') as f:
                 data = f.read()
 
             meta = yaml.safe_load(data)
