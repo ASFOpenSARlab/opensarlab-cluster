@@ -61,7 +61,7 @@ hub:
          - ADMIN_USER
 
     image:
-      imagePullPolicy: Always
+      pullPolicy: Always
       name: HUB_IMAGE_NAME_HERE
       tag: HUB_IMAGE_TAG_HERE
 
