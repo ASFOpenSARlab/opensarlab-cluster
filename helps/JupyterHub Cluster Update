@@ -1,0 +1,33 @@
+JupyterHub Cluster Update
+
+JH Helm 0.11.1 --> 1.1.3 (JH app 1.3.0 --> 1.4.2)
+
+Changelog for helm chart: https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/HEAD/CHANGELOG.md
+Changelog for JH app: https://github.com/jupyterhub/jupyterhub/blob/main/docs/source/changelog.md
+
+
+## Helm 0.11.1 -> Helm 1.0.1  
+https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/HEAD/CHANGELOG.md#101---2021-06-25
+
+JH 1.3.0 -> 1.4.1
+  https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/HEAD/CHANGELOG.md#breaking-changes-1
+    - delete_pvc
+      hub:
+        config:
+          KubeSpawner:
+            delete_pvc: false
+
+Kubespawner 0.15.0 -> 1.0.0  # Breaking Changes
+  - When using KubeSpawner 1.0.0 or later together with JupyterHub 1.4.1 or later, deleting a JupyterHub user 
+    or deleting (not just stopping) a named server will lead to removing the associated PVC resource. 
+    To opt out of this behavior set the delete_pvc configuration to False.
+    See above JH
+
+oauthenticator 0.12.3 -> 14.0.0  # Nothing overtly breaking
+
+## Helm 1.0.1 -> Helm 1.1.3
+https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/HEAD/CHANGELOG.md#113---2021-08-25
+
+JH 1.4.1 -> 1.4.2  # Nothing overtly breaking
+Kubespawner 1.0.0 -> 1.1.0  # Nothing overtly breaking
+oauthenticator 14.0.0 -> 14.1.0  # Nothing overtly breaking

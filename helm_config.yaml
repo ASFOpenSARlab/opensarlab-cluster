@@ -6,7 +6,6 @@
 proxy:
   https:
     enabled: false
-  secretToken: SECRET_TOKEN
   service:
     nodePorts:
       http: NODE_PORT
