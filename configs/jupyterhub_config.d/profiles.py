@@ -45,7 +45,7 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
 
         # m5a.2xlarge: 8 cpus, 32 GiB RAM
         if 'SAR_1_-_Test' in group_list:
-            image_url = f"{os.environ.get('custom.IMAGE_REPO_URL')}/sar:e914cd7"
+            image_url = f"{os.environ.get('OSL_IMAGE_REPO_URL')}/sar:e914cd7"
             profile = {
                 'display_name': 'SAR 1 - Test',
                 'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G.',
@@ -78,7 +78,7 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
 
         # m5a.2xlarge: 8 cpus, 32 GiB RAM
         if 'SAR_1' in group_list:
-            image_url = f"{os.environ.get('custom.IMAGE_REPO_URL')}/sar:e914cd7"
+            image_url = f"{os.environ.get('OSL_IMAGE_REPO_URL')}/sar:e914cd7"
             profile = {
                 'display_name': 'SAR 1',
                 'description': 'Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G.',
@@ -111,7 +111,7 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
 
         # m5a.2xlarge: 8 cpus, 32 GiB RAM
         if 'SAR_1_-_Dev' in group_list:
-            image_url = f"{os.environ.get('custom.IMAGE_REPO_URL')}/sar:e914cd7"
+            image_url = f"{os.environ.get('OSL_IMAGE_REPO_URL')}/sar:e914cd7"
             profile = {
                 'display_name': 'SAR 1 - Dev',
                 'description': 'Development profile. CPU limit: 8. RAM limit: 16G. Storage: 500G.',
@@ -144,7 +144,7 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
         
         # m5a.8xlarge: 32 cpu, 128 GiB RAM
         if 'SAR_2' in group_list:
-            image_url = f"{os.environ.get('custom.IMAGE_REPO_URL')}/sar:e914cd7"
+            image_url = f"{os.environ.get('OSL_IMAGE_REPO_URL')}/sar:e914cd7"
             profile = {
                 'display_name': 'SAR 2',
                 'description': 'Formally UNAVCO. Contains basic SAR processing packages on a bigger machine. RAM limit: 96G. CPU limit: 8 cpus. Storage: 500 GiB.',
@@ -178,7 +178,7 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
 
         # m5a.8xlarge: 32 cpu, 128 GiB RAM
         if 'SAR_2_-_Max' in group_list:
-            image_url = f"{os.environ.get('custom.IMAGE_REPO_URL')}/sar:e914cd7"
+            image_url = f"{os.environ.get('OSL_IMAGE_REPO_URL')}/sar:e914cd7"
             profile = {
                 'display_name': 'SAR 2 - Max',
                 'description': 'Similar to SAR 2 but one person per machine. RAM limit: ~128GB. CPU limit: ~30 cpus. Storage: 500 GiB.',
@@ -209,7 +209,7 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
             profile_list.append(profile)
 
         if 'SAR_1_-_No_Gitpuller' in group_list:
-            image_url = f"{os.environ.get('custom.IMAGE_REPO_URL')}/sar:e914cd7"
+            image_url = f"{os.environ.get('OSL_IMAGE_REPO_URL')}/sar:e914cd7"
             profile = {
                 'display_name': 'SAR 1 - No Gitpuller',
                 'description': 'Useful for debugging some server timeouts. This does not pull in the latest notebooks.',
@@ -243,7 +243,7 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
             profile_list.append(profile)
 
         if 'SAR_1_-_No_Hook' in group_list:
-            image_url = f"{os.environ.get('custom.IMAGE_REPO_URL')}/sar:e914cd7"
+            image_url = f"{os.environ.get('OSL_IMAGE_REPO_URL')}/sar:e914cd7"
             profile = {
                 'display_name': 'SAR 1 - No Hook',
                 'description': 'Useful for debugging some server timeouts. This does not run the post-hook.',
