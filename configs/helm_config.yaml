@@ -80,7 +80,7 @@ hub:
           os.environ['OSL_COST_TAG_KEY'] = z2jh.get_config('custom.COST_TAG_KEY')
           os.environ['OSL_COST_TAG_VALUE'] = z2jh.get_config('custom.COST_TAG_VALUE')
           os.environ['OSL_IMAGE_REPO_URL'] = z2jh.get_config('custom.IMAGE_REPO_URL')
-          os.environ['OSL_NAMESPACE'] = jupyter
+          os.environ['OSL_NAMESPACE'] = 'jupyter'
 
         except Exception as e:
                 print(e)
