@@ -1,0 +1,98 @@
+# !!!! This config is used in the first round of Franz's labs. It will not be used afterwards. Though some of the settings could still prove useful.
+#
+# This helm config file modifies the defaults found in zero-to-jupyterhub-k8s/jupyterhub/
+# Possible values are scattered throughout the doc starting at https://z2jh.jupyter.org/en/latest/setup-jupyterhub.html
+
+proxy:
+  https:
+    enabled: false
+  service:
+    nodePorts:
+      http: NODE_PORT
+    type: NodePort
+
+singleuser:
+  startTimeout: 600
+  storage:
+    dynamic:
+      storageClass: gp2
+      pvcNameTemplate: claim-{username}
+
+prePuller:
+  continuous:
+    enabled: false
+  hook:
+    enabled: false
+
+cull:
+  enabled: true
+  timeout: 3600
+  every: 300
+
+scheduling:
+  userPlaceholder:
+    enabled: false
+  userScheduler:
+    enabled: true
+  corePods:
+    nodeAffinity:
+      matchNodePurpose: require  # hub.jupyter.org/node-purpose=core
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
+
+custom:
+  OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
+  OAUTH_DNS_NAME: OAUTH_DNS_NAME
+  OAUTH_POOL_NAME: OAUTH_POOL_NAME
+  CLUSTER_NAME: CLUSTER_NAME
+  COST_TAG_KEY: COST_TAG_KEY
+  COST_TAG_VALUE: COST_TAG_VALUE
+  AZ_NAME: AZ_NAME
+  IMAGE_REPO_URL: IMAGE_REPO_URL
+
+hub:
+    config:
+      JupyterHub:
+        admin_access: true
+      Authenticator:
+        admin_users:
+         - ADMIN_USER
+
+    image:
+      pullPolicy: Always
+      name: HUB_IMAGE_NAME_HERE
+      tag: HUB_IMAGE_TAG_HERE
+
+    extraConfig:
+      meta.py: |
+        try:
+
+          import os
+          import z2jh
+
+          os.environ["OSL_OAUTH_DNS_NAME"] = z2jh.get_config("custom.OAUTH_DNS_NAME")
+          os.environ["OSL_OAUTH_JUPYTER_URL"] = z2jh.get_config("custom.OAUTH_JUPYTER_URL")
+          os.environ['OSL_OAUTH_POOL_NAME'] = z2jh.get_config("custom.OAUTH_POOL_NAME")
+          os.environ['OSL_AZ_NAME'] = z2jh.get_config('custom.AZ_NAME')
+          os.environ['OSL_REGION_NAME'] = z2jh.get_config('custom.AZ_NAME')[:-1]
+          os.environ['OSL_CLUSTER_NAME'] = z2jh.get_config('custom.CLUSTER_NAME')
+          os.environ['OSL_COST_TAG_KEY'] = z2jh.get_config('custom.COST_TAG_KEY')
+          os.environ['OSL_COST_TAG_VALUE'] = z2jh.get_config('custom.COST_TAG_VALUE')
+          os.environ['OSL_IMAGE_REPO_URL'] = z2jh.get_config('custom.IMAGE_REPO_URL')
+          os.environ['OSL_NAMESPACE'] = jupyter
+
+        except Exception as e:
+                print(e)
+
+    extraFiles:
+      auth:
+        mountPath: /usr/local/etc/jupyterhub/helm_config.d/auth.py
+      crons:
+        mountPath: /usr/local/etc/jupyterhub/helm_config.d/crons.py
+      hooks:
+        mountPath: /usr/local/etc/jupyterhub/helm_config.d/hooks.py
+      profiles:
+        mountPath: /usr/local/etc/jupyterhub/helm_config.d/profiles.py
+      services:
+        mountPath: /usr/local/etc/jupyterhub/helm_config.d/services.py
