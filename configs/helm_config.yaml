@@ -87,12 +87,12 @@ hub:
 
     extraFiles:
       auth:
-        mountPath: /usr/local/etc/jupyterhub/helm_config.d/auth.py
+        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/auth.py
       crons:
-        mountPath: /usr/local/etc/jupyterhub/helm_config.d/crons.py
+        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/crons.py
       hooks:
-        mountPath: /usr/local/etc/jupyterhub/helm_config.d/hooks.py
+        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/hooks.py
       profiles:
-        mountPath: /usr/local/etc/jupyterhub/helm_config.d/profiles.py
+        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/profiles.py
       services:
-        mountPath: /usr/local/etc/jupyterhub/helm_config.d/services.py
+        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/services.py
