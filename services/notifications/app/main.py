@@ -5,17 +5,14 @@ custom.ICAL_URL = 'https://calendar.google.com/calendar/ical/....'
 c.JupyterHub.services = [
     {
         'name': 'notifications',
-        'url': 'http://notifications.notifications'
+        'url': 'http://services.notifications'
     }
 ]
 
 """
 
 import os
-import argparse
 from datetime import datetime
-import json
-from urllib.parse import urlparse
 import re
 
 import yaml
