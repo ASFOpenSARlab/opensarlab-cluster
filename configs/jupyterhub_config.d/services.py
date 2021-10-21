@@ -3,7 +3,7 @@ try:
     c.JupyterHub.services.append(
         {
             'name': 'notifications',
-            'url': 'http://notifications.notifications'
+            'url': 'http://services.notifications'
         }
     )
 
