@@ -1,5 +1,5 @@
 
-import os
+import z2jh
 
 # Before mounting the home directory, check to see if a volume exists.
 # If it doesn't, check for any EBS snapshots.
@@ -13,10 +13,10 @@ def my_pre_hook(spawner):
             'username': spawner.user.name,
             'pvc_name': spawner.pvc_name,
             'namespace': 'jupyter',
-            'cluster_name': os.environ.get('OSL_CLUSTER_NAME'),
-            'cost_tag_key': os.environ.get('OSL_COST_TAG_KEY'),
-            'cost_tag_value': os.environ.get('OSL_COST_TAG_VALUE'),
-            'az_name': os.environ.get('OSL_AZ_NAME'),
+            'cluster_name': z2jh.get_config('custom.CLUSTER_NAME'),
+            'cost_tag_key': z2jh.get_config('custom.COST_TAG_KEY'),
+            'cost_tag_value': z2jh.get_config('custom.COST_TAG_VALUE'),
+            'az_name': z2jh.get_config('custom.AZ_NAME'),
             'vol_size': spawner.storage_capacity,
             'spawn_pvc': spawner.get_pvc_manifest()
         }
@@ -37,8 +37,8 @@ def my_post_hook(spawner):
 
         meta = {
             'pvc_name': spawner.pvc_name,
-            'cluster_name': os.environ.get('OSL_CLUSTER_NAME'),
-            'az_name': os.environ.get('OSL_AZ_NAME')
+            'cluster_name': z2jh.get_config('custom.CLUSTER_NAME'),
+            'az_name': z2jh.get_config('custom.AZ_NAME')
         }
 
         volume_stopping_tags(meta)

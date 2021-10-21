@@ -1,5 +1,7 @@
 import os
 
+import z2jh
+
 try:
     from crontab import CronTab
 
@@ -18,9 +20,9 @@ try:
     ]
     meta = "\n".join(meta).format(
         days_vol_inactive_till_termination=days_vol_inactive_till_termination,
-        region_name=os.environ.get('OSL_AZ_NAME'),
-        cluster_name=os.environ.get('OSL_CLUSTER_NAME'),
-        cognito_name=os.environ.get('OSL_OAUTH_POOL_NAME'),
+        region_name=z2jh.get_config('custom.AZ_NAME'),
+        cluster_name=z2jh.get_config('custom.CLUSTER_NAME'),
+        cognito_name=z2jh.get_config('custom.OAUTH_POOL_NAME'),
         kubernetes_service_port=os.environ.get('KUBERNETES_SERVICE_PORT'),
         kubernetes_service_host=os.environ.get('KUBERNETES_SERVICE_HOST')
     )
