@@ -730,7 +730,13 @@ Resources:
                       --set hub.image.name=$IMAGE_REPO_URL/hub
                       --set hub.image.tag=${HubImageTag}
                       --set-file hub.extraFiles.crons.stringData=./configs/jupyterhub_config.d/crons.py
+                      --set-file hub.extraFiles.crons-delete_snapshot.stringData=./configs/jupyterhub_config.d/crons/delete_snapshot.py
+                      --set-file hub.extraFiles.crons-delete_volumes.stringData=./configs/jupyterhub_config.d/crons/delete_volumes.py
                       --set-file hub.extraFiles.hooks.stringData=./configs/jupyterhub_config.d/hooks.py
+                      --set-file hub.extraFiles.hooks-pv.stringData=./configs/jupyterhub_config.d/hooks/pv.yaml
+                      --set-file hub.extraFiles.hooks-pvc.stringData=./configs/jupyterhub_config.d/hooks/pvc.yaml
+                      --set-file hub.extraFiles.hooks-volume_from_snapshot.stringData=./configs/jupyterhub_config.d/hooks/volume_from_snapshot.py
+                      --set-file hub.extraFiles.hooks-volume_stopping_tags.stringData=./configs/jupyterhub_config.d/hooks/volume_stopping_tags.py
                       --set-file hub.extraFiles.profiles.stringData=./configs/jupyterhub_config.d/profiles.py
                       --set-file hub.extraFiles.services.stringData=./configs/jupyterhub_config.d/services.py
                   - kubectl -n jupyter rollout status -w deployment.apps/hub

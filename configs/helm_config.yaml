@@ -67,8 +67,20 @@ hub:
     extraFiles:
       crons:
         mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/crons.py
+      crons-delete_snapshot:
+        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/crons/delete_snapshots.py
+      crons-delete_volumes:
+        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/crons/delete_volumes.py
       hooks:
         mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/hooks.py
+      hooks-pv:
+        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/hooks/pv.yaml
+      hooks-pvc:
+        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/hooks/pvc.yaml
+      hooks-volume_from_snapshot:
+        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/hooks/volume_from_snapshot.py
+      hooks-volume_stopping_tags:
+        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/hooks/volume_stopping_tags.py
       profiles:
         mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/profiles.py
       services:
