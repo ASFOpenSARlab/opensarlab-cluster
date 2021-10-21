@@ -75,7 +75,7 @@ hub:
         mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/services.py
 
     extraConfig:
-      auth.py:
+      auth.py: |
         # Auth has to be put in extraConfig. If it is in extraFiles, JupyterHub will overwrite with the default dummy auth.
         import os
         import z2jh
