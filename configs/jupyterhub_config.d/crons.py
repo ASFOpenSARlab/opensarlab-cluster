@@ -20,7 +20,7 @@ try:
     ]
     meta = "\n".join(meta).format(
         days_vol_inactive_till_termination=days_vol_inactive_till_termination,
-        region_name=z2jh.get_config('custom.AZ_NAME'),
+        region_name=z2jh.get_config('custom.AZ_NAME')[:-1],
         cluster_name=z2jh.get_config('custom.CLUSTER_NAME'),
         cognito_name=z2jh.get_config('custom.OAUTH_POOL_NAME'),
         kubernetes_service_port=os.environ.get('KUBERNETES_SERVICE_PORT'),
