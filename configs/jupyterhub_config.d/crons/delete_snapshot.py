@@ -20,7 +20,7 @@ class DeleteSnapshot():
             self.cluster_name = cluster_name
             self.cognito_name = cognito_name
         else:
-            with open("meta.yaml", 'r') as f:
+            with open("/usr/local/etc/jupyterhub/custom/crons/meta.yaml", 'r') as f:
                 data = f.read()
 
             meta = yaml.safe_load(data)
@@ -355,7 +355,7 @@ class DeleteSnapshot():
                     # ses.sendEmail is rated to 14 emails per second. Let's make sure we stay below that limit. Even if we don't always get there.
                     time.sleep(0.2)
 
-def delete_snapshot(cluster_name='opensarlab', cognito_name='opensarlab', local=False, dry_run=False):
+def delete_snapshot(cluster_name=None, cognito_name=None, local=False, dry_run=False):
     try:
         ds = DeleteSnapshot(cluster_name, cognito_name, local, dry_run)
         snaps = ds.get_snapshots()
@@ -368,8 +368,8 @@ def delete_snapshot(cluster_name='opensarlab', cognito_name='opensarlab', local=
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cluster-name", dest="cluster_name", default="opensarlab")
-    parser.add_argument("--cognito-name", dest="cognito_name", default="opensarlab")
+    parser.add_argument("--cluster-name", dest="cluster_name")
+    parser.add_argument("--cognito-name", dest="cognito_name")
     parser.add_argument("--local", action="store_true", dest="local")
     parser.add_argument("--dry-run", action="store_true", dest="dry_run")
     args = parser.parse_args()

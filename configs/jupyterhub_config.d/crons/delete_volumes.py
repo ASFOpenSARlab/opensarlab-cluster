@@ -14,7 +14,7 @@ def delete_volumes():
 
         print("Checking for expired volumes...")
 
-        with open("meta.yaml", 'r') as f:
+        with open("/usr/local/etc/jupyterhub/custom/crons/meta.yaml", 'r') as f:
             data = f.read()
 
         meta = yaml.safe_load(data)

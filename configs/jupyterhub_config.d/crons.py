@@ -5,7 +5,7 @@ import z2jh
 try:
     from crontab import CronTab
 
-    working_directory = '/usr/local/etc/jupyterhub/jupyterhub_config.d/crons'
+    working_directory = '/usr/local/etc/jupyterhub/custom/crons'
 
     days_vol_inactive_till_termination = 5
 
