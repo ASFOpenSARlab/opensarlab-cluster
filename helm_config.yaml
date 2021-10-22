@@ -36,10 +36,10 @@ scheduling:
     enabled: true
   corePods:
     nodeAffinity:
-      matchNodePurpose: require  # hub.jupyter.org/node-purpose=core
+      matchNodePurpose: require # hub.jupyter.org/node-purpose=core
   userPods:
     nodeAffinity:
-      matchNodePurpose: require  # hub.jupyter.org/node-purpose=user
+      matchNodePurpose: require # hub.jupyter.org/node-purpose=user
 
 custom:
   OAUTH_JUPYTER_URL: OAUTH_JUPYTER_URL
@@ -52,50 +52,50 @@ custom:
   IMAGE_REPO_URL: IMAGE_REPO_URL
 
 hub:
-    config:
-      JupyterHub:
-        admin_access: true
-      Authenticator:
-        admin_users:
-         - ADMIN_USER
+  config:
+    JupyterHub:
+      admin_access: true
+    Authenticator:
+      admin_users:
+        - ADMIN_USER
 
-    image:
-      pullPolicy: Always
-      name: HUB_IMAGE_NAME_HERE
-      tag: HUB_IMAGE_TAG_HERE
+  image:
+    pullPolicy: Always
+    name: HUB_IMAGE_NAME_HERE
+    tag: HUB_IMAGE_TAG_HERE
 
-    extraFiles:
-      crons:
-        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/crons.py
-      crons-delete_snapshot:
-        mountPath: /usr/local/etc/jupyterhub/custom/crons/delete_snapshots.py
-      crons-delete_volumes:
-        mountPath: /usr/local/etc/jupyterhub/custom/crons/delete_volumes.py
-      hooks:
-        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/hooks.py
-      hooks-pv:
-        mountPath: /usr/local/etc/jupyterhub/custom/hooks/pv.yaml
-      hooks-pvc:
-        mountPath: /usr/local/etc/jupyterhub/custom/hooks/pvc.yaml
-      profiles:
-        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/profiles.py
-      services:
-        mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/services.py
+  extraFiles:
+    crons:
+      mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/crons.py
+    crons-delete_snapshot:
+      mountPath: /usr/local/etc/jupyterhub/custom/crons/delete_snapshots.py
+    crons-delete_volumes:
+      mountPath: /usr/local/etc/jupyterhub/custom/crons/delete_volumes.py
+    hooks:
+      mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/hooks.py
+    hooks-pv:
+      mountPath: /usr/local/etc/jupyterhub/custom/hooks/pv.yaml
+    hooks-pvc:
+      mountPath: /usr/local/etc/jupyterhub/custom/hooks/pvc.yaml
+    profiles:
+      mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/profiles.py
+    services:
+      mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/services.py
 
-    extraConfig:
-      auth.py: |
-        # Auth has to be put in extraConfig. If it is in extraFiles, JupyterHub will overwrite with the default dummy auth.
-        import os
-        import z2jh
+  extraConfig:
+    auth.py: |
+      # Auth has to be put in extraConfig. If it is in extraFiles, JupyterHub will overwrite with the default dummy auth.
+      import os
+      import z2jh
 
-        try:
-            os.environ["OAUTH_DNS_NAME"] = z2jh.get_config("custom.OAUTH_DNS_NAME")
-            os.environ["OAUTH_JUPYTER_URL"] = z2jh.get_config("custom.OAUTH_JUPYTER_URL")
-            os.environ['OAUTH_POOL_NAME'] = z2jh.get_config("custom.OAUTH_POOL_NAME")
-            os.environ['REGION_NAME'] = z2jh.get_config('custom.AZ_NAME')[:-1]
+      try:
+          os.environ["OAUTH_DNS_NAME"] = z2jh.get_config("custom.OAUTH_DNS_NAME")
+          os.environ["OAUTH_JUPYTER_URL"] = z2jh.get_config("custom.OAUTH_JUPYTER_URL")
+          os.environ['OAUTH_POOL_NAME'] = z2jh.get_config("custom.OAUTH_POOL_NAME")
+          os.environ['REGION_NAME'] = z2jh.get_config('custom.AZ_NAME')[:-1]
 
-            from generic_with_logout import GenericOAuthenticator
-            c.JupyterHub.authenticator_class = GenericOAuthenticator
+          from generic_with_logout import GenericOAuthenticator
+          c.JupyterHub.authenticator_class = GenericOAuthenticator
 
-        except Exception as e:
-            print(e)
+      except Exception as e:
+          print(e)

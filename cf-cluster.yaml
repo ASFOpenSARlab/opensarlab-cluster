@@ -1,7 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
-
   AdminUserName:
     Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
     Type: String
@@ -9,27 +8,27 @@ Parameters:
   CertificateArn:
     Description: The ARN of the SSL certificate attached to the load balancer.
     Type: String
-    Default: ''
+    Default: ""
 
   ContainerNamespace:
     Description: OVERRIDE in child. The full url of the container ECR. Example-- osl-e-dev-container
     Type: String
-    Default: ''
+    Default: ""
 
   OAuthPoolName:
     Description: AWS Cognito User Pool name
     Type: String
-    Default: ''
+    Default: ""
 
   OAuthDNSName:
     Description: AWS Cognito User Pool DNS Url
     Type: String
-    Default: ''
+    Default: ""
 
   DeploymentURL:
     Description: Jupyterhub URL used by AWS Cognito authentication. If not given, the default is the load balancer URL
     Type: String
-    Default: ''
+    Default: ""
 
   CostTagKey:
     Type: String
@@ -44,7 +43,7 @@ Parameters:
   ICALUrl:
     Type: String
     Description: "The URL of the Google Calendar used for notifications."
-    Default: ''
+    Default: ""
 
   # The following are dynamically added by the pipeline
   VpcId:
@@ -62,7 +61,7 @@ Parameters:
   HubImageTag:
     Type: String
     Description: "Tag of the hub image."
-    Default: 'latest'
+    Default: "latest"
 
   # The following values require defaults.
   LoadBalancerCidrBlock:
@@ -95,14 +94,11 @@ Parameters:
     Type: String
     Default: m5a.8xlarge
 
-
 Outputs:
-
   AppUrl:
     Value: !GetAtt LoadBalancer.DNSName
 
 Resources:
-
   ClusterRole:
     Type: AWS::IAM::Role
     Properties:
@@ -122,8 +118,7 @@ Resources:
           - Effect: Allow
             Principal:
               AWS:
-                Fn::ImportValue:
-                  !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
+                Fn::ImportValue: !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
@@ -151,7 +146,7 @@ Resources:
                   - "ec2:*"
                   - "eks:*"
                   - "sts:AssumeRole"
-                Resource: '*'
+                Resource: "*"
 
   ClusterSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -171,7 +166,7 @@ Resources:
       ResourcesVpcConfig:
         SubnetIds: !Ref Subnets
         SecurityGroupIds:
-        - !GetAtt ClusterSecurityGroup.GroupId
+          - !GetAtt ClusterSecurityGroup.GroupId
       Version: "1.21"
 
   UserAccessRole:
@@ -192,7 +187,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - "eks:*"
-                Resource: '*'
+                Resource: "*"
 
   NodeInstanceRole:
     Type: AWS::IAM::Role
@@ -205,15 +200,15 @@ Resources:
             Service: ec2.amazonaws.com
           Action: sts:AssumeRole
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-      - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-      - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-      - arn:aws:iam::aws:policy/AutoScalingFullAccess
-      - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
       Policies:
         - PolicyName: !Sub ${AWS::Region}-${Cluster}-Service_Account_Policy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Sid: SAHubDeleteVolumes
                 Effect: Allow
@@ -264,7 +259,7 @@ Resources:
                 Resource: "*"
         - PolicyName: !Sub ${AWS::Region}-${Cluster}-EKS_CSI_EBS_Policy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -283,14 +278,14 @@ Resources:
                   - ec2:DescribeVolumesModifications
                   - ec2:DetachVolume
                   - ec2:ModifyVolume
-                Resource: '*'
+                Resource: "*"
 
   NodeInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
       InstanceProfileName: !Ref NodeInstanceRole
       Roles:
-      - !Ref NodeInstanceRole
+        - !Ref NodeInstanceRole
 
   NodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -381,26 +376,26 @@ Resources:
       MaxSize: "2"
       VPCZoneIdentifier: !Ref ActiveSubnets
       TargetGroupARNs:
-      - !Ref TargetGroup
+        - !Ref TargetGroup
       Tags:
-      - Key: Name
-        Value: !Sub ${Cluster}-instance
-        PropagateAtLaunch: true
-      - Key: !Sub k8s.io/cluster/${Cluster}
-        Value: owned
-        PropagateAtLaunch: true
-      - Key: !Sub kubernetes.io/cluster/${Cluster}
-        Value: owned
-        PropagateAtLaunch: true
-      - Key: k8s.io/cluster-autoscaler/enabled
-        Value: "true"
-        PropagateAtLaunch: true
-      - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-        Value: "true"
-        PropagateAtLaunch: true
-      - Key: !Sub ${CostTagKey}
-        Value: !Sub ${CostTagValue}
-        PropagateAtLaunch: true
+        - Key: Name
+          Value: !Sub ${Cluster}-instance
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: !Sub kubernetes.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/enabled
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+          PropagateAtLaunch: true
 
   LaunchConfigurationCore:
     Type: AWS::AutoScaling::LaunchConfiguration
@@ -410,7 +405,7 @@ Resources:
       ImageId: !Ref NodeImageId
       InstanceType: !Ref NodeInstanceTypeCore
       SecurityGroups:
-      - !Ref NodeSecurityGroup
+        - !Ref NodeSecurityGroup
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
@@ -422,98 +417,98 @@ Resources:
           --region ${AWS::Region}
 
   AutoScalingGroupSAR1:
-   Type: AWS::AutoScaling::AutoScalingGroup
-   Properties:
-     DesiredCapacity: "0"
-     LaunchConfigurationName: !Ref LaunchConfigurationSAR1
-     MinSize: "0"
-     MaxSize: "25"
-     VPCZoneIdentifier: !Ref ActiveSubnets
-     Tags:
-     - Key: Name
-       Value: !Sub ${AWS::StackName}-instance
-       PropagateAtLaunch: true
-     - Key: !Sub k8s.io/cluster/${Cluster}
-       Value: owned
-       PropagateAtLaunch: true
-     - Key: !Sub kubernetes.io/cluster/${Cluster}
-       Value: owned
-       PropagateAtLaunch: true
-     - Key: k8s.io/cluster-autoscaler/enabled
-       Value: "true"
-       PropagateAtLaunch: true
-     - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-       Value: "true"
-       PropagateAtLaunch: true
-     - Key: !Sub ${CostTagKey}
-       Value: !Sub ${CostTagValue}
-       PropagateAtLaunch: true
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: "0"
+      LaunchConfigurationName: !Ref LaunchConfigurationSAR1
+      MinSize: "0"
+      MaxSize: "25"
+      VPCZoneIdentifier: !Ref ActiveSubnets
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-instance
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: !Sub kubernetes.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/enabled
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+          PropagateAtLaunch: true
 
   LaunchConfigurationSAR1:
-   Type: AWS::AutoScaling::LaunchConfiguration
-   Properties:
-     AssociatePublicIpAddress: true
-     IamInstanceProfile: !Ref NodeInstanceProfile
-     ImageId: !Ref NodeImageId
-     InstanceType: !Ref NodeInstanceTypeSAR1
-     SecurityGroups:
-      - !Ref NodeSecurityGroup
-     UserData:
-       Fn::Base64: !Sub |
-         #!/bin/bash
-         set -o xtrace
-         /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_1'
-         /opt/aws/bin/cfn-signal --exit-code $? \
-         --stack  ${AWS::StackName} \
-         --resource NodeGroup  \
-         --region ${AWS::Region}
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref NodeInstanceProfile
+      ImageId: !Ref NodeImageId
+      InstanceType: !Ref NodeInstanceTypeSAR1
+      SecurityGroups:
+        - !Ref NodeSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_1'
+          /opt/aws/bin/cfn-signal --exit-code $? \
+          --stack  ${AWS::StackName} \
+          --resource NodeGroup  \
+          --region ${AWS::Region}
 
   AutoScalingGroupSAR2:
-   Type: AWS::AutoScaling::AutoScalingGroup
-   Properties:
-     DesiredCapacity: "0"
-     LaunchConfigurationName: !Ref LaunchConfigurationSAR2
-     MinSize: "0"
-     MaxSize: "25"
-     VPCZoneIdentifier: !Ref ActiveSubnets
-     Tags:
-     - Key: Name
-       Value: !Sub ${AWS::StackName}-instance
-       PropagateAtLaunch: true
-     - Key: !Sub k8s.io/cluster/${Cluster}
-       Value: owned
-       PropagateAtLaunch: true
-     - Key: !Sub kubernetes.io/cluster/${Cluster}
-       Value: owned
-       PropagateAtLaunch: true
-     - Key: k8s.io/cluster-autoscaler/enabled
-       Value: "true"
-       PropagateAtLaunch: true
-     - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-       Value: "true"
-       PropagateAtLaunch: true
-     - Key: !Sub ${CostTagKey}
-       Value: !Sub ${CostTagValue}
-       PropagateAtLaunch: true
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: "0"
+      LaunchConfigurationName: !Ref LaunchConfigurationSAR2
+      MinSize: "0"
+      MaxSize: "25"
+      VPCZoneIdentifier: !Ref ActiveSubnets
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-instance
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: !Sub kubernetes.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/enabled
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+          PropagateAtLaunch: true
 
   LaunchConfigurationSAR2:
-   Type: AWS::AutoScaling::LaunchConfiguration
-   Properties:
-     AssociatePublicIpAddress: true
-     IamInstanceProfile: !Ref NodeInstanceProfile
-     ImageId: !Ref NodeImageId
-     InstanceType: !Ref NodeInstanceTypeSAR2
-     SecurityGroups:
-      - !Ref NodeSecurityGroup
-     UserData:
-       Fn::Base64: !Sub |
-         #!/bin/bash
-         set -o xtrace
-         /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_2'
-         /opt/aws/bin/cfn-signal --exit-code $? \
-         --stack  ${AWS::StackName} \
-         --resource NodeGroup  \
-         --region ${AWS::Region}
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref NodeInstanceProfile
+      ImageId: !Ref NodeImageId
+      InstanceType: !Ref NodeInstanceTypeSAR2
+      SecurityGroups:
+        - !Ref NodeSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_2'
+          /opt/aws/bin/cfn-signal --exit-code $? \
+          --stack  ${AWS::StackName} \
+          --resource NodeGroup  \
+          --region ${AWS::Region}
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -536,14 +531,14 @@ Resources:
       GroupDescription: !Sub Security group for ${Cluster} load balancer
       VpcId: !Ref VpcId
       SecurityGroupIngress:
-      - CidrIp: !Ref LoadBalancerCidrBlock
-        IpProtocol: tcp
-        FromPort: 80
-        ToPort: 80
-      - CidrIp: !Ref LoadBalancerCidrBlock
-        IpProtocol: tcp
-        FromPort: 443
-        ToPort: 443
+        - CidrIp: !Ref LoadBalancerCidrBlock
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+        - CidrIp: !Ref LoadBalancerCidrBlock
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
 
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -551,7 +546,7 @@ Resources:
       Name: !Ref AWS::StackName
       Subnets: !Ref Subnets
       SecurityGroups:
-      - !GetAtt LoadBalancerSecurityGroup.GroupId
+        - !GetAtt LoadBalancerSecurityGroup.GroupId
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
@@ -563,11 +558,11 @@ Resources:
       Protocol: HTTP
       Port: 80
       DefaultActions:
-      - Type: redirect
-        RedirectConfig:
-          StatusCode: HTTP_301
-          Protocol: HTTPS
-          Port: "443"
+        - Type: redirect
+          RedirectConfig:
+            StatusCode: HTTP_301
+            Protocol: HTTPS
+            Port: "443"
 
   HttpsListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -576,22 +571,22 @@ Resources:
       Protocol: HTTPS
       Port: 443
       Certificates:
-      - CertificateArn: !Ref CertificateArn
+        - CertificateArn: !Ref CertificateArn
       DefaultActions:
-      - Type: forward
-        TargetGroupArn: !Ref TargetGroup
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
 
   BasicLifecycleRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub ${AWS::Region}-${AWS::StackName}-SnapshotPolicyRole
       AssumeRolePolicyDocument:
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
-        - Effect: Allow
-          Principal:
-            Service: dlm.amazonaws.com
-          Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service: dlm.amazonaws.com
+            Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSDataLifecycleManagerServiceRole
 
@@ -605,12 +600,10 @@ Resources:
         ResourceTypes:
           - "VOLUME"
         TargetTags:
-          -
-            Key: !Sub "kubernetes.io/cluster/${Cluster}"
+          - Key: !Sub "kubernetes.io/cluster/${Cluster}"
             Value: "owned"
         Schedules:
-          -
-            Name: "Daily Snapshots"
+          - Name: "Daily Snapshots"
             CreateRule:
               Interval: 24
               IntervalUnit: "HOURS"
@@ -646,133 +639,132 @@ Resources:
         Type: CODEPIPELINE
         BuildSpec:
           Fn::Sub:
-          - |-
-            version: 0.2
-            env:
-              shell: bash
-            phases:
-              install:
-                runtime-versions:
-                  docker: 18
-                  python: 3.8
-                commands:
-                  - pip3 install awscli>=1.16.158 --upgrade
-                  - pip3 install boto3 --upgrade
-                  - pip3 install kubernetes
-                  - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/darwin/amd64/kubectl
-                  - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version v3.7.0
-                  - export HELM_HOST=127.0.0.1:44134
-                  - curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
-                  - mv /tmp/eksctl /usr/local/bin
-                  - eksctl version
-              pre_build:
-                commands:
-                  - echo "Logging into AWS ECR..."
-                  - $(aws ecr get-login --no-include-email --region ${AWS::Region})
-                  - echo "Logging into Docker Hub user to get latest jupyter image..."
-                  - dh_creds=$(aws secretsmanager get-secret-value --secret-id dockerhub/creds --query 'SecretString' | sed 's/\"//g' )
-                  - dh_username=$(echo $dh_creds | cut -f1 -d' ')
-                  - echo $dh_creds | cut -f2 -d' ' > dh.pass
-                  - cat dh.pass | docker login -u $dh_username --password-stdin
-                  - echo "Install helm charts and update..."
-                  - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
-                  - helm repo add autoscaler https://kubernetes.github.io/autoscaler
-                  - helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
-                  - helm repo update
-              build:
-                commands:
-                  - echo "Update assume role of Common role..."
-                  - sed -i "s|CLUSTER_ROLE_ARN|${ClusterRole.Arn}|" common-role-assumerolepolicy-template.json;
-                    export commonrolearn=${CommonRoleArn}; echo $commonrolearn;
-                    aws iam update-assume-role-policy --role-name ${!commonrolearn##*/} --policy-document file://common-role-assumerolepolicy-template.json;
-                    sleep 5
-                  - echo "Update kubeconfig and config files..."
-                  - aws eks update-kubeconfig --name ${Cluster} --role-arn ${CommonRoleArn}
-                  - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" configs/aws-auth-cm.yaml
-                  - sed -i "s|USER_ACCESS_ROLE_ARN|${UserAccessRole.Arn}|" configs/aws-auth-cm.yaml
-                  - kubectl apply -f configs/aws-auth-cm.yaml
-                  - echo "Reapply storage class..."
-                  - kubectl delete sc gp2 || true
-                  - echo "Install EBS CSI driver for enhanced volume management..."
-                  - kubectl apply -f configs/csi-sc.yaml
-                  - helm upgrade aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver
-                      --install
-                      --version 2.4.0
-                      --namespace kube-system
-                      --timeout=6m0s
-                      --atomic
-                      --set enableVolumeScheduling=true
-                      --set enableVolumeResizing=true
-                      --set enableVolumeSnapshot=false
-                      --set extraCreateMetadata=true
-                      --set k8sTagClusterId=${Cluster}
-                      --set extraVolumeTags.${CostTagKey}=${CostTagValue}
-                  - echo "Associate IAM and OIDC for service accounts..."
-                  - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
-                  - echo "Install JupyterHub cluster..."
-                  - export IMAGE_REPO_URL='${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}' && echo $IMAGE_REPO_URL
-                  - helm upgrade jupyter jupyterhub/jupyterhub
-                      --install
-                      --create-namespace
-                      --namespace jupyter
-                      --version 1.1.3
-                      --values helm_config.yaml
-                      --timeout=6m0s
-                      --atomic
-                      --set hub.config.Authenticator.admin_users[0]=${AdminUserName}
-                      --set proxy.service.nodePorts.http='${NodeProxyPort}'
-                      --set custom.IMAGE_REPO_URL=$IMAGE_REPO_URL
-                      --set custom.OAUTH_JUPYTER_URL=$( [ -n '${DeploymentURL}' ] && echo '${DeploymentURL}' || echo 'https://${LoadBalancer.DNSName}' )
-                      --set custom.OAUTH_DNS_NAME=${OAuthDNSName}
-                      --set custom.CLUSTER_NAME=${Cluster},custom.OAUTH_POOL_NAME=${OAuthPoolName},custom.AZ_NAME=${AWS::Region}d
-                      --set custom.COST_TAG_VALUE=${CostTagValue}
-                      --set custom.COST_TAG_KEY=${CostTagKey}
-                      --set hub.image.name=$IMAGE_REPO_URL/hub
-                      --set hub.image.tag=${HubImageTag}
-                      --set-file hub.extraFiles.crons.stringData=./helm_config.d/crons.py
-                      --set-file hub.extraFiles.crons-delete_snapshot.stringData=./helm_config.d/crons/delete_snapshot.py
-                      --set-file hub.extraFiles.crons-delete_volumes.stringData=./helm_config.d/crons/delete_volumes.py
-                      --set-file hub.extraFiles.hooks.stringData=./helm_config.d/hooks.py
-                      --set-file hub.extraFiles.hooks-pv.stringData=./helm_config.d/hooks/pv.yaml
-                      --set-file hub.extraFiles.hooks-pvc.stringData=./helm_config.d/hooks/pvc.yaml
-                      --set-file hub.extraFiles.profiles.stringData=./helm_config.d/profiles.py
-                      --set-file hub.extraFiles.services.stringData=./helm_config.d/services.py
-                  - kubectl -n jupyter rollout status -w deployment.apps/hub
-                  - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true
-                  - echo "Associate volume provisioner with service account...";
-                    kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
-                  - echo "Apply CNI. This must be updated on every upgrade...";
-                    curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.9/config/v1.9/aws-k8s-cni.yaml;
-                    sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml;
-                    kubectl apply -f aws-k8s-cni.yaml
-                  - echo "Install autoscaler..."
-                  - helm upgrade autoscaler autoscaler/cluster-autoscaler-chart
-                      --install
-                      --create-namespace
-                      --namespace autoscaler
-                      --atomic
-                      --timeout=2m0s
-                      --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
-                  - echo "Create services namespace"
-                  - kubectl apply -f services/namespace.yaml
-                  - echo "Install notifications service..."
-                  - cp services/notifications/k8s/deployment.example.yaml services/notifications/k8s/deployment.yaml;
-                    sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_REPO_URL/notifications:latest|" services/notifications/k8s/deployment.yaml;
-                    sed -i "s|ICAL_URL_PLACEHOLDER|${ICALUrl}|" services/notifications/k8s/deployment.yaml;
-                    kubectl apply -f services/notifications/k8s/service.yaml;
-                    kubectl apply -f services/notifications/k8s/deployment.yaml;
-                    kubectl -n services rollout status deployment/notifications -w;
-                    kubectl -n services scale deployment notifications --replicas=0;
-                    kubectl -n services scale deployment notifications --replicas=1
-                  - echo "Install Fluent Bit for AWS Container Insights..."
-                  - export FluentBitHttpPort='2020';
-                    export FluentBitReadFromHead='Off';
-                    [[ $FluentBitReadFromHead = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On';
-                    [[ -z $FluentBitHttpPort ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On';
-                    curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml | sed 's/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/;s/{{http_server_toggle}}/"'$FluentBitHttpServer'"/;s/{{http_server_port}}/"'$FluentBitHttpPort'"/;s/{{read_from_head}}/"'$FluentBitReadFromHead'"/;s/{{read_from_tail}}/"'$FluentBitReadFromTail'"/' | kubectl apply -f -
-          - CommonRoleArn:
-              Fn::ImportValue:
-                !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
+            - |-
+              version: 0.2
+              env:
+                shell: bash
+              phases:
+                install:
+                  runtime-versions:
+                    docker: 18
+                    python: 3.8
+                  commands:
+                    - pip3 install awscli>=1.16.158 --upgrade
+                    - pip3 install boto3 --upgrade
+                    - pip3 install kubernetes
+                    - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/darwin/amd64/kubectl
+                    - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version v3.7.0
+                    - export HELM_HOST=127.0.0.1:44134
+                    - curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+                    - mv /tmp/eksctl /usr/local/bin
+                    - eksctl version
+                pre_build:
+                  commands:
+                    - echo "Logging into AWS ECR..."
+                    - $(aws ecr get-login --no-include-email --region ${AWS::Region})
+                    - echo "Logging into Docker Hub user to get latest jupyter image..."
+                    - dh_creds=$(aws secretsmanager get-secret-value --secret-id dockerhub/creds --query 'SecretString' | sed 's/\"//g' )
+                    - dh_username=$(echo $dh_creds | cut -f1 -d' ')
+                    - echo $dh_creds | cut -f2 -d' ' > dh.pass
+                    - cat dh.pass | docker login -u $dh_username --password-stdin
+                    - echo "Install helm charts and update..."
+                    - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
+                    - helm repo add autoscaler https://kubernetes.github.io/autoscaler
+                    - helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+                    - helm repo update
+                build:
+                  commands:
+                    - echo "Update assume role of Common role..."
+                    - sed -i "s|CLUSTER_ROLE_ARN|${ClusterRole.Arn}|" common-role-assumerolepolicy-template.json;
+                      export commonrolearn=${CommonRoleArn}; echo $commonrolearn;
+                      aws iam update-assume-role-policy --role-name ${!commonrolearn##*/} --policy-document file://common-role-assumerolepolicy-template.json;
+                      sleep 5
+                    - echo "Update kubeconfig and config files..."
+                    - aws eks update-kubeconfig --name ${Cluster} --role-arn ${CommonRoleArn}
+                    - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" configs/aws-auth-cm.yaml
+                    - sed -i "s|USER_ACCESS_ROLE_ARN|${UserAccessRole.Arn}|" configs/aws-auth-cm.yaml
+                    - kubectl apply -f configs/aws-auth-cm.yaml
+                    - echo "Reapply storage class..."
+                    - kubectl delete sc gp2 || true
+                    - echo "Install EBS CSI driver for enhanced volume management..."
+                    - kubectl apply -f configs/csi-sc.yaml
+                    - helm upgrade aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver
+                        --install
+                        --version 2.4.0
+                        --namespace kube-system
+                        --timeout=6m0s
+                        --atomic
+                        --set enableVolumeScheduling=true
+                        --set enableVolumeResizing=true
+                        --set enableVolumeSnapshot=false
+                        --set extraCreateMetadata=true
+                        --set k8sTagClusterId=${Cluster}
+                        --set extraVolumeTags.${CostTagKey}=${CostTagValue}
+                    - echo "Associate IAM and OIDC for service accounts..."
+                    - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
+                    - echo "Install JupyterHub cluster..."
+                    - export IMAGE_REPO_URL='${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}' && echo $IMAGE_REPO_URL
+                    - helm upgrade jupyter jupyterhub/jupyterhub
+                        --install
+                        --create-namespace
+                        --namespace jupyter
+                        --version 1.1.3
+                        --values helm_config.yaml
+                        --timeout=6m0s
+                        --atomic
+                        --set hub.config.Authenticator.admin_users[0]=${AdminUserName}
+                        --set proxy.service.nodePorts.http='${NodeProxyPort}'
+                        --set custom.IMAGE_REPO_URL=$IMAGE_REPO_URL
+                        --set custom.OAUTH_JUPYTER_URL=$( [ -n '${DeploymentURL}' ] && echo '${DeploymentURL}' || echo 'https://${LoadBalancer.DNSName}' )
+                        --set custom.OAUTH_DNS_NAME=${OAuthDNSName}
+                        --set custom.CLUSTER_NAME=${Cluster},custom.OAUTH_POOL_NAME=${OAuthPoolName},custom.AZ_NAME=${AWS::Region}d
+                        --set custom.COST_TAG_VALUE=${CostTagValue}
+                        --set custom.COST_TAG_KEY=${CostTagKey}
+                        --set hub.image.name=$IMAGE_REPO_URL/hub
+                        --set hub.image.tag=${HubImageTag}
+                        --set-file hub.extraFiles.crons.stringData=./helm_config.d/crons.py
+                        --set-file hub.extraFiles.crons-delete_snapshot.stringData=./helm_config.d/crons/delete_snapshot.py
+                        --set-file hub.extraFiles.crons-delete_volumes.stringData=./helm_config.d/crons/delete_volumes.py
+                        --set-file hub.extraFiles.hooks.stringData=./helm_config.d/hooks.py
+                        --set-file hub.extraFiles.hooks-pv.stringData=./helm_config.d/hooks/pv.yaml
+                        --set-file hub.extraFiles.hooks-pvc.stringData=./helm_config.d/hooks/pvc.yaml
+                        --set-file hub.extraFiles.profiles.stringData=./helm_config.d/profiles.py
+                        --set-file hub.extraFiles.services.stringData=./helm_config.d/services.py
+                    - kubectl -n jupyter rollout status -w deployment.apps/hub
+                    - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true
+                    - echo "Associate volume provisioner with service account...";
+                      kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
+                    - echo "Apply CNI. This must be updated on every upgrade...";
+                      curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.9/config/v1.9/aws-k8s-cni.yaml;
+                      sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml;
+                      kubectl apply -f aws-k8s-cni.yaml
+                    - echo "Install autoscaler..."
+                    - helm upgrade autoscaler autoscaler/cluster-autoscaler-chart
+                        --install
+                        --create-namespace
+                        --namespace autoscaler
+                        --atomic
+                        --timeout=2m0s
+                        --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
+                    - echo "Create services namespace"
+                    - kubectl apply -f services/namespace.yaml
+                    - echo "Install notifications service..."
+                    - cp services/notifications/k8s/deployment.example.yaml services/notifications/k8s/deployment.yaml;
+                      sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_REPO_URL/notifications:latest|" services/notifications/k8s/deployment.yaml;
+                      sed -i "s|ICAL_URL_PLACEHOLDER|${ICALUrl}|" services/notifications/k8s/deployment.yaml;
+                      kubectl apply -f services/notifications/k8s/service.yaml;
+                      kubectl apply -f services/notifications/k8s/deployment.yaml;
+                      kubectl -n services rollout status deployment/notifications -w;
+                      kubectl -n services scale deployment notifications --replicas=0;
+                      kubectl -n services scale deployment notifications --replicas=1
+                    - echo "Install Fluent Bit for AWS Container Insights..."
+                    - export FluentBitHttpPort='2020';
+                      export FluentBitReadFromHead='Off';
+                      [[ $FluentBitReadFromHead = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On';
+                      [[ -z $FluentBitHttpPort ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On';
+                      curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml | sed 's/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/;s/{{http_server_toggle}}/"'$FluentBitHttpServer'"/;s/{{http_server_port}}/"'$FluentBitHttpPort'"/;s/{{read_from_head}}/"'$FluentBitReadFromHead'"/;s/{{read_from_tail}}/"'$FluentBitReadFromTail'"/' | kubectl apply -f -
+            - CommonRoleArn:
+                Fn::ImportValue: !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
 
       LogsConfig:
         CloudWatchLogs:
