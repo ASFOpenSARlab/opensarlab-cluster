@@ -733,8 +733,8 @@ Resources:
                       --set-file hub.extraFiles.crons_delete_snapshot.stringData=./configs/jupyterhub_config.d/crons/delete_snapshot.py
                       --set-file hub.extraFiles.crons_delete_volumes.stringData=./configs/jupyterhub_config.d/crons/delete_volumes.py
                       --set-file hub.extraFiles.hooks.stringData=./configs/jupyterhub_config.d/hooks.py
-                      --set-file hub.extraFiles.hooks_pv.data=./configs/jupyterhub_config.d/hooks/pv.yaml
-                      --set-file hub.extraFiles.hooks_pvc.data=./configs/jupyterhub_config.d/hooks/pvc.yaml
+                      --set-file hub.extraFiles.hooks_pv.stringData=./configs/jupyterhub_config.d/hooks/pv.yaml
+                      --set-file hub.extraFiles.hooks_pvc.stringData=./configs/jupyterhub_config.d/hooks/pvc.yaml
                       --set-file hub.extraFiles.hooks_volume_from_snapshot.stringData=./configs/jupyterhub_config.d/hooks/volume_from_snapshot.py
                       --set-file hub.extraFiles.hooks_volume_stopping_tags.stringData=./configs/jupyterhub_config.d/hooks/volume_stopping_tags.py
                       --set-file hub.extraFiles.profiles.stringData=./configs/jupyterhub_config.d/profiles.py
