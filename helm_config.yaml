@@ -73,10 +73,10 @@ hub:
         mountPath: /usr/local/etc/jupyterhub/custom/crons/delete_volumes.py
       hooks:
         mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/hooks.py
-      hooks-pv:
-        mountPath: /usr/local/etc/jupyterhub/custom/hooks/pv.yaml
-      hooks-pvc:
-        mountPath: /usr/local/etc/jupyterhub/custom/hooks/pvc.yaml
+#      hooks-pv:
+#        mountPath: /usr/local/etc/jupyterhub/custom/hooks/pv.yaml
+#      hooks-pvc:
+#        mountPath: /usr/local/etc/jupyterhub/custom/hooks/pvc.yaml
       profiles:
         mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/profiles.py
       services:
