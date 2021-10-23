@@ -757,6 +757,11 @@ Resources:
                     - echo "Install crons service...";
                       cp services/crons/k8s/deployment.example.yaml services/crons/k8s/deployment.yaml;
                       sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_REPO_URL/crons:latest|" services/crons/k8s/deployment.yaml;
+                      sed -i "s|REGION_NAME_PLACEHOLDER|${AWS::Region}|" services/crons/k8s/deployment.yaml;
+                      sed -i "s|COGNITO_NAME_PLACEHOLDER|${OAuthPoolName}|" services/crons/k8s/deployment.yaml;
+                      sed -i "s|CLUSTER_NAME_PLACEHOLDER|${Cluster}|" services/crons/k8s/deployment.yaml;
+                      sed -i "s|NAMESPACE_PLACEHOLDER|jupyter|" services/crons/k8s/deployment.yaml;
+                      sed -i "s|DAYS_VOL_INACTIVE_TILL_TERMINATION_PLACEHOLDER|5|" services/crons/k8s/deployment.yaml;
                       kubectl apply -f services/crons/k8s/service.yaml;
                       kubectl apply -f services/crons/k8s/deployment.yaml;
                       kubectl -n services rollout status deployment/crons -w;

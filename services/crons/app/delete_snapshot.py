@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
+import os
 import datetime
-import urllib
 import time
 import argparse
 
 import escapism
-import yaml
 import boto3
 from botocore.exceptions import ClientError
 
@@ -20,14 +19,10 @@ class DeleteSnapshot():
             self.cluster_name = cluster_name
             self.cognito_name = cognito_name
         else:
-            with open("/home/jovyan/crons/meta.yaml", 'r') as f:
-                data = f.read()
 
-            meta = yaml.safe_load(data)
-
-            session = boto3.Session(region_name=meta['region_name'])
-            self.cluster_name = meta['cluster_name']
-            self.cognito_name = meta['cognito_name']
+            session = boto3.Session(region_name=os.environ.get('OSL_REGION_NAME'))
+            self.cluster_name = os.environ.get('OSL_CLUSTER_NAME')
+            self.cognito_name = os.environ.get('OSL_COGNITO_NAME')
 
         print(f"Cluster name set to {self.cluster_name}")
         print(f"Cognito pool name set to {self.cognito_name}")

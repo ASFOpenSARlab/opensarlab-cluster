@@ -6,7 +6,6 @@ def delete_volumes():
     try:
         import os
         import datetime
-        import yaml
         import boto3
         from kubernetes import client as k8s_client
         from kubernetes import config as k8s_config
@@ -14,18 +13,12 @@ def delete_volumes():
 
         print("Checking for expired volumes...")
 
-        with open("/home/jovyan/crons/meta.yaml", 'r') as f:
-            data = f.read()
-
-        meta = yaml.safe_load(data)
-
-        namespace = meta['namespace']
-        days_inactive_till_termination = meta['days_vol_inactive_till_termination']
-        cluster_name = meta['cluster_name']
-        region_name = meta['region_name']
-
-        os.environ['KUBERNETES_SERVICE_PORT'] = meta['kubernetes_service_port']
-        os.environ['KUBERNETES_SERVICE_HOST'] = meta['kubernetes_service_host']
+        namespace = os.environ.get('OSL_NAMESPACE')
+        days_inactive_till_termination = os.environ.get('OSL_DAYS_VOL_INACTIVE_TILL_TERMINATION')
+        cluster_name = os.environ.get('OSL_CLUSTER_NAME')
+        region_name = os.environ.get('OSL_REGION_NAME')
+        #os.environ['KUBERNETES_SERVICE_PORT']
+        #os.environ['KUBERNETES_SERVICE_HOST']
 
         k8s_config.load_incluster_config()
         api = k8s_client.CoreV1Api()

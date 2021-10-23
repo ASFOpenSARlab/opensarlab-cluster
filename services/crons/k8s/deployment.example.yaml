@@ -18,7 +18,15 @@ spec:
       - name: crons
         image: IMAGE_PLACEHOLDER
         env:
-        - name: crons_namespace
-          value: jupyter
+        - name: OSL_REGION_NAME
+          value: REGION_NAME_PLACEHOLDER
+        - name: OSL_COGNITO_NAME
+          value: COGNITO_NAME_PLACEHOLDER
+        - name: OSL_CLUSTER_NAME
+          value: CLUSTER_NAME_PLACEHOLDER
+        - name: OSL_NAMESPACE
+          value: NAMESPACE_PLACEHOLDER
+        - name: OSL_DAYS_VOL_INACTIVE_TILL_TERMINATION
+          value: DAYS_VOL_INACTIVE_TILL_TERMINATION_PLACEHOLDER
         ports:
         - containerPort: 80
