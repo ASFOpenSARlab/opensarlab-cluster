@@ -8,7 +8,6 @@ RUN ln -fs /usr/share/zoneinfo/America/Alaska /etc/localtime && \
     pip3 install kubernetes \
         boto3 \
         awscli \
-        pyyaml \
         escapism
 
 COPY app/.jobber /home/jobberuser/.jobber
