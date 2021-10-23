@@ -32,7 +32,7 @@ try:
         f.write(meta)
 
     # Make file executable
-    os.chmod(f"{working_directory}/meta.yaml", 0o755)
+    os.chmod(f"{working_directory}/meta.yaml", 0o777)
 
     # Setup crontab for volume killer
     cron = CronTab(user='jovyan')
