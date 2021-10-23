@@ -722,9 +722,6 @@ Resources:
                         --set custom.COST_TAG_KEY=${CostTagKey}
                         --set hub.image.name=$IMAGE_REPO_URL/hub
                         --set hub.image.tag='${HubImageTag}'
-                        --set-file hub.extraFiles.crons.stringData=./helm_config.d/crons.py
-                        --set-file hub.extraFiles.crons-delete_snapshot.stringData=./helm_config.d/crons/delete_snapshot.py
-                        --set-file hub.extraFiles.crons-delete_volumes.stringData=./helm_config.d/crons/delete_volumes.py
                         --set-file hub.extraFiles.hooks.stringData=./helm_config.d/hooks.py
                         --set-file hub.extraFiles.hooks-pv.stringData=./helm_config.d/hooks/pv.yaml
                         --set-file hub.extraFiles.hooks-pvc.stringData=./helm_config.d/hooks/pvc.yaml
@@ -738,18 +735,18 @@ Resources:
                       curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.9/config/v1.9/aws-k8s-cni.yaml;
                       sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml;
                       kubectl apply -f aws-k8s-cni.yaml
-                    - echo "Install autoscaler..."
-                    - helm upgrade autoscaler autoscaler/cluster-autoscaler-chart
+                    - echo "Install autoscaler...";
+                      helm upgrade autoscaler autoscaler/cluster-autoscaler-chart
                         --install
                         --create-namespace
                         --namespace autoscaler
                         --atomic
                         --timeout=2m0s
                         --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
-                    - echo "Create services namespace"
-                    - kubectl apply -f services/namespace.yaml
-                    - echo "Install notifications service..."
-                    - cp services/notifications/k8s/deployment.example.yaml services/notifications/k8s/deployment.yaml;
+                    - echo "Create services namespace";
+                      kubectl apply -f services/namespace.yaml
+                    - echo "Install notifications service...";
+                      cp services/notifications/k8s/deployment.example.yaml services/notifications/k8s/deployment.yaml;
                       sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_REPO_URL/notifications:latest|" services/notifications/k8s/deployment.yaml;
                       sed -i "s|ICAL_URL_PLACEHOLDER|${ICALUrl}|" services/notifications/k8s/deployment.yaml;
                       kubectl apply -f services/notifications/k8s/service.yaml;
@@ -757,8 +754,16 @@ Resources:
                       kubectl -n services rollout status deployment/notifications -w;
                       kubectl -n services scale deployment notifications --replicas=0;
                       kubectl -n services scale deployment notifications --replicas=1
-                    - echo "Install Fluent Bit for AWS Container Insights..."
-                    - export FluentBitHttpPort='2020';
+                    - echo "Install crons service...";
+                      cp services/crons/k8s/deployment.example.yaml services/crons/k8s/deployment.yaml;
+                      sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_REPO_URL/crons:latest|" services/crons/k8s/deployment.yaml;
+                      kubectl apply -f services/crons/k8s/service.yaml;
+                      kubectl apply -f services/crons/k8s/deployment.yaml;
+                      kubectl -n services rollout status deployment/crons -w;
+                      kubectl -n services scale deployment crons --replicas=0;
+                      kubectl -n services scale deployment crons --replicas=1
+                    - echo "Install Fluent Bit for AWS Container Insights...";
+                      export FluentBitHttpPort='2020';
                       export FluentBitReadFromHead='Off';
                       [[ $FluentBitReadFromHead = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On';
                       [[ -z $FluentBitHttpPort ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On';

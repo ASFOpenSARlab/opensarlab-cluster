@@ -65,14 +65,6 @@ hub:
     tag: HUB_IMAGE_TAG_HERE
 
   extraFiles:
-    crons:
-      mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/crons.py
-    crons-delete_snapshot:
-      mountPath: /home/jovyan/crons/delete_snapshots.py
-      mode: 0777
-    crons-delete_volumes:
-      mountPath: /home/jovyan/crons/delete_volumes.py
-      mode: 0777
     hooks:
       mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/hooks.py
     hooks-pv:

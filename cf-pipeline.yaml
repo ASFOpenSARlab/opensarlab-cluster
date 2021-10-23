@@ -149,6 +149,14 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
+  CronsRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ContainerNamespace}/crons"
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
   PrebuildCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -214,6 +222,11 @@ Resources:
                   cd services/notifications;
                   bash build.sh;
                   cd $PrevWD
+                - echo "Build crons image...";
+                  PrevWD=$(pwd); 
+                  cd services/crons;
+                  bash build.sh;
+                  cd $PrevWD
           artifacts:
             files:
               - '**/*'
@@ -271,6 +284,11 @@ Resources:
                     {
                       "value": "true",
                       "name": "NOTIFICATIONS_FORCE_BUILD",
+                      "type": "PLAINTEXT"
+                    },
+                    {
+                      "value": "true",
+                      "name": "CRONS_FORCE_BUILD",
                       "type": "PLAINTEXT"
                     },
                     {

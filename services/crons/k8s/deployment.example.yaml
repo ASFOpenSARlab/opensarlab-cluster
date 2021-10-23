@@ -1,0 +1,24 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crons
+  namespace: services
+spec:
+  selector:
+    matchLabels:
+      run: crons
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: crons
+    spec:
+      containers:
+      - name: crons
+        image: IMAGE_PLACEHOLDER
+        env:
+        - name: crons_namespace
+          value: jupyter
+        ports:
+        - containerPort: 80

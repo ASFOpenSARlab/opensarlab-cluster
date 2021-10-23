@@ -1,0 +1,20 @@
+version: 1.4
+
+prefs:
+  logPath: /home/jobberuser/jobber.log
+  runLog:
+    type: file
+    path: /home/jobberuser/runlog
+    maxFileLen: 100m
+    maxHistories: 2
+
+jobs:
+  DeleteVolumes:
+    cmd: python3 /home/jobberuser/delete_volumes.py
+    time: 0 0 12 * * *  # 12 UTC, 3am AKST
+    onError: Backoff
+
+  DeleteSnapshot:
+    cmd: python3 /home/jobberuser/delete_snapshot.py
+    time: 0 0 13 * * *  # 13 UTC, 4am AKST
+    onError: Backoff
