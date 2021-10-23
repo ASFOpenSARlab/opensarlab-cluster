@@ -14,7 +14,7 @@ def delete_volumes():
         print("Checking for expired volumes...")
 
         namespace = os.environ.get('OSL_NAMESPACE')
-        days_inactive_till_termination = os.environ.get('OSL_DAYS_VOL_INACTIVE_TILL_TERMINATION')
+        days_inactive_till_termination = int(os.environ.get('OSL_DAYS_VOL_INACTIVE_TILL_TERMINATION'))
         cluster_name = os.environ.get('OSL_CLUSTER_NAME')
         region_name = os.environ.get('OSL_REGION_NAME')
         #os.environ['KUBERNETES_SERVICE_PORT']
