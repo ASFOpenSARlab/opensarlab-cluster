@@ -41,18 +41,6 @@ COPY /usr/local/lib/python3.8/dist-packages/jupyterhub/groups.py /usr/local/lib/
 COPY /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/groups.py /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/groups.py
 COPY /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/__init__.py /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/__init__.py
 
-# Copy volume handling
-RUN mkdir -p /usr/local/etc/jupyterhub/custom
-COPY /usr/local/etc/jupyterhub/custom/pv.yaml /usr/local/etc/jupyterhub/custom/pv.yaml
-COPY /usr/local/etc/jupyterhub/custom/pvc.yaml /usr/local/etc/jupyterhub/custom/pvc.yaml
-COPY /usr/local/etc/jupyterhub/custom/volume_stopping_tags.py /usr/local/etc/jupyterhub/custom/volume_stopping_tags.py
-COPY /usr/local/etc/jupyterhub/custom/volume_from_snapshot.py /usr/local/etc/jupyterhub/custom/volume_from_snapshot.py
-COPY /usr/local/etc/jupyterhub/custom/delete_volumes.py /usr/local/etc/jupyterhub/custom/delete_volumes.py
-COPY /usr/local/etc/jupyterhub/custom/delete_snapshot.py /usr/local/etc/jupyterhub/custom/delete_snapshot.py
-
-RUN chown -R 1000:0 /usr/local/etc/jupyterhub/custom/
-ENV PYTHONPATH "${PYTHONPATH}:/usr/local/etc/jupyterhub/custom/"
-
 # Allow joyvan user some sudo privileges
 #RUN echo 'jovyan  ALL=NOPASSWD: /usr/sbin/service cron start' >> /etc/sudoers
 RUN echo 'jovyan ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers

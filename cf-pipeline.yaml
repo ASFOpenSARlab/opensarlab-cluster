@@ -211,7 +211,7 @@ Resources:
                   cd $PrevWD
                 - echo "Build notification image...";
                   PrevWD=$(pwd); 
-                  cd notifications;
+                  cd services/notifications;
                   bash build.sh;
                   cd $PrevWD
           artifacts:
