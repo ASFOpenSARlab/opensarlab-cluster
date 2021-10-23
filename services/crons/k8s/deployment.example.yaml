@@ -28,5 +28,3 @@ spec:
           value: NAMESPACE_PLACEHOLDER
         - name: OSL_DAYS_VOL_INACTIVE_TILL_TERMINATION
           value: DAYS_VOL_INACTIVE_TILL_TERMINATION_PLACEHOLDER
-        ports:
-        - containerPort: 80

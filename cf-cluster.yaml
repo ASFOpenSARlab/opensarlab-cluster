@@ -762,7 +762,6 @@ Resources:
                       sed -i "s|CLUSTER_NAME_PLACEHOLDER|${Cluster}|" services/crons/k8s/deployment.yaml;
                       sed -i "s|NAMESPACE_PLACEHOLDER|jupyter|" services/crons/k8s/deployment.yaml;
                       sed -i "s|DAYS_VOL_INACTIVE_TILL_TERMINATION_PLACEHOLDER|5|" services/crons/k8s/deployment.yaml;
-                      kubectl apply -f services/crons/k8s/service.yaml;
                       kubectl apply -f services/crons/k8s/deployment.yaml;
                       kubectl -n services rollout status deployment/crons -w;
                       kubectl -n services scale deployment crons --replicas=0;
