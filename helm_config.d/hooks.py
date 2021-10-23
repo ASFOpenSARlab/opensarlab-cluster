@@ -168,7 +168,7 @@ def volume_from_snapshot(spawner):
             labels = spawn_pvc.metadata.labels
 
             # Get PVC manifest
-            with open("/usr/local/etc/jupyterhub/custom/hooks/pvc.yaml", mode='r') as f:
+            with open("/home/jovyan/hooks/pvc.yaml", mode='r') as f:
                 pvc_yaml = f.read().format(
                     annotations=annotations,
                     cluster_name=cluster_name,
@@ -182,7 +182,7 @@ def volume_from_snapshot(spawner):
             pvc_manifest = yaml.safe_load(pvc_yaml)
 
             # Get PV manifest
-            with open("/usr/local/etc/jupyterhub/custom/hooks/pv.yaml", mode='r') as f:
+            with open("/home/jovyan/hooks/pv.yaml", mode='r') as f:
                 pv_yaml = f.read()
 
             annotations = pvc_manifest['metadata']['annotations']
