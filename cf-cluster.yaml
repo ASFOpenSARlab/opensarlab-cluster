@@ -708,7 +708,10 @@ Resources:
                     - echo "Associate IAM and OIDC for service accounts..."
                     - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
                     - echo "Install JupyterHub cluster..."
-                    - export IMAGE_REPO_URL='${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}' && echo $IMAGE_REPO_URL &&
+                    - export IMAGE_REPO_URL='${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}' &&
+                      echo $IMAGE_REPO_URL &&
+                      base64 ./helm_config.d/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png > ASFLogo-Blue2.png.b64 &&
+                      base64 ./helm_config.d/usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png > alaska_satellite_facility_1000.png.b64 &&
                       helm upgrade jupyter jupyterhub/jupyterhub
                         --install
                         --create-namespace
@@ -734,8 +737,8 @@ Resources:
                         --set-file hub.extraFiles.lib-groups.stringData='./helm_config.d/usr/local/lib/jupyterhub/groups.py'
                         --set-file hub.extraFiles.lib-handlers-groups.stringData='./helm_config.d/usr/local/lib/jupyterhub/handlers/groups.py'
                         --set-file hub.extraFiles.lib-handlers-init.stringData='./helm_config.d/usr/local/lib/jupyterhub/handlers/__init__.py'
-                        --set-file hub.extraFiles.share-images-alaska_satellite_facility_1000.stringData='./helm_config.d/usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png'
-                        --set-file hub.extraFiles.share-images-blue2.stringData='./helm_config.d/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png'
+                        --set-file hub.extraFiles.share-images-alaska_satellite_facility_1000.binaryData='./alaska_satellite_facility_1000.png.b64'
+                        --set-file hub.extraFiles.share-images-blue2.binaryData='./ASFLogo-Blue2.png.b64'
                         --set-file hub.extraFiles.share-nasa_logo.stringData='./helm_config.d/usr/local/share/jupyterhub/static/images/NASA_logo.svg'
                         --set-file hub.extraFiles.share-js-groups.stringData='./helm_config.d/usr/local/share/jupyterhub/static/js/groups.js'
                         --set-file hub.extraFiles.share-templates-groups.stringData='./helm_config.d/usr/local/share/jupyterhub/templates/groups.html'
