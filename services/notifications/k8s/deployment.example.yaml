@@ -14,6 +14,8 @@ spec:
       labels:
         run: notifications
     spec:
+      nodeSelector:
+        hub.jupyter.org/node-purpose: core
       containers:
       - name: notifications
         image: IMAGE_PLACEHOLDER

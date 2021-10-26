@@ -14,6 +14,8 @@ spec:
       labels:
         run: crons
     spec:
+      nodeSelector:
+        hub.jupyter.org/node-purpose: core
       containers:
       - name: crons
         image: IMAGE_PLACEHOLDER

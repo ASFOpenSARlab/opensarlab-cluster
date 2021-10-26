@@ -10,11 +10,17 @@ prefs:
 
 jobs:
   DeleteVolumes:
-    cmd: python3 /home/jobberuser/delete_volumes.py
+    cmd: |
+      echo "\n******** " $(date) >> /home/jobberuser/jobber.log
+      python3 /home/jobberuser/delete_volumes.py >> /home/jobberuser/jobber.log
+      echo "******** " $(date) "\n" >> /home/jobberuser/jobber.log
     time: 0 0 12 * * *  # 12 UTC, 3am AKST
     onError: Backoff
 
   DeleteSnapshot:
-    cmd: python3 /home/jobberuser/delete_snapshot.py
+    cmd: |
+      echo "\n******** " $(date) >> /home/jobberuser/jobber.log
+      python3 /home/jobberuser/delete_snapshot.py >> /home/jobberuser/jobber.log
+      echo "******** " $(date) "\n" >> /home/jobberuser/jobber.log
     time: 0 0 13 * * *  # 13 UTC, 4am AKST
     onError: Backoff
