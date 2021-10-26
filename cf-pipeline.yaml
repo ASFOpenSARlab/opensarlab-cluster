@@ -183,13 +183,13 @@ Resources:
                 python: 3.8
             pre_build:
               commands:
-                - echo "Logging into AWS ECR..."
-                - $(aws ecr get-login --no-include-email --region ${AWS::Region})
-                - echo "Logging into Docker Hub user..."
-                - dh_creds=$(aws secretsmanager get-secret-value --secret-id dockerhub/creds --query 'SecretString' | sed 's/\"//g' )
-                - dh_username=$(echo $dh_creds | cut -f1 -d' ')
-                - echo $dh_creds | cut -f2 -d' ' > dh.pass
-                - cat dh.pass | docker login -u $dh_username --password-stdin
+                - echo "Logging into AWS ECR...";
+                  $(aws ecr get-login --no-include-email --region ${AWS::Region})
+                - echo "Logging into Docker Hub user...";
+                  dh_creds=$(aws secretsmanager get-secret-value --secret-id dockerhub/creds --query 'SecretString' | sed 's/\"//g' );
+                  dh_username=$(echo $dh_creds | cut -f1 -d' ');
+                  echo $dh_creds | cut -f2 -d' ' > dh.pass;
+                  cat dh.pass | docker login -u $dh_username --password-stdin;
                 - echo "End prebuild"
             build:
               commands:
