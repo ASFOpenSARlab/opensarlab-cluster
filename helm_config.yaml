@@ -76,25 +76,25 @@ hub:
       mountPath: /usr/local/lib/python3.8/dist-packages/generic_with_logout.py
     lib-groups:
       mountPath: /usr/local/lib/python3.8/dist-packages/jupyterhub/groups.py
-    lib-handlers_groups:
+    lib-handlers-groups:
       mountPath: /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/groups.py
-    lib-handlers_init:
+    lib-handlers-init:
       mountPath: /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/__init__.py
-    share-images_alaska_satellite_facility_1000:
+    share-images-alaska_satellite_facility_1000:
       mountPath: /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
-    share-images_blue2:
+    share-images-blue2:
       mountPath: /usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png
     share-nasa_logo:
       mountPath: /usr/local/share/jupyterhub/static/images/NASA_logo.svg
-    share-js_group:
+    share-js-group:
       mountPath: /usr/local/share/jupyterhub/static/js/groups.js
-    share-templates_groups:
+    share-templates-groups:
       mountPath: /usr/local/share/jupyterhub/templates/groups.html
-    share-templates_login:
+    share-templates-login:
       mountPath: /usr/local/share/jupyterhub/templates/login.html
-    share-templates_pending:
+    share-templates-pending:
       mountPath: /usr/local/share/jupyterhub/templates/pending.html
-    share-templates_custom_page:
+    share-templates-custom_page:
       mountPath: /usr/local/share/jupyterhub/templates/custom/page.html
 
   extraConfig:

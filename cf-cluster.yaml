@@ -717,31 +717,31 @@ Resources:
                         --values helm_config.yaml
                         --timeout=6m0s
                         --atomic
-                        --set hub.config.Authenticator.admin_users[0]=${AdminUserName}
+                        --set hub.config.Authenticator.admin_users[0]='${AdminUserName}'
                         --set proxy.service.nodePorts.http='${NodeProxyPort}'
                         --set custom.IMAGE_REPO_URL=$IMAGE_REPO_URL
                         --set custom.OAUTH_JUPYTER_URL=$( [ -n '${DeploymentURL}' ] && echo '${DeploymentURL}' || echo 'https://${LoadBalancer.DNSName}' )
-                        --set custom.OAUTH_DNS_NAME=${OAuthDNSName}
-                        --set custom.CLUSTER_NAME=${Cluster},custom.OAUTH_POOL_NAME=${OAuthPoolName},custom.AZ_NAME=${AWS::Region}d
-                        --set custom.COST_TAG_VALUE=${CostTagValue}
-                        --set custom.COST_TAG_KEY=${CostTagKey}
-                        --set-file hub.extraFiles.hooks.stringData=./helm_config.d/hooks.py
-                        --set-file hub.extraFiles.hooks-pv.stringData=./helm_config.d/hooks/pv.yaml
-                        --set-file hub.extraFiles.hooks-pvc.stringData=./helm_config.d/hooks/pvc.yaml
-                        --set-file hub.extraFiles.profiles.stringData=./helm_config.d/profiles.py
-                        --set-file hub.extraFiles.services.stringData=./helm_config.d/services.py
-                        --set-file hub.extraFiles.lib-logout.stringData=./helm_config.d/usr/local/lib/generic_with_logout.py
-                        --set-file hub.extraFiles.lib-groups.stringData=./helm_config.d/usr/local/lib/jupyterhub/groups.py
-                        --set-file hub.extraFiles.lib-handlers_groups.stringData=./helm_config.d/usr/local/lib/jupyterhub/handlers/groups.py
-                        --set-file hub.extraFiles.lib-handlers_init.stringData=./helm_config.d/usr/local/lib/jupyterhub/handlers/__init__.py
-                        --set-file hub.extraFiles.share-images_alaska_satellite_facility_1000.stringData=./helm_config.d/usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
-                        --set-file hub.extraFiles.share-images_blue2.stringData=./helm_config.d/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png
-                        --set-file hub.extraFiles.share-nasa_logo.stringData=./helm_config.d/usr/local/share/jupyterhub/static/images/NASA_logo.svg
-                        --set-file hub.extraFiles.share-js_groups.stringData=./helm_config.d/usr/local/share/jupyterhub/static/js/groups.js
-                        --set-file hub.extraFiles.share-templates_groups.stringData=./helm_config.d/usr/local/share/jupyterhub/templates/groups.html
-                        --set-file hub.extraFiles.share-templates_login.stringData=./helm_config.d/usr/local/share/jupyterhub/templates/login.html
-                        --set-file hub.extraFiles.share-templates_pending.stringData=./helm_config.d/usr/local/share/jupyterhub/templates/pending.html
-                        --set-file hub.extraFiles.share-templates_custom_page.stringData=./helm_config.d/usr/local/share/jupyterhub/templates/custom/page.html
+                        --set custom.OAUTH_DNS_NAME='${OAuthDNSName}'
+                        --set custom.CLUSTER_NAME='${Cluster}',custom.OAUTH_POOL_NAME='${OAuthPoolName}',custom.AZ_NAME='${AWS::Region}d'
+                        --set custom.COST_TAG_VALUE='${CostTagValue}'
+                        --set custom.COST_TAG_KEY='${CostTagKey}'
+                        --set-file hub.extraFiles.hooks.stringData='./helm_config.d/hooks.py'
+                        --set-file hub.extraFiles.hooks-pv.stringData='./helm_config.d/hooks/pv.yaml'
+                        --set-file hub.extraFiles.hooks-pvc.stringData='./helm_config.d/hooks/pvc.yaml'
+                        --set-file hub.extraFiles.profiles.stringData='./helm_config.d/profiles.py'
+                        --set-file hub.extraFiles.services.stringData='./helm_config.d/services.py'
+                        --set-file hub.extraFiles.lib-logout.stringData='./helm_config.d/usr/local/lib/generic_with_logout.py'
+                        --set-file hub.extraFiles.lib-groups.stringData='./helm_config.d/usr/local/lib/jupyterhub/groups.py'
+                        --set-file hub.extraFiles.lib-handlers-groups.stringData='./helm_config.d/usr/local/lib/jupyterhub/handlers/groups.py'
+                        --set-file hub.extraFiles.lib-handlers-init.stringData='./helm_config.d/usr/local/lib/jupyterhub/handlers/__init__.py'
+                        --set-file hub.extraFiles.share-images-alaska_satellite_facility_1000.stringData='./helm_config.d/usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png'
+                        --set-file hub.extraFiles.share-images-blue2.stringData='./helm_config.d/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png'
+                        --set-file hub.extraFiles.share-nasa_logo.stringData='./helm_config.d/usr/local/share/jupyterhub/static/images/NASA_logo.svg'
+                        --set-file hub.extraFiles.share-js-groups.stringData='./helm_config.d/usr/local/share/jupyterhub/static/js/groups.js'
+                        --set-file hub.extraFiles.share-templates-groups.stringData='./helm_config.d/usr/local/share/jupyterhub/templates/groups.html'
+                        --set-file hub.extraFiles.share-templates-login.stringData='./helm_config.d/usr/local/share/jupyterhub/templates/login.html'
+                        --set-file hub.extraFiles.share-templates-pending.stringData='./helm_config.d/usr/local/share/jupyterhub/templates/pending.html'
+                        --set-file hub.extraFiles.share-templates-custom_page.stringData='./helm_config.d/usr/local/share/jupyterhub/templates/custom/page.html'
                     - kubectl -n jupyter rollout status -w deployment.apps/hub
                     - echo "Associate volume provisioner with service account...";
                       kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
