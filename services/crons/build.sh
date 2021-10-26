@@ -16,4 +16,6 @@ if [ "$CRONS_FORCE_BUILD" = 'true' ]; then
     # Push to registry
     docker push $DOCKER_REGISTRY/crons:$BUILD_TAG
     docker push $DOCKER_REGISTRY/crons:latest
+
+    echo -n ${BUILD_TAG:-latest} > get_crons_image_build.tmp
 fi

@@ -63,6 +63,16 @@ Parameters:
     Description: "Tag of the hub image."
     Default: "latest"
 
+  NotificationsImageTag:
+    Type: String
+    Description: "Tag of the notifications image."
+    Default: "latest"
+
+  CronsImageTag:
+    Type: String
+    Description: "Tag of the crons image."
+    Default: "latest"
+
   # The following values require defaults.
   LoadBalancerCidrBlock:
     Description: The range of allowed IPv4 addresses for the load balancer. This only firewalls the load balancer URL and not the cluster in general.
@@ -747,7 +757,7 @@ Resources:
                       kubectl apply -f services/namespace.yaml
                     - echo "Install notifications service...";
                       cp services/notifications/k8s/deployment.example.yaml services/notifications/k8s/deployment.yaml;
-                      sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_REPO_URL/notifications:latest|" services/notifications/k8s/deployment.yaml;
+                      sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_REPO_URL/notifications:${NotificationsImageTag}|" services/notifications/k8s/deployment.yaml;
                       sed -i "s|ICAL_URL_PLACEHOLDER|${ICALUrl}|" services/notifications/k8s/deployment.yaml;
                       kubectl apply -f services/notifications/k8s/service.yaml;
                       kubectl apply -f services/notifications/k8s/deployment.yaml;
@@ -756,7 +766,7 @@ Resources:
                       kubectl -n services scale deployment notifications --replicas=1
                     - echo "Install crons service...";
                       cp services/crons/k8s/deployment.example.yaml services/crons/k8s/deployment.yaml;
-                      sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_REPO_URL/crons:latest|" services/crons/k8s/deployment.yaml;
+                      sed -i "s|IMAGE_PLACEHOLDER|$IMAGE_REPO_URL/crons:${CronsImageTag}|" services/crons/k8s/deployment.yaml;
                       sed -i "s|REGION_NAME_PLACEHOLDER|${AWS::Region}|" services/crons/k8s/deployment.yaml;
                       sed -i "s|COGNITO_NAME_PLACEHOLDER|${OAuthPoolName}|" services/crons/k8s/deployment.yaml;
                       sed -i "s|CLUSTER_NAME_PLACEHOLDER|${Cluster}|" services/crons/k8s/deployment.yaml;
