@@ -741,7 +741,7 @@ Resources:
                         --set-file hub.extraFiles.share-templates-groups.stringData='./helm_config.d/usr/local/share/jupyterhub/templates/groups.html'
                         --set-file hub.extraFiles.share-templates-login.stringData='./helm_config.d/usr/local/share/jupyterhub/templates/login.html'
                         --set-file hub.extraFiles.share-templates-pending.stringData='./helm_config.d/usr/local/share/jupyterhub/templates/pending.html'
-                        --set-file hub.extraFiles.share-templates-custom_page.stringData='./helm_config.d/usr/local/share/jupyterhub/templates/custom/page.html'
+                        --set-file hub.extraFiles.share-templates-custom-page.stringData='./helm_config.d/usr/local/share/jupyterhub/templates/custom/page.html'
                     - kubectl -n jupyter rollout status -w deployment.apps/hub
                     - echo "Associate volume provisioner with service account...";
                       kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -

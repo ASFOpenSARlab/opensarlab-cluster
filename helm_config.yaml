@@ -94,7 +94,7 @@ hub:
       mountPath: /usr/local/share/jupyterhub/templates/login.html
     share-templates-pending:
       mountPath: /usr/local/share/jupyterhub/templates/pending.html
-    share-templates-custom_page:
+    share-templates-custom-page:
       mountPath: /usr/local/share/jupyterhub/templates/custom/page.html
 
   extraConfig:
