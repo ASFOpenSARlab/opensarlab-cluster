@@ -86,7 +86,7 @@ hub:
       mountPath: /usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png
     share-nasa_logo:
       mountPath: /usr/local/share/jupyterhub/static/images/NASA_logo.svg
-    share-js-group:
+    share-js-groups:
       mountPath: /usr/local/share/jupyterhub/static/js/groups.js
     share-templates-groups:
       mountPath: /usr/local/share/jupyterhub/templates/groups.html
