@@ -115,5 +115,5 @@ hub:
       except Exception as e:
           print(e)
 
-    custom_templates.py: |
-        c.JupyterHub.template_paths = ["/usr/local/share/jupyterhub/templates/custom/"]
+    customTemplates.py: |
+      c.JupyterHub.template_paths = ["/usr/local/share/jupyterhub/templates/custom/"]

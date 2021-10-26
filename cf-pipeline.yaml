@@ -1,40 +1,40 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: "2010-09-09"
 
 Parameters:
-# The following parameters can be entered in AWS when creating the cluster stack. Adding them here is optional.
+  # The following parameters can be entered in AWS when creating the cluster stack. Adding them here is optional.
   AdminUserName:
     Description: "User name of main admin. This name is also whitelisted. Other admins are granted permsissions via the Jupyter Hub admin console."
     Type: String
-    Default: '' # create a Cognito user with the AdminUserName in the AWS Cognito console
+    Default: "" # create a Cognito user with the AdminUserName in the AWS Cognito console
 
   CertificateArn:
     Type: String
     Description: "Arn associated with the CA certificate you stored in AWS Certificate Manager"
-    Default: '' # arn:aws:acm:<region>:<account_#>:certificate/<certificate_id>
+    Default: "" # arn:aws:acm:<region>:<account_#>:certificate/<certificate_id>
 
   CodeCommitRepoName:
     Type: String
     Description: "Name of the code commit repo holding your <deployment_name>-cluster code"
-    Default: ''
+    Default: ""
 
   CodeCommitBranchName:
     Type: String
     Description: "Name of the branch holding this deployment's cluster code"
-    Default: ''
+    Default: ""
 
   ContainerNamespace: # this namespaces your your ECR repos to distinguish containers belonging to different deployments
     Type: String
-    Default: '' # '<deployment_name>'
+    Default: "" # '<deployment_name>'
 
   OAuthPoolName:
     Description: AWS Cognito User Pool name
     Type: String
-    Default: '' # '<deployment_name>-auth'
+    Default: "" # '<deployment_name>-auth'
 
   DeploymentURL:
     Description: "Used for Cognito authentication. If not using a custom URL, use the load balancer URL, found in the 'Outputs' tab of the cloudformation stack."
     Type: String
-    Default: '' # load balancer URL found in the "Outputs" tab of <deployment_name>-cluster cloudformation stack
+    Default: "" # load balancer URL found in the "Outputs" tab of <deployment_name>-cluster cloudformation stack
 
   CostTagKey:
     Type: String
@@ -49,10 +49,9 @@ Parameters:
   ICALUrl:
     Type: String
     Description: "The iCal formatted URL of the Google Calendar used for notifications."
-    Default: '' # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cf-cluster.yaml and notifications/dock
+    Default: "" # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cf-cluster.yaml and notifications/dock
 
 Outputs:
-
   CommonRoleArn:
     Description: "Common role arn"
     Value: !GetAtt CommonRole.Arn
@@ -60,7 +59,6 @@ Outputs:
       Name: !Sub ${AWS::Region}-${AWS::StackName}-cluster-${AWS::AccountId}-common-role-arn
 
 Resources:
-
   CommonRole:
     Type: AWS::IAM::Role
     Properties:
@@ -120,7 +118,7 @@ Resources:
                   - "eks:*"
                   - "codepipeline:*"
                   - "sts:AssumeRole"
-                Resource: '*'
+                Resource: "*"
 
   S3Bucket:
     Type: AWS::S3::Bucket
@@ -228,8 +226,8 @@ Resources:
 
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
-    Properties: 
-      ArtifactStore: 
+    Properties:
+      ArtifactStore:
         Type: S3
         Location: !Sub codepipeline-${AWS::Region}-${AWS::StackName}
       Name: !Sub ${AWS::StackName}-Pipeline
@@ -302,7 +300,7 @@ Resources:
                 StackName: !Sub ${AWS::StackName}-cluster
                 TemplatePath: PreBuildArtifact::cf-cluster.yaml
                 ParameterOverrides: !Sub
-                  - | 
+                  - |
                     {
                       "AdminUserName": "${AdminUserName}",
                       "ContainerNamespace": "${ContainerNamespace}",
@@ -341,6 +339,6 @@ Resources:
               InputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
-      Tags: 
+      Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
