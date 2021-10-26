@@ -58,6 +58,9 @@ hub:
     Authenticator:
       admin_users:
         - ADMIN_USER
+  image:
+    name: jupyterhub/k8s-hub
+    tag: 1.1.3
 
   extraFiles:
     hooks:
