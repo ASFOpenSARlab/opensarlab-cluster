@@ -743,7 +743,6 @@ Resources:
                         --set-file hub.extraFiles.share-templates_pending.stringData=./helm_config.d/usr/local/share/jupyterhub/templates/pending.html
                         --set-file hub.extraFiles.share-templates_custom_page.stringData=./helm_config.d/usr/local/share/jupyterhub/templates/custom/page.html
                     - kubectl -n jupyter rollout status -w deployment.apps/hub
-                    - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true
                     - echo "Associate volume provisioner with service account...";
                       kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
                     - echo "Apply CNI. This must be updated on every upgrade...";
