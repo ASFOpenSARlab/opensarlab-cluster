@@ -16,6 +16,6 @@ COPY app/delete_volumes.py /home/jobberuser/delete_volumes.py
 COPY app/meta.yaml.example /home/jobberuser/meta.yaml.example
 
 RUN chown -R jobberuser:jobberuser /home/jobberuser && \
-    chmod 444 /home/jobberuser/.jobber
+    chmod 755 /home/jobberuser/.jobber
 
 USER jobberuser

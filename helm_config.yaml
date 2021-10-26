@@ -77,6 +77,30 @@ hub:
       mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/profiles.py
     services:
       mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/services.py
+    lib-logout:
+      mountPath: /usr/local/lib/python3.8/dist-packages/generic_with_logout.py
+    lib-groups:
+      mountPath: /usr/local/lib/python3.8/dist-packages/jupyterhub/groups.py
+    lib-handlers_groups:
+      mountPath: /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/groups.py
+    lib-handlers_init:
+      mountPath: /usr/local/lib/python3.8/dist-packages/jupyterhub/handlers/__init__.py
+    share-images_alaska_satellite_facility_1000:
+      mountPath: /usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
+    share-images_blue2:
+      mountPath: /usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png
+    share-nasa_logo:
+      mountPath: /usr/local/share/jupyterhub/static/images/NASA_logo.svg
+    share-js_group:
+      mountPath: /usr/local/share/jupyterhub/static/js/groups.js
+    share-templates_groups:
+      mountPath: /usr/local/share/jupyterhub/templates/groups.html
+    share-templates_login:
+      mountPath: /usr/local/share/jupyterhub/templates/login.html
+    share-templates_pending:
+      mountPath: /usr/local/share/jupyterhub/templates/pending.html
+    share-templates_custom_page:
+      mountPath: /usr/local/share/jupyterhub/templates/custom/page.html
 
   extraConfig:
     auth.py: |
@@ -95,3 +119,6 @@ hub:
 
       except Exception as e:
           print(e)
+
+    custom_templates.py: |
+        c.JupyterHub.template_paths = ["/usr/local/share/jupyterhub/templates/custom/"]

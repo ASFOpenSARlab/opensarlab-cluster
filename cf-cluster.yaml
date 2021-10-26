@@ -737,6 +737,18 @@ Resources:
                         --set-file hub.extraFiles.hooks-pvc.stringData=./helm_config.d/hooks/pvc.yaml
                         --set-file hub.extraFiles.profiles.stringData=./helm_config.d/profiles.py
                         --set-file hub.extraFiles.services.stringData=./helm_config.d/services.py
+                        --set-file hub.extraFiles.lib-logout.stringData=./helm_config.d/usr/local/lib/generic_with_logout.py
+                        --set-file hub.extraFiles.lib-groups.stringData=./helm_config.d/usr/local/lib/jupyterhub/groups.py
+                        --set-file hub.extraFiles.lib-handlers_groups.stringData=./helm_config.d/usr/local/lib/jupyterhub/handlers/groups.py
+                        --set-file hub.extraFiles.lib-handlers_init.stringData=./helm_config.d/usr/local/lib/jupyterhub/handlers/__init__.py
+                        --set-file hub.extraFiles.share-images_alaska_satellite_facility_1000.stringData=./helm_config.d/usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png
+                        --set-file hub.extraFiles.share-images_blue2.stringData=./helm_config.d/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png
+                        --set-file hub.extraFiles.share-nasa_logo.stringData=./helm_config.d/usr/local/share/jupyterhub/static/images/NASA_logo.svg
+                        --set-file hub.extraFiles.share-js_groups.stringData=./helm_config.d/usr/local/share/jupyterhub/static/js/groups.js
+                        --set-file hub.extraFiles.share-templates_groups.stringData=./helm_config.d/usr/local/share/jupyterhub/templates/groups.html
+                        --set-file hub.extraFiles.share-templates_login.stringData=./helm_config.d/usr/local/share/jupyterhub/templates/login.html
+                        --set-file hub.extraFiles.share-templates_pending.stringData=./helm_config.d/usr/local/share/jupyterhub/templates/pending.html
+                        --set-file hub.extraFiles.share-templates_custom_page.stringData=./helm_config.d/usr/local/share/jupyterhub/templates/custom/page.html
                     - kubectl -n jupyter rollout status -w deployment.apps/hub
                     - kubectl --logtostderr=true -n jupyter patch deployment hub --patch "$(cat configs/deploy-patch.yaml)" || true
                     - echo "Associate volume provisioner with service account...";
