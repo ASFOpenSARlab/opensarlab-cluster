@@ -133,14 +133,6 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  HubRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Sub "${ContainerNamespace}/hub"
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
   NotificationsRepository:
     Type: AWS::ECR::Repository
     Properties:
@@ -183,7 +175,6 @@ Resources:
               - VpcId
               - ActiveSubnets
               - Subnets
-              - HubImageTag
               - NotificationsImageTag
               - CronsImageTag
 
@@ -211,14 +202,6 @@ Resources:
                   export VpcId="${!VPCIDS_SUBNETS[0]}";
                   export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
                   export Subnets="${!VPCIDS_SUBNETS[2]}";
-                - echo "Build hub image...";
-                  PrevWD=$(pwd); 
-                  cd hub;
-                  bash build.sh;
-                  export HubImageBuild=( $(cat get_hub_image_build.tmp) );
-                  echo ${!HubImageBuild[@]};
-                  export HubImageTag="${!HubImageBuild[0]}";
-                  cd $PrevWD
                 - echo "Build notification image...";
                   PrevWD=$(pwd); 
                   cd services/notifications;
@@ -286,11 +269,6 @@ Resources:
                   [
                     {
                       "value": "true",
-                      "name": "HUB_FORCE_BUILD",
-                      "type": "PLAINTEXT"
-                    },
-                    {
-                      "value": "true",
                       "name": "NOTIFICATIONS_FORCE_BUILD",
                       "type": "PLAINTEXT"
                     },
@@ -338,14 +316,12 @@ Resources:
                       "ActiveSubnets": "${myActiveSubnets}",
                       "Subnets": "${mySubnets}",
                       "ICALUrl": "${ICALUrl}",
-                      "HubImageTag": "${myHubImageTag}",
                       "NotificationsImageTag": "${myNotificationsImageTag}",
                       "CronsImageTag": "${myCronsImageTag}"
                     }
                   - myVpcId: "#{prebuild.VpcId}"
                     myActiveSubnets: "#{prebuild.ActiveSubnets}"
                     mySubnets: "#{prebuild.Subnets}"
-                    myHubImageTag: "#{prebuild.HubImageTag}"
                     myNotificationsImageTag: "#{prebuild.NotificationsImageTag}"
                     myCronsImageTag: "#{prebuild.CronsImageTag}"
               InputArtifacts:

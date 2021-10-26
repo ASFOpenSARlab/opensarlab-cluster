@@ -58,11 +58,6 @@ Parameters:
     Description: The subnets actually used by resources in the cluster. Typically only one (e.g., subnet for AZ -d).
     Type: List<AWS::EC2::Subnet::Id>
 
-  HubImageTag:
-    Type: String
-    Description: "Tag of the hub image."
-    Default: "latest"
-
   NotificationsImageTag:
     Type: String
     Description: "Tag of the notifications image."
@@ -730,8 +725,6 @@ Resources:
                         --set custom.CLUSTER_NAME=${Cluster},custom.OAUTH_POOL_NAME=${OAuthPoolName},custom.AZ_NAME=${AWS::Region}d
                         --set custom.COST_TAG_VALUE=${CostTagValue}
                         --set custom.COST_TAG_KEY=${CostTagKey}
-                        --set hub.image.name=$IMAGE_REPO_URL/hub
-                        --set hub.image.tag='${HubImageTag}'
                         --set-file hub.extraFiles.hooks.stringData=./helm_config.d/hooks.py
                         --set-file hub.extraFiles.hooks-pv.stringData=./helm_config.d/hooks/pv.yaml
                         --set-file hub.extraFiles.hooks-pvc.stringData=./helm_config.d/hooks/pvc.yaml

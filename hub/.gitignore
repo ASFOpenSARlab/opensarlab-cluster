@@ -1,9 +1,0 @@
-*
-!.gitignore
-!dockerfile
-!build.sh
-!etc/
-!etc/**
-!usr/
-!usr/**
-
