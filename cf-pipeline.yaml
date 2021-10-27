@@ -131,22 +131,6 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  NotificationsRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Sub "${ContainerNamespace}/notifications"
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  CronsRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Sub "${ContainerNamespace}/crons"
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
   PrebuildCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -173,24 +157,11 @@ Resources:
               - VpcId
               - ActiveSubnets
               - Subnets
-              - NotificationsImageTag
-              - CronsImageTag
 
           phases:
             install:
               runtime-versions:
-                docker: 18
                 python: 3.8
-            pre_build:
-              commands:
-                - echo "Logging into AWS ECR...";
-                  $(aws ecr get-login --no-include-email --region ${AWS::Region})
-                - echo "Logging into Docker Hub user...";
-                  dh_creds=$(aws secretsmanager get-secret-value --secret-id dockerhub/creds --query 'SecretString' | sed 's/\"//g' );
-                  dh_username=$(echo $dh_creds | cut -f1 -d' ');
-                  echo $dh_creds | cut -f2 -d' ' > dh.pass;
-                  cat dh.pass | docker login -u $dh_username --password-stdin;
-                - echo "End prebuild"
             build:
               commands:
                 - echo "Getting VpcId and Subnets...";
@@ -200,22 +171,6 @@ Resources:
                   export VpcId="${!VPCIDS_SUBNETS[0]}";
                   export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
                   export Subnets="${!VPCIDS_SUBNETS[2]}";
-                - echo "Build notification image...";
-                  PrevWD=$(pwd); 
-                  cd services/notifications;
-                  bash build.sh;
-                  export NotificationsImageBuild=( $(cat get_notifications_image_build.tmp) );
-                  echo ${!NotificationsImageBuild[@]};
-                  export NotificationsImageTag="${!NotificationsImageBuild[0]}";
-                  cd $PrevWD
-                - echo "Build crons image...";
-                  PrevWD=$(pwd); 
-                  cd services/crons;
-                  bash build.sh;
-                  export CronsImageBuild=( $(cat get_crons_image_build.tmp) );
-                  echo ${!CronsImageBuild[@]};
-                  export CronsImageTag="${!CronsImageBuild[0]}";
-                  cd $PrevWD
           artifacts:
             files:
               - '**/*'
@@ -266,16 +221,6 @@ Resources:
                 EnvironmentVariables: !Sub |
                   [
                     {
-                      "value": "true",
-                      "name": "NOTIFICATIONS_FORCE_BUILD",
-                      "type": "PLAINTEXT"
-                    },
-                    {
-                      "value": "true",
-                      "name": "CRONS_FORCE_BUILD",
-                      "type": "PLAINTEXT"
-                    },
-                    {
                       "value": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}",
                       "name": "DOCKER_REGISTRY",
                       "type": "PLAINTEXT"
@@ -313,15 +258,11 @@ Resources:
                       "VpcId": "${myVpcId}",
                       "ActiveSubnets": "${myActiveSubnets}",
                       "Subnets": "${mySubnets}",
-                      "ICALUrl": "${ICALUrl}",
-                      "NotificationsImageTag": "${myNotificationsImageTag}",
-                      "CronsImageTag": "${myCronsImageTag}"
+                      "ICALUrl": "${ICALUrl}"
                     }
                   - myVpcId: "#{prebuild.VpcId}"
                     myActiveSubnets: "#{prebuild.ActiveSubnets}"
                     mySubnets: "#{prebuild.Subnets}"
-                    myNotificationsImageTag: "#{prebuild.NotificationsImageTag}"
-                    myCronsImageTag: "#{prebuild.CronsImageTag}"
               InputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
