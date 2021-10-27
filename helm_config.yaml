@@ -65,8 +65,7 @@ hub:
           - "sh"
           - "-c"
           - >
-            apt install python-yaml
-            pip3 install boto3 kubernetes
+            echo "Hello"
 
   extraFiles:
     hooks:
