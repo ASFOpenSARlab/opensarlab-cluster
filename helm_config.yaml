@@ -58,6 +58,15 @@ hub:
     Authenticator:
       admin_users:
         - ADMIN_USER
+  lifecycle:
+    postStart:
+      exec:
+        command:
+          - "sh"
+          - "-c"
+          - >
+            apt install python-yaml
+            pip3 install boto3 kubernetes
 
   extraFiles:
     hooks:

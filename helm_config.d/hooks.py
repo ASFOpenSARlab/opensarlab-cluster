@@ -1,17 +1,5 @@
 #!/usr/bin/env python3
 
-import os
-import re
-
-import yaml
-import boto3
-from kubernetes import client as k8s_client
-from kubernetes import config as k8s_config
-from kubernetes.client.rest import ApiException
-
-import z2jh
-
-
 def get_tag_value(resource, key):
     
     val = [s['Value'] for s in resource['Tags'] if s['Key'] == key]
@@ -22,6 +10,16 @@ def get_tag_value(resource, key):
     return str(val[0])
 
 def volume_from_snapshot(spawner):
+
+    import re
+
+    import boto3
+    import yaml
+    from kubernetes import client as k8s_client
+    from kubernetes import config as k8s_config
+    from kubernetes.client.rest import ApiException
+
+    import z2jh
 
     k8s_config.load_incluster_config()
     api = k8s_client.CoreV1Api()
@@ -241,6 +239,8 @@ def volume_stopping_tag(spawner):
     import datetime
 
     import boto3
+
+    import z2jh
 
     pvc_name = spawner.pvc_name
     cluster_name = z2jh.get_config('custom.CLUSTER_NAME')
