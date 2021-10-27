@@ -8,8 +8,6 @@ import os
 import base64
 import urllib
 
-import boto3
-
 from tornado import gen
 from tornado.httputil import url_concat
 from tornado.web import RequestHandler
@@ -28,6 +26,8 @@ class GenericParameters():
     _REGION_NAME = os.environ.get('REGION_NAME', '')
 
     def _get_client_and_secret(pool_name, region_name):
+
+        import boto3
 
         # This only works if the parent pod has rights to Cognito
         session = boto3.Session()

@@ -65,7 +65,9 @@ hub:
           - "sh"
           - "-c"
           - >
-            echo "Hello"
+            exec &>> /home/jovyan/postStart.log; date; id;
+            pip3 list
+            pip3 install boto3
 
   extraFiles:
     hooks:
