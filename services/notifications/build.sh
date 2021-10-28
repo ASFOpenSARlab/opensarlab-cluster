@@ -8,10 +8,10 @@ cp dockerfile dockerfile.build
 
 BUILD_TAG=$(date +"%F-%H-%M-%S")
 
-time docker build -f dockerfile.build -t $DOCKER_REPO:$BUILD_TAG -t $DOCKER_REPO:latest .
+time docker build -f dockerfile.build -t $NOTE_REPO_URI:$BUILD_TAG -t $NOTE_REPO_URI:latest .
 
 # Push to registry
-docker push $DOCKER_REPO:$BUILD_TAG
-docker push $DOCKER_REPO:latest
+docker push $NOTE_REPO_URI:$BUILD_TAG
+docker push $NOTE_REPO_URI:latest
 
 echo -n ${BUILD_TAG:-latest} > get_image_build.tmp
