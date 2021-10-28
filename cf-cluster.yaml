@@ -721,17 +721,19 @@ Resources:
                         --set extraVolumeTags.${CostTagKey}=${CostTagValue}
                     - echo "Associate IAM and OIDC for service accounts..."
                     - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
+                    - echo "Get registry URI...";
+                      export REGISTRY_URI='${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}'
+                      echo $REGISTRY_URI
                     - echo "Build Hub Image...";
                       PrevWD=$(pwd); 
                       cd hub;
-                      export HUB_REPO_URI=$(aws ecr describe-repositories --repository-names ${HubRepository} | jq -r .repositories[0].repositoryUri);
-                      bash build.sh;
-                      HubImageBuild=( $(cat get_image_build.tmp) );
-                      echo ${!HubImageBuild[@]};
-                      export HubImageTag="${!HubImageBuild[0]}";
-                      cd $PrevWD
+                      cp dockerfile dockerfile.build;
+                      export HUB_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
+                      time docker build -f dockerfile.build -t $REGISTRY_URI/hub:$HUB_IMAGE_BUILD -t $REGISTRY_URI/hub:latest .;
+                      docker push $REGISTRY_URI/hub:$HUB_IMAGE_BUILD;
+                      docker push $REGISTRY_URI/hub:latest;
+                      cd $PrevWD;
                     - echo "Install JupyterHub cluster...";
-                      export REPO_URI_SAR=$(aws ecr describe-repositories --repository-names ${ContainerNamespace}/sar | jq .repositories[0].repositoryUri) && echo $REPO_URI_SAR;
                       base64 ./hub/helm_config.d/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png > ASFLogo-Blue2.png.b64 &&
                       base64 ./hub/helm_config.d/usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png > alaska_satellite_facility_1000.png.b64 &&
                       helm upgrade jupyter jupyterhub/jupyterhub
@@ -742,10 +744,10 @@ Resources:
                         --values ./hub/helm_config.yaml
                         --timeout=6m0s
                         --atomic
-                        --set hub.image.name=${HubRepository},hub.image.tag=$HubImageTag
+                        --set hub.image.name=$REGISTRY_URI/hub,hub.image.tag=$HUB_IMAGE_BUILD
                         --set hub.config.Authenticator.admin_users[0]='${AdminUserName}'
                         --set proxy.service.nodePorts.http='${NodeProxyPort}'
-                        --set custom.REPO_URI_SAR=$REPO_URI_SAR
+                        --set custom.REGISTRY_URI=$REGISTRY_URI
                         --set custom.OAUTH_JUPYTER_URL=$( [ -n '${DeploymentURL}' ] && echo '${DeploymentURL}' || echo 'https://${LoadBalancer.DNSName}' )
                         --set custom.OAUTH_DNS_NAME='${OAuthDNSName}'
                         --set custom.CLUSTER_NAME='${Cluster}',custom.OAUTH_POOL_NAME='${OAuthPoolName}',custom.AZ_NAME='${AWS::Region}d'
@@ -785,36 +787,36 @@ Resources:
                         --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
                     - echo "Create services namespace";
                       kubectl apply -f services/namespace.yaml
-                    - echo "Build notification image...";
+                    - echo "Build Notification Image...";
                       PrevWD=$(pwd); 
                       cd services/notifications;
-                      export NOTE_REPO_URI=$(aws ecr describe-repositories --repository-names ${NotificationsRepository} | jq -r .repositories[0].repositoryUri);
-                      bash build.sh;
-                      NotificationsImageBuild=( $(cat get_image_build.tmp) );
-                      echo ${!NotificationsImageBuild[@]};
-                      export NotificationsImageTag="${!NotificationsImageBuild[0]}";
-                      cd $PrevWD
+                      cp dockerfile dockerfile.build;
+                      export NOTES_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
+                      time docker build -f dockerfile.build -t $REGISTRY_URI/notifications:$NOTES_IMAGE_BUILD -t $REGISTRY_URI/notifications:latest .;
+                      docker push $REGISTRY_URI/notifications:$NOTES_IMAGE_BUILD;
+                      docker push $REGISTRY_URI/notifications:latest;
+                      cd $PrevWD;
                     - echo "Install notifications service...";
                       cp services/notifications/k8s/deployment.example.yaml services/notifications/k8s/deployment.yaml;
-                      sed -i "s|IMAGE_PLACEHOLDER|$NOTE_REPO_URI:$NotificationsImageTag|" services/notifications/k8s/deployment.yaml;
+                      sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/notifications:$NOTES_IMAGE_BUILD|" services/notifications/k8s/deployment.yaml;
                       sed -i "s|ICAL_URL_PLACEHOLDER|${ICALUrl}|" services/notifications/k8s/deployment.yaml;
                       kubectl apply -f services/notifications/k8s/service.yaml;
                       kubectl apply -f services/notifications/k8s/deployment.yaml;
                       kubectl -n services rollout status deployment/notifications -w;
                       kubectl -n services scale deployment notifications --replicas=0;
                       kubectl -n services scale deployment notifications --replicas=1
-                    - echo "Build crons image...";
+                    - echo "Build Crons Image...";
                       PrevWD=$(pwd); 
                       cd services/crons;
-                      export CRONS_REPO_URI=$(aws ecr describe-repositories --repository-names ${CronsRepository} | jq -r .repositories[0].repositoryUri);
-                      bash build.sh;
-                      CronsImageBuild=( $(cat get_image_build.tmp) );
-                      echo ${!CronsImageBuild[@]};
-                      export CronsImageTag="${!CronsImageBuild[0]}";
-                      cd $PrevWD
-                    - echo "Install crons service...";
+                      cp dockerfile dockerfile.build;
+                      export CRONS_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
+                      time docker build -f dockerfile.build -t $REGISTRY_URI/crons:$CRONS_IMAGE_BUILD -t $REGISTRY_URI/crons:latest .;
+                      docker push $REGISTRY_URI/crons:$CRONS_IMAGE_BUILD;
+                      docker push $REGISTRY_URI/crons:latest;
+                      cd $PrevWD;
+                    - echo "Install Crons service...";
                       cp services/crons/k8s/deployment.example.yaml services/crons/k8s/deployment.yaml;
-                      sed -i "s|IMAGE_PLACEHOLDER|$CRONS_REPO_URI:$CronsImageTag|" services/crons/k8s/deployment.yaml;
+                      sed -i "s|IMAGE_PLACEHOLDER|$CRONS_REPO_URI:$CRONS_IMAGE_BUILD|" services/crons/k8s/deployment.yaml;
                       sed -i "s|REGION_NAME_PLACEHOLDER|${AWS::Region}|" services/crons/k8s/deployment.yaml;
                       sed -i "s|COGNITO_NAME_PLACEHOLDER|${OAuthPoolName}|" services/crons/k8s/deployment.yaml;
                       sed -i "s|CLUSTER_NAME_PLACEHOLDER|${Cluster}|" services/crons/k8s/deployment.yaml;
