@@ -724,7 +724,7 @@ Resources:
                     - echo "Build Hub Image...";
                       PrevWD=$(pwd); 
                       cd hub;
-                      export HUB_REPO_URI=$(aws ecr describe-repositories --repository-names ${HubRepository} | jq .repositories[0].repositoryUri);
+                      export HUB_REPO_URI=$(aws ecr describe-repositories --repository-names ${HubRepository} | jq -r .repositories[0].repositoryUri);
                       bash build.sh;
                       HubImageBuild=( $(cat get_image_build.tmp) );
                       echo ${!HubImageBuild[@]};
@@ -788,7 +788,7 @@ Resources:
                     - echo "Build notification image...";
                       PrevWD=$(pwd); 
                       cd services/notifications;
-                      export NOTE_REPO_URI=$(aws ecr describe-repositories --repository-names ${NotificationsRepository} | jq .repositories[0].repositoryUri);
+                      export NOTE_REPO_URI=$(aws ecr describe-repositories --repository-names ${NotificationsRepository} | jq -r .repositories[0].repositoryUri);
                       bash build.sh;
                       NotificationsImageBuild=( $(cat get_image_build.tmp) );
                       echo ${!NotificationsImageBuild[@]};
@@ -806,7 +806,7 @@ Resources:
                     - echo "Build crons image...";
                       PrevWD=$(pwd); 
                       cd services/crons;
-                      export CRONS_REPO_URI=$(aws ecr describe-repositories --repository-names ${CronsRepository} | jq .repositories[0].repositoryUri);
+                      export CRONS_REPO_URI=$(aws ecr describe-repositories --repository-names ${CronsRepository} | jq -r .repositories[0].repositoryUri);
                       bash build.sh;
                       CronsImageBuild=( $(cat get_image_build.tmp) );
                       echo ${!CronsImageBuild[@]};
