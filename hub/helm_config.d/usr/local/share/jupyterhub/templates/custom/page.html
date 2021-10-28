@@ -2,7 +2,7 @@
 {% block nav_bar_left_items %} 
     {{ super() }}
     
-    {% if 'admin:users' in parsed_scopes %}
+    {%-- if user.admin --%}
     <li><a href="{{base_url}}groups">Groups</a></li>
-    {% endif %}
+    {%-- endif --%}
 {% endblock %}
