@@ -822,7 +822,7 @@ Resources:
                       cd $PrevWD;
                     - echo "Install Crons service...";
                       cp services/crons/k8s/deployment.example.yaml services/crons/k8s/deployment.yaml;
-                      sed -i "s|IMAGE_PLACEHOLDER|$CRONS_REPO_URI:$CRONS_IMAGE_BUILD|" services/crons/k8s/deployment.yaml;
+                      sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/crons:$CRONS_IMAGE_BUILD|" services/crons/k8s/deployment.yaml;
                       sed -i "s|REGION_NAME_PLACEHOLDER|${AWS::Region}|" services/crons/k8s/deployment.yaml;
                       sed -i "s|COGNITO_NAME_PLACEHOLDER|${OAuthPoolName}|" services/crons/k8s/deployment.yaml;
                       sed -i "s|CLUSTER_NAME_PLACEHOLDER|${Cluster}|" services/crons/k8s/deployment.yaml;
