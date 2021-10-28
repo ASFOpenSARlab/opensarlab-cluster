@@ -13,7 +13,6 @@ RUN ln -fs /usr/share/zoneinfo/America/Alaska /etc/localtime && \
 COPY app/.jobber /home/jobberuser/.jobber
 COPY app/delete_snapshot.py /home/jobberuser/delete_snapshot.py
 COPY app/delete_volumes.py /home/jobberuser/delete_volumes.py
-COPY app/meta.yaml.example /home/jobberuser/meta.yaml.example
 
 RUN chown -R jobberuser:jobberuser /home/jobberuser && \
     chmod 755 /home/jobberuser/.jobber

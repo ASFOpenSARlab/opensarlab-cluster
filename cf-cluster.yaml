@@ -785,6 +785,12 @@ Resources:
                         --atomic
                         --timeout=2m0s
                         --set autoDiscovery.clusterName=${Cluster},awsRegion=${AWS::Region},nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
+                    - echo "Install Fluent Bit for AWS Container Insights...";
+                      export FluentBitHttpPort='2020';
+                      export FluentBitReadFromHead='Off';
+                      [[ $FluentBitReadFromHead = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On';
+                      [[ -z $FluentBitHttpPort ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On';
+                      curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml | sed 's/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/;s/{{http_server_toggle}}/"'$FluentBitHttpServer'"/;s/{{http_server_port}}/"'$FluentBitHttpPort'"/;s/{{read_from_head}}/"'$FluentBitReadFromHead'"/;s/{{read_from_tail}}/"'$FluentBitReadFromTail'"/' | kubectl apply -f -
                     - echo "Create services namespace";
                       kubectl apply -f services/namespace.yaml
                     - echo "Build Notification Image...";
@@ -826,12 +832,6 @@ Resources:
                       kubectl -n services rollout status deployment/crons -w;
                       kubectl -n services scale deployment crons --replicas=0;
                       kubectl -n services scale deployment crons --replicas=1
-                    - echo "Install Fluent Bit for AWS Container Insights...";
-                      export FluentBitHttpPort='2020';
-                      export FluentBitReadFromHead='Off';
-                      [[ $FluentBitReadFromHead = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On';
-                      [[ -z $FluentBitHttpPort ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On';
-                      curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml | sed 's/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/;s/{{http_server_toggle}}/"'$FluentBitHttpServer'"/;s/{{http_server_port}}/"'$FluentBitHttpPort'"/;s/{{read_from_head}}/"'$FluentBitReadFromHead'"/;s/{{read_from_tail}}/"'$FluentBitReadFromTail'"/' | kubectl apply -f -
             - CommonRoleArn:
                 Fn::ImportValue: !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
 
