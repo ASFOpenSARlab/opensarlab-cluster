@@ -166,7 +166,7 @@ Resources:
               on-failure: ABORT
               commands:
                 - echo "Install pip packages..."
-                  pip3 install jinja2
+                  pip3 install jinja2 --upgrade
             build:
               on-failure: ABORT
               commands:
@@ -177,7 +177,7 @@ Resources:
                   export VpcId="${!VPCIDS_SUBNETS[0]}";
                   export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
                   export Subnets="${!VPCIDS_SUBNETS[2]}";
-                - echo "Create Profiles.py...";
+                - echo "Extract profiles...";
                   python3 create_profiles_infrastructure.py;
                   python3 create_profiles_config.py;
                   mv profiles.py ./hub/helm_config.d/profiles.py
