@@ -162,6 +162,9 @@ Resources:
             install:
               runtime-versions:
                 python: 3.8
+            pre_build:
+                - echo "Install pip packages..."
+                  pip3 install jinja2
             build:
               commands:
                 - echo "Getting VpcId and Subnets...";
@@ -171,6 +174,9 @@ Resources:
                   export VpcId="${!VPCIDS_SUBNETS[0]}";
                   export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
                   export Subnets="${!VPCIDS_SUBNETS[2]}";
+                - echo "Create Profiles.py...";
+                  python3 create_profiles_infrastructure.py
+                  python3 create_profiles_config.py;
           artifacts:
             files:
               - '**/*'
