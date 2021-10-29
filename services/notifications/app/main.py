@@ -39,24 +39,38 @@ def notes(profile_arg, ical_arg):
                 descr_to_html = html2text.html2text(event.description)
 
                 groups = compiled.search(descr_to_html)
-                meta = yaml.safe_load(groups.group(1))
-                message = groups.group(2)
+                
+                try:
+                    meta = yaml.safe_load(groups.group(1))
+                    message = groups.group(2)
 
-                profile = [ prof.strip() for prof in meta['profile'].split(',') ]
+                    profile = [ prof.strip() for prof in meta['profile'].split(',') ]
 
-                if 'mute' not in meta:
-                    if type(profile) is not list:
-                        profile = [profile]
+                    if 'mute' not in meta:
+                        if type(profile) is not list:
+                            profile = [profile]
 
-                    if profile_arg in profile:
-                        active_events.append(
-                            {
-                                "title": event.name,
-                                "message": message.strip(),
-                                "type": meta['type'].strip()
-                            }
-                        )
-    
+                        if profile_arg in profile:
+                            active_events.append(
+                                {
+                                    "title": event.name,
+                                    "message": message.strip(),
+                                    "type": meta['type'].strip()
+                                }
+                            )
+                except Exception as e:
+                    print(e)
+                    message = """
+There must be a description of format:
+
+<meta>
+    profile: SAR 1,Other_profile_names
+    type: info
+
+<message>
+    Your message in HTML.""" 
+                    raise Exception(message)
+
         print(f"Active events to popup: {active_events}")
         return active_events
 

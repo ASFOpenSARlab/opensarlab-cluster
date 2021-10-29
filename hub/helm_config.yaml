@@ -17,6 +17,25 @@ singleuser:
     dynamic:
       storageClass: gp2
       pvcNameTemplate: claim-{username}
+  extraFiles:
+    user-hooks-sar:
+      mountPath: /etc/jupyter-hooks/sar.sh
+      mode: 0755
+    user-hooks-sar_test:
+      mountPath: /etc/jupyter-hooks/sar_test.sh
+      mode: 0755
+    user-hooks-sar_dev:
+      mountPath: /etc/jupyter-hooks/sar_dev.sh
+      mode: 0755
+    user-hooks-no_smart_git:
+      mountPath: /etc/jupyter-hooks/no_smart_git.sh
+      mode: 0755
+    user-hooks-pull:
+      mountPath: /etc/jupyter-hooks/scripts/pull.py
+    user-others-check_storage:
+      mountPath: /etc/jupyter-hooks/resource_checks/check_storage.py
+    user-custom_magics:
+      mountPath: /etc/jupyter-hooks/custom_magics/00-df.py
 
 prePuller:
   continuous:
@@ -69,10 +88,10 @@ hub:
       mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/hooks.py
     hooks-pv:
       mountPath: /home/jovyan/hooks/pv.yaml
-      mode: 0777
+      mode: 0755
     hooks-pvc:
       mountPath: /home/jovyan/hooks/pvc.yaml
-      mode: 0777
+      mode: 0755
     profiles:
       mountPath: /usr/local/etc/jupyterhub/jupyterhub_config.d/profiles.py
     services:

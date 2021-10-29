@@ -797,6 +797,13 @@ Resources:
                         --set-file hub.extraFiles.share-templates-login.stringData='./hub/helm_config.d/usr/local/share/jupyterhub/templates/login.html'
                         --set-file hub.extraFiles.share-templates-pending.stringData='./hub/helm_config.d/usr/local/share/jupyterhub/templates/pending.html'
                         --set-file hub.extraFiles.share-templates-custom-page.stringData='./hub/helm_config.d/usr/local/share/jupyterhub/templates/custom/page.html'
+                        --set-file singleuser.extraFiles.user-hooks-sar.stringData='./hub/helm_config.d/user_containers/hooks/sar.sh'
+                        --set-file singleuser.extraFiles.user-hooks-sar_test.stringData='./hub/helm_config.d/user_containers/hooks/sar_test.sh'
+                        --set-file singleuser.extraFiles.user-hooks-sar_dev.stringData='./hub/helm_config.d/user_containers/hooks/sar_dev.sh'
+                        --set-file singleuser.extraFiles.user-hooks-no_smart_git.stringData='./hub/helm_config.d/user_containers/hooks/no_smart_git.sh'
+                        --set-file singleuser.extraFiles.user-hooks-pull.stringData='./hub/helm_config.d/user_containers/hooks/pull.py'
+                        --set-file singleuser.extraFiles.user-others-check_storage.stringData='./hub/helm_config.d/user_containers/others/check_storage.py'
+                        --set-file singleuser.extraFiles.user-custom_magics.stringData='./hub/helm_config.d/user_containers/custom_magics/00-df.py'
                     - kubectl -n jupyter rollout status -w deployment.apps/hub
                     - echo "Associate volume provisioner with service account...";
                       kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
