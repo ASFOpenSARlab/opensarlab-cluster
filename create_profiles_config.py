@@ -10,7 +10,7 @@ def space_to_underscore(enviroment, value):
 FILTERS["space_to_underscore"] = space_to_underscore
 
 #read your yaml file
-with open("profiles.yaml", "r") as yam, open("profiles.py.template", "r") as tem, open("./hub/helm_config.d/profiles.py", 'w') as pro:
+with open("profiles.yaml", "r") as yam, open("profiles.py.template", "r") as tem, open("profiles.py", 'w') as pro:
     profiles = yaml.safe_load(yam)
 
     all_node_names = []

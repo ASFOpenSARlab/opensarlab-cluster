@@ -647,6 +647,31 @@ Resources:
         Type: LINUX_CONTAINER
         Image: aws/codebuild/standard:3.0
         PrivilegedMode: True
+        EnvironmentVariables:
+        - Name: AWS_REGION
+          Value: !Sub ${AWS::Region}
+        - Name: AWS_ACCOUNT_ID
+          Value: !Sub ${AWS::AccountId}
+
+          ## Given by parent CF
+          #${ICALUrl}
+          #${OAuthPoolName}
+          #${CostTagKey}
+          #${CostTagValue}
+          #${ContainerNamespace}
+          #${AdminUserName}
+          #${DeploymentURL}
+#
+          ## Given locally as defaults
+          #${NodeProxyPort}
+          #${LoadBalancer.DNSName}
+#
+          ## Resources created in local CF
+          #${ClusterRole.Arn}
+          #${ClusterRole}
+          #${Cluster}
+          #${NodeInstanceRole.Arn}
+
       Artifacts:
         Type: CODEPIPELINE
       ServiceRole: !Ref ClusterRole
@@ -662,6 +687,8 @@ Resources:
               version: 0.2
               env:
                 shell: bash
+                secrets-manager:
+                  DH_CREDS: "dockerhub/creds"
               phases:
                 install:
                   runtime-versions:
@@ -683,9 +710,8 @@ Resources:
                     - echo "Logging into AWS ECR..."
                     - $(aws ecr get-login --no-include-email --region ${AWS::Region})
                     - echo "Logging into Docker Hub user to get latest jupyter image..."
-                    - dh_creds=$(aws secretsmanager get-secret-value --secret-id dockerhub/creds --query 'SecretString' | sed 's/\"//g' )
-                    - dh_username=$(echo $dh_creds | cut -f1 -d' ')
-                    - echo $dh_creds | cut -f2 -d' ' > dh.pass
+                    - dh_username=$(echo $DH_CREDS | cut -f1 -d' ')
+                    - echo $DH_CREDS | cut -f2 -d' ' > dh.pass
                     - cat dh.pass | docker login -u $dh_username --password-stdin
                     - echo "Install helm charts and update..."
                     - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
