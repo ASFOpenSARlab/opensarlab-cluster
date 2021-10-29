@@ -1,0 +1,70 @@
+# Required fields:
+#   name, description, image_name, image_tag, storage_capacity, server_type
+# First listed profile per user is default
+# Extra labels uses profile name
+# hook_script is optional
+# If mem (ram) or cpu is not given or if set to None, then use default of max.
+# If delete_pvc is not given, set to False 
+# If hook_script not given, don't do lifecycle
+
+profiles:
+  - name: Required Only
+    description: "Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G."
+    image_name: sar
+    image_tag: e914cd7
+    server_type: sar_1
+    storage_capacity: 500Gi
+    
+  - name: SAR 1
+    description: "Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G."
+    image_name: sar
+    image_tag: e914cd7
+    hook_script: sar.sh
+    memory_guarantee: 6G
+    memory_limit: 16G
+    cpu_guarantee: None
+    cpu_limit: None
+    storage_capacity: 500Gi
+    server_type: sar_1
+    delete_user_volumes: False
+
+  - name: SAR 1 - Test
+    description: "Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G."
+    image_name: sar
+    image_tag: e914cd7
+    hook_script: sar_test.sh
+    memory_guarantee: 6G
+    memory_limit: 16G
+    storage_capacity: 500Gi
+    server_type: sar_1
+
+  - name: SAR 1 - Dev
+    description: "Development profile. CPU limit: 8. RAM limit: 16G. Storage: 500G"
+    image_name: sar
+    image_tag: e914cd7
+    hook_script: sar_dev.sh
+    memory_guarantee: 6G
+    memory_limit: 16G
+    storage_capacity: 500Gi
+    server_type: sar_1
+
+  - name: SAR 2
+    description: "Formally UNAVCO. Contains basic SAR processing packages on a bigger machine. RAM limit: 96G. CPU limit: 8 cpus. Storage: 500 GiB."
+    image_name: sar
+    image_tag: e914cd7
+    hook_script: sar.sh
+    memory_guarantee: 32G
+    memory_limit: 96G
+    cpu_limit: 8
+    storage_capacity: 500Gi
+    server_type: sar_2
+
+  - name: SAR 2 - Max
+    description: "Similar to SAR 2 but one person per machine. RAM limit: ~128GB. CPU limit: ~30 cpus. Storage: 500 GiB."
+    image_name: sar
+    image_tag: e914cd7
+    hook_script: sar.sh
+    cpu_guarantee: 30
+    storage_capacity: 500Gi
+    server_type: sar_2
+    delete_user_volumes: None

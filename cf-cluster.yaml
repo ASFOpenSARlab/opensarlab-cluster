@@ -733,6 +733,11 @@ Resources:
                       docker push $REGISTRY_URI/hub:$HUB_IMAGE_BUILD;
                       docker push $REGISTRY_URI/hub:latest;
                       cd $PrevWD;
+                    - echo "Create Profiles.py...";
+                      PrevWD=$(pwd);
+                      cd hub;
+                      python3 create_profiles.py;
+                      cd $PrevWD;
                     - echo "Install JupyterHub cluster...";
                       base64 ./hub/helm_config.d/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png > ASFLogo-Blue2.png.b64 &&
                       base64 ./hub/helm_config.d/usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png > alaska_satellite_facility_1000.png.b64 &&

@@ -1,0 +1,125 @@
+from typing import List, Dict
+
+import z2jh
+
+# Profile list programmatically
+# Ideally, if/else statements based on permissions would determine the final choices.
+# https://jupyterhub-kubespawner.readthedocs.io/en/latest/spawner.html#kubespawner.KubeSpawner
+# Other singleuser server params can be taken from above to below as needed.
+
+"""
+To manually add some Groups and names to Groups, `kubectl` into the hub, python3 and
+
+from jupyterhub import groups
+
+g = groups.Groups()
+g.add_group('general_cpu')
+g.get_users_in_group('general_cpu')
+g.add_user_to_group('emlundell_test1', 'general_cpu')
+g.get_users_in_group('general_cpu')
+
+
+The `server_type` found in the profiles (e.g. general_cpu_large) are defined in the cloudformation template.
+"""
+
+class NoProfileException(Exception):
+    """No Profiles found"""
+
+def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
+
+    try:
+        from jupyterhub import groups as groups_py
+
+        user_name = spawner.user.name
+
+        groups = groups_py.Groups()
+        group_list = groups.get_all_enabled_group_names_for_user(user_name=user_name)
+        group_list.extend(groups.get_all_enabled_group_names_set_to_all_users())
+        
+        if not group_list:
+            raise NoProfileException()
+
+        print(f"Group list: {group_list}")
+
+        profile_list = []
+
+        {% for profile in profiles['profiles'] -%}
+
+        if '{{ profile.name | space_to_underscore }}' in group_list:
+            profile = {
+                'display_name': '{{ profile.name }}',
+                'description': "{{ profile.description }}",
+                'kubespawner_override': {
+                    'extra_labels': {
+                        'server_type': '{{ profile.server_type }}',
+                        'profile_name': '{{ profile.name | space_to_underscore }}'
+                    },
+                    'node_selector': {
+                        'server_type': '{{ profile.server_type }}'
+                    },
+                    'image': f"{z2jh.get_config('custom.REGISTRY_URI')}/{{ profile.image_name }}:{{ profile.image_tag }}",
+                    {% if profile.hook_script is defined -%}
+                    'lifecycle_hooks': {
+                        "postStart": {
+                            "exec": {
+                                "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/{{ profile.hook_script }}"]
+                            }
+                        }
+                    },
+                    {% endif -%}
+                    'args': [
+                        "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'{{ profile.name }}'}"
+                    ],
+                    {% if profile.memory_limit is defined -%} 
+                        'mem_limit': '{{ profile.memory_limit }}', 
+                    {% endif -%}
+                    {% if profile.memory_guarantee is defined -%} 
+                        'mem_guarantee': '{{ profile.memory_guarantee }}', 
+                    {% endif -%}
+                    {% if profile.cpu_limit is defined -%} 
+                        'cpu_limit': {{ profile.cpu_limit }}, 
+                    {% endif -%}
+                    {% if profile.cpu_guarantee is defined -%} 
+                        'cpu_guarantee': {{ profile.cpu_guarantee }}, 
+                    {% endif -%}
+                    {% if profile.delete_user_volumes is defined -%}
+                        'delete_pvc': {{ profile.delete_user_volumes }},
+                    {% else -%}
+                        'delete_pvc': False,
+                    {% endif -%}
+                    'storage_capacity': '{{ profile.storage_capacity }}'
+                }
+            }
+            profile_list.append(profile)
+
+        {% endfor -%}
+
+        # This clause for sudo should always be last
+        if 'sudo' in group_list:
+            print("Adding sudo privs...")
+            spawner.args.append('--allow-root')
+            spawner.environment["GRANT_SUDO"] = "yes"
+            spawner.gid = 599
+
+            # Users should know that sudo is enabled in profile before entering
+            for profile in profile_list:
+                profile['display_name'] += " (Sudo Enabled)"
+        else:
+            print("Sudo privs not given.")
+
+        return profile_list 
+
+    except NoProfileException as e:
+        print(f"No profiles found for user {spawner.user.name}.")
+        print(e)
+
+        return []
+
+    except Exception as e:            
+        print("Something went wrong with the profiles list...")
+        print(e)
+
+        return []
+
+c.KubeSpawner.profile_list = profile_list_hook
+
