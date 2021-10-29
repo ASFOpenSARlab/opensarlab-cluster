@@ -165,7 +165,7 @@ Resources:
             pre_build:
               on-failure: ABORT
               commands:
-                - echo "Install pip packages..."
+                - echo "Install pip packages...";
                   pip3 install jinja2 --upgrade
             build:
               on-failure: ABORT
