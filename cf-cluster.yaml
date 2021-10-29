@@ -735,7 +735,7 @@ Resources:
                       cd $PrevWD;
                     - echo "Create Profiles.py...";
                       PrevWD=$(pwd);
-                      cd hub;
+                      cd hub/helm_config.d/;
                       python3 create_profiles.py;
                       cd $PrevWD;
                     - echo "Install JupyterHub cluster...";
