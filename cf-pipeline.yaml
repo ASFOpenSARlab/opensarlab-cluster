@@ -163,9 +163,12 @@ Resources:
               runtime-versions:
                 python: 3.8
             pre_build:
+              on-failure: ABORT
+              commands:
                 - echo "Install pip packages..."
                   pip3 install jinja2
             build:
+              on-failure: ABORT
               commands:
                 - echo "Getting VpcId and Subnets...";
                   python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}-cluster;
