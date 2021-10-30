@@ -26,8 +26,6 @@ profiles:
     hook_script: sar.sh
     memory_guarantee: 6G
     memory_limit: 16G
-    cpu_guarantee: None
-    cpu_limit: None
     storage_capacity: 500Gi
     node_name: sar_1
     delete_user_volumes: False
