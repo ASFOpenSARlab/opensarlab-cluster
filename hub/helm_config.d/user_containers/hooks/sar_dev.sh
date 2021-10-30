@@ -37,9 +37,6 @@ gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master $HOME/not
 
 gitpuller https://github.com/asfadmin/asf-jupyter-envs.git main $HOME/conda_environments
 
-gitpuller https://github.com/asfadmin/asf-jupyter-docs.git master $HOME/opensarlab_docs
-python /etc/jupyter-hooks/scripts/osl_user_guides_to_ipynb.py -p $HOME/opensarlab_docs
-
 RIGHT_NOW=$(date)
 # "If the delimiting identifier is unquoted, the shell will substitute all variables, 
 # commands and special characters before passing the here-document lines to the command."

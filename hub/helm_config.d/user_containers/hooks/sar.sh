@@ -35,9 +35,6 @@ cp /etc/jupyter-hooks/custom_magics/00-df.py $HOME/.ipython/profile_default/star
 
 gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master $HOME/notebooks
 
-gitpuller https://github.com/asfadmin/asf-jupyter-docs.git master $HOME/opensarlab_docs
-python /etc/jupyter-hooks/scripts/osl_user_guides_to_ipynb.py -p $HOME/opensarlab_docs
-
 CONDARC=$HOME/.condarc
 if ! test -f "$CONDARC"; then
 cat <<EOT >> $CONDARC

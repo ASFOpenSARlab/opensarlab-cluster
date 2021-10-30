@@ -37,9 +37,6 @@ gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master $HOME/not
 
 gitpuller https://github.com/asfadmin/asf-jupyter-envs.git main $HOME/conda_environments
 
-gitpuller https://github.com/asfadmin/asf-jupyter-docs.git master $HOME/opensarlab_docs
-python /etc/jupyter-hooks/scripts/osl_user_guides_to_ipynb.py -p $HOME/opensarlab_docs
-
 CONDARC=$HOME/.condarc
 if ! test -f "$CONDARC"; then
 cat <<EOT >> $CONDARC
