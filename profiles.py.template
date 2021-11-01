@@ -45,14 +45,14 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
 
         {% for profile in profiles['profiles'] -%}
 
-        if '{{ profile.name | space_to_underscore }}' in group_list:
+        if '{{ profile.name | replace(" ", "_") }}' in group_list:
             profile = {
                 'display_name': '{{ profile.name }}',
                 'description': "{{ profile.description }}",
                 'kubespawner_override': {
                     'extra_labels': {
                         'server_type': '{{ profile.node_name }}',
-                        'profile_name': '{{ profile.name | space_to_underscore }}'
+                        'profile_name': '{{ profile.name | replace(" ", "_") }}'
                     },
                     'node_selector': {
                         'server_type': '{{ profile.node_name }}'
