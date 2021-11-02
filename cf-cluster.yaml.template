@@ -94,100 +94,18 @@ Outputs:
     Value: !GetAtt LoadBalancer.DNSName
 
 Resources:
-  ClusterRole:
+  {% filter indent(width=2) %}
+  {% include "components/cluster.yaml" -%}
+  {% include "components/basic_lifecycle.yaml" -%}
+  {% include "components/respository.yaml" -%}
+  {% endfilter %}
+
+  {% for node in nodes -%}
+
+  NodeInstanceRole{{ node.name }}:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::Region}-${AWS::StackName}
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - eks.amazonaws.com
-                - codebuild.amazonaws.com
-                - cloudformation.amazonaws.com
-                - codepipeline.amazonaws.com
-                - iam.amazonaws.com
-            Action: sts:AssumeRole
-          - Effect: Allow
-            Principal:
-              AWS:
-                Fn::ImportValue: !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
-        - arn:aws:iam::aws:policy/AutoScalingFullAccess
-      Policies:
-        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-hub-build
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "codestar-connections:*"
-                  - "s3:*"
-                  - "dlm:*"
-                  - "logs:*"
-                  - "cloudformation:*"
-                  - "elasticloadbalancing:*"
-                  - "autoscaling:*"
-                  - "codebuild:*"
-                  - "iam:*"
-                  - "secretsmanager:*"
-                  - "ssm:*"
-                  - "ecr:*"
-                  - "ec2:*"
-                  - "eks:*"
-                  - "sts:AssumeRole"
-                Resource: "*"
-
-  ClusterSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: !Sub ${AWS::StackName}
-      GroupDescription: !Sub Security group for the ${AWS::StackName} EKS cluster
-      VpcId: !Ref VpcId
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  Cluster:
-    Type: AWS::EKS::Cluster
-    Properties:
-      Name: !Ref AWS::StackName
-      RoleArn: !GetAtt ClusterRole.Arn
-      ResourcesVpcConfig:
-        SubnetIds: !Ref Subnets
-        SecurityGroupIds:
-          - !GetAtt ClusterSecurityGroup.GroupId
-      Version: "1.21"
-
-  UserAccessRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::Region}-${Cluster}-access
-      AssumeRolePolicyDocument:
-        Statement:
-          Effect: Deny
-          Principal:
-            AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
-          Action: sts:AssumeRole
-      Policies:
-        - PolicyName: !Sub ${AWS::Region}-${Cluster}-access
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "eks:*"
-                Resource: "*"
-
-  NodeInstanceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::Region}-${Cluster}-instance
+      RoleName: !Sub ${AWS::Region}-${Cluster}-{{ node.name }}-instance
       AssumeRolePolicyDocument:
         Statement:
           Effect: Allow
@@ -200,181 +118,31 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
-      Policies:
-        - PolicyName: !Sub ${AWS::Region}-${Cluster}-Service_Account_Policy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Sid: SAHubDeleteVolumes
-                Effect: Allow
-                Action:
-                  - ec2:DescribeSnapshots
-                  - ec2:DescribeVolumes
-                Resource: "*"
-              - Sid: SAHubDeleteSnapshots
-                Effect: Allow
-                Action:
-                  - ec2:DescribeSnapshots
-                  - ec2:DeleteSnapshot
-                  - ec2:DescribeVolumes
-                  - cognito-idp:ListUserPools
-                  - cognito-idp:AdminGetUser
-                  - cognito-idp:AdminDisableUser
-                  - cognito-idp:ListUsers
-                  - ses:SendEmail
-                Resource: "*"
-              - Sid: SAHubForceDeactivation
-                Effect: Allow
-                Action:
-                  - ec2:DescribeSnapshots
-                  - ec2:DeleteSnapshot
-                  - cognito-idp:ListUserPools
-                  - cognito-idp:ListUsers
-                  - cognito-idp:AdminDisableUser
-                Resource: "*"
-              - Sid: SAHubVolumeFromSnapshot
-                Effect: Allow
-                Action:
-                  - ec2:DescribeSnapshots
-                  - ec2:CreateVolume
-                  - ec2:CreateTags
-                Resource: "*"
-              - Sid: SAHubVolumeStoppingTags
-                Effect: Allow
-                Action:
-                  - ec2:DescribeVolumes
-                  - ec2:CreateTags
-                Resource: "*"
-              - Sid: SAHubGenericWithLogout
-                Effect: Allow
-                Action:
-                  - cognito-idp:ListUserPools
-                  - cognito-idp:ListUserPoolClients
-                  - cognito-idp:DescribeUserPoolClient
-                Resource: "*"
-        - PolicyName: !Sub ${AWS::Region}-${Cluster}-EKS_CSI_EBS_Policy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ec2:AttachVolume
-                  - ec2:CreateSnapshot
-                  - ec2:CreateTags
-                  - ec2:CreateVolume
-                  - ec2:DeleteSnapshot
-                  - ec2:DeleteTags
-                  - ec2:DeleteVolume
-                  - ec2:DescribeAvailabilityZones
-                  - ec2:DescribeInstances
-                  - ec2:DescribeSnapshots
-                  - ec2:DescribeTags
-                  - ec2:DescribeVolumes
-                  - ec2:DescribeVolumesModifications
-                  - ec2:DetachVolume
-                  - ec2:ModifyVolume
-                Resource: "*"
+      {% filter indent(width=6) %}
+      {% if node.is_hub is defined -%}
+        {% include "components/hub_node_policy.yaml" -%}
+      {% else -%}
+        {% include "components/user_node_policy.yaml" -%}
+      {% endif -%}
+      {% endfilter %}
 
-  NodeInstanceProfile:
+  NodeInstanceProfile{{ node.name }}:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: !Ref NodeInstanceRole
+      InstanceProfileName: !Ref NodeInstanceRole{{ node.name }}
       Roles:
-        - !Ref NodeInstanceRole
+        - !Ref NodeInstanceRole{{ node.name }}
 
-  NodeSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: !Sub ${Cluster}-instance
-      GroupDescription: !Sub Security group for instances in the ${Cluster} EKS cluster
-      VpcId: !Ref VpcId
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  NodeSecurityGroupIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow instances to communicate with each other
-      GroupId: !Ref NodeSecurityGroup
-      SourceSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: "-1"
-      FromPort: 0
-      ToPort: 65535
-
-  NodeSecurityGroupFromControlPlaneIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
-      GroupId: !Ref NodeSecurityGroup
-      SourceSecurityGroupId: !GetAtt ClusterSecurityGroup.GroupId
-      IpProtocol: tcp
-      FromPort: 1025
-      ToPort: 65535
-
-  NodeSecurityGroupFromLoadBalancer:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow worker Kubelets and pods to receive communication from the load balancer
-      GroupId: !Ref NodeSecurityGroup
-      SourceSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
-      IpProtocol: tcp
-      FromPort: !Ref NodeProxyPort
-      ToPort: !Ref NodeProxyPort
-
-  ControlPlaneEgressToNodeSecurityGroup:
-    Type: AWS::EC2::SecurityGroupEgress
-    Properties:
-      Description: Allow the cluster control plane to communicate with worker Kubelet and pods
-      GroupId: !GetAtt ClusterSecurityGroup.GroupId
-      DestinationSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: tcp
-      FromPort: 1025
-      ToPort: 65535
-
-  NodeSecurityGroupFromControlPlaneOn443Ingress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
-      GroupId: !Ref NodeSecurityGroup
-      SourceSecurityGroupId: !GetAtt ClusterSecurityGroup.GroupId
-      IpProtocol: tcp
-      FromPort: 443
-      ToPort: 443
-
-  ControlPlaneEgressToNodeSecurityGroupOn443:
-    Type: AWS::EC2::SecurityGroupEgress
-    Properties:
-      Description: Allow the cluster control plane to communicate with pods running extension API servers on port 443
-      GroupId: !GetAtt ClusterSecurityGroup.GroupId
-      DestinationSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: tcp
-      FromPort: 443
-      ToPort: 443
-
-  ClusterControlPlaneSecurityGroupIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow pods to communicate with the cluster API Server
-      GroupId: !GetAtt ClusterSecurityGroup.GroupId
-      SourceSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: tcp
-      ToPort: 443
-      FromPort: 443
-
-  AutoScalingGroupCore:
+  AutoScalingGroup{{ node.name }}:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      DesiredCapacity: "1"
-      LaunchConfigurationName: !Ref LaunchConfigurationCore
-      MinSize: "1"
-      MaxSize: "2"
+      LaunchConfigurationName: !Ref LaunchConfiguration{{ node.name }}
+      MinSize: {{ node.min_number}}
+      MaxSize: {{ node.max_number}}
       VPCZoneIdentifier: !Ref ActiveSubnets
-      TargetGroupARNs:
-        - !Ref TargetGroup
       Tags:
         - Key: Name
-          Value: !Sub ${Cluster}-instance
+          Value: !Sub ${AWS::StackName}-instance
           PropagateAtLaunch: true
         - Key: !Sub k8s.io/cluster/${Cluster}
           Value: owned
@@ -392,251 +160,30 @@ Resources:
           Value: !Sub ${CostTagValue}
           PropagateAtLaunch: true
 
-  LaunchConfigurationCore:
+  LaunchConfiguration{{ node.name }}:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: true
-      IamInstanceProfile: !Ref NodeInstanceProfile
+      IamInstanceProfile: !Ref NodeInstanceProfile{{ node.name }}
       ImageId: !Ref NodeImageId
-      InstanceType: !Ref NodeInstanceTypeCore
+      InstanceType: !Ref {{ node.instance }}
       SecurityGroups:
         - !Ref NodeSecurityGroup
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           set -o xtrace
+          {% if node.is_hub is defined -%}
           /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=core,server_type=core'
-          /opt/aws/bin/cfn-signal --exit-code $? \
-          --stack  ${Cluster} \
-          --resource NodeGroup  \
-          --region ${AWS::Region}
-
-  AutoScalingGroupSAR1:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      DesiredCapacity: "0"
-      LaunchConfigurationName: !Ref LaunchConfigurationSAR1
-      MinSize: "0"
-      MaxSize: "25"
-      VPCZoneIdentifier: !Ref ActiveSubnets
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-instance
-          PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster/${Cluster}
-          Value: owned
-          PropagateAtLaunch: true
-        - Key: !Sub kubernetes.io/cluster/${Cluster}
-          Value: owned
-          PropagateAtLaunch: true
-        - Key: k8s.io/cluster-autoscaler/enabled
-          Value: "true"
-          PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-          Value: "true"
-          PropagateAtLaunch: true
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-          PropagateAtLaunch: true
-
-  LaunchConfigurationSAR1:
-    Type: AWS::AutoScaling::LaunchConfiguration
-    Properties:
-      AssociatePublicIpAddress: true
-      IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageId
-      InstanceType: !Ref NodeInstanceTypeSAR1
-      SecurityGroups:
-        - !Ref NodeSecurityGroup
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          set -o xtrace
-          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_1'
+          {% else -%}
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type={{ node.name }}'
+          {% endif -%}
           /opt/aws/bin/cfn-signal --exit-code $? \
           --stack  ${AWS::StackName} \
           --resource NodeGroup  \
           --region ${AWS::Region}
 
-  AutoScalingGroupSAR2:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      DesiredCapacity: "0"
-      LaunchConfigurationName: !Ref LaunchConfigurationSAR2
-      MinSize: "0"
-      MaxSize: "25"
-      VPCZoneIdentifier: !Ref ActiveSubnets
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-instance
-          PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster/${Cluster}
-          Value: owned
-          PropagateAtLaunch: true
-        - Key: !Sub kubernetes.io/cluster/${Cluster}
-          Value: owned
-          PropagateAtLaunch: true
-        - Key: k8s.io/cluster-autoscaler/enabled
-          Value: "true"
-          PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-          Value: "true"
-          PropagateAtLaunch: true
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-          PropagateAtLaunch: true
-
-  LaunchConfigurationSAR2:
-    Type: AWS::AutoScaling::LaunchConfiguration
-    Properties:
-      AssociatePublicIpAddress: true
-      IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageId
-      InstanceType: !Ref NodeInstanceTypeSAR2
-      SecurityGroups:
-        - !Ref NodeSecurityGroup
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          set -o xtrace
-          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_2'
-          /opt/aws/bin/cfn-signal --exit-code $? \
-          --stack  ${AWS::StackName} \
-          --resource NodeGroup  \
-          --region ${AWS::Region}
-
-  TargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Ref AWS::StackName
-      VpcId: !Ref VpcId
-      Protocol: HTTP
-      Port: !Ref NodeProxyPort
-      HealthCheckPath: /hub/health
-      HealthCheckIntervalSeconds: 120
-      HealthyThresholdCount: 2
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  LoadBalancerSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: !Sub ${Cluster}-load-balancer
-      GroupDescription: !Sub Security group for ${Cluster} load balancer
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - CidrIp: !Ref LoadBalancerCidrBlock
-          IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-        - CidrIp: !Ref LoadBalancerCidrBlock
-          IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: !Ref AWS::StackName
-      Subnets: !Ref Subnets
-      SecurityGroups:
-        - !GetAtt LoadBalancerSecurityGroup.GroupId
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  HttpListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref LoadBalancer
-      Protocol: HTTP
-      Port: 80
-      DefaultActions:
-        - Type: redirect
-          RedirectConfig:
-            StatusCode: HTTP_301
-            Protocol: HTTPS
-            Port: "443"
-
-  HttpsListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref LoadBalancer
-      Protocol: HTTPS
-      Port: 443
-      Certificates:
-        - CertificateArn: !Ref CertificateArn
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref TargetGroup
-
-  BasicLifecycleRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-SnapshotPolicyRole
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: dlm.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSDataLifecycleManagerServiceRole
-
-  BasicLifecyclePolicy:
-    Type: "AWS::DLM::LifecyclePolicy"
-    Properties:
-      Description: !Sub "Lifecycle Policy for ${Cluster}"
-      State: "ENABLED"
-      ExecutionRoleArn: !GetAtt BasicLifecycleRole.Arn
-      PolicyDetails:
-        ResourceTypes:
-          - "VOLUME"
-        TargetTags:
-          - Key: !Sub "kubernetes.io/cluster/${Cluster}"
-            Value: "owned"
-        Schedules:
-          - Name: "Daily Snapshots"
-            CreateRule:
-              Interval: 24
-              IntervalUnit: "HOURS"
-              Times:
-                - "10:00"
-            RetainRule:
-              Count: 1
-            CopyTags: true
-
-  NotificationsRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Sub "${ContainerNamespace}/notifications"
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  CronsRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Sub "${ContainerNamespace}/crons"
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  HubRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Sub "${ContainerNamespace}/hub"
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  HubGroupLogs:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/codebuild/${Cluster}-hub-group"
-      RetentionInDays: 30
+  {% endfor -%}
 
   HubProject:
     Type: AWS::CodeBuild::Project
@@ -647,31 +194,6 @@ Resources:
         Type: LINUX_CONTAINER
         Image: aws/codebuild/standard:3.0
         PrivilegedMode: True
-        EnvironmentVariables:
-        - Name: AWS_REGION
-          Value: !Sub ${AWS::Region}
-        - Name: AWS_ACCOUNT_ID
-          Value: !Sub ${AWS::AccountId}
-
-          ## Given by parent CF
-          #${ICALUrl}
-          #${OAuthPoolName}
-          #${CostTagKey}
-          #${CostTagValue}
-          #${ContainerNamespace}
-          #${AdminUserName}
-          #${DeploymentURL}
-#
-          ## Given locally as defaults
-          #${NodeProxyPort}
-          #${LoadBalancer.DNSName}
-#
-          ## Resources created in local CF
-          #${ClusterRole.Arn}
-          #${ClusterRole}
-          #${Cluster}
-          #${NodeInstanceRole.Arn}
-
       Artifacts:
         Type: CODEPIPELINE
       ServiceRole: !Ref ClusterRole
@@ -879,3 +401,9 @@ Resources:
         CloudWatchLogs:
           Status: ENABLED
           GroupName: !Ref HubGroupLogs
+
+  HubGroupLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${Cluster}-hub-group"
+      RetentionInDays: 30

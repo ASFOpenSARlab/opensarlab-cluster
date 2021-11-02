@@ -1,17 +1,20 @@
 
+import sys
+
 import yaml
 from jinja2 import Template
 
-#read your yaml file
-with open("profiles.yaml", "r") as yam, open("profiles.py.template", "r") as tem, open("profiles.py", 'w') as pro:
-    profiles = yaml.safe_load(yam)
+opensarlab_yaml_path = sys.argv[1]
+template_path = sys.argv[2]
+output_config_path = sys.argv[3]
 
+def checks(yaml_config):
     all_node_names = []
-    for nodes in profiles['nodes']:
-        all_node_names.append(nodes['node_name'])
+    for nodes in yaml_config['nodes']:
+        all_node_names.append(nodes['name'])
 
     required_fields = ['name', 'description', 'image_name', 'image_tag', 'node_name', 'storage_capacity']
-    for profile in profiles['profiles']:
+    for profile in yaml_config['profiles']:
         # Check to see if all required fields are present.
         for required in required_fields:
             if required not in profile.keys():
@@ -21,6 +24,10 @@ with open("profiles.yaml", "r") as yam, open("profiles.py.template", "r") as tem
         if profile['node_name'] not in all_node_names:
             raise Exception(f"Node name '{profile['node_name']}'' is not valid for profile '{ profile['name'] }'. Must be one of '{all_node_names}'.")
 
+with open(opensarlab_yaml_path, "r") as yaml_file, open(template_path, "r") as template_file, open(output_config_path, 'w') as output_file:
+    yaml_config = yaml.safe_load(yaml_file)
 
-    template = Template(tem.read())
-    pro.write(template.render(profiles=profiles))
+    checks(yaml_config)
+
+    template = Template(template_file.read())
+    output_file.write(template.render(profiles=yaml_config['profiles']))

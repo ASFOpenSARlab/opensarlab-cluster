@@ -1,0 +1,235 @@
+ClusterRole:
+  Type: AWS::IAM::Role
+  Properties:
+    RoleName: !Sub ${AWS::Region}-${AWS::StackName}
+    AssumeRolePolicyDocument:
+      Version: 2012-10-17
+      Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - eks.amazonaws.com
+              - codebuild.amazonaws.com
+              - cloudformation.amazonaws.com
+              - codepipeline.amazonaws.com
+              - iam.amazonaws.com
+          Action: sts:AssumeRole
+        - Effect: Allow
+          Principal:
+            AWS:
+              Fn::ImportValue: !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
+          Action: sts:AssumeRole
+    ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+      - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+      - arn:aws:iam::aws:policy/AutoScalingFullAccess
+    Policies:
+      - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-hub-build
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "codestar-connections:*"
+                - "s3:*"
+                - "dlm:*"
+                - "logs:*"
+                - "cloudformation:*"
+                - "elasticloadbalancing:*"
+                - "autoscaling:*"
+                - "codebuild:*"
+                - "iam:*"
+                - "secretsmanager:*"
+                - "ssm:*"
+                - "ecr:*"
+                - "ec2:*"
+                - "eks:*"
+                - "sts:AssumeRole"
+              Resource: "*"
+
+ClusterSecurityGroup:
+  Type: AWS::EC2::SecurityGroup
+  Properties:
+    GroupName: !Sub ${AWS::StackName}
+    GroupDescription: !Sub Security group for the ${AWS::StackName} EKS cluster
+    VpcId: !Ref VpcId
+    Tags:
+      - Key: !Sub ${CostTagKey}
+        Value: !Sub ${CostTagValue}
+
+Cluster:
+  Type: AWS::EKS::Cluster
+  Properties:
+    Name: !Ref AWS::StackName
+    RoleArn: !GetAtt ClusterRole.Arn
+    ResourcesVpcConfig:
+      SubnetIds: !Ref Subnets
+      SecurityGroupIds:
+        - !GetAtt ClusterSecurityGroup.GroupId
+    Version: 1.21
+
+UserAccessRole:
+  Type: AWS::IAM::Role
+  Properties:
+    RoleName: !Sub ${AWS::Region}-${Cluster}-access
+    AssumeRolePolicyDocument:
+      Statement:
+        Effect: Deny
+        Principal:
+          AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+        Action: sts:AssumeRole
+    Policies:
+      - PolicyName: !Sub ${AWS::Region}-${Cluster}-access
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "eks:*"
+              Resource: "*"
+
+NodeSecurityGroup:
+  Type: AWS::EC2::SecurityGroup
+  Properties:
+    GroupName: !Sub ${Cluster}-instance
+    GroupDescription: !Sub Security group for instances in the ${Cluster} EKS cluster
+    VpcId: !Ref VpcId
+    Tags:
+      - Key: !Sub ${CostTagKey}
+        Value: !Sub ${CostTagValue}
+
+NodeSecurityGroupIngress:
+  Type: AWS::EC2::SecurityGroupIngress
+  Properties:
+    Description: Allow instances to communicate with each other
+    GroupId: !Ref NodeSecurityGroup
+    SourceSecurityGroupId: !Ref NodeSecurityGroup
+    IpProtocol: "-1"
+    FromPort: 0
+    ToPort: 65535
+
+NodeSecurityGroupFromControlPlaneIngress:
+  Type: AWS::EC2::SecurityGroupIngress
+  Properties:
+    Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
+    GroupId: !Ref NodeSecurityGroup
+    SourceSecurityGroupId: !GetAtt ClusterSecurityGroup.GroupId
+    IpProtocol: tcp
+    FromPort: 1025
+    ToPort: 65535
+
+NodeSecurityGroupFromLoadBalancer:
+  Type: AWS::EC2::SecurityGroupIngress
+  Properties:
+    Description: Allow worker Kubelets and pods to receive communication from the load balancer
+    GroupId: !Ref NodeSecurityGroup
+    SourceSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+    IpProtocol: tcp
+    FromPort: !Ref NodeProxyPort
+    ToPort: !Ref NodeProxyPort
+
+ControlPlaneEgressToNodeSecurityGroup:
+  Type: AWS::EC2::SecurityGroupEgress
+  Properties:
+    Description: Allow the cluster control plane to communicate with worker Kubelet and pods
+    GroupId: !GetAtt ClusterSecurityGroup.GroupId
+    DestinationSecurityGroupId: !Ref NodeSecurityGroup
+    IpProtocol: tcp
+    FromPort: 1025
+    ToPort: 65535
+
+NodeSecurityGroupFromControlPlaneOn443Ingress:
+  Type: AWS::EC2::SecurityGroupIngress
+  Properties:
+    Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
+    GroupId: !Ref NodeSecurityGroup
+    SourceSecurityGroupId: !GetAtt ClusterSecurityGroup.GroupId
+    IpProtocol: tcp
+    FromPort: 443
+    ToPort: 443
+
+ControlPlaneEgressToNodeSecurityGroupOn443:
+  Type: AWS::EC2::SecurityGroupEgress
+  Properties:
+    Description: Allow the cluster control plane to communicate with pods running extension API servers on port 443
+    GroupId: !GetAtt ClusterSecurityGroup.GroupId
+    DestinationSecurityGroupId: !Ref NodeSecurityGroup
+    IpProtocol: tcp
+    FromPort: 443
+    ToPort: 443
+
+ClusterControlPlaneSecurityGroupIngress:
+  Type: AWS::EC2::SecurityGroupIngress
+  Properties:
+    Description: Allow pods to communicate with the cluster API Server
+    GroupId: !GetAtt ClusterSecurityGroup.GroupId
+    SourceSecurityGroupId: !Ref NodeSecurityGroup
+    IpProtocol: tcp
+    ToPort: 443
+    FromPort: 443
+
+TargetGroup:
+  Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  Properties:
+    Name: !Ref AWS::StackName
+    VpcId: !Ref VpcId
+    Protocol: HTTP
+    Port: !Ref NodeProxyPort
+    HealthCheckPath: /hub/health
+    HealthCheckIntervalSeconds: 120
+    HealthyThresholdCount: 2
+    Tags:
+      - Key: !Sub ${CostTagKey}
+        Value: !Sub ${CostTagValue}
+
+LoadBalancerSecurityGroup:
+  Type: AWS::EC2::SecurityGroup
+  Properties:
+    GroupName: !Sub ${Cluster}-load-balancer
+    GroupDescription: !Sub Security group for ${Cluster} load balancer
+    VpcId: !Ref VpcId
+    SecurityGroupIngress:
+      - CidrIp: !Ref LoadBalancerCidrBlock
+        IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+      - CidrIp: !Ref LoadBalancerCidrBlock
+        IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+
+LoadBalancer:
+  Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+  Properties:
+    Name: !Ref AWS::StackName
+    Subnets: !Ref Subnets
+    SecurityGroups:
+      - !GetAtt LoadBalancerSecurityGroup.GroupId
+    Tags:
+      - Key: !Sub ${CostTagKey}
+        Value: !Sub ${CostTagValue}
+
+HttpListener:
+  Type: AWS::ElasticLoadBalancingV2::Listener
+  Properties:
+    LoadBalancerArn: !Ref LoadBalancer
+    Protocol: HTTP
+    Port: 80
+    DefaultActions:
+      - Type: redirect
+        RedirectConfig:
+          StatusCode: HTTP_301
+          Protocol: HTTPS
+          Port: "443"
+
+HttpsListener:
+  Type: AWS::ElasticLoadBalancingV2::Listener
+  Properties:
+    LoadBalancerArn: !Ref LoadBalancer
+    Protocol: HTTPS
+    Port: 443
+    Certificates:
+      - CertificateArn: !Ref CertificateArn
+    DefaultActions:
+      - Type: forward
+        TargetGroupArn: !Ref TargetGroup

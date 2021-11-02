@@ -177,10 +177,8 @@ Resources:
                   export VpcId="${!VPCIDS_SUBNETS[0]}";
                   export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
                   export Subnets="${!VPCIDS_SUBNETS[2]}";
-                - echo "Extract profiles...";
+                - echo "Setup cloudformations...";
                   python3 create_profiles_infrastructure.py;
-                  python3 create_profiles_config.py;
-                  mv profiles.py ./hub/helm_config.d/profiles.py
           artifacts:
             files:
               - '**/*'

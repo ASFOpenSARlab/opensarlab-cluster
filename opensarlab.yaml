@@ -13,15 +13,27 @@ parameters:
   ical_url: https://calendar.google.com/calendar/ical/c_90n3vfk860on0v1kl0fqcj2nss%40group.calendar.google.com/public/basic.ics
 
 nodes:
-  - node_name: sar_1
-    node_type: m5a.2xlarge
+  - name: hub
+    instance: t3a.medium
+    min_number: 1
+    max_number: 2
+    is_hub: True
 
-  - node_name: sar_2
-    node_type: m5a.8xlarge
+  - name: sar_1
+    instance: m5a.2xlarge
+    min_number: 0
+    max_number: 25
 
-  - node_name: gpu
-    node_type: whatever
-    gpu: True
+  - name: sar_2
+    instance: m5a.8xlarge
+    min_number: 0
+    max_number: 25
+
+  - name: gpu
+    instance: whatever
+    min_number: 0
+    max_number: 3
+    is_gpu: True
 
 profiles:
   - name: Required Only

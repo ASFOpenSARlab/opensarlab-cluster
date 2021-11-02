@@ -1,0 +1,23 @@
+NotificationsRepository:
+  Type: AWS::ECR::Repository
+  Properties:
+    RepositoryName: !Sub "${ContainerNamespace}/notifications"
+    Tags:
+      - Key: !Sub ${CostTagKey}
+        Value: !Sub ${CostTagValue}
+
+CronsRepository:
+  Type: AWS::ECR::Repository
+  Properties:
+    RepositoryName: !Sub "${ContainerNamespace}/crons"
+    Tags:
+      - Key: !Sub ${CostTagKey}
+        Value: !Sub ${CostTagValue}
+
+HubRepository:
+  Type: AWS::ECR::Repository
+  Properties:
+    RepositoryName: !Sub "${ContainerNamespace}/hub"
+    Tags:
+      - Key: !Sub ${CostTagKey}
+        Value: !Sub ${CostTagValue}

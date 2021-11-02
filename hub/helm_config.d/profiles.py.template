@@ -43,7 +43,7 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
 
         profile_list = []
 
-        {% for profile in profiles['profiles'] -%}
+        {% for profile in profiles -%}
 
         if '{{ profile.name | replace(" ", "_") }}' in group_list:
             profile = {
