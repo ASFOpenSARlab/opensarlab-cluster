@@ -74,21 +74,6 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/eks/optimized-ami/1.21/amazon-linux-2/recommended/image_id
 
-  NodeInstanceTypeCore:
-    Description: EC2 instance type for the node Core instances.
-    Type: String
-    Default: t3a.medium
-
-  NodeInstanceTypeSAR1:
-    Description: EC2 instance type for SAR 1.
-    Type: String
-    Default: m5a.2xlarge
-
-  NodeInstanceTypeSAR2:
-    Description: EC2 instance type for SAR 2.
-    Type: String
-    Default: m5a.8xlarge
-
 Outputs:
   AppUrl:
     Value: !GetAtt LoadBalancer.DNSName
@@ -162,7 +147,7 @@ Resources:
         SubnetIds: !Ref Subnets
         SecurityGroupIds:
           - !GetAtt ClusterSecurityGroup.GroupId
-      Version: "1.21"
+      Version: 1.21
 
   UserAccessRole:
     Type: AWS::IAM::Role
@@ -183,104 +168,6 @@ Resources:
                 Action:
                   - "eks:*"
                 Resource: "*"
-
-  NodeInstanceRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::Region}-${Cluster}-instance
-      AssumeRolePolicyDocument:
-        Statement:
-          Effect: Allow
-          Principal:
-            Service: ec2.amazonaws.com
-          Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AutoScalingFullAccess
-        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
-      Policies:
-        - PolicyName: !Sub ${AWS::Region}-${Cluster}-Service_Account_Policy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Sid: SAHubDeleteVolumes
-                Effect: Allow
-                Action:
-                  - ec2:DescribeSnapshots
-                  - ec2:DescribeVolumes
-                Resource: "*"
-              - Sid: SAHubDeleteSnapshots
-                Effect: Allow
-                Action:
-                  - ec2:DescribeSnapshots
-                  - ec2:DeleteSnapshot
-                  - ec2:DescribeVolumes
-                  - cognito-idp:ListUserPools
-                  - cognito-idp:AdminGetUser
-                  - cognito-idp:AdminDisableUser
-                  - cognito-idp:ListUsers
-                  - ses:SendEmail
-                Resource: "*"
-              - Sid: SAHubForceDeactivation
-                Effect: Allow
-                Action:
-                  - ec2:DescribeSnapshots
-                  - ec2:DeleteSnapshot
-                  - cognito-idp:ListUserPools
-                  - cognito-idp:ListUsers
-                  - cognito-idp:AdminDisableUser
-                Resource: "*"
-              - Sid: SAHubVolumeFromSnapshot
-                Effect: Allow
-                Action:
-                  - ec2:DescribeSnapshots
-                  - ec2:CreateVolume
-                  - ec2:CreateTags
-                Resource: "*"
-              - Sid: SAHubVolumeStoppingTags
-                Effect: Allow
-                Action:
-                  - ec2:DescribeVolumes
-                  - ec2:CreateTags
-                Resource: "*"
-              - Sid: SAHubGenericWithLogout
-                Effect: Allow
-                Action:
-                  - cognito-idp:ListUserPools
-                  - cognito-idp:ListUserPoolClients
-                  - cognito-idp:DescribeUserPoolClient
-                Resource: "*"
-        - PolicyName: !Sub ${AWS::Region}-${Cluster}-EKS_CSI_EBS_Policy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - ec2:AttachVolume
-                  - ec2:CreateSnapshot
-                  - ec2:CreateTags
-                  - ec2:CreateVolume
-                  - ec2:DeleteSnapshot
-                  - ec2:DeleteTags
-                  - ec2:DeleteVolume
-                  - ec2:DescribeAvailabilityZones
-                  - ec2:DescribeInstances
-                  - ec2:DescribeSnapshots
-                  - ec2:DescribeTags
-                  - ec2:DescribeVolumes
-                  - ec2:DescribeVolumesModifications
-                  - ec2:DetachVolume
-                  - ec2:ModifyVolume
-                Resource: "*"
-
-  NodeInstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      InstanceProfileName: !Ref NodeInstanceRole
-      Roles:
-        - !Ref NodeInstanceRole
 
   NodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -362,149 +249,6 @@ Resources:
       ToPort: 443
       FromPort: 443
 
-  AutoScalingGroupCore:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      DesiredCapacity: "1"
-      LaunchConfigurationName: !Ref LaunchConfigurationCore
-      MinSize: "1"
-      MaxSize: "2"
-      VPCZoneIdentifier: !Ref ActiveSubnets
-      TargetGroupARNs:
-        - !Ref TargetGroup
-      Tags:
-        - Key: Name
-          Value: !Sub ${Cluster}-instance
-          PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster/${Cluster}
-          Value: owned
-          PropagateAtLaunch: true
-        - Key: !Sub kubernetes.io/cluster/${Cluster}
-          Value: owned
-          PropagateAtLaunch: true
-        - Key: k8s.io/cluster-autoscaler/enabled
-          Value: "true"
-          PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-          Value: "true"
-          PropagateAtLaunch: true
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-          PropagateAtLaunch: true
-
-  LaunchConfigurationCore:
-    Type: AWS::AutoScaling::LaunchConfiguration
-    Properties:
-      AssociatePublicIpAddress: true
-      IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageId
-      InstanceType: !Ref NodeInstanceTypeCore
-      SecurityGroups:
-        - !Ref NodeSecurityGroup
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          set -o xtrace
-          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=core,server_type=core'
-          /opt/aws/bin/cfn-signal --exit-code $? \
-          --stack  ${Cluster} \
-          --resource NodeGroup  \
-          --region ${AWS::Region}
-
-  AutoScalingGroupSAR1:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      DesiredCapacity: "0"
-      LaunchConfigurationName: !Ref LaunchConfigurationSAR1
-      MinSize: "0"
-      MaxSize: "25"
-      VPCZoneIdentifier: !Ref ActiveSubnets
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-instance
-          PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster/${Cluster}
-          Value: owned
-          PropagateAtLaunch: true
-        - Key: !Sub kubernetes.io/cluster/${Cluster}
-          Value: owned
-          PropagateAtLaunch: true
-        - Key: k8s.io/cluster-autoscaler/enabled
-          Value: "true"
-          PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-          Value: "true"
-          PropagateAtLaunch: true
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-          PropagateAtLaunch: true
-
-  LaunchConfigurationSAR1:
-    Type: AWS::AutoScaling::LaunchConfiguration
-    Properties:
-      AssociatePublicIpAddress: true
-      IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageId
-      InstanceType: !Ref NodeInstanceTypeSAR1
-      SecurityGroups:
-        - !Ref NodeSecurityGroup
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          set -o xtrace
-          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_1'
-          /opt/aws/bin/cfn-signal --exit-code $? \
-          --stack  ${AWS::StackName} \
-          --resource NodeGroup  \
-          --region ${AWS::Region}
-
-  AutoScalingGroupSAR2:
-    Type: AWS::AutoScaling::AutoScalingGroup
-    Properties:
-      DesiredCapacity: "0"
-      LaunchConfigurationName: !Ref LaunchConfigurationSAR2
-      MinSize: "0"
-      MaxSize: "25"
-      VPCZoneIdentifier: !Ref ActiveSubnets
-      Tags:
-        - Key: Name
-          Value: !Sub ${AWS::StackName}-instance
-          PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster/${Cluster}
-          Value: owned
-          PropagateAtLaunch: true
-        - Key: !Sub kubernetes.io/cluster/${Cluster}
-          Value: owned
-          PropagateAtLaunch: true
-        - Key: k8s.io/cluster-autoscaler/enabled
-          Value: "true"
-          PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
-          Value: "true"
-          PropagateAtLaunch: true
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-          PropagateAtLaunch: true
-
-  LaunchConfigurationSAR2:
-    Type: AWS::AutoScaling::LaunchConfiguration
-    Properties:
-      AssociatePublicIpAddress: true
-      IamInstanceProfile: !Ref NodeInstanceProfile
-      ImageId: !Ref NodeImageId
-      InstanceType: !Ref NodeInstanceTypeSAR2
-      SecurityGroups:
-        - !Ref NodeSecurityGroup
-      UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          set -o xtrace
-          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_2'
-          /opt/aws/bin/cfn-signal --exit-code $? \
-          --stack  ${AWS::StackName} \
-          --resource NodeGroup  \
-          --region ${AWS::Region}
-
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
@@ -570,7 +314,7 @@ Resources:
       DefaultActions:
         - Type: forward
           TargetGroupArn: !Ref TargetGroup
-
+    
   BasicLifecycleRole:
     Type: AWS::IAM::Role
     Properties:
@@ -607,7 +351,7 @@ Resources:
             RetainRule:
               Count: 1
             CopyTags: true
-
+    
   NotificationsRepository:
     Type: AWS::ECR::Repository
     Properties:
@@ -632,11 +376,369 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  HubGroupLogs:
-    Type: AWS::Logs::LogGroup
+  NodeInstanceRolehub:
+    Type: AWS::IAM::Role
     Properties:
-      LogGroupName: !Sub "/aws/codebuild/${Cluster}-hub-group"
-      RetentionInDays: 30
+      RoleName: !Sub ${AWS::Region}-${Cluster}-hub-instance
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${Cluster}-hub-Service_Account_Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: SAHubDeleteVolumes
+                Effect: Allow
+                Action:
+                  - ec2:DescribeSnapshots
+                  - ec2:DescribeVolumes
+                Resource: "*"
+              - Sid: SAHubDeleteSnapshots
+                Effect: Allow
+                Action:
+                  - ec2:DescribeSnapshots
+                  - ec2:DeleteSnapshot
+                  - ec2:DescribeVolumes
+                  - cognito-idp:ListUserPools
+                  - cognito-idp:AdminGetUser
+                  - cognito-idp:AdminDisableUser
+                  - cognito-idp:ListUsers
+                  - ses:SendEmail
+                Resource: "*"
+              - Sid: SAHubForceDeactivation
+                Effect: Allow
+                Action:
+                  - ec2:DescribeSnapshots
+                  - ec2:DeleteSnapshot
+                  - cognito-idp:ListUserPools
+                  - cognito-idp:ListUsers
+                  - cognito-idp:AdminDisableUser
+                Resource: "*"
+              - Sid: SAHubVolumeFromSnapshot
+                Effect: Allow
+                Action:
+                  - ec2:DescribeSnapshots
+                  - ec2:CreateVolume
+                  - ec2:CreateTags
+                Resource: "*"
+              - Sid: SAHubVolumeStoppingTags
+                Effect: Allow
+                Action:
+                  - ec2:DescribeVolumes
+                  - ec2:CreateTags
+                Resource: "*"
+              - Sid: SAHubGenericWithLogout
+                Effect: Allow
+                Action:
+                  - cognito-idp:ListUserPools
+                  - cognito-idp:ListUserPoolClients
+                  - cognito-idp:DescribeUserPoolClient
+                Resource: "*"
+        - PolicyName: !Sub ${AWS::Region}-${Cluster}-hub-EKS_CSI_EBS_Policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:AttachVolume
+                  - ec2:CreateSnapshot
+                  - ec2:CreateTags
+                  - ec2:CreateVolume
+                  - ec2:DeleteSnapshot
+                  - ec2:DeleteTags
+                  - ec2:DeleteVolume
+                  - ec2:DescribeAvailabilityZones
+                  - ec2:DescribeInstances
+                  - ec2:DescribeSnapshots
+                  - ec2:DescribeTags
+                  - ec2:DescribeVolumes
+                  - ec2:DescribeVolumesModifications
+                  - ec2:DetachVolume
+                  - ec2:ModifyVolume
+                Resource: "*"
+            
+
+  NodeInstanceProfilehub:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Ref NodeInstanceRolehub
+      Roles:
+        - !Ref NodeInstanceRolehub
+
+  AutoScalingGrouphub:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName: !Ref LaunchConfigurationhub
+      MinSize: 1
+      MaxSize: 2
+      VPCZoneIdentifier: !Ref ActiveSubnets
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-instance
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: !Sub kubernetes.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/enabled
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+          PropagateAtLaunch: true
+
+  LaunchConfigurationhub:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref NodeInstanceProfilehub
+      ImageId: !Ref NodeImageId
+      InstanceType: t3a.medium
+      SecurityGroups:
+        - !Ref NodeSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=core,server_type=core'
+          /opt/aws/bin/cfn-signal --exit-code $? \
+          --stack  ${AWS::StackName} \
+          --resource NodeGroup  \
+          --region ${AWS::Region}
+
+  
+
+  NodeInstanceRolesar_1:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${Cluster}-sar_1-instance
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+            
+
+  NodeInstanceProfilesar_1:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Ref NodeInstanceRolesar_1
+      Roles:
+        - !Ref NodeInstanceRolesar_1
+
+  AutoScalingGroupsar_1:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName: !Ref LaunchConfigurationsar_1
+      MinSize: 0
+      MaxSize: 25
+      VPCZoneIdentifier: !Ref ActiveSubnets
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-instance
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: !Sub kubernetes.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/enabled
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+          PropagateAtLaunch: true
+
+  LaunchConfigurationsar_1:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref NodeInstanceProfilesar_1
+      ImageId: !Ref NodeImageId
+      InstanceType: m5a.2xlarge
+      SecurityGroups:
+        - !Ref NodeSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_1'
+          /opt/aws/bin/cfn-signal --exit-code $? \
+          --stack  ${AWS::StackName} \
+          --resource NodeGroup  \
+          --region ${AWS::Region}
+
+  
+
+  NodeInstanceRolesar_2:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${Cluster}-sar_2-instance
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+            
+
+  NodeInstanceProfilesar_2:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Ref NodeInstanceRolesar_2
+      Roles:
+        - !Ref NodeInstanceRolesar_2
+
+  AutoScalingGroupsar_2:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName: !Ref LaunchConfigurationsar_2
+      MinSize: 0
+      MaxSize: 25
+      VPCZoneIdentifier: !Ref ActiveSubnets
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-instance
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: !Sub kubernetes.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/enabled
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+          PropagateAtLaunch: true
+
+  LaunchConfigurationsar_2:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref NodeInstanceProfilesar_2
+      ImageId: !Ref NodeImageId
+      InstanceType: m5a.8xlarge
+      SecurityGroups:
+        - !Ref NodeSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=sar_2'
+          /opt/aws/bin/cfn-signal --exit-code $? \
+          --stack  ${AWS::StackName} \
+          --resource NodeGroup  \
+          --region ${AWS::Region}
+
+  
+
+  NodeInstanceRolegpu:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${Cluster}-gpu-instance
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+            
+
+  NodeInstanceProfilegpu:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Ref NodeInstanceRolegpu
+      Roles:
+        - !Ref NodeInstanceRolegpu
+
+  AutoScalingGroupgpu:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName: !Ref LaunchConfigurationgpu
+      MinSize: 0
+      MaxSize: 3
+      VPCZoneIdentifier: !Ref ActiveSubnets
+      Tags:
+        - Key: Name
+          Value: !Sub ${AWS::StackName}-instance
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: !Sub kubernetes.io/cluster/${Cluster}
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/enabled
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster-autoscaler/${Cluster}
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+          PropagateAtLaunch: true
+
+  LaunchConfigurationgpu:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      AssociatePublicIpAddress: true
+      IamInstanceProfile: !Ref NodeInstanceProfilegpu
+      ImageId: !Ref NodeImageId
+      InstanceType: whatever
+      SecurityGroups:
+        - !Ref NodeSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -o xtrace
+          /etc/eks/bootstrap.sh ${Cluster} --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type=gpu'
+          /opt/aws/bin/cfn-signal --exit-code $? \
+          --stack  ${AWS::StackName} \
+          --resource NodeGroup  \
+          --region ${AWS::Region}
 
   HubProject:
     Type: AWS::CodeBuild::Project
@@ -647,31 +749,6 @@ Resources:
         Type: LINUX_CONTAINER
         Image: aws/codebuild/standard:3.0
         PrivilegedMode: True
-        EnvironmentVariables:
-        - Name: AWS_REGION
-          Value: !Sub ${AWS::Region}
-        - Name: AWS_ACCOUNT_ID
-          Value: !Sub ${AWS::AccountId}
-
-          ## Given by parent CF
-          #${ICALUrl}
-          #${OAuthPoolName}
-          #${CostTagKey}
-          #${CostTagValue}
-          #${ContainerNamespace}
-          #${AdminUserName}
-          #${DeploymentURL}
-#
-          ## Given locally as defaults
-          #${NodeProxyPort}
-          #${LoadBalancer.DNSName}
-#
-          ## Resources created in local CF
-          #${ClusterRole.Arn}
-          #${ClusterRole}
-          #${Cluster}
-          #${NodeInstanceRole.Arn}
-
       Artifacts:
         Type: CODEPIPELINE
       ServiceRole: !Ref ClusterRole
@@ -727,8 +804,6 @@ Resources:
                       sleep 5
                     - echo "Update kubeconfig and config files..."
                     - aws eks update-kubeconfig --name ${Cluster} --role-arn ${CommonRoleArn}
-                    - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" configs/aws-auth-cm.yaml
-                    - sed -i "s|USER_ACCESS_ROLE_ARN|${UserAccessRole.Arn}|" configs/aws-auth-cm.yaml
                     - kubectl apply -f configs/aws-auth-cm.yaml
                     - echo "Reapply storage class..."
                     - kubectl delete sc gp2 || true
@@ -764,7 +839,7 @@ Resources:
                       PrevWD=$(pwd); 
                       cd hub/helm_config.d/;
                       echo "Location of opensarlab.yaml: $OPENSARLAB_YAML_PATH";
-                      bash create_profiles_config.py $OPENSARLAB_YAML_PATH profile.py.template profiles.py
+                      python3 create_profiles_config.py $OPENSARLAB_YAML_PATH profiles.py.template profiles.py
                       cd $PrevWD;
                     - echo "Install JupyterHub cluster...";
                       base64 ./hub/helm_config.d/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png > ASFLogo-Blue2.png.b64 &&
@@ -830,7 +905,7 @@ Resources:
                       export FluentBitReadFromHead='Off';
                       [[ $FluentBitReadFromHead = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On';
                       [[ -z $FluentBitHttpPort ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On';
-                      curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml | sed 's/{{cluster_name}}/${Cluster}/;s/{{region_name}}/${AWS::Region}/;s/{{http_server_toggle}}/"'$FluentBitHttpServer'"/;s/{{http_server_port}}/"'$FluentBitHttpPort'"/;s/{{read_from_head}}/"'$FluentBitReadFromHead'"/;s/{{read_from_tail}}/"'$FluentBitReadFromTail'"/' | kubectl apply -f -
+                      curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml | sed 's//${Cluster}/;s//${AWS::Region}/;s//"'$FluentBitHttpServer'"/;s//"'$FluentBitHttpPort'"/;s//"'$FluentBitReadFromHead'"/;s//"'$FluentBitReadFromTail'"/' | kubectl apply -f -
                     - echo "Create services namespace";
                       kubectl apply -f services/namespace.yaml
                     - echo "Build Notification Image...";
@@ -879,3 +954,9 @@ Resources:
         CloudWatchLogs:
           Status: ENABLED
           GroupName: !Ref HubGroupLogs
+
+  HubGroupLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${Cluster}-hub-group"
+      RetentionInDays: 30

@@ -1,3 +1,7 @@
+{% set parameters = opensarlab['parameters'] -%}
+{% set nodes = opensarlab['nodes'] -%}
+{% set profiles = opensarlab['profiles'] -%}
+
 AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
@@ -74,33 +78,19 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/eks/optimized-ami/1.21/amazon-linux-2/recommended/image_id
 
-  NodeInstanceTypeCore:
-    Description: EC2 instance type for the node Core instances.
-    Type: String
-    Default: t3a.medium
-
-  NodeInstanceTypeSAR1:
-    Description: EC2 instance type for SAR 1.
-    Type: String
-    Default: m5a.2xlarge
-
-  NodeInstanceTypeSAR2:
-    Description: EC2 instance type for SAR 2.
-    Type: String
-    Default: m5a.8xlarge
-
 Outputs:
   AppUrl:
     Value: !GetAtt LoadBalancer.DNSName
 
 Resources:
-  {% filter indent(width=2) %}
-  {% include "components/cluster.yaml" -%}
-  {% include "components/basic_lifecycle.yaml" -%}
-  {% include "components/respository.yaml" -%}
-  {% endfilter %}
 
-  {% for node in nodes -%}
+  {%- filter indent(width=2) -%}
+  {% include "components/cluster.yaml" %}
+  {% include "components/basic_lifecycle.yaml" %}
+  {% include "components/repository.yaml" %}
+  {%- endfilter -%}
+
+  {%- for node in nodes %}
 
   NodeInstanceRole{{ node.name }}:
     Type: AWS::IAM::Role
@@ -118,13 +108,13 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
-      {% filter indent(width=6) %}
+      {%- filter indent(width=6) -%}
       {% if node.is_hub is defined -%}
-        {% include "components/hub_node_policy.yaml" -%}
+        {% include "components/hub_node_policy.yaml" %}
       {% else -%}
-        {% include "components/user_node_policy.yaml" -%}
+        {% include "components/user_node_policy.yaml" %}
       {% endif -%}
-      {% endfilter %}
+      {%- endfilter %}
 
   NodeInstanceProfile{{ node.name }}:
     Type: AWS::IAM::InstanceProfile
@@ -166,7 +156,7 @@ Resources:
       AssociatePublicIpAddress: true
       IamInstanceProfile: !Ref NodeInstanceProfile{{ node.name }}
       ImageId: !Ref NodeImageId
-      InstanceType: !Ref {{ node.instance }}
+      InstanceType: {{ node.instance }}
       SecurityGroups:
         - !Ref NodeSecurityGroup
       UserData:
@@ -242,20 +232,12 @@ Resources:
                     - helm repo update
                 build:
                   commands:
-                    - echo "Update assume role of Common role..."
-                    - sed -i "s|CLUSTER_ROLE_ARN|${ClusterRole.Arn}|" common-role-assumerolepolicy-template.json;
-                      export commonrolearn=${CommonRoleArn}; echo $commonrolearn;
-                      aws iam update-assume-role-policy --role-name ${!commonrolearn##*/} --policy-document file://common-role-assumerolepolicy-template.json;
-                      sleep 5
-                    - echo "Update kubeconfig and config files..."
-                    - aws eks update-kubeconfig --name ${Cluster} --role-arn ${CommonRoleArn}
-                    - sed -i "s|INSTANCE_ROLE_ARN|${NodeInstanceRole.Arn}|" configs/aws-auth-cm.yaml
-                    - sed -i "s|USER_ACCESS_ROLE_ARN|${UserAccessRole.Arn}|" configs/aws-auth-cm.yaml
-                    - kubectl apply -f configs/aws-auth-cm.yaml
-                    - echo "Reapply storage class..."
-                    - kubectl delete sc gp2 || true
-                    - echo "Install EBS CSI driver for enhanced volume management..."
-                    - kubectl apply -f configs/csi-sc.yaml
+                    - echo "Update kubeconfig and apply config files...";
+                      aws eks update-kubeconfig --name ${Cluster} --role-arn arn:aws:iam::${AWS::Region}:role/${AWS::Region}-${AWS::StackName}-common-role;
+                      kubectl apply -f configs/aws-auth-cm.yaml
+                    - echo "Reapply storage class...";
+                      kubectl delete sc gp2 || true;
+                      kubectl apply -f configs/csi-sc.yaml
                     - helm upgrade aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver
                         --install
                         --version 2.4.0
@@ -268,8 +250,8 @@ Resources:
                         --set extraCreateMetadata=true
                         --set k8sTagClusterId=${Cluster}
                         --set extraVolumeTags.${CostTagKey}=${CostTagValue}
-                    - echo "Associate IAM and OIDC for service accounts..."
-                    - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
+                    - echo "Associate IAM and OIDC for service accounts...";
+                      eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
                     - echo "Get registry URI...";
                       export REGISTRY_URI='${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}'
                       echo $REGISTRY_URI
@@ -281,12 +263,6 @@ Resources:
                       time docker build -f dockerfile.build -t $REGISTRY_URI/hub:$HUB_IMAGE_BUILD -t $REGISTRY_URI/hub:latest .;
                       docker push $REGISTRY_URI/hub:$HUB_IMAGE_BUILD;
                       docker push $REGISTRY_URI/hub:latest;
-                      cd $PrevWD;
-                    - echo "Create Profiles Config..."
-                      PrevWD=$(pwd); 
-                      cd hub/helm_config.d/;
-                      echo "Location of opensarlab.yaml: $OPENSARLAB_YAML_PATH";
-                      bash create_profiles_config.py $OPENSARLAB_YAML_PATH profile.py.template profiles.py
                       cd $PrevWD;
                     - echo "Install JupyterHub cluster...";
                       base64 ./hub/helm_config.d/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png > ASFLogo-Blue2.png.b64 &&
@@ -394,8 +370,6 @@ Resources:
                       kubectl -n services rollout status deployment/crons -w;
                       kubectl -n services scale deployment crons --replicas=0;
                       kubectl -n services scale deployment crons --replicas=1
-            - CommonRoleArn:
-                Fn::ImportValue: !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
 
       LogsConfig:
         CloudWatchLogs:

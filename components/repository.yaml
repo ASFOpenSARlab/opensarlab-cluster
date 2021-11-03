@@ -1,3 +1,4 @@
+
 NotificationsRepository:
   Type: AWS::ECR::Repository
   Properties:

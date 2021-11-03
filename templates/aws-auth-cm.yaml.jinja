@@ -5,11 +5,13 @@ metadata:
   namespace: kube-system
 data:
   mapRoles: |
-    - rolearn: INSTANCE_ROLE_ARN
-      username: system:node:{{EC2PrivateDNSName}}
+    {% for node in opensarlab['nodes'] %}
+    - rolearn: arn:aws:iam::{{ region_name }}:role/{{ cluster_name }}-{{ node.name }}-instance
+      username: system:node:{% raw %}{{EC2PrivateDNSName}}{% endraw %}
       groups:
         - system:bootstrappers
         - system:nodes
+    {% endfor %}
     - rolearn: USER_ACCESS_ROLE_ARN
       username: user-access-role
       groups:

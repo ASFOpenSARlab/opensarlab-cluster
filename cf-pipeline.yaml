@@ -51,13 +51,6 @@ Parameters:
     Description: "The iCal formatted URL of the Google Calendar used for notifications."
     Default: "" # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cf-cluster.yaml and notifications/dock
 
-Outputs:
-  CommonRoleArn:
-    Description: "Common role arn"
-    Value: !GetAtt CommonRole.Arn
-    Export:
-      Name: !Sub ${AWS::Region}-${AWS::StackName}-cluster-${AWS::AccountId}-common-role-arn
-
 Resources:
   CommonRole:
     Type: AWS::IAM::Role
@@ -73,6 +66,11 @@ Resources:
                 - codebuild.amazonaws.com
                 - codepipeline.amazonaws.com
                 - eks.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              AWS:
+                - cluster_role_arn
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
@@ -117,6 +115,55 @@ Resources:
                   - "ec2:*"
                   - "eks:*"
                   - "codepipeline:*"
+                  - "sts:AssumeRole"
+                Resource: "*"
+
+  ClusterRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${AWS::StackName}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+                - codebuild.amazonaws.com
+                - cloudformation.amazonaws.com
+                - codepipeline.amazonaws.com
+                - iam.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt CommonRole.Arn
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-hub-build
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codestar-connections:*"
+                  - "s3:*"
+                  - "dlm:*"
+                  - "logs:*"
+                  - "cloudformation:*"
+                  - "elasticloadbalancing:*"
+                  - "autoscaling:*"
+                  - "codebuild:*"
+                  - "iam:*"
+                  - "secretsmanager:*"
+                  - "ssm:*"
+                  - "ecr:*"
+                  - "ec2:*"
+                  - "eks:*"
                   - "sts:AssumeRole"
                 Resource: "*"
 
@@ -177,8 +224,10 @@ Resources:
                   export VpcId="${!VPCIDS_SUBNETS[0]}";
                   export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
                   export Subnets="${!VPCIDS_SUBNETS[2]}";
-                - echo "Setup cloudformations...";
-                  python3 create_profiles_infrastructure.py;
+                - echo "Render templates...";
+                  python3 create_aws_auth.py opensarlab.yaml templates/aws_auth_cm.yaml.jinja configs/aws_auth_cm.yaml ${AWS::StackName} ${AWS::Region};
+                  python3 create_cf_cluster.py opensarlab.yaml templates/cf-cluster.yaml.jinja cf-cluster.yaml;
+                  python3 create_profiles.py opensarlab.yaml templates/profiles.py.template /hub/helm_config.d/profiles.py;
           artifacts:
             files:
               - '**/*'

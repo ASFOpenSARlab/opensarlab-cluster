@@ -1,51 +1,5 @@
-ClusterRole:
-  Type: AWS::IAM::Role
-  Properties:
-    RoleName: !Sub ${AWS::Region}-${AWS::StackName}
-    AssumeRolePolicyDocument:
-      Version: 2012-10-17
-      Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-              - eks.amazonaws.com
-              - codebuild.amazonaws.com
-              - cloudformation.amazonaws.com
-              - codepipeline.amazonaws.com
-              - iam.amazonaws.com
-          Action: sts:AssumeRole
-        - Effect: Allow
-          Principal:
-            AWS:
-              Fn::ImportValue: !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
-          Action: sts:AssumeRole
-    ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-      - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
-      - arn:aws:iam::aws:policy/AutoScalingFullAccess
-    Policies:
-      - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-hub-build
-        PolicyDocument:
-          Version: 2012-10-17
-          Statement:
-            - Effect: Allow
-              Action:
-                - "codestar-connections:*"
-                - "s3:*"
-                - "dlm:*"
-                - "logs:*"
-                - "cloudformation:*"
-                - "elasticloadbalancing:*"
-                - "autoscaling:*"
-                - "codebuild:*"
-                - "iam:*"
-                - "secretsmanager:*"
-                - "ssm:*"
-                - "ecr:*"
-                - "ec2:*"
-                - "eks:*"
-                - "sts:AssumeRole"
-              Resource: "*"
+
+# ClusterRole has been created in pipeline.yaml
 
 ClusterSecurityGroup:
   Type: AWS::EC2::SecurityGroup
