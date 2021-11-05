@@ -193,10 +193,10 @@ Resources:
                   python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}-cluster --append_parameters=opensarlab.yaml --az_postfix=d;
                   yamllint opensarlab.yaml
                 - echo "Render templates...";
-                  python3 create_aws_auth.py opensarlab.yaml templates/aws_auth_cm.yaml.jinja configs/aws_auth_cm.yaml ${AWS::StackName} ${AWS::Region};
-                  python3 create_cf_cluster.py opensarlab.yaml templates/cf-cluster.yaml.jinja cf-cluster.yaml;
-                  python3 create_profiles.py opensarlab.yaml templates/profiles.py.jinja ./hub/helm_config.d/profiles.py;
-                  yamllint configs/aws_auth_cm.yaml cf-cluster.yaml ./hub/helm_config.d/profiles.py
+                  python3 create_aws_auth.py ./opensarlab.yaml ./templates/aws-auth-cm.yaml.jinja ./configs/aws-auth-cm.yaml ${AWS::StackName} ${AWS::Region};
+                  python3 create_cf_cluster.py ./opensarlab.yaml ./templates/cf-cluster.yaml.jinja ./cf-cluster.yaml;
+                  python3 create_profiles.py ./opensarlab.yaml ./templates/profiles.py.jinja ./hub/helm_config.d/profiles.py;
+                  yamllint ./configs/aws-auth-cm.yaml ./cf-cluster.yaml ./hub/helm_config.d/profiles.py
           artifacts:
             files:
               - '**/*'
