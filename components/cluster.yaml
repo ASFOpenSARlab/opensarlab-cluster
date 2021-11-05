@@ -20,7 +20,7 @@ Cluster:
       SubnetIds: !Ref Subnets
       SecurityGroupIds:
         - !GetAtt ClusterSecurityGroup.GroupId
-    Version: 1.21
+    Version: "1.21"
 
 UserAccessRole:
   Type: AWS::IAM::Role

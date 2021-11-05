@@ -8,17 +8,17 @@ import boto3
     python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}
 """
 
-def which_subnet_is_d(subnets):
+def which_subnet_is_d(subnets, az_postfix):
     
     for subid, az in subnets:
-        if 'd' in az:
+        if az_postfix in az:
             active_subnet = subid
         else:
             other_subnet = subid
     
     return active_subnet, other_subnet
 
-def main(region_name, profile_name, cluster_name):
+def main(region_name, profile_name, cluster_name, append_file, az_postfix):
 
     session = None 
     try:
@@ -45,7 +45,7 @@ def main(region_name, profile_name, cluster_name):
         all_subnets = [(s['SubnetId'], s['AvailabilityZone']) for s in response['Subnets']]
         
         # Which subnet is -d and which is random?
-        active_subnet, other_subnet = which_subnet_is_d(all_subnets)
+        active_subnet, other_subnet = which_subnet_is_d(all_subnets, az_postfix)
         
     except Exception as e:
         
@@ -90,17 +90,27 @@ def main(region_name, profile_name, cluster_name):
         
         vpcid = default_vpcid
 
-    # Populate CF template parameters accordingly
+    # Append values to file
     print(f"{vpcid} {active_subnet} {active_subnet},{other_subnet}")
-    with open('get_vpcid_and_subnets.tmp', 'w') as f:
-        f.write(f"{vpcid} {active_subnet} {active_subnet},{other_subnet}")
+    if append_file:
+        with open(append_file, 'a') as f:
+            f.write(
+        f"""
+
+others:
+    vpc_id: {vpcid}
+    active_subnets: {active_subnet}
+    all_subnets: {active_subnet},{other_subnet}
+        """)
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--region_name', default=None)
     parser.add_argument('--cluster_name', default=None)
+    parser.add_argument('--append_file', default=None)
+    parser.add_argument('--az_postfix', default=None)
     parser.add_argument('--profile_name', default='default')
     args = parser.parse_args()
 
-    main(args.region_name, args.profile_name, args.cluster_name)
+    main(args.region_name, args.profile_name, args.cluster_name, args.append_file, args.az_postfix)

@@ -1,6 +1,9 @@
+---
+
 {% set parameters = opensarlab['parameters'] -%}
 {% set nodes = opensarlab['nodes'] -%}
 {% set profiles = opensarlab['profiles'] -%}
+{% set others = opensarlab['others'] -%}
 
 AWSTemplateFormatVersion: 2010-09-09
 
@@ -8,59 +11,63 @@ Parameters:
   AdminUserName:
     Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
     Type: String
+    Default: {{ parameters.admin_user_name }}
 
   CertificateArn:
     Description: The ARN of the SSL certificate attached to the load balancer.
     Type: String
-    Default: ""
+    Default: {{ parameters.certificate_arn }}
 
   ContainerNamespace:
     Description: OVERRIDE in child. The full url of the container ECR. Example-- osl-e-dev-container
     Type: String
-    Default: ""
+    Default: {{ parameters.container_namespace }}
 
   OAuthPoolName:
     Description: AWS Cognito User Pool name
     Type: String
-    Default: ""
+    Default: {{ parameters.oauth_pool_name }}
 
   OAuthDNSName:
     Description: AWS Cognito User Pool DNS Url
     Type: String
-    Default: ""
+    Default: {{ parameters.oauth_dns_name }}
 
   DeploymentURL:
     Description: Jupyterhub URL used by AWS Cognito authentication. If not given, the default is the load balancer URL
     Type: String
-    Default: ""
+    Default: {{ parameters.deployment_url }}
 
   CostTagKey:
     Type: String
     Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
-    Default: ""
+    Default: {{ parameters.cost_tag_key }}
 
   CostTagValue:
     Type: String
     Description: "The value of the cost tag used for filtering the budget, etc."
-    Default: "osl-daac"
+    Default: {{ parameters.cost_tag_value }}
 
   ICALUrl:
     Type: String
     Description: "The URL of the Google Calendar used for notifications."
-    Default: ""
+    Default: {{ parameters.ical_url }}
 
   # The following are dynamically added by the pipeline
   VpcId:
     Description: The VPC of the worker instances
     Type: AWS::EC2::VPC::Id
+    Default: {{ others.vpc_id }}
 
   Subnets:
     Description: The subnets where workers can be created.
     Type: List<AWS::EC2::Subnet::Id>
+    Default: {{ others.all_subnets }}
 
   ActiveSubnets:
     Description: The subnets actually used by resources in the cluster. Typically only one (e.g., subnet for AZ -d).
     Type: List<AWS::EC2::Subnet::Id>
+    Default: {{ others.active_subnets }}
 
   # The following values require defaults.
   LoadBalancerCidrBlock:
@@ -127,8 +134,8 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       LaunchConfigurationName: !Ref LaunchConfiguration{{ node.name }}
-      MinSize: {{ node.min_number}}
-      MaxSize: {{ node.max_number}}
+      MinSize: "{{ node.min_number}}"
+      MaxSize: "{{ node.max_number}}"
       VPCZoneIdentifier: !Ref ActiveSubnets
       Tags:
         - Key: Name
@@ -183,7 +190,7 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
         Image: aws/codebuild/standard:3.0
-        PrivilegedMode: True
+        PrivilegedMode: true
       Artifacts:
         Type: CODEPIPELINE
       ServiceRole: !Ref ClusterRole
@@ -193,9 +200,7 @@ Resources:
           Value: !Sub ${CostTagValue}
       Source:
         Type: CODEPIPELINE
-        BuildSpec:
-          Fn::Sub:
-            - |-
+        BuildSpec: !Sub |-
               version: 0.2
               env:
                 shell: bash

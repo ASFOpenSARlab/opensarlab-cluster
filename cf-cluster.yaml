@@ -1,62 +1,68 @@
+---
+
 AWSTemplateFormatVersion: 2010-09-09
 
 Parameters:
   AdminUserName:
     Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
     Type: String
+    Default: emlundell_test1
 
   CertificateArn:
     Description: The ARN of the SSL certificate attached to the load balancer.
     Type: String
-    Default: ""
+    Default: arn:aws:acm:us-west-2:701288258305:certificate/f4d36bbc-f7d4-4143-a5d3-9e0ec96324dd
 
   ContainerNamespace:
     Description: OVERRIDE in child. The full url of the container ECR. Example-- osl-e-dev-container
     Type: String
-    Default: ""
+    Default: osl-daac-test-container
 
   OAuthPoolName:
     Description: AWS Cognito User Pool name
     Type: String
-    Default: ""
+    Default: osl-daac-test-auth
 
   OAuthDNSName:
     Description: AWS Cognito User Pool DNS Url
     Type: String
-    Default: ""
+    Default: https://osl-daac-test-auth.auth.us-west-2.amazoncognito.com
 
   DeploymentURL:
     Description: Jupyterhub URL used by AWS Cognito authentication. If not given, the default is the load balancer URL
     Type: String
-    Default: ""
+    Default: https://osl-daac-test-cluster-cluster-1273112873.us-west-2.elb.amazonaws.com
 
   CostTagKey:
     Type: String
     Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
-    Default: ""
+    Default: osl-billing
 
   CostTagValue:
     Type: String
     Description: "The value of the cost tag used for filtering the budget, etc."
-    Default: "osl-daac"
+    Default: osl-daac-test
 
   ICALUrl:
     Type: String
     Description: "The URL of the Google Calendar used for notifications."
-    Default: ""
+    Default: https://calendar.google.com/calendar/ical/c_90n3vfk860on0v1kl0fqcj2nss%40group.calendar.google.com/public/basic.ics
 
   # The following are dynamically added by the pipeline
   VpcId:
     Description: The VPC of the worker instances
     Type: AWS::EC2::VPC::Id
+    Default: vpc-b83f28c0
 
   Subnets:
     Description: The subnets where workers can be created.
     Type: List<AWS::EC2::Subnet::Id>
+    Default: subnet-d61ff4fc,subnet-ea34b6a0
 
   ActiveSubnets:
     Description: The subnets actually used by resources in the cluster. Typically only one (e.g., subnet for AZ -d).
     Type: List<AWS::EC2::Subnet::Id>
+    Default: subnet-d61ff4fc
 
   # The following values require defaults.
   LoadBalancerCidrBlock:
@@ -79,54 +85,7 @@ Outputs:
     Value: !GetAtt LoadBalancer.DNSName
 
 Resources:
-  ClusterRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::Region}-${AWS::StackName}
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - eks.amazonaws.com
-                - codebuild.amazonaws.com
-                - cloudformation.amazonaws.com
-                - codepipeline.amazonaws.com
-                - iam.amazonaws.com
-            Action: sts:AssumeRole
-          - Effect: Allow
-            Principal:
-              AWS:
-                Fn::ImportValue: !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
-        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
-        - arn:aws:iam::aws:policy/AutoScalingFullAccess
-      Policies:
-        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-hub-build
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "codestar-connections:*"
-                  - "s3:*"
-                  - "dlm:*"
-                  - "logs:*"
-                  - "cloudformation:*"
-                  - "elasticloadbalancing:*"
-                  - "autoscaling:*"
-                  - "codebuild:*"
-                  - "iam:*"
-                  - "secretsmanager:*"
-                  - "ssm:*"
-                  - "ecr:*"
-                  - "ec2:*"
-                  - "eks:*"
-                  - "sts:AssumeRole"
-                Resource: "*"
+  # ClusterRole has been created in pipeline.yaml
 
   ClusterSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -147,7 +106,7 @@ Resources:
         SubnetIds: !Ref Subnets
         SecurityGroupIds:
           - !GetAtt ClusterSecurityGroup.GroupId
-      Version: 1.21
+      Version: "1.21"
 
   UserAccessRole:
     Type: AWS::IAM::Role
@@ -479,8 +438,8 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       LaunchConfigurationName: !Ref LaunchConfigurationhub
-      MinSize: 1
-      MaxSize: 2
+      MinSize: "1"
+      MaxSize: "2"
       VPCZoneIdentifier: !Ref ActiveSubnets
       Tags:
         - Key: Name
@@ -552,8 +511,8 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       LaunchConfigurationName: !Ref LaunchConfigurationsar_1
-      MinSize: 0
-      MaxSize: 25
+      MinSize: "0"
+      MaxSize: "25"
       VPCZoneIdentifier: !Ref ActiveSubnets
       Tags:
         - Key: Name
@@ -625,8 +584,8 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       LaunchConfigurationName: !Ref LaunchConfigurationsar_2
-      MinSize: 0
-      MaxSize: 25
+      MinSize: "0"
+      MaxSize: "25"
       VPCZoneIdentifier: !Ref ActiveSubnets
       Tags:
         - Key: Name
@@ -698,8 +657,8 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       LaunchConfigurationName: !Ref LaunchConfigurationgpu
-      MinSize: 0
-      MaxSize: 3
+      MinSize: "0"
+      MaxSize: "3"
       VPCZoneIdentifier: !Ref ActiveSubnets
       Tags:
         - Key: Name
@@ -748,7 +707,7 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
         Image: aws/codebuild/standard:3.0
-        PrivilegedMode: True
+        PrivilegedMode: true
       Artifacts:
         Type: CODEPIPELINE
       ServiceRole: !Ref ClusterRole
@@ -758,9 +717,7 @@ Resources:
           Value: !Sub ${CostTagValue}
       Source:
         Type: CODEPIPELINE
-        BuildSpec:
-          Fn::Sub:
-            - |-
+        BuildSpec: !Sub |-
               version: 0.2
               env:
                 shell: bash
@@ -797,18 +754,12 @@ Resources:
                     - helm repo update
                 build:
                   commands:
-                    - echo "Update assume role of Common role..."
-                    - sed -i "s|CLUSTER_ROLE_ARN|${ClusterRole.Arn}|" common-role-assumerolepolicy-template.json;
-                      export commonrolearn=${CommonRoleArn}; echo $commonrolearn;
-                      aws iam update-assume-role-policy --role-name ${!commonrolearn##*/} --policy-document file://common-role-assumerolepolicy-template.json;
-                      sleep 5
-                    - echo "Update kubeconfig and config files..."
-                    - aws eks update-kubeconfig --name ${Cluster} --role-arn ${CommonRoleArn}
-                    - kubectl apply -f configs/aws-auth-cm.yaml
-                    - echo "Reapply storage class..."
-                    - kubectl delete sc gp2 || true
-                    - echo "Install EBS CSI driver for enhanced volume management..."
-                    - kubectl apply -f configs/csi-sc.yaml
+                    - echo "Update kubeconfig and apply config files...";
+                      aws eks update-kubeconfig --name ${Cluster} --role-arn arn:aws:iam::${AWS::Region}:role/${AWS::Region}-${AWS::StackName}-common-role;
+                      kubectl apply -f configs/aws-auth-cm.yaml
+                    - echo "Reapply storage class...";
+                      kubectl delete sc gp2 || true;
+                      kubectl apply -f configs/csi-sc.yaml
                     - helm upgrade aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver
                         --install
                         --version 2.4.0
@@ -821,8 +772,8 @@ Resources:
                         --set extraCreateMetadata=true
                         --set k8sTagClusterId=${Cluster}
                         --set extraVolumeTags.${CostTagKey}=${CostTagValue}
-                    - echo "Associate IAM and OIDC for service accounts..."
-                    - eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
+                    - echo "Associate IAM and OIDC for service accounts...";
+                      eksctl utils associate-iam-oidc-provider --cluster ${Cluster} --approve
                     - echo "Get registry URI...";
                       export REGISTRY_URI='${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}'
                       echo $REGISTRY_URI
@@ -834,12 +785,6 @@ Resources:
                       time docker build -f dockerfile.build -t $REGISTRY_URI/hub:$HUB_IMAGE_BUILD -t $REGISTRY_URI/hub:latest .;
                       docker push $REGISTRY_URI/hub:$HUB_IMAGE_BUILD;
                       docker push $REGISTRY_URI/hub:latest;
-                      cd $PrevWD;
-                    - echo "Create Profiles Config..."
-                      PrevWD=$(pwd); 
-                      cd hub/helm_config.d/;
-                      echo "Location of opensarlab.yaml: $OPENSARLAB_YAML_PATH";
-                      python3 create_profiles_config.py $OPENSARLAB_YAML_PATH profiles.py.template profiles.py
                       cd $PrevWD;
                     - echo "Install JupyterHub cluster...";
                       base64 ./hub/helm_config.d/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png > ASFLogo-Blue2.png.b64 &&
@@ -947,8 +892,6 @@ Resources:
                       kubectl -n services rollout status deployment/crons -w;
                       kubectl -n services scale deployment crons --replicas=0;
                       kubectl -n services scale deployment crons --replicas=1
-            - CommonRoleArn:
-                Fn::ImportValue: !Sub ${AWS::Region}-${AWS::StackName}-${AWS::AccountId}-common-role-arn
 
       LogsConfig:
         CloudWatchLogs:

@@ -1,16 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 
 Parameters:
-  # The following parameters can be entered in AWS when creating the cluster stack. Adding them here is optional.
-  AdminUserName:
-    Description: "User name of main admin. This name is also whitelisted. Other admins are granted permsissions via the Jupyter Hub admin console."
-    Type: String
-    Default: "" # create a Cognito user with the AdminUserName in the AWS Cognito console
-
-  CertificateArn:
-    Type: String
-    Description: "Arn associated with the CA certificate you stored in AWS Certificate Manager"
-    Default: "" # arn:aws:acm:<region>:<account_#>:certificate/<certificate_id>
 
   CodeCommitRepoName:
     Type: String
@@ -22,20 +12,6 @@ Parameters:
     Description: "Name of the branch holding this deployment's cluster code"
     Default: ""
 
-  ContainerNamespace: # this namespaces your your ECR repos to distinguish containers belonging to different deployments
-    Type: String
-    Default: "" # '<deployment_name>'
-
-  OAuthPoolName:
-    Description: AWS Cognito User Pool name
-    Type: String
-    Default: "" # '<deployment_name>-auth'
-
-  DeploymentURL:
-    Description: "Used for Cognito authentication. If not using a custom URL, use the load balancer URL, found in the 'Outputs' tab of the cloudformation stack."
-    Type: String
-    Default: "" # load balancer URL found in the "Outputs" tab of <deployment_name>-cluster cloudformation stack
-
   CostTagKey:
     Type: String
     Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
@@ -45,11 +21,6 @@ Parameters:
     Type: String
     Description: "The value of the cost tag used for filtering the budget, etc."
     Default: "" # should match CostTagValue used in cf-cognito.yaml and cf-cluster.yaml
-
-  ICALUrl:
-    Type: String
-    Description: "The iCal formatted URL of the Google Calendar used for notifications."
-    Default: "" # Found in Google calendar's settings (use url in iCal format). Should match ICALUrl in cf-cluster.yaml and notifications/dock
 
 Resources:
   CommonRole:
@@ -200,10 +171,6 @@ Resources:
 
           env:
             shell: bash
-            exported-variables:
-              - VpcId
-              - ActiveSubnets
-              - Subnets
 
           phases:
             install:
@@ -213,21 +180,21 @@ Resources:
               on-failure: ABORT
               commands:
                 - echo "Install pip packages...";
-                  pip3 install jinja2 --upgrade
+                  pip3 install jinja2 --upgrade;
+                  pip3 install yamllint --upgrade
             build:
               on-failure: ABORT
               commands:
+                - echo "Check to see if opensarlab.yaml exists...";
+                  [ ! -f opensarlab.yaml ] && echo "opensarlab.yaml not found" && exit 1
                 - echo "Getting VpcId and Subnets...";
-                  python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}-cluster;
-                  export VPCIDS_SUBNETS=( $(cat get_vpcid_and_subnets.tmp) );
-                  echo ${!VPCIDS_SUBNETS[@]};
-                  export VpcId="${!VPCIDS_SUBNETS[0]}";
-                  export ActiveSubnets="${!VPCIDS_SUBNETS[1]}";
-                  export Subnets="${!VPCIDS_SUBNETS[2]}";
+                  python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}-cluster --append_parameters=opensarlab.yaml --az_postfix=d;
+                  yamllint opensarlab.yaml
                 - echo "Render templates...";
                   python3 create_aws_auth.py opensarlab.yaml templates/aws_auth_cm.yaml.jinja configs/aws_auth_cm.yaml ${AWS::StackName} ${AWS::Region};
                   python3 create_cf_cluster.py opensarlab.yaml templates/cf-cluster.yaml.jinja cf-cluster.yaml;
                   python3 create_profiles.py opensarlab.yaml templates/profiles.py.template /hub/helm_config.d/profiles.py;
+                  yamllint configs/aws_auth_cm.yaml cf-cluster.yaml /hub/helm_config.d/profiles.py
           artifacts:
             files:
               - '**/*'
@@ -263,7 +230,8 @@ Resources:
                 - Name: SourceArtifact
               Region: !Sub ${AWS::Region}
               Namespace: SourceVariables
-        - Name: !Sub ${AWS::StackName}-Build-Cluster
+
+        - Name: !Sub ${AWS::StackName}-PreBuild
           Actions:
             - Name: PreBuild
               RunOrder: 1
@@ -275,21 +243,16 @@ Resources:
                 Version: "1"
               Configuration:
                 ProjectName: !Ref PrebuildCodeBuild
-                EnvironmentVariables: !Sub |
-                  [
-                    {
-                      "value": "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}",
-                      "name": "DOCKER_REGISTRY",
-                      "type": "PLAINTEXT"
-                    }
-                  ]
               InputArtifacts:
                 - Name: SourceArtifact
               OutputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
+
+        - Name: !Sub ${AWS::StackName}-Build-Cluster
+          Actions:
             - Name: BuildCluster
-              RunOrder: 2
+              RunOrder: 1
               ActionTypeId:
                 Category: Deploy
                 Owner: AWS
@@ -301,29 +264,11 @@ Resources:
                 RoleArn: !GetAtt CommonRole.Arn
                 StackName: !Sub ${AWS::StackName}-cluster
                 TemplatePath: PreBuildArtifact::cf-cluster.yaml
-                ParameterOverrides: !Sub
-                  - |
-                    {
-                      "AdminUserName": "${AdminUserName}",
-                      "ContainerNamespace": "${ContainerNamespace}",
-                      "OAuthPoolName": "${OAuthPoolName}",
-                      "OAuthDNSName": "https://${OAuthPoolName}.auth.${AWS::Region}.amazoncognito.com",
-                      "DeploymentURL": "${DeploymentURL}",
-                      "CostTagKey": "${CostTagKey}",
-                      "CostTagValue": "${CostTagValue}",
-                      "CertificateArn": "${CertificateArn}",
-                      "VpcId": "${myVpcId}",
-                      "ActiveSubnets": "${myActiveSubnets}",
-                      "Subnets": "${mySubnets}",
-                      "ICALUrl": "${ICALUrl}"
-                    }
-                  - myVpcId: "#{prebuild.VpcId}"
-                    myActiveSubnets: "#{prebuild.ActiveSubnets}"
-                    mySubnets: "#{prebuild.Subnets}"
               InputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
               RoleArn: !GetAtt CommonRole.Arn
+
         - Name: !Sub ${AWS::StackName}-BuildJupyterHub
           Actions:
             - Name: BuildJupyterHub

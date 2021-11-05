@@ -1,15 +1,15 @@
 
 parameters:
-  admin_user_name: emlundell_test1
-  certificate_arn: arn:aws:acm:us-west-2:701288258305:certificate/f4d36bbc-f7d4-4143-a5d3-9e0ec96324dd
   code_commit_repo_name: main
   code_commit_branch_name: osl-daac-test-cluster
+  cost_tag_key: osl-billing
+  cost_tag_value: osl-daac-test
+  admin_user_name: emlundell_test1
+  certificate_arn: arn:aws:acm:us-west-2:701288258305:certificate/f4d36bbc-f7d4-4143-a5d3-9e0ec96324dd
   container_namespace: osl-daac-test-container
   oauth_pool_name: osl-daac-test-auth
   oauth_dns_name: https://osl-daac-test-auth.auth.us-west-2.amazoncognito.com
   deployment_url: https://osl-daac-test-cluster-cluster-1273112873.us-west-2.elb.amazonaws.com
-  cost_tag_key: osl-billing
-  cost_tag_value: osl-daac-test
   ical_url: https://calendar.google.com/calendar/ical/c_90n3vfk860on0v1kl0fqcj2nss%40group.calendar.google.com/public/basic.ics
 
 nodes:
@@ -95,3 +95,9 @@ profiles:
     storage_capacity: 500Gi
     node_name: sar_2
     delete_user_volumes: None
+
+others:
+    vpc_id: vpc-b83f28c0
+    active_subnets: subnet-d61ff4fc
+    all_subnets: subnet-d61ff4fc,subnet-ea34b6a0
+        
