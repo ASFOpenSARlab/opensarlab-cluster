@@ -45,11 +45,6 @@ Resources:
                 - codepipeline.amazonaws.com
                 - eks.amazonaws.com
             Action: sts:AssumeRole
-          - Effect: Allow
-            Principal:
-              AWS:
-                - !GetAtt ClusterRole.Arn
-            Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
