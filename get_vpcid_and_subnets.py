@@ -98,9 +98,9 @@ def main(region_name, profile_name, cluster_name, append_parameters, az_postfix)
         f"""
 
 others:
-    vpc_id: {vpcid}
-    active_subnets: {active_subnet}
-    all_subnets: {active_subnet},{other_subnet}
+  vpc_id: {vpcid}
+  active_subnets: {active_subnet}
+  all_subnets: {active_subnet},{other_subnet}
 """)
 
 if __name__ == "__main__":
