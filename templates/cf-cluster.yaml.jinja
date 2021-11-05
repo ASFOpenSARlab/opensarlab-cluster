@@ -112,59 +112,59 @@ Resources:
   BasicLifecyclePolicy:
     Type: "AWS::DLM::LifecyclePolicy"
     Properties:
-    Description: !Sub "Lifecycle Policy for ${Cluster}"
-    State: "ENABLED"
-    ExecutionRoleArn: !GetAtt BasicLifecycleRole.Arn
-    PolicyDetails:
-      ResourceTypes:
-        - "VOLUME"
-      TargetTags:
-        - Key: !Sub "kubernetes.io/cluster/${Cluster}"
-          Value: "owned"
-          Schedules:
-            - Name: "Daily Snapshots"
-              CreateRule:
-                Interval: 24
-                IntervalUnit: "HOURS"
-              Times:
-                - "10:00"
-              RetainRule:
-                Count: 1
-              CopyTags: true
+      Description: !Sub "Lifecycle Policy for ${Cluster}"
+      State: "ENABLED"
+      ExecutionRoleArn: !GetAtt BasicLifecycleRole.Arn
+      PolicyDetails:
+        ResourceTypes:
+          - "VOLUME"
+        TargetTags:
+          - Key: !Sub "kubernetes.io/cluster/${Cluster}"
+            Value: "owned"
+            Schedules:
+              - Name: "Daily Snapshots"
+                CreateRule:
+                  Interval: 24
+                  IntervalUnit: "HOURS"
+                Times:
+                  - "10:00"
+                RetainRule:
+                  Count: 1
+                CopyTags: true
 
   NotificationsRepository:
     Type: AWS::ECR::Repository
     Properties:
-    RepositoryName: !Sub "${ContainerNamespace}/notifications"
-    Tags:
+      RepositoryName: !Sub "${ContainerNamespace}/notifications"
+      Tags:
       - Key: !Sub ${CostTagKey}
-        Value: !Sub ${CostTagValue}
+          Value: !Sub ${CostTagValue}
 
   CronsRepository:
     Type: AWS::ECR::Repository
     Properties:
-    RepositoryName: !Sub "${ContainerNamespace}/crons"
-    Tags:
-      - Key: !Sub ${CostTagKey}
-        Value: !Sub ${CostTagValue}
+      RepositoryName: !Sub "${ContainerNamespace}/crons"
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
 
   HubRepository:
     Type: AWS::ECR::Repository
     Properties:
-    RepositoryName: !Sub "${ContainerNamespace}/hub"
-    Tags:
-      - Key: !Sub ${CostTagKey}
-        Value: !Sub ${CostTagValue}
+      RepositoryName: !Sub "${ContainerNamespace}/hub"
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
 
   {%- for node in nodes %}
 
   Repository{{ node.name }}:
     Type: AWS::ECR::Repository
     Properties:
-    RepositoryName: !Sub "${ContainerNamespace}/{{ node.name }}"
-    Tags:
-      - Key: !Sub ${CostTagKey}
-        Value: !Sub ${CostTagValue}
+      RepositoryName: !Sub "${ContainerNamespace}/{{ node.name }}"
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
 
   NodeInstanceRole{{ node.name }}:
     Type: AWS::IAM::Role
