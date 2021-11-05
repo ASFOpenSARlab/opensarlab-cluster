@@ -1,3 +1,4 @@
+---
 
 parameters:
   code_commit_repo_name: main
@@ -95,9 +96,4 @@ profiles:
     storage_capacity: 500Gi
     node_name: sar_2
     delete_user_volumes: None
-
-others:
-    vpc_id: vpc-b83f28c0
-    active_subnets: subnet-d61ff4fc
-    all_subnets: subnet-d61ff4fc,subnet-ea34b6a0
         

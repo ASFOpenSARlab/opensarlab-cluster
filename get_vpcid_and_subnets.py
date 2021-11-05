@@ -101,7 +101,7 @@ others:
     vpc_id: {vpcid}
     active_subnets: {active_subnet}
     all_subnets: {active_subnet},{other_subnet}
-        """)
+""")
 
 if __name__ == "__main__":
 
