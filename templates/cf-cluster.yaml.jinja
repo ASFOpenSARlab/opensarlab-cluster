@@ -157,7 +157,7 @@ Resources:
           Value: !Sub ${CostTagValue}
 
   {%- for node in nodes %}
-  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","📡") %}
+  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","specialcharacter") %}
 
   Repository{{ node_name_escaped }}:
     Type: AWS::ECR::Repository
