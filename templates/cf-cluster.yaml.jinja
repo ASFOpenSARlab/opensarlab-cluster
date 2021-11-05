@@ -137,7 +137,7 @@ Resources:
     Properties:
       RepositoryName: !Sub "${ContainerNamespace}/notifications"
       Tags:
-      - Key: !Sub ${CostTagKey}
+        - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
   CronsRepository:
@@ -157,8 +157,9 @@ Resources:
           Value: !Sub ${CostTagValue}
 
   {%- for node in nodes %}
+  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","📡") %}
 
-  Repository{{ node.name }}:
+  Repository{{ node_name_escaped }}:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: !Sub "${ContainerNamespace}/{{ node.name }}"
@@ -166,7 +167,7 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  NodeInstanceRole{{ node.name }}:
+  NodeInstanceRole{{ node_name_escaped }}:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub ${AWS::Region}-${Cluster}-{{ node.name }}-instance
@@ -190,17 +191,17 @@ Resources:
       {% endif -%}
       {%- endfilter %}
 
-  NodeInstanceProfile{{ node.name }}:
+  NodeInstanceProfile{{ node_name_escaped }}:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: !Ref NodeInstanceRole{{ node.name }}
+      InstanceProfileName: !Ref NodeInstanceRole{{ node_name_escaped }}
       Roles:
-        - !Ref NodeInstanceRole{{ node.name }}
+        - !Ref NodeInstanceRole{{ node_name_escaped }}
 
-  AutoScalingGroup{{ node.name }}:
+  AutoScalingGroup{{ node_name_escaped }}:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
-      LaunchConfigurationName: !Ref LaunchConfiguration{{ node.name }}
+      LaunchConfigurationName: !Ref LaunchConfiguration{{ node_name_escaped }}
       MinSize: "{{ node.min_number}}"
       MaxSize: "{{ node.max_number}}"
       VPCZoneIdentifier: !Ref ActiveSubnets
@@ -224,11 +225,11 @@ Resources:
           Value: !Sub ${CostTagValue}
           PropagateAtLaunch: true
 
-  LaunchConfiguration{{ node.name }}:
+  LaunchConfiguration{{ node_name_escaped }}:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: true
-      IamInstanceProfile: !Ref NodeInstanceProfile{{ node.name }}
+      IamInstanceProfile: !Ref NodeInstanceProfile{{ node_name_escaped }}
       ImageId: !Ref NodeImageId
       InstanceType: {{ node.instance }}
       SecurityGroups:
