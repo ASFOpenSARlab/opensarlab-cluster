@@ -94,7 +94,7 @@ Resources:
   ClusterRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::Region}-${AWS::StackName}
+      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-cluster
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
