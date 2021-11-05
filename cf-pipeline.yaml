@@ -187,8 +187,8 @@ Resources:
             build:
               on-failure: ABORT
               commands:
-                - echo "Check to see if opensarlab.yaml exists...";
-                  [ ! -f opensarlab.yaml ] && echo "opensarlab.yaml not found" && exit 1
+                - echo "Check top file structure...";
+                  ls -l
                 - echo "Getting VpcId and Subnets...";
                   python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}-cluster --append_parameters=opensarlab.yaml --az_postfix=d;
                   yamllint opensarlab.yaml
