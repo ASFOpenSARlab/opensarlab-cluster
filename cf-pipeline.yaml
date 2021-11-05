@@ -196,7 +196,7 @@ Resources:
                   python3 create_aws_auth.py ./opensarlab.yaml ./templates/aws-auth-cm.yaml.jinja ./configs/aws-auth-cm.yaml ${AWS::StackName} ${AWS::Region};
                   python3 create_cf_cluster.py ./opensarlab.yaml ./templates/cf-cluster.yaml.jinja ./cf-cluster.yaml;
                   python3 create_profiles.py ./opensarlab.yaml ./templates/profiles.py.jinja ./hub/helm_config.d/profiles.py;
-                  yamllint ./configs/aws-auth-cm.yaml ./cf-cluster.yaml ./hub/helm_config.d/profiles.py
+                  yamllint ./configs/aws-auth-cm.yaml ./cf-cluster.yaml
           artifacts:
             files:
               - '**/*'
