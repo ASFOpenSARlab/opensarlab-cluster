@@ -48,7 +48,7 @@ Resources:
           - Effect: Allow
             Principal:
               AWS:
-                - cluster_role_arn
+                - !GetAtt ClusterRole.Arn
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
