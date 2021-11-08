@@ -3,6 +3,7 @@
 import argparse
 
 import boto3
+import botocore
 
 """
     python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}
@@ -47,9 +48,9 @@ def main(region_name, profile_name, cluster_name, append_parameters, az_postfix)
         # Which subnet is -d and which is random?
         active_subnet, other_subnet = which_subnet_is_d(all_subnets, az_postfix)
         
-    except Exception as e:
+    except botocore.exceptions.ResourceNotFoundException as e:
         
-        print("There was an error: ", e)
+        print("Resource not found: ", e)
         
         # Create new non-default VPC. This will auto-include subnets
         #response = client.create_vpc(
@@ -86,9 +87,13 @@ def main(region_name, profile_name, cluster_name, append_parameters, az_postfix)
         all_subnets = [(s['SubnetId'], s['AvailabilityZone']) for s in response['Subnets']]
     
         # Find AZ -d subnet for ActiveSubnet
-        active_subnet, other_subnet = which_subnet_is_d(all_subnets)
+        active_subnet, other_subnet = which_subnet_is_d(all_subnets, az_postfix)
         
         vpcid = default_vpcid
+
+    except Exception as e:
+        print("There was an error: ", e)
+        raise
 
     # Append values to file
     print(f"{vpcid} {active_subnet} {active_subnet},{other_subnet}")
