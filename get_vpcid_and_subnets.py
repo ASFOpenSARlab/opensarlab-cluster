@@ -3,7 +3,6 @@
 import argparse
 
 import boto3
-import botocore
 
 """
     python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}
@@ -48,7 +47,7 @@ def main(region_name, profile_name, cluster_name, append_parameters, az_postfix)
         # Which subnet is -d and which is random?
         active_subnet, other_subnet = which_subnet_is_d(all_subnets, az_postfix)
         
-    except botocore.exceptions.ResourceNotFoundException as e:
+    except eks.exceptions.ResourceNotFoundException as e:
         
         print("Resource not found: ", e)
         
