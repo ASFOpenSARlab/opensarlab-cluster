@@ -22,13 +22,6 @@ Parameters:
     Description: "The value of the cost tag used for filtering the budget, etc."
     Default: "" # should match CostTagValue used in cf-cognito.yaml and cf-cluster.yaml
 
-Outputs:
-  CommonRoleArn:
-    Description: "Cluster build role arn"
-    Value: !GetAtt ClusterBuildRole.Arn
-    Export:
-      Name: !Sub ${AWS::Region}-${AWS::StackName}-cluster-${AWS::AccountId}-common-role-arn
-
 Resources:
   ClusterBuildRole:
     Type: AWS::IAM::Role
