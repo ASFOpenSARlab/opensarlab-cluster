@@ -98,7 +98,7 @@ Resources:
   BasicLifecycleRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-SnapshotPolicyRole
+      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-SnapshotPolicy-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -170,7 +170,7 @@ Resources:
   NodeInstanceRole{{ node_name_escaped }}:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::Region}-${Cluster}-{{ node.name }}-instance
+      RoleName: !Sub ${AWS::Region}-${Cluster}-{{ node.name }}-instance-role
       AssumeRolePolicyDocument:
         Statement:
           Effect: Allow

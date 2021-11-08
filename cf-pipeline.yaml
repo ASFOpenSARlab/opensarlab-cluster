@@ -22,18 +22,11 @@ Parameters:
     Description: "The value of the cost tag used for filtering the budget, etc."
     Default: "" # should match CostTagValue used in cf-cognito.yaml and cf-cluster.yaml
 
-Outputs:
-  CommonRoleArn:
-    Description: "Common role arn"
-    Value: !GetAtt CommonRole.Arn
-    Export:
-      Name: !Sub ${AWS::Region}-${AWS::StackName}-cluster-${AWS::AccountId}-common-role-arn
-
 Resources:
-  CommonRole:
+  ClusterBuildRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-common-role
+      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-cluster-build-role
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -51,7 +44,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
       Policies:
-        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-GetPassRole
+        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-GetPassRole-policy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -67,7 +60,7 @@ Resources:
                       - "cloudformation.amazonaws.com"
                       - "codepipeline.amazonaws.com"
                       - "codebuild.amazonaws.com"
-        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-hub-build
+        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-hub-build-policy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -94,7 +87,7 @@ Resources:
   ClusterRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-cluster
+      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-cluster-role
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -110,35 +103,12 @@ Resources:
           - Effect: Allow
             Principal:
               AWS:
-                - !GetAtt CommonRole.Arn
+                - !GetAtt ClusterBuildRole.Arn
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
-      Policies:
-        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-hub-build
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "codestar-connections:*"
-                  - "s3:*"
-                  - "dlm:*"
-                  - "logs:*"
-                  - "cloudformation:*"
-                  - "elasticloadbalancing:*"
-                  - "autoscaling:*"
-                  - "codebuild:*"
-                  - "iam:*"
-                  - "secretsmanager:*"
-                  - "ssm:*"
-                  - "ecr:*"
-                  - "ec2:*"
-                  - "eks:*"
-                  - "sts:AssumeRole"
-                Resource: "*"
 
   S3Bucket:
     Type: AWS::S3::Bucket
@@ -162,7 +132,7 @@ Resources:
         Image: aws/codebuild/standard:4.0
         ComputeType: BUILD_GENERAL1_SMALL
         PrivilegedMode: True
-      ServiceRole: !GetAtt CommonRole.Arn
+      ServiceRole: !GetAtt ClusterBuildRole.Arn
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
@@ -213,7 +183,7 @@ Resources:
         Location: !Sub codepipeline-${AWS::Region}-${AWS::StackName}
       Name: !Sub ${AWS::StackName}-Pipeline
       RestartExecutionOnUpdate: True
-      RoleArn: !GetAtt CommonRole.Arn
+      RoleArn: !GetAtt ClusterBuildRole.Arn
       Stages:
         - Name: !Sub ${AWS::StackName}-Source
           Actions:
@@ -263,13 +233,13 @@ Resources:
               Configuration:
                 ActionMode: CREATE_UPDATE
                 Capabilities: CAPABILITY_NAMED_IAM
-                RoleArn: !GetAtt CommonRole.Arn
+                RoleArn: !GetAtt ClusterBuildRole.Arn
                 StackName: !Sub ${AWS::StackName}-cluster
                 TemplatePath: PreBuildArtifact::cf-cluster.yaml
               InputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
-              RoleArn: !GetAtt CommonRole.Arn
+              RoleArn: !GetAtt ClusterBuildRole.Arn
 
         - Name: !Sub ${AWS::StackName}-BuildJupyterHub
           Actions:
