@@ -72,7 +72,7 @@ Resources:
             Action: sts:AssumeRole
           - Effect: Allow
             Principal:
-              AWS: !Ref CrossAccountRole.Arn
+              AWS: !GetAtt CrossAccountRole.Arn
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
