@@ -14,7 +14,7 @@ ClusterSecurityGroup:
 Cluster:
   Type: AWS::EKS::Cluster
   Properties:
-    Name: ${CostTagValue}-cluster
+    Name: !Sub ${CostTagValue}-cluster
     RoleArn: !Sub arn:aws:iam::${AWS::Region}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
     ResourcesVpcConfig:
       SubnetIds: !Ref Subnets
@@ -125,7 +125,7 @@ ClusterControlPlaneSecurityGroupIngress:
 TargetGroup:
   Type: AWS::ElasticLoadBalancingV2::TargetGroup
   Properties:
-    Name: ${CostTagValue}
+    Name: !Sub ${CostTagValue}
     VpcId: !Ref VpcId
     Protocol: HTTP
     Port: !Ref NodeProxyPort
@@ -155,7 +155,7 @@ LoadBalancerSecurityGroup:
 LoadBalancer:
   Type: AWS::ElasticLoadBalancingV2::LoadBalancer
   Properties:
-    Name: ${CostTagValue}-cluster
+    Name: !Sub ${CostTagValue}-cluster
     Subnets: !Ref Subnets
     SecurityGroups:
       - !GetAtt LoadBalancerSecurityGroup.GroupId
