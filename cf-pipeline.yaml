@@ -35,29 +35,25 @@ Resources:
             Principal:
               AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
             Action: sts:AssumeRole
-
-  CrossAccountPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cross-account-policy
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action:
-              - cloudformation:*
-              - codebuild:*
-              - s3:*
-              - iam:PassRole
-            Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/*
-            Condition:
-              "StringEquals":
-                "iam:PassedToService":
-                  - "eks.amazonaws.com"
-                  - "cloudformation.amazonaws.com"
-                  - "codepipeline.amazonaws.com"
-                  - "codebuild.amazonaws.com"
-      Roles: [!Ref CrossAccountRole]
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cross-account-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                  - codebuild:*
+                  - s3:*
+                  - iam:PassRole
+                Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/*
+                #Condition:
+                #  "StringEquals":
+                #    "iam:PassedToService":
+                #      - "eks.amazonaws.com"
+                #      - "cloudformation.amazonaws.com"
+                #      - "codepipeline.amazonaws.com"
+                #      - "codebuild.amazonaws.com"
 
   ClusterBuildRole:
     Type: AWS::IAM::Role
