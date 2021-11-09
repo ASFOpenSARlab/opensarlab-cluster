@@ -1,15 +1,28 @@
 
-# ClusterRole has been created in pipeline.yaml
-
-ClusterSecurityGroup:
-  Type: AWS::EC2::SecurityGroup
+ClusterRunRole:
+  Type: AWS::IAM::Role
   Properties:
-    GroupName: !Sub ${CostTagValue}-cluster
-    GroupDescription: !Sub Security group for the ${CostTagValue}-cluster EKS cluster
-    VpcId: !Ref VpcId
-    Tags:
-      - Key: !Sub ${CostTagKey}
-        Value: !Sub ${CostTagValue}
+    RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-run-role
+    AssumeRolePolicyDocument:
+      Version: 2012-10-17
+      Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - eks.amazonaws.com
+              - codebuild.amazonaws.com
+              - cloudformation.amazonaws.com
+              - codepipeline.amazonaws.com
+              - iam.amazonaws.com
+          Action: sts:AssumeRole
+        - Effect: Allow
+          Principal:
+            AWS: arn:aws:iam::${AWS::Region}:role/${AWS::Region}-${CostTagValue}-cluster-build-role
+          Action: sts:AssumeRole
+    ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+      - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+      - arn:aws:iam::aws:policy/AutoScalingFullAccess
 
 Cluster:
   Type: AWS::EKS::Cluster
@@ -21,6 +34,16 @@ Cluster:
       SecurityGroupIds:
         - !GetAtt ClusterSecurityGroup.GroupId
     Version: "1.21"
+
+ClusterSecurityGroup:
+  Type: AWS::EC2::SecurityGroup
+  Properties:
+    GroupName: !Sub ${CostTagValue}-cluster
+    GroupDescription: !Sub Security group for the ${CostTagValue}-cluster EKS cluster
+    VpcId: !Ref VpcId
+    Tags:
+      - Key: !Sub ${CostTagKey}
+        Value: !Sub ${CostTagValue}
 
 UserAccessRole:
   Type: AWS::IAM::Role
