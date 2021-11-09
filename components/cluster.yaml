@@ -125,7 +125,7 @@ ClusterControlPlaneSecurityGroupIngress:
 TargetGroup:
   Type: AWS::ElasticLoadBalancingV2::TargetGroup
   Properties:
-    Name: ${CostTagValue}-cluster
+    Name: ${CostTagValue}
     VpcId: !Ref VpcId
     Protocol: HTTP
     Port: !Ref NodeProxyPort
