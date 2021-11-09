@@ -15,7 +15,7 @@ Cluster:
   Type: AWS::EKS::Cluster
   Properties:
     Name: !Ref AWS::StackName
-    RoleArn: !Sub arn:aws:iam::${AWS::Region}:role/${AWS::Region}-${AWS::StackName}
+    RoleArn: !Sub arn:aws:iam::${AWS::Region}:role/${AWS::Region}-${AWS::StackName}-role
     ResourcesVpcConfig:
       SubnetIds: !Ref Subnets
       SecurityGroupIds:
