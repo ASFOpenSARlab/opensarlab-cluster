@@ -148,14 +148,6 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  HubRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: !Sub "${ContainerNamespace}/hub"
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
   {%- for node in nodes %}
   {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","specialcharacter") %}
 
