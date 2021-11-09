@@ -139,8 +139,8 @@ TargetGroup:
 LoadBalancerSecurityGroup:
   Type: AWS::EC2::SecurityGroup
   Properties:
-    GroupName: !Sub ${CostValueTag}-cluster-load-balancer
-    GroupDescription: !Sub Security group for ${CostValueTag}-cluster load balancer
+    GroupName: !Sub ${CostTagValue}-cluster-load-balancer
+    GroupDescription: !Sub Security group for ${CostTagValue}-cluster load balancer
     VpcId: !Ref VpcId
     SecurityGroupIngress:
       - CidrIp: !Ref LoadBalancerCidrBlock
