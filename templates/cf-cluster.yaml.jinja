@@ -106,8 +106,8 @@ Resources:
             Principal:
               Service: dlm.amazonaws.com
             Action: sts:AssumeRole
-        ManagedPolicyArns:
-          - arn:aws:iam::aws:policy/service-role/AWSDataLifecycleManagerServiceRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSDataLifecycleManagerServiceRole
 
   BasicLifecyclePolicy:
     Type: "AWS::DLM::LifecyclePolicy"
