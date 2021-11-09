@@ -4,8 +4,8 @@
 ClusterSecurityGroup:
   Type: AWS::EC2::SecurityGroup
   Properties:
-    GroupName: !Sub ${AWS::StackName}
-    GroupDescription: !Sub Security group for the ${AWS::StackName} EKS cluster
+    GroupName: !Sub ${CostTagValue}-cluster
+    GroupDescription: !Sub Security group for the ${CostTagValue}-cluster EKS cluster
     VpcId: !Ref VpcId
     Tags:
       - Key: !Sub ${CostTagKey}
@@ -14,8 +14,8 @@ ClusterSecurityGroup:
 Cluster:
   Type: AWS::EKS::Cluster
   Properties:
-    Name: !Ref AWS::StackName
-    RoleArn: !Sub arn:aws:iam::${AWS::Region}:role/${AWS::Region}-${AWS::StackName}-role
+    Name: ${CostTagValue}-cluster
+    RoleArn: !Sub arn:aws:iam::${AWS::Region}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
     ResourcesVpcConfig:
       SubnetIds: !Ref Subnets
       SecurityGroupIds:
@@ -25,7 +25,7 @@ Cluster:
 UserAccessRole:
   Type: AWS::IAM::Role
   Properties:
-    RoleName: !Sub ${AWS::Region}-${Cluster}-access
+    RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-access
     AssumeRolePolicyDocument:
       Statement:
         Effect: Deny
@@ -33,7 +33,7 @@ UserAccessRole:
           AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
         Action: sts:AssumeRole
     Policies:
-      - PolicyName: !Sub ${AWS::Region}-${Cluster}-access
+      - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-access
         PolicyDocument:
           Version: 2012-10-17
           Statement:
@@ -45,8 +45,8 @@ UserAccessRole:
 NodeSecurityGroup:
   Type: AWS::EC2::SecurityGroup
   Properties:
-    GroupName: !Sub ${Cluster}-instance
-    GroupDescription: !Sub Security group for instances in the ${Cluster} EKS cluster
+    GroupName: !Sub ${CostTagValue}-cluster-instance
+    GroupDescription: !Sub Security group for instances in the ${CostTagValue}-cluster EKS cluster
     VpcId: !Ref VpcId
     Tags:
       - Key: !Sub ${CostTagKey}
@@ -125,7 +125,7 @@ ClusterControlPlaneSecurityGroupIngress:
 TargetGroup:
   Type: AWS::ElasticLoadBalancingV2::TargetGroup
   Properties:
-    Name: !Ref AWS::StackName
+    Name: ${CostTagValue}-cluster
     VpcId: !Ref VpcId
     Protocol: HTTP
     Port: !Ref NodeProxyPort
@@ -139,8 +139,8 @@ TargetGroup:
 LoadBalancerSecurityGroup:
   Type: AWS::EC2::SecurityGroup
   Properties:
-    GroupName: !Sub ${Cluster}-load-balancer
-    GroupDescription: !Sub Security group for ${Cluster} load balancer
+    GroupName: !Sub ${CostValueTag}-cluster-load-balancer
+    GroupDescription: !Sub Security group for ${CostValueTag}-cluster load balancer
     VpcId: !Ref VpcId
     SecurityGroupIngress:
       - CidrIp: !Ref LoadBalancerCidrBlock
@@ -155,7 +155,7 @@ LoadBalancerSecurityGroup:
 LoadBalancer:
   Type: AWS::ElasticLoadBalancingV2::LoadBalancer
   Properties:
-    Name: !Ref AWS::StackName
+    Name: ${CostTagValue}-cluster
     Subnets: !Ref Subnets
     SecurityGroups:
       - !GetAtt LoadBalancerSecurityGroup.GroupId

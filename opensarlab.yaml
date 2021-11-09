@@ -1,8 +1,8 @@
 ---
 
 parameters:
-  code_commit_repo_name: main
-  code_commit_branch_name: osl-daac-test-cluster
+  code_commit_repo_name: osl-daac-test-cluster
+  code_commit_branch_name: main
   cost_tag_key: osl-billing
   cost_tag_value: osl-daac-test
   admin_user_name: emlundell_test1

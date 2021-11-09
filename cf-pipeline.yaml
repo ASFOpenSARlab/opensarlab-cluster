@@ -26,7 +26,7 @@ Resources:
   ClusterBuildRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-cluster-build-role
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-build-role
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -44,7 +44,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
       Policies:
-        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-GetPassRole-policy
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-GetPassRole-policy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -60,7 +60,7 @@ Resources:
                       - "cloudformation.amazonaws.com"
                       - "codepipeline.amazonaws.com"
                       - "codebuild.amazonaws.com"
-        - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-hub-build-policy
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-hub-build-policy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -84,10 +84,10 @@ Resources:
                   - "sts:AssumeRole"
                 Resource: "*"
 
-  ClusterRole:
+  ClusterRunRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::Region}-${AWS::StackName}-cluster-role
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-run-role
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -113,7 +113,7 @@ Resources:
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub codepipeline-${AWS::Region}-${AWS::StackName}
+      BucketName: !Sub codepipeline-${AWS::Region}-${CostTagValue}
       AccessControl: PublicRead
       Tags:
         - Key: Description
@@ -124,7 +124,7 @@ Resources:
   PrebuildCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub ${AWS::StackName}-prebuild-codebuild
+      Name: !Sub ${CostTagValue}-prebuild-codebuild
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -160,10 +160,10 @@ Resources:
                 - echo "Check top file structure...";
                   ls -l
                 - echo "Getting VpcId and Subnets...";
-                  python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}-cluster --append_parameters=opensarlab.yaml --az_postfix=d;
+                  python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${CostTagValue}-cluster --append_parameters=opensarlab.yaml --az_postfix=d;
                   yamllint opensarlab.yaml
                 - echo "Render templates...";
-                  python3 create_aws_auth.py ./opensarlab.yaml ./templates/aws-auth-cm.yaml.jinja ./configs/aws-auth-cm.yaml ${AWS::StackName} ${AWS::Region};
+                  python3 create_aws_auth.py ./opensarlab.yaml ./templates/aws-auth-cm.yaml.jinja ./configs/aws-auth-cm.yaml ${CostTagValue} ${AWS::Region};
                   python3 create_cf_cluster.py ./opensarlab.yaml ./templates/cf-cluster.yaml.jinja ./cf-cluster.yaml;
                   python3 create_profiles.py ./opensarlab.yaml ./templates/profiles.py.jinja ./hub/helm_config.d/profiles.py;
                   yamllint ./configs/aws-auth-cm.yaml ./cf-cluster.yaml
@@ -180,12 +180,12 @@ Resources:
     Properties:
       ArtifactStore:
         Type: S3
-        Location: !Sub codepipeline-${AWS::Region}-${AWS::StackName}
-      Name: !Sub ${AWS::StackName}-Pipeline
+        Location: !Sub codepipeline-${AWS::Region}-${CostTagValue}
+      Name: !Sub ${CostTagValue}-Pipeline
       RestartExecutionOnUpdate: True
       RoleArn: !GetAtt ClusterBuildRole.Arn
       Stages:
-        - Name: !Sub ${AWS::StackName}-Source
+        - Name: !Sub ${CostTagValue}-Source
           Actions:
             - Name: Source
               ActionTypeId:
@@ -203,7 +203,7 @@ Resources:
               Region: !Sub ${AWS::Region}
               Namespace: SourceVariables
 
-        - Name: !Sub ${AWS::StackName}-PreBuild
+        - Name: !Sub ${CostTagValue}-PreBuild
           Actions:
             - Name: PreBuild
               RunOrder: 1
@@ -221,7 +221,7 @@ Resources:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
 
-        - Name: !Sub ${AWS::StackName}-Build-Cluster
+        - Name: !Sub ${CostTagValue}-Build-Cluster
           Actions:
             - Name: BuildCluster
               RunOrder: 1
@@ -234,14 +234,14 @@ Resources:
                 ActionMode: CREATE_UPDATE
                 Capabilities: CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt ClusterBuildRole.Arn
-                StackName: !Sub ${AWS::StackName}-cluster
+                StackName: !Sub ${CostTagValue}-cluster
                 TemplatePath: PreBuildArtifact::cf-cluster.yaml
               InputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
               RoleArn: !GetAtt ClusterBuildRole.Arn
 
-        - Name: !Sub ${AWS::StackName}-BuildJupyterHub
+        - Name: !Sub ${CostTagValue}-BuildJupyterHub
           Actions:
             - Name: BuildJupyterHub
               ActionTypeId:
@@ -250,7 +250,7 @@ Resources:
                 Provider: CodeBuild
                 Version: "1"
               Configuration:
-                ProjectName: !Sub ${AWS::StackName}-cluster-jupyterhub
+                ProjectName: !Sub ${CostTagValue}-cluster-jupyterhub
               InputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
