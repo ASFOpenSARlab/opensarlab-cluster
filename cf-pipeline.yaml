@@ -45,6 +45,12 @@ Resources:
                   - cloudformation:*
                   - codebuild:*
                   - s3:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                  - codebuild:*
+                  - s3:*
                   - iam:PassRole
                 Resource: !Sub arn:aws:iam::${AWS::AccountId}:*
                 #Condition:
@@ -233,7 +239,7 @@ Resources:
               InputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
-              RoleArn: !GetAtt ClusterBuildRole.Arn
+              RoleArn: !GetAtt CrossAccountRole.Arn
 
         - Name: !Sub ${CostTagValue}-BuildJupyterHub
           Actions:
