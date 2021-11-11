@@ -17,7 +17,7 @@ ClusterRunRole:
           Action: sts:AssumeRole
         - Effect: Allow
           Principal:
-            AWS: !Sub arn:aws:iam::${AWS::Region}:role/${AWS::Region}-${CostTagValue}-cluster-build-role
+            AWS: !Sub arn:aws:iam::${AWS::AcountId}:role/${AWS::Region}-${CostTagValue}-cluster-build-role
           Action: sts:AssumeRole
     ManagedPolicyArns:
       - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
@@ -28,7 +28,7 @@ Cluster:
   Type: AWS::EKS::Cluster
   Properties:
     Name: !Sub ${CostTagValue}-cluster
-    RoleArn: !Sub arn:aws:iam::${AWS::Region}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
+    RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
     ResourcesVpcConfig:
       SubnetIds: !Ref Subnets
       SecurityGroupIds:
