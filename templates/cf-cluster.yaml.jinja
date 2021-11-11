@@ -121,16 +121,16 @@ Resources:
         TargetTags:
           - Key: !Sub "kubernetes.io/cluster/${CostTagValue}-cluster"
             Value: "owned"
-            Schedules:
-              - Name: "Daily Snapshots"
-                CreateRule:
-                  Interval: 24
-                  IntervalUnit: "HOURS"
+        Schedules:
+          - Name: "Daily Snapshots"
+            CreateRule:
+                Interval: 24
+                IntervalUnit: "HOURS"
                 Times:
                   - "10:00"
-                RetainRule:
-                  Count: 1
-                CopyTags: true
+            RetainRule:
+                Count: 1
+            CopyTags: true
 
   NotificationsRepository:
     Type: AWS::ECR::Repository
