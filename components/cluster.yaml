@@ -48,7 +48,7 @@ ClusterSecurityGroup:
 UserAccessRole:
   Type: AWS::IAM::Role
   Properties:
-    RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-access
+    RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access
     AssumeRolePolicyDocument:
       Statement:
         Effect: Deny
@@ -56,7 +56,7 @@ UserAccessRole:
           AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
         Action: sts:AssumeRole
     Policies:
-      - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-access
+      - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access
         PolicyDocument:
           Version: 2012-10-17
           Statement:
