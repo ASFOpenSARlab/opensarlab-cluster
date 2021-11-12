@@ -86,7 +86,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
       Policies:
-        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-hub-build-policy
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-build-policy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
