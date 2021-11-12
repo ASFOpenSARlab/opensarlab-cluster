@@ -31,7 +31,7 @@ nodes:
     max_number: 25
 
   - name: gpu
-    instance: whatever
+    instance: p3.2xlarge
     min_number: 0
     max_number: 3
     is_gpu: True
