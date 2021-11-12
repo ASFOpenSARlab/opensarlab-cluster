@@ -23,6 +23,32 @@ Parameters:
     Default: "" # should match CostTagValue used in cf-cognito.yaml and cf-cluster.yaml
 
 Resources:
+  #arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-CodeBuildKubectlRole
+  CodeBuildKubectlRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-CodeBuildKubectlRole
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: "codebuild.amazonaws.com"
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+        - arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-CodeBuildKubectlPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - eks:Describe*
+                Resource: "*"
+
   CrossAccountRole:
     Type: AWS::IAM::Role
     Properties:
@@ -163,7 +189,7 @@ Resources:
                   python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${CostTagValue}-cluster --append_parameters=opensarlab.yaml --az_postfix=d;
                   yamllint opensarlab.yaml
                 - echo "Render templates...";
-                  python3 create_aws_auth.py ./opensarlab.yaml ./templates/aws-auth-cm.yaml.jinja ./configs/aws-auth-cm.yaml ${CostTagValue} ${AWS::Region};
+                  python3 create_aws_auth.py ./opensarlab.yaml ./templates/aws-auth-cm.yaml.jinja ./configs/aws-auth-cm.yaml ${CostTagValue} ${AWS::Region} ${AWS::AccountId};
                   python3 create_cf_cluster.py ./opensarlab.yaml ./templates/cf-cluster.yaml.jinja ./cf-cluster.yaml;
                   python3 create_profiles.py ./opensarlab.yaml ./templates/profiles.py.jinja ./hub/helm_config.d/profiles.py;
                   yamllint ./configs/aws-auth-cm.yaml ./cf-cluster.yaml
