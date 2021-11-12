@@ -23,32 +23,6 @@ Parameters:
     Default: "" # should match CostTagValue used in cf-cognito.yaml and cf-cluster.yaml
 
 Resources:
-  #arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-CodeBuildKubectlRole
-  CodeBuildKubectlRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::Region}-${CostTagValue}-CodeBuildKubectlRole
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: "codebuild.amazonaws.com"
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
-        - arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess
-      Policies:
-        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-CodeBuildKubectlPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - eks:Describe*
-                Resource: "*"
-
   CrossAccountRole:
     Type: AWS::IAM::Role
     Properties:
@@ -180,6 +154,7 @@ Resources:
                 - echo "Install pip packages...";
                   pip3 install jinja2 --upgrade;
                   pip3 install yamllint --upgrade
+                - echo "IAM build role used is $(aws sts get-caller-identity)"
             build:
               on-failure: ABORT
               commands:

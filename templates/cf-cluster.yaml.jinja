@@ -284,6 +284,7 @@ Resources:
                     - eksctl version
                 pre_build:
                   commands:
+                    - echo "IAM build role used is $(aws sts get-caller-identity)"
                     - echo "Logging into AWS ECR..."
                     - $(aws ecr get-login --no-include-email --region ${AWS::Region})
                     - echo "Logging into Docker Hub user to get latest jupyter image..."

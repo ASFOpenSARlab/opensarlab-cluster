@@ -12,11 +12,7 @@ data:
         - system:bootstrappers
         - system:nodes
     {% endfor %}
-    - rolearn: USER_ACCESS_ROLE_ARN
+    - rolearn: arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-cluster-access
       username: user-access-role
-      groups:
-        - system:masters
-    - rolearn: arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-CodeBuildKubectlRole
-      username: build
       groups:
         - system:masters
