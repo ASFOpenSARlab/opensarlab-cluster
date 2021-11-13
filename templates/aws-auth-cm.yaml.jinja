@@ -15,10 +15,10 @@ data:
       username: cluster-run-role
       groups:
         - system:masters
-    {% for node in opensarlab['nodes'] %-}
+    {% for node in opensarlab['nodes'] -%}
     - rolearn: arn:aws:iam::{{ account_id }}:role/{{ cost_tag_value }}-{{ node.name }}-instance
       username: system:node:{% raw %}{{EC2PrivateDNSName}}{% endraw %}
       groups:
         - system:bootstrappers
         - system:nodes
-    {% endfor %-}
+    {% endfor -%}
