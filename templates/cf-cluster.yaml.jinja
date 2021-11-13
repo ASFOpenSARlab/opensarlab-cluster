@@ -299,7 +299,7 @@ Resources:
                 build:
                   commands:
                     - echo "Update kubeconfig and apply config files...";
-                      aws eks update-kubeconfig --name ${CostTagValue}-cluster --role-arn arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role;
+                      aws eks update-kubeconfig --name ${CostTagValue}-cluster --role-arn arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-build-role;
                       kubectl apply -f configs/aws-auth-cm.yaml
                     - echo "Reapply storage class...";
                       kubectl delete sc gp2 || true;

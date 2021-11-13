@@ -16,3 +16,7 @@ data:
       username: user-access-role
       groups:
         - system:masters
+    - rolearn: arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-cluster-run-role
+      username: cluster-run-role
+      groups:
+        - system:masters
