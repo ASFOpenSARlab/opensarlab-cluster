@@ -1,1 +1,75 @@
 
+Policies:
+  - PolicyName: !Sub ${AWS::Region}-${Cluster}-{{ node.name }}-Service_Account_Policy
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Sid: SAHubDeleteVolumes
+          Effect: Allow
+          Action:
+            - ec2:DescribeSnapshots
+            - ec2:DescribeVolumes
+          Resource: "*"
+        - Sid: SAHubDeleteSnapshots
+          Effect: Allow
+          Action:
+            - ec2:DescribeSnapshots
+            - ec2:DeleteSnapshot
+            - ec2:DescribeVolumes
+            - cognito-idp:ListUserPools
+            - cognito-idp:AdminGetUser
+            - cognito-idp:AdminDisableUser
+            - cognito-idp:ListUsers
+            - ses:SendEmail
+          Resource: "*"
+        - Sid: SAHubForceDeactivation
+          Effect: Allow
+          Action:
+            - ec2:DescribeSnapshots
+            - ec2:DeleteSnapshot
+            - cognito-idp:ListUserPools
+            - cognito-idp:ListUsers
+            - cognito-idp:AdminDisableUser
+          Resource: "*"
+        - Sid: SAHubVolumeFromSnapshot
+          Effect: Allow
+          Action:
+            - ec2:DescribeSnapshots
+            - ec2:CreateVolume
+            - ec2:CreateTags
+          Resource: "*"
+        - Sid: SAHubVolumeStoppingTags
+          Effect: Allow
+          Action:
+            - ec2:DescribeVolumes
+            - ec2:CreateTags
+          Resource: "*"
+        - Sid: SAHubGenericWithLogout
+          Effect: Allow
+          Action:
+            - cognito-idp:ListUserPools
+            - cognito-idp:ListUserPoolClients
+            - cognito-idp:DescribeUserPoolClient
+          Resource: "*"
+  - PolicyName: !Sub ${AWS::Region}-${Cluster}-{{ node.name }}-EKS_CSI_EBS_Policy
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Allow
+          Action:
+            - ec2:AttachVolume
+            - ec2:CreateSnapshot
+            - ec2:CreateTags
+            - ec2:CreateVolume
+            - ec2:DeleteSnapshot
+            - ec2:DeleteTags
+            - ec2:DeleteVolume
+            - ec2:DescribeAvailabilityZones
+            - ec2:DescribeInstances
+            - ec2:DescribeSnapshots
+            - ec2:DescribeTags
+            - ec2:DescribeVolumes
+            - ec2:DescribeVolumesModifications
+            - ec2:DetachVolume
+            - ec2:ModifyVolume
+          Resource: "*"
