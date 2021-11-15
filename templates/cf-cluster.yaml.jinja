@@ -149,7 +149,7 @@ Resources:
           Value: !Sub ${CostTagValue}
 
   {%- for node in nodes %}
-  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","specialcharacter") %}
+  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") %}
 
   Repository{{ node_name_escaped }}:
     Type: AWS::ECR::Repository
@@ -199,7 +199,7 @@ Resources:
       VPCZoneIdentifier: !Ref ActiveSubnets
       Tags:
         - Key: Name
-          Value: !Sub ${CostTagValue}-cluster-instance
+          Value: !Sub ${CostTagValue}-{{ node.name }}-cluster-instance
           PropagateAtLaunch: true
         - Key: !Sub k8s.io/cluster/${CostTagValue}-cluster
           Value: owned
@@ -210,7 +210,7 @@ Resources:
         - Key: k8s.io/cluster-autoscaler/enabled
           Value: "true"
           PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster-autoscaler/${CostTagValue}-cluster
+        - Key: !Sub k8s.io/cluster-autoscaler/${CostTagValue}-{{ node.name }}-cluster
           Value: "true"
           PropagateAtLaunch: true
         - Key: !Sub ${CostTagKey}
@@ -235,10 +235,7 @@ Resources:
           {% else -%}
           /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type={{ node.name }}'
           {% endif -%}
-          /opt/aws/bin/cfn-signal --exit-code $? \
-          --stack  ${CostTagValue}-cluster \
-          --resource NodeGroup  \
-          --region ${AWS::Region}
+          /opt/aws/bin/cfn-signal --exit-code $? --stack ${AWS::StackName} --resource NodeGroup --region ${AWS::Region}
 
   {% endfor -%}
 
