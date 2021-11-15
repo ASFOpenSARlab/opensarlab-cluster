@@ -16,7 +16,7 @@ data:
       groups:
         - system:masters
     {% for node in opensarlab['nodes'] -%}
-    - rolearn: arn:aws:iam::{{ account_id }}:role/{{ cost_tag_value }}-{{ node.name }}-instance
+    - rolearn: arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-{{ node.name }}-instance-role
       username: system:node:{% raw %}{{EC2PrivateDNSName}}{% endraw %}
       groups:
         - system:bootstrappers
