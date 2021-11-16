@@ -4,11 +4,7 @@ import argparse
 
 import boto3
 
-"""
-    python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${AWS::StackName}
-"""
-
-def which_subnet_is_d(subnets, az_postfix):
+def which_subnet_is_az(subnets, az_postfix):
     
     for subid, az in subnets:
         if az_postfix in az:
@@ -45,19 +41,11 @@ def main(region_name, profile_name, cluster_name, append_parameters, az_postfix)
         all_subnets = [(s['SubnetId'], s['AvailabilityZone']) for s in response['Subnets']]
         
         # Which subnet is -d and which is random?
-        active_subnet, other_subnet = which_subnet_is_d(all_subnets, az_postfix)
+        active_subnet, other_subnet = which_subnet_is_az(all_subnets, az_postfix)
         
     except eks.exceptions.ResourceNotFoundException as e:
-        
         print("Resource not found: ", e)
-        
-        # Create new non-default VPC. This will auto-include subnets
-        #response = client.create_vpc(
-        #    CidrBlock='string', 
-        #    DryRun=True
-        #)
-        #print(response)
-        
+
         # Use default VPC
         response = ec2.describe_vpcs(
             Filters=[
@@ -86,7 +74,7 @@ def main(region_name, profile_name, cluster_name, append_parameters, az_postfix)
         all_subnets = [(s['SubnetId'], s['AvailabilityZone']) for s in response['Subnets']]
     
         # Find AZ -d subnet for ActiveSubnet
-        active_subnet, other_subnet = which_subnet_is_d(all_subnets, az_postfix)
+        active_subnet, other_subnet = which_subnet_is_az(all_subnets, az_postfix)
         
         vpcid = default_vpcid
 
