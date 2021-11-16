@@ -167,7 +167,7 @@ Resources:
                     --cluster_name=${CostTagValue}-cluster
                     --append_parameters=$OSL_HOME/opensarlab.yaml
                     --az_postfix=d;
-                  yamllint $OSL_HOME/opensarlab.yaml
+                  yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensarlab.yaml
                 - echo "Render templates...";
                   python3 $CF_PIPELINE_DIR/create_aws_auth.py 
                     $OSL_HOME/opensarlab.yaml
@@ -184,7 +184,7 @@ Resources:
                     $OSL_HOME/opensarlab.yaml
                     $CF_PIPELINE_DIR/templates/profiles.py.jinja
                     $CF_CLUSTER_DIR/hub/helm_config.d/profiles.py;
-                  yamllint $CF_CLUSTER_DIR/configs/aws-auth-cm.yaml $CF_CLUSTER_DIR/cf-cluster.yaml
+                  yamllint -c $OSL_HOME/.yamllint $CF_CLUSTER_DIR/configs/aws-auth-cm.yaml $CF_CLUSTER_DIR/cf-cluster.yaml
           artifacts:
             files:
               - '**/*'
