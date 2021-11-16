@@ -96,4 +96,3 @@ profiles:
     storage_capacity: 500Gi
     node_name: sar_2
     delete_user_volumes: None
-        

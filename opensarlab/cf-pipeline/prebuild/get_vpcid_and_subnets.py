@@ -1,8 +1,8 @@
 
-
 import argparse
 
 import boto3
+import yaml
 
 def which_subnet_is_az(subnets, az_postfix):
     
@@ -14,7 +14,7 @@ def which_subnet_is_az(subnets, az_postfix):
     
     return active_subnet, other_subnet
 
-def main(region_name, profile_name, cluster_name, append_parameters, az_postfix):
+def main(region_name, profile_name, cluster_name, append_parameters_to, az_postfix):
 
     session = None 
     try:
@@ -84,25 +84,27 @@ def main(region_name, profile_name, cluster_name, append_parameters, az_postfix)
 
     # Append values to file
     print(f"{vpcid} {active_subnet} {active_subnet},{other_subnet}")
-    if append_parameters:
-        with open(append_parameters, 'a') as f:
-            f.write(
-        f"""
+    if append_parameters_to:
+        with open(append_parameters_to, "r") as f:
+            yaml_config = yaml.safe_load(f)
 
-others:
-  vpc_id: {vpcid}
-  active_subnets: {active_subnet}
-  all_subnets: {active_subnet},{other_subnet}
-""")
+        others = {}
+        others['vpc_id'] = f"{vpcid}"
+        others['active_subnets'] = f"{active_subnet}"
+        others['all_subnets'] = f"{active_subnet},{other_subnet}"
+        yaml_config['parameters'].update(others)
+
+        with open(append_parameters_to, "w") as f:
+            yaml.safe_dump(yaml_config, f)
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--region_name', default=None)
     parser.add_argument('--cluster_name', default=None)
-    parser.add_argument('--append_parameters', default=None)
+    parser.add_argument('--append_parameters_to', default=None)
     parser.add_argument('--az_postfix', default=None)
     parser.add_argument('--profile_name', default='default')
     args = parser.parse_args()
 
-    main(args.region_name, args.profile_name, args.cluster_name, args.append_parameters, args.az_postfix)
+    main(args.region_name, args.profile_name, args.cluster_name, args.append_parameters_to, args.az_postfix)

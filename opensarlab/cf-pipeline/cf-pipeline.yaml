@@ -158,16 +158,33 @@ Resources:
             build:
               on-failure: ABORT
               commands:
-                - echo "Check top file structure...";
-                  ls -l
+                - export CF_PIPELINE_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-pipeline/prebuild/;
+                  export CF_CLUSTER_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-cluster/;
+                  export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
                 - echo "Getting VpcId and Subnets...";
-                  python3 get_vpcid_and_subnets.py --region_name=${AWS::Region} --cluster_name=${CostTagValue}-cluster --append_parameters=opensarlab.yaml --az_postfix=d;
-                  yamllint opensarlab.yaml
+                  python3 $CF_PIPELINE_DIR/get_vpcid_and_subnets.py
+                    --region_name=${AWS::Region}
+                    --cluster_name=${CostTagValue}-cluster
+                    --append_parameters=$OSL_HOME/opensarlab.yaml
+                    --az_postfix=d;
+                  yamllint $OSL_HOME/opensarlab.yaml
                 - echo "Render templates...";
-                  python3 create_aws_auth.py ./opensarlab.yaml ./templates/aws-auth-cm.yaml.jinja ./configs/aws-auth-cm.yaml ${CostTagValue} ${AWS::Region} ${AWS::AccountId};
-                  python3 create_cf_cluster.py ./opensarlab.yaml ./templates/cf-cluster.yaml.jinja ./cf-cluster.yaml;
-                  python3 create_profiles.py ./opensarlab.yaml ./templates/profiles.py.jinja ./hub/helm_config.d/profiles.py;
-                  yamllint ./configs/aws-auth-cm.yaml ./cf-cluster.yaml
+                  python3 $CF_PIPELINE_DIR/create_aws_auth.py 
+                    $OSL_HOME/opensarlab.yaml
+                    $CF_PIPELINE_DIR/templates/aws-auth-cm.yaml.jinja
+                    $CF_CLUSTER_DIR/configs/aws-auth-cm.yaml
+                    ${CostTagValue}
+                    ${AWS::Region}
+                    ${AWS::AccountId};
+                  python3 $CF_PIPELINE_DIR/create_cf_cluster.py
+                    $OSL_HOME/opensarlab.yaml
+                    $CF_PIPELINE_DIR/templates/cf-cluster.yaml.jinja
+                    $CF_CLUSTER_DIR/cf-cluster.yaml;
+                  python3 $CF_PIPELINE_DIR/create_profiles.py
+                    $OSL_HOME/opensarlab.yaml
+                    $CF_PIPELINE_DIR/templates/profiles.py.jinja
+                    $CF_CLUSTER_DIR/hub/helm_config.d/profiles.py;
+                  yamllint $CF_CLUSTER_DIR/configs/aws-auth-cm.yaml $CF_CLUSTER_DIR/cf-cluster.yaml
           artifacts:
             files:
               - '**/*'

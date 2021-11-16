@@ -3,7 +3,6 @@
 {% set parameters = opensarlab['parameters'] -%}
 {% set nodes = opensarlab['nodes'] -%}
 {% set profiles = opensarlab['profiles'] -%}
-{% set others = opensarlab['others'] -%}
 
 AWSTemplateFormatVersion: 2010-09-09
 
@@ -57,17 +56,17 @@ Parameters:
   VpcId:
     Description: The VPC of the worker instances
     Type: AWS::EC2::VPC::Id
-    Default: {{ others.vpc_id }}
+    Default: {{ parameters.vpc_id }}
 
   Subnets:
     Description: The subnets where workers can be created.
     Type: List<AWS::EC2::Subnet::Id>
-    Default: {{ others.all_subnets }}
+    Default: {{ parameters.all_subnets }}
 
   ActiveSubnets:
     Description: The subnets actually used by resources in the cluster. Typically only one (e.g., subnet for AZ -d).
     Type: List<AWS::EC2::Subnet::Id>
-    Default: {{ others.active_subnets }}
+    Default: {{ parameters.active_subnets }}
 
   # The following values require defaults.
   LoadBalancerCidrBlock:
@@ -305,9 +304,11 @@ Resources:
                     - helm repo update
                 build:
                   commands:
+                    - cd $CODEBUILD_SRC_DIR/opensarlab/cf-cluster/;
+                      pwd;
                     - echo "Update kubeconfig and apply config files...";
                       aws eks update-kubeconfig --name ${CostTagValue}-cluster --role-arn arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-build-role;
-                      kubectl apply -f configs/aws-auth-cm.yaml
+                      kubectl apply configs/aws-auth-cm.yaml
                     - echo "Reapply storage class...";
                       kubectl delete sc gp2 || true;
                       kubectl apply -f configs/csi-sc.yaml
@@ -330,7 +331,7 @@ Resources:
                       export REGISTRY_URI='${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ContainerNamespace}'
                       echo $REGISTRY_URI
                     - echo "Build Hub Image...";
-                      PrevWD=$(pwd); 
+                      PrevWD=$(pwd);
                       cd hub;
                       cp dockerfile dockerfile.build;
                       export HUB_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
@@ -385,7 +386,7 @@ Resources:
                     - kubectl -n jupyter rollout status -w deployment.apps/hub
                     - echo "Associate volume provisioner with service account...";
                       kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
-                    - echo "Apply CNI. This must be updated on every upgrade...";
+                    - echo "Apply CNI. This must be updated on every cluster upgrade...";
                       curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/release-1.9/config/v1.9/aws-k8s-cni.yaml;
                       sed -i -e 's/us-west-2/${AWS::Region}/' aws-k8s-cni.yaml;
                       kubectl apply -f aws-k8s-cni.yaml
