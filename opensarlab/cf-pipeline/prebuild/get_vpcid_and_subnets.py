@@ -95,7 +95,13 @@ def main(region_name, profile_name, cluster_name, append_parameters_to, az_postf
         yaml_config['parameters'].update(others)
 
         with open(append_parameters_to, "w") as f:
-            yaml.safe_dump(yaml_config, f)
+            
+            #https://github.com/yaml/pyyaml/issues/234
+            class IndentDumper(yaml.Dumper):
+                def increase_indent(self, flow=False, *args, **kwargs):
+                    return super().increase_indent(flow=flow, indentless=False)
+
+            yaml.dump(yaml_config, f, Dumper=IndentDumper)
 
 if __name__ == "__main__":
 
