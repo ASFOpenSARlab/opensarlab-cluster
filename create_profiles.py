@@ -1,12 +1,26 @@
 
 import sys
+import pathlib
+import re
 
 import yaml
-from jinja2 import Template
+from jinja2 import Environment, FileSystemLoader, Template
+
+env = Environment(
+    loader=FileSystemLoader(pathlib.Path().parent),
+    autoescape=True
+)
 
 opensarlab_yaml_path = sys.argv[1]
 template_path = sys.argv[2]
 output_config_path = sys.argv[3]
+
+# Custom filter method
+def regex_replace(s, find, replace):
+    """A non-optimal implementation of a regex filter"""
+    return re.sub(find, replace, s)
+
+env.filters['regex_replace'] = regex_replace
 
 def checks(yaml_config):
     all_node_names = []
