@@ -154,7 +154,7 @@ Resources:
   Repository{{ node_name_escaped }}:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: !Sub "${ContainerNamespace}/{{ node.name }}"
+      RepositoryName: !Sub "${ContainerNamespace}/{{ node_name_escaped }}"
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
@@ -162,7 +162,7 @@ Resources:
   NodeInstanceRole{{ node_name_escaped }}:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-{{ node.name }}-instance-role
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-{{ node_name_escaped }}-instance-role
       AssumeRolePolicyDocument:
         Statement:
           Effect: Allow
@@ -186,7 +186,7 @@ Resources:
   NodeInstanceProfile{{ node_name_escaped }}:
     Type: AWS::IAM::InstanceProfile
     Properties:
-      InstanceProfileName: !Ref NodeInstanceRole{{ node_name_escaped }}
+      InstanceProfileName: !Sub ${AWS::Region}-${CostTagValue}-cluster-{{ node_name_escaped }}-instance-profile
       Roles:
         - !Ref NodeInstanceRole{{ node_name_escaped }}
 
@@ -199,7 +199,7 @@ Resources:
       VPCZoneIdentifier: !Ref ActiveSubnets
       Tags:
         - Key: Name
-          Value: !Sub ${CostTagValue}-{{ node.name }}-cluster-instance
+          Value: !Sub ${CostTagValue}-{{ node_name_escaped }}-cluster-instance
           PropagateAtLaunch: true
         - Key: !Sub k8s.io/cluster/${CostTagValue}-cluster
           Value: owned
@@ -210,7 +210,7 @@ Resources:
         - Key: k8s.io/cluster-autoscaler/enabled
           Value: "true"
           PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster-autoscaler/${CostTagValue}-{{ node.name }}-cluster
+        - Key: !Sub k8s.io/cluster-autoscaler/${CostTagValue}-{{ node_name_escaped }}-cluster
           Value: "true"
           PropagateAtLaunch: true
         - Key: !Sub ${CostTagKey}
@@ -233,11 +233,17 @@ Resources:
           {% if node.is_hub is defined -%}
           /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=core,server_type=core'
           {% else -%}
-          /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type={{ node.name }}'
+          /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type={{ node_name_escaped }}'
           {% endif -%}
           /opt/aws/bin/cfn-signal --exit-code $? --stack ${AWS::StackName} --resource NodeGroup --region ${AWS::Region}
 
   {% endfor -%}
+
+  HubGroupLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${CostTagValue}-cluster-hub-group"
+      RetentionInDays: 30
 
   HubProject:
     Type: AWS::CodeBuild::Project
@@ -255,6 +261,10 @@ Resources:
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Ref HubGroupLogs
       Source:
         Type: CODEPIPELINE
         BuildSpec: !Sub |-
@@ -434,14 +444,3 @@ Resources:
                       kubectl -n services rollout status deployment/crons -w;
                       kubectl -n services scale deployment crons --replicas=0;
                       kubectl -n services scale deployment crons --replicas=1
-
-      LogsConfig:
-        CloudWatchLogs:
-          Status: ENABLED
-          GroupName: !Ref HubGroupLogs
-
-  HubGroupLogs:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub "/aws/codebuild/${CostTagValue}-cluster-hub-group"
-      RetentionInDays: 30

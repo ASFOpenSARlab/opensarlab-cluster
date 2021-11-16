@@ -44,6 +44,7 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
         profile_list = []
 
         {% for profile in profiles -%}
+        {% set node_name_escaped = profile.node_name | regex_replace ("[^A-Za-z0-9]","00") -%}
 
         if '{{ profile.name | replace(" ", "_") }}' in group_list:
             profile = {
@@ -51,11 +52,11 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                 'description': "{{ profile.description }}",
                 'kubespawner_override': {
                     'extra_labels': {
-                        'server_type': '{{ profile.node_name }}',
+                        'server_type': '{{ node_name_escaped }}',
                         'profile_name': '{{ profile.name | replace(" ", "_") }}'
                     },
                     'node_selector': {
-                        'server_type': '{{ profile.node_name }}'
+                        'server_type': '{{ node_name_escaped }}'
                     },
                     'image': f"{z2jh.get_config('custom.REGISTRY_URI')}/{{ profile.image_name }}:{{ profile.image_tag }}",
                     {% if profile.hook_script is defined -%}
