@@ -161,6 +161,7 @@ Resources:
                 - export CF_PIPELINE_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-pipeline/prebuild/;
                   export CF_CLUSTER_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-cluster/;
                   export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
+                  export PYTHONPATH=$PYTHONPATH:$OSL_HOME;
                 - echo "Getting VpcId and Subnets...";
                   python3 $CF_PIPELINE_DIR/get_vpcid_and_subnets.py
                     --region_name=${AWS::Region}

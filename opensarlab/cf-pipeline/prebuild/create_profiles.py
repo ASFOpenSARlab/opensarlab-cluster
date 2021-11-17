@@ -5,7 +5,7 @@ import pathlib
 import yaml
 from jinja2 import Environment, FileSystemLoader, Template
 
-from opensarlab.custom_filters import regex_replace
+from opensarlab.utils.custom_filters import regex_replace
 
 env = Environment(
     loader=FileSystemLoader(pathlib.Path(__file__).parent),
