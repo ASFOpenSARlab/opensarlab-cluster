@@ -159,7 +159,7 @@ Resources:
               on-failure: ABORT
               commands:
                 - export CF_PIPELINE_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-pipeline/prebuild;
-                  export =$CODEBUILD_SRC_DIR/opensarlab/cf-cluster;
+                  export CF_CLUSTER_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-cluster;
                   export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
                   export PYTHONPATH=$PYTCF_CLUSTER_DIRHONPATH:$OSL_HOME;
                   echo $CF_PIPELINE_DIR $CF_CLUSTER_DIR $OSL_HOME $PYTHONPATH; 
