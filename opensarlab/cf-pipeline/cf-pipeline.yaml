@@ -48,18 +48,16 @@ Resources:
                 Resource: "*"
               - Effect: Allow
                 Action:
-                  - cloudformation:*
-                  - codebuild:*
-                  - s3:*
+                  - iam:GetRole
                   - iam:PassRole
-                Resource: !Sub arn:aws:iam::${AWS::AccountId}:*
-                #Condition:
-                #  "StringEquals":
-                #    "iam:PassedToService":
-                #      - "eks.amazonaws.com"
-                #      - "cloudformation.amazonaws.com"
-                #      - "codepipeline.amazonaws.com"
-                #      - "codebuild.amazonaws.com"
+                Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/*
+                Condition:
+                  "StringEquals":
+                    "iam:PassedToService":
+                      - "eks.amazonaws.com"
+                      - "cloudformation.amazonaws.com"
+                      - "codepipeline.amazonaws.com"
+                      - "codebuild.amazonaws.com"
 
   ClusterBuildRole:
     Type: AWS::IAM::Role
@@ -79,6 +77,10 @@ Resources:
           - Effect: Allow
             Principal:
               AWS: !GetAtt CrossAccountRole.Arn
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              AWS: !Sub ${AWS::Region}-${CostTagValue}-cluster-run-role
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
@@ -258,7 +260,7 @@ Resources:
               InputArtifacts:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
-              RoleArn: !GetAtt CrossAccountRole.Arn
+              RoleArn: !GetAtt ClusterBuildRole.Arn
 
         - Name: !Sub ${CostTagValue}-BuildJupyterHub
           Actions:
