@@ -1,6 +1,7 @@
 
 import sys
 import pathlib
+import argparse
 
 import yaml
 from jinja2 import Environment, FileSystemLoader
@@ -14,17 +15,20 @@ env = Environment(
 
 env.filters['regex_replace'] = regex_replace
 
-# python3 create_aws_auth.py opensarlab.yaml templates/aws-auth-cm.yaml.jinja aws-auth-cm.yaml osl-cluster us-west-2
-opensarlab_yaml_path = sys.argv[1]
-template_path = sys.argv[2]
-output_config_path = sys.argv[3]
+def main(config, output_file, cost_tag_value, region_name, account_id):
+    with open(config, "r") as infile, open(output_file, 'w') as outfile:
+        yaml_config = yaml.safe_load(infile)
 
-cost_tag_value = sys.argv[4]
-region_name = sys.argv[5]
-account_id = sys.argv[6]
+        template = env.get_template("templates/aws-auth-cm.yaml.jinja")
+        outfile.write(template.render(opensarlab=yaml_config, region_name=region_name, account_id=account_id ))
 
-with open(opensarlab_yaml_path, "r") as yaml_file, open(output_config_path, 'w') as output_file:
-    yaml_config = yaml.safe_load(yaml_file)
+if __name__ == "__main__":
 
-    template = env.get_template(template_path)
-    output_file.write(template.render(opensarlab=yaml_config, cost_tag_value=cost_tag_value, region_name=region_name, account_id=account_id ))
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', default=None)
+    parser.add_argument('--output_file', default=None)
+    parser.add_argument('--region_name', default=None)
+    parser.add_argument('--account_id', default=None)
+    args = parser.parse_args()
+
+    main(args.config, args.output_file, args.region_name, args.account_id)

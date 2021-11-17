@@ -7,6 +7,7 @@ metadata:
   namespace: kube-system
 data:
   mapRoles: |
+    {% set cost_tag_value = opensarlab['parameters']['cost_tag_value'] -%}
     - rolearn: arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-cluster-user-access
       username: user-access-role
       groups:

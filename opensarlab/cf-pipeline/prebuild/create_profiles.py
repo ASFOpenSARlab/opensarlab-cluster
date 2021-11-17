@@ -1,9 +1,9 @@
 
-import sys
 import pathlib
+import argparse
 
 import yaml
-from jinja2 import Environment, FileSystemLoader, Template
+from jinja2 import Environment, FileSystemLoader
 
 from opensarlab.utils.custom_filters import regex_replace
 
@@ -13,10 +13,6 @@ env = Environment(
 )
 
 env.filters['regex_replace'] = regex_replace
-
-opensarlab_yaml_path = sys.argv[1]
-template_path = sys.argv[2]
-output_config_path = sys.argv[3]
 
 def checks(yaml_config):
     all_node_names = []
@@ -34,10 +30,20 @@ def checks(yaml_config):
         if profile['node_name'] not in all_node_names:
             raise Exception(f"Node name '{profile['node_name']}'' is not valid for profile '{ profile['name'] }'. Must be one of '{all_node_names}'.")
 
-with open(opensarlab_yaml_path, "r") as yaml_file, open(template_path, "r") as template_file, open(output_config_path, 'w') as output_file:
-    yaml_config = yaml.safe_load(yaml_file)
+def main(config, output_file):
+    with open(config, "r") as infile, open(output_file, 'w') as outfile:
+        yaml_config = yaml.safe_load(infile)
 
-    checks(yaml_config)
+        checks(yaml_config)
 
-    template = Template(template_file.read())
-    output_file.write(template.render(profiles=yaml_config['profiles']))
+        template = env.get_template('templates/profile.py.jinja')
+        outfile.write(template.render(profiles=yaml_config['profiles']))
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--config', default=None)
+    parser.add_argument('--output_file', default=None)
+    args = parser.parse_args()
+
+    main(args.config, args.output_file)
