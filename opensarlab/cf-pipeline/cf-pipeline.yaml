@@ -160,7 +160,7 @@ Resources:
               commands:
                 - export CF_CLUSTER_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-cluster;
                   export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
-                  export PYTHONPATH=$PYTCF_CLUSTER_DIRHONPATH:$OSL_HOME;
+                  export PYTHONPATH=$PYTHONPATH:$CODEBUILD_SRC_DIR;
                   echo $CF_CLUSTER_DIR $OSL_HOME $PYTHONPATH;
                 - cd $CODEBUILD_SRC_DIR/opensarlab/cf-pipeline/prebuild
                 - echo "Getting VpcId and Subnets...";
