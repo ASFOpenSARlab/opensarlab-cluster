@@ -80,7 +80,7 @@ Resources:
             Action: sts:AssumeRole
           - Effect: Allow
             Principal:
-              AWS: !Sub ${AWS::Region}-${CostTagValue}-cluster-run-role
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AdministratorAccess
