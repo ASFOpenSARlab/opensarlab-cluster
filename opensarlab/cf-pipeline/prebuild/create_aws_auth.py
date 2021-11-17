@@ -15,7 +15,7 @@ env = Environment(
 
 env.filters['regex_replace'] = regex_replace
 
-def main(config, output_file, cost_tag_value, region_name, account_id):
+def main(config, output_file, region_name, account_id):
     with open(config, "r") as infile, open(output_file, 'w') as outfile:
         yaml_config = yaml.safe_load(infile)
 
