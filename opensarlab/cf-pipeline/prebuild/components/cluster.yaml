@@ -148,7 +148,7 @@ ClusterControlPlaneSecurityGroupIngress:
 TargetGroup:
   Type: AWS::ElasticLoadBalancingV2::TargetGroup
   Properties:
-    Name: !Sub ${CostTagValue}
+    Name: !Sub ${AWS::Region}-${CostTagValue}
     VpcId: !Ref VpcId
     Protocol: HTTP
     Port: !Ref NodeProxyPort
@@ -162,7 +162,7 @@ TargetGroup:
 LoadBalancerSecurityGroup:
   Type: AWS::EC2::SecurityGroup
   Properties:
-    GroupName: !Sub ${CostTagValue}-cluster-load-balancer
+    GroupName: !Sub ${AWS::Region}-${CostTagValue}-cluster-load-balancer
     GroupDescription: !Sub Security group for ${CostTagValue}-cluster load balancer
     VpcId: !Ref VpcId
     SecurityGroupIngress:
@@ -178,7 +178,7 @@ LoadBalancerSecurityGroup:
 LoadBalancer:
   Type: AWS::ElasticLoadBalancingV2::LoadBalancer
   Properties:
-    Name: !Sub ${CostTagValue}-cluster
+    Name: !Sub ${AWS::Region}-${CostTagValue}-cluster
     Subnets: !Ref Subnets
     SecurityGroups:
       - !GetAtt LoadBalancerSecurityGroup.GroupId

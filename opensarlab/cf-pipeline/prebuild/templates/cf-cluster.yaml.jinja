@@ -196,6 +196,10 @@ Resources:
       MinSize: "{{ node.min_number}}"
       MaxSize: "{{ node.max_number}}"
       VPCZoneIdentifier: !Ref ActiveSubnets
+      {% if node.is_hub is defined -%}
+      TargetGroupARNs:
+        - !Ref TargetGroup
+      {% endif -%}
       Tags:
         - Key: Name
           Value: !Sub ${CostTagValue}-{{ node_name_escaped }}-cluster-instance
