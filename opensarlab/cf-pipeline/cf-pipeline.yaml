@@ -180,8 +180,8 @@ Resources:
                 - echo "Render cf-cluster.yaml...";
                   python3 create_cf_cluster.py
                     --config $OSL_HOME/opensarlab.yaml
-                    --output_file $CF_CLUSTER_DIR/cf-cluster.yaml;
-                  yamllint -c $OSL_HOME/.yamllint $CF_CLUSTER_DIR/cf-cluster.yaml
+                    --output_file $CODEBUILD_SRC_DIR/cf-cluster.yaml;
+                  yamllint -c $OSL_HOME/.yamllint $CODEBUILD_SRC_DIR/cf-cluster.yaml
                 - echo "Render profiles.py...";
                   python3 create_profiles.py
                     --config $OSL_HOME/opensarlab.yaml
