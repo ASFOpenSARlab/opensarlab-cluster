@@ -23,42 +23,6 @@ Parameters:
     Default: "" # should match CostTagValue used in cf-cognito.yaml and cf-cluster.yaml
 
 Resources:
-  CrossAccountRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cross-account-role
-      Path: /
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cross-account-policy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - cloudformation:*
-                  - codebuild:*
-                  - s3:*
-                Resource: "*"
-              - Effect: Allow
-                Action:
-                  - iam:GetRole
-                  - iam:PassRole
-                Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/*
-                Condition:
-                  "StringEquals":
-                    "iam:PassedToService":
-                      - "eks.amazonaws.com"
-                      - "cloudformation.amazonaws.com"
-                      - "codepipeline.amazonaws.com"
-                      - "codebuild.amazonaws.com"
-
   ClusterBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -76,10 +40,6 @@ Resources:
             Action: sts:AssumeRole
           - Effect: Allow
             Principal:
-              AWS: !GetAtt CrossAccountRole.Arn
-            Action: sts:AssumeRole
-          - Effect: Allow
-            Principal:
               AWS: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
             Action: sts:AssumeRole
       ManagedPolicyArns:
@@ -88,6 +48,22 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
       Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-get-pass-role
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+            - Effect: Allow
+              Action:
+                - iam:GetRole
+                - iam:PassRole
+              Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/*
+              Condition:
+                "StringEquals":
+                  "iam:PassedToService":
+                    - "eks.amazonaws.com"
+                    - "cloudformation.amazonaws.com"
+                    - "codepipeline.amazonaws.com"
+                    - "codebuild.amazonaws.com"
         - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-build-policy
           PolicyDocument:
             Version: 2012-10-17

@@ -259,7 +259,7 @@ Resources:
         PrivilegedMode: true
       Artifacts:
         Type: CODEPIPELINE
-      ServiceRole: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-build-role
+      ServiceRole: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
       TimeoutInMinutes: 45
       Tags:
         - Key: !Sub ${CostTagKey}
