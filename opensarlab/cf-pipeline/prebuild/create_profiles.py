@@ -36,7 +36,7 @@ def main(config, output_file):
 
         checks(yaml_config)
 
-        template = env.get_template('templates/profile.py.jinja')
+        template = env.get_template('templates/profiles.py.jinja')
         outfile.write(template.render(profiles=yaml_config['profiles']))
 
 if __name__ == "__main__":
