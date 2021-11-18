@@ -315,7 +315,7 @@ Resources:
                       cp configs/cluster-build-assumerolepolicy.template.json assume.json;
                       sed -i "s|CLUSTER_RUN_ARN|arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role|" assume.json;
                       aws iam update-assume-role-policy --role-name ${AWS::Region}-${CostTagValue}-cluster-build-role --policy-document file://assume.json;
-                      sleep 3
+                      sleep 5
                     - echo "Update kubeconfig and apply config files...";
                       aws eks update-kubeconfig --name ${CostTagValue}-cluster --role-arn arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-build-role;
                     - echo "Apply aws-auth.yaml...";
