@@ -313,7 +313,7 @@ Resources:
                     - cd $CODEBUILD_SRC_DIR/opensarlab/cf-cluster/;
                     - echo "Update assumed role of cluster-build...";
                       cp configs/cluster-build-assumerolepolicy.template.json assume.json;
-                      sed -i "s|CLUSTER_RUN_ARN|arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role|" ;
+                      sed -i "s|CLUSTER_RUN_ARN|arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role|" assume.json;
                       aws iam update-assume-role-policy --role-name ${AWS::Region}-${CostTagValue}-cluster-build-role --policy-document file://assume.json;
                       sleep 3
                     - echo "Update kubeconfig and apply config files...";
