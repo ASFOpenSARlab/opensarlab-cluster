@@ -23,6 +23,29 @@ ClusterRunRole:
       - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
       - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
       - arn:aws:iam::aws:policy/AutoScalingFullAccess
+    Policies:
+      - PolicyName: !Sub !Sub ${AWS::Region}-${CostTagValue}-cluster-run-extra-policy
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "codestar-connections:*"
+                - "s3:*"
+                - "dlm:*"
+                - "logs:*"
+                - "cloudformation:*"
+                - "elasticloadbalancing:*"
+                - "autoscaling:*"
+                - "codebuild:*"
+                - "iam:*"
+                - "secretsmanager:*"
+                - "ssm:*"
+                - "ecr:*"
+                - "ec2:*"
+                - "eks:*"
+                - "sts:AssumeRole"
+              Resource: '*'
 
 Cluster:
   Type: AWS::EKS::Cluster
