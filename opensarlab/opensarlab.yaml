@@ -12,6 +12,7 @@ parameters:
   oauth_dns_name: https://osl-daac-test-auth.auth.us-west-2.amazoncognito.com
   deployment_url: https://osl-daac-test-cluster-cluster-1273112873.us-west-2.elb.amazonaws.com
   ical_url: https://calendar.google.com/calendar/ical/c_90n3vfk860on0v1kl0fqcj2nss%40group.calendar.google.com/public/basic.ics
+  az_postfix: d
 
 nodes:
   - name: hub

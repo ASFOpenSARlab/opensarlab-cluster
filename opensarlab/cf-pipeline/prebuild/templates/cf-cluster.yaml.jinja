@@ -52,6 +52,11 @@ Parameters:
     Description: "The URL of the Google Calendar used for notifications."
     Default: {{ parameters.ical_url }}
 
+  AZPostfix:
+    Type: String
+    Description: "Letter postfix of AZ."
+    Default: {{ parameters.az_postfix }}
+
   # The following are dynamically added by the pipeline
   VpcId:
     Description: The VPC of the worker instances
@@ -367,7 +372,7 @@ Resources:
                         --set custom.REGISTRY_URI=$REGISTRY_URI
                         --set custom.OAUTH_JUPYTER_URL=$( [ -n '${DeploymentURL}' ] && echo '${DeploymentURL}' || echo 'https://${LoadBalancer.DNSName}' )
                         --set custom.OAUTH_DNS_NAME='${OAuthDNSName}'
-                        --set custom.CLUSTER_NAME='${CostTagValue}-cluster',custom.OAUTH_POOL_NAME='${OAuthPoolName}',custom.AZ_NAME='${AWS::Region}d'
+                        --set custom.CLUSTER_NAME='${CostTagValue}-cluster',custom.OAUTH_POOL_NAME='${OAuthPoolName}',custom.AZ_NAME='${AWS::Region}${AZPostfix}'
                         --set custom.COST_TAG_VALUE='${CostTagValue}'
                         --set custom.COST_TAG_KEY='${CostTagKey}'
                         --set-file hub.extraFiles.hooks.stringData='./hub/helm_config.d/hooks.py'

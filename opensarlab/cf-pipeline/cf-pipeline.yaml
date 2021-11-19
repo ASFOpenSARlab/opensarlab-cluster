@@ -141,8 +141,7 @@ Resources:
                   python3 get_vpcid_and_subnets.py
                     --region_name=${AWS::Region}
                     --cluster_name=${CostTagValue}-cluster
-                    --append_parameters=$OSL_HOME/opensarlab.yaml
-                    --az_postfix=d;
+                    --config=$OSL_HOME/opensarlab.yaml
                   yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensarlab.yaml
                 - echo "Render aws-auth-cm.yaml...";
                   python3 create_aws_auth.py 
