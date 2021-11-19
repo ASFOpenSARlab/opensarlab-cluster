@@ -35,7 +35,7 @@ Parameters:
   DeploymentURL:
     Description: Jupyterhub URL used by AWS Cognito authentication. If not given, the default is the load balancer URL
     Type: String
-    Default: {{ parameters.deployment_url }}
+    Default: {{ parameters.deployment_url or ''}}
 
   CostTagKey:
     Type: String
