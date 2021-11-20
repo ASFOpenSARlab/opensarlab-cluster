@@ -161,10 +161,10 @@ Resources:
                 files:
                   - '**/*'
 
-  MidBuildCodeBuild:
+  PostBuildCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub ${CostTagValue}-MidBuild
+      Name: !Sub ${CostTagValue}-PostBuild
       Artifacts:
         Type: CODEPIPELINE
       Environment:
@@ -203,7 +203,7 @@ Resources:
                   export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
                   export PYTHONPATH=$PYTHONPATH:$CODEBUILD_SRC_DIR;
                   echo $CF_CLUSTER_DIR $OSL_HOME $PYTHONPATH;
-                - cd $CODEBUILD_SRC_DIR/opensarlab/cf-pipeline/midbuild
+                - cd $CODEBUILD_SRC_DIR/opensarlab/cf-pipeline/postbuild
                 - echo "Update opensarlab.yaml:deployment_url...";
                   python3 update_deployment_url.py 
                     --config=$OSL_HOME/opensarlab.yaml
@@ -234,7 +234,7 @@ Resources:
             files:
               - '**/*'
             secondary-artifacts:
-              MidBuildArtifact:
+              PostBuildArtifact:
                 files:
                   - '**/*'
 
@@ -301,27 +301,25 @@ Resources:
                 TemplatePath: PreBuildArtifact::cf-cluster.yaml
               InputArtifacts:
                 - Name: PreBuildArtifact
-              OutputArtifacts:
-                - Name: BuildArtifact
               Region: !Sub ${AWS::Region}
               RoleArn: !GetAtt ClusterBuildRole.Arn
 
-        - Name: !Sub ${CostTagValue}-MidBuild
+        - Name: !Sub ${CostTagValue}-PostBuild
           Actions:
-            - Name: MidBuild
+            - Name: PostBuild
               RunOrder: 1
-              Namespace: MidBuild
+              Namespace: PostBuild
               ActionTypeId:
                 Category: Build
                 Owner: AWS
                 Provider: CodeBuild
                 Version: "1"
               Configuration:
-                ProjectName: !Sub ${CostTagValue}-MidBuild
+                ProjectName: !Sub ${CostTagValue}-PostBuild
               InputArtifacts:
-                - Name: BuildArtifact
+                - Name: PreBuildArtifact
               OutputArtifacts:
-                - Name: MidBuildArtifact
+                - Name: PostBuildArtifact
               Region: !Sub ${AWS::Region}
 
         - Name: !Sub ${CostTagValue}-Deploy
@@ -339,9 +337,9 @@ Resources:
                 Capabilities: CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt ClusterBuildRole.Arn
                 StackName: !Sub ${CostTagValue}-cluster
-                TemplatePath: MidBuildArtifact::cf-cluster.yaml
+                TemplatePath: PostBuildArtifact::cf-cluster.yaml
               InputArtifacts:
-                - Name: MidBuildArtifact
+                - Name: PostBuildArtifact
               Region: !Sub ${AWS::Region}
               RoleArn: !GetAtt ClusterBuildRole.Arn
             
@@ -357,9 +355,9 @@ Resources:
                 Capabilities: CAPABILITY_NAMED_IAM
                 RoleArn: !GetAtt ClusterBuildRole.Arn
                 StackName: !Sub ${CostTagValue}-cognito
-                TemplatePath: MidBuildArtifact::cf-cognito.yaml
+                TemplatePath: PostBuildArtifact::cf-cognito.yaml
               InputArtifacts:
-                - Name: MidBuildArtifact
+                - Name: PostBuildArtifact
               Region: !Sub ${AWS::Region}
               RoleArn: !GetAtt ClusterBuildRole.Arn
 
