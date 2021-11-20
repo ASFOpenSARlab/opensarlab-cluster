@@ -16,7 +16,7 @@ def main(config, aws_region, aws_profile):
     if deployment_url == 'load balancer':
         
         cost_tag_value = yaml_config['parameters']['cost_tag_value']
-        lb_name = f"{aws_region}-{cost_tag_value}-cluster-lb"
+        lb_name = f"{cost_tag_value}"
 
         session = None 
         try:
