@@ -3,13 +3,13 @@ import os
 import boto3
 from botocore.exceptions import ClientError
 
-def send_email(email, env):
+def send_email(email):
 
     print("Sending email of form: ")
     print(email)
 
     # Create a new SES resource and specify a region.
-    client = boto3.client('ses', region_name=env['region_name'])
+    client = boto3.client('ses', region_name={{ aws_region }})
     
     # Try to send the email.
     try:
@@ -46,7 +46,7 @@ def send_email(email, env):
         print("Email sent! Message ID:"),
         print(response['MessageId'])
         
-def email_reset(userName, userEmail, fullName, env):
+def email_reset(userName, userEmail, fullName):
     
     """
     # Replace sender@example.com with your "From" address.
@@ -60,20 +60,20 @@ def email_reset(userName, userEmail, fullName, env):
     
     # Send email to Jupyter Group 
     email_meta = {
-        'SENDER': '{adminEmailAddress}'.format(adminEmailAddress=env['admin_email_address']), 
-        'RECIPIENT': "OSL Admin <{adminEmailAddress}>".format(adminEmailAddress=env['admin_email_address']),
+        'SENDER': '{{ admin_email_address }}', 
+        'RECIPIENT': "OSL Admin <{{ admin_email_address }}>",
         'SUBJECT': "User Password Reset",
         'BODY_HTML': """<html>
             <head></head>
             <body>
-                <p>{fullName} ({userName}) at {userEmail} just reset their password for access to {clusterDomain}. No admin action is required at this time.</p>
+                <p>{fullName} ({userName}) at {userEmail} just reset their password for access to {{ deployment_url }}. No admin action is required at this time.</p>
             </body>
-            </html>""".format(userName=userName, userEmail=userEmail, fullName=fullName, clusterDomain=env['cluster_domain'], adminEmailAddress=env['admin_email_address']) 
+            </html>""".format(userName=userName, userEmail=userEmail, fullName=fullName) 
     }
     
-    send_email(email_meta, env)
+    send_email(email_meta)
     
-def email_signup(userName, userEmail, fullName, env):
+def email_signup(userName, userEmail, fullName):
     
     """
     # Replace sender@example.com with your "From" address.
@@ -87,29 +87,29 @@ def email_signup(userName, userEmail, fullName, env):
     
     # Send email to Jupyter Group 
     email_meta = {
-        'SENDER': '{adminEmailAddress}'.format(adminEmailAddress=env['admin_email_address']), 
-        'RECIPIENT': "OSL Admin <{adminEmailAddress}>".format(adminEmailAddress=env['admin_email_address']),
+        'SENDER': '{{ admin_email_address }}', 
+        'RECIPIENT': "OSL Admin <{{ admin_email_address }}>",
         'SUBJECT': "OSL User Signup",
         'BODY_HTML': """<html>
             <head></head>
             <body>
-                <p>{fullName} ({userName}) at {userEmail} just signed up for access to {clusterDomain}. Please verify and <i>enable</i> their account.</p>
+                <p>{fullName} ({userName}) at {userEmail} just signed up for access to {{ deployment_url }}. Please verify and <i>enable</i> their account.</p>
             </body>
-            </html>""".format(userName=userName, userEmail=userEmail, fullName=fullName, clusterDomain=env['cluster_domain'], adminEmailAddress=env['admin_email_address']) 
+            </html>""".format(userName=userName, userEmail=userEmail, fullName=fullName) 
     }
 
-    send_email(email_meta, env)
+    send_email(email_meta)
     
     # Send email to user
     email_meta = {
-        'SENDER': "{adminEmailAddress}".format(adminEmailAddress=env['admin_email_address']),
+        'SENDER': "{{ admin_email_address }}",
         'RECIPIENT': '"{fullName}" <{userEmail}>'.format(fullName=fullName, userEmail=userEmail),
         'SUBJECT': "OSL Account Access Pending",
         'BODY_HTML': """<html>
             <head></head>
             <body>
                 <p>
-                You recently have applied for access to {clusterDomain} operated by the Alaska Satellite Facility (ASF). 
+                You recently have applied for access to {{ deployment_url }} operated by the Alaska Satellite Facility (ASF). 
                 You are using the username '{userName}'. 
                 This email confirms that your email is verified.  
                 </p>
@@ -120,26 +120,16 @@ def email_signup(userName, userEmail, fullName, env):
                 Confirmation may take up to a day. 
                 </p>
             </body>
-            </html>""".format(userName=userName, clusterDomain=env['cluster_domain'], adminEmailAddress=env['admin_email_address'])
+            </html>""".format(userName=userName)
     }
     
-    send_email(email_meta, env)
+    send_email(email_meta)
      
 def lambda_handler(event, context):
 
-    env = {
-        "region_name": os.environ['region_name'],
-        "stackname": os.environ['stackname'],
-        "cluster_domain": os.environ['cluster_domain'],
-        "admin_email_address": os.environ['admin_email_address']
-    }
-    
-    print(f"Email handling function for cluster {env['stackname']}")
-    print(event)
-    
     # If resetting password, don't disable.
     if event['triggerSource'] == 'PostConfirmation_ConfirmForgotPassword':
-        email_reset(event['userName'], event['request']['userAttributes']['email'], event['request']['userAttributes']['name'], env)
+        email_reset(event['userName'], event['request']['userAttributes']['email'], event['request']['userAttributes']['name'])
     
     # If signing up, disable for admin confirmation
     elif event['triggerSource'] == 'PostConfirmation_ConfirmSignUp':
@@ -151,6 +141,6 @@ def lambda_handler(event, context):
     
         print(response)
     
-        email_signup(event['userName'], event['request']['userAttributes']['email'], event['request']['userAttributes']['name'], env)
+        email_signup(event['userName'], event['request']['userAttributes']['email'], event['request']['userAttributes']['name'])
     
     return event

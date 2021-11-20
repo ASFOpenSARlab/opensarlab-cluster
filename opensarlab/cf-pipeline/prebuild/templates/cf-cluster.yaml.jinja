@@ -22,20 +22,10 @@ Parameters:
     Type: String
     Default: {{ parameters.container_namespace }}
 
-  OAuthPoolName:
-    Description: AWS Cognito User Pool name
-    Type: String
-    Default: {{ parameters.oauth_pool_name }}
-
-  OAuthDNSName:
-    Description: AWS Cognito User Pool DNS Url
-    Type: String
-    Default: {{ parameters.oauth_dns_name }}
-
   DeploymentURL:
     Description: Jupyterhub URL used by AWS Cognito authentication. If not given, the default is the load balancer URL
     Type: String
-    Default: {{ parameters.deployment_url or ''}}
+    Default: {{ parameters.deployment_url }}
 
   CostTagKey:
     Type: String
@@ -95,9 +85,241 @@ Outputs:
 
 Resources:
 
-  {% filter indent(width=2) -%}
-  {% include "components/cluster.yaml" %}
-  {%- endfilter %}
+  ClusterRunRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-run-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+                - codebuild.amazonaws.com
+                - cloudformation.amazonaws.com
+                - codepipeline.amazonaws.com
+                - iam.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-build-role
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-run-extra-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codestar-connections:*"
+                  - "s3:*"
+                  - "dlm:*"
+                  - "logs:*"
+                  - "cloudformation:*"
+                  - "elasticloadbalancing:*"
+                  - "autoscaling:*"
+                  - "codebuild:*"
+                  - "iam:*"
+                  - "secretsmanager:*"
+                  - "ssm:*"
+                  - "ecr:*"
+                  - "ec2:*"
+                  - "eks:*"
+                  - "sts:AssumeRole"
+                Resource: '*'
+
+  Cluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Sub ${CostTagValue}-cluster
+      RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
+      ResourcesVpcConfig:
+        SubnetIds: !Ref Subnets
+        SecurityGroupIds:
+          - !GetAtt ClusterSecurityGroup.GroupId
+        Version: "1.21"
+
+  ClusterSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${CostTagValue}-cluster
+      GroupDescription: !Sub Security group for the ${CostTagValue}-cluster EKS cluster
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  UserAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Deny
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "eks:*"
+                Resource: "*"
+
+  NodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${CostTagValue}-cluster-instance
+      GroupDescription: !Sub Security group for instances in the ${CostTagValue}-cluster EKS cluster
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  NodeSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow instances to communicate with each other
+      GroupId: !Ref NodeSecurityGroup
+      SourceSecurityGroupId: !Ref NodeSecurityGroup
+      IpProtocol: "-1"
+      FromPort: 0
+      ToPort: 65535
+
+  NodeSecurityGroupFromControlPlaneIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
+      GroupId: !Ref NodeSecurityGroup
+      SourceSecurityGroupId: !GetAtt ClusterSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 1025
+      ToPort: 65535
+
+  NodeSecurityGroupFromLoadBalancer:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow worker Kubelets and pods to receive communication from the load balancer
+      GroupId: !Ref NodeSecurityGroup
+      SourceSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: !Ref NodeProxyPort
+      ToPort: !Ref NodeProxyPort
+
+  ControlPlaneEgressToNodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow the cluster control plane to communicate with worker Kubelet and pods
+      GroupId: !GetAtt ClusterSecurityGroup.GroupId
+      DestinationSecurityGroupId: !Ref NodeSecurityGroup
+      IpProtocol: tcp
+      FromPort: 1025
+      ToPort: 65535
+
+  NodeSecurityGroupFromControlPlaneOn443Ingress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
+      GroupId: !Ref NodeSecurityGroup
+      SourceSecurityGroupId: !GetAtt ClusterSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+
+  ControlPlaneEgressToNodeSecurityGroupOn443:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow the cluster control plane to communicate with pods running extension API servers on port 443
+      GroupId: !GetAtt ClusterSecurityGroup.GroupId
+      DestinationSecurityGroupId: !Ref NodeSecurityGroup
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+
+  ClusterControlPlaneSecurityGroupIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow pods to communicate with the cluster API Server
+      GroupId: !GetAtt ClusterSecurityGroup.GroupId
+      SourceSecurityGroupId: !Ref NodeSecurityGroup
+      IpProtocol: tcp
+      ToPort: 443
+      FromPort: 443
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${AWS::Region}-${CostTagValue}
+      VpcId: !Ref VpcId
+      Protocol: HTTP
+      Port: !Ref NodeProxyPort
+      HealthCheckPath: /hub/health
+      HealthCheckIntervalSeconds: 120
+      HealthyThresholdCount: 2
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${AWS::Region}-${CostTagValue}-cluster-load-balancer
+      GroupDescription: !Sub Security group for ${CostTagValue}-cluster load balancer
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - CidrIp: !Ref LoadBalancerCidrBlock
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+        - CidrIp: !Ref LoadBalancerCidrBlock
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${AWS::Region}-${CostTagValue}-cluster-lb
+      Subnets: !Ref Subnets
+      SecurityGroups:
+        - !GetAtt LoadBalancerSecurityGroup.GroupId
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Protocol: HTTP
+      Port: 80
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+          StatusCode: HTTP_301
+          Protocol: HTTPS
+          Port: "443"
+
+  HttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Protocol: HTTPS
+      Port: 443
+      Certificates:
+        - CertificateArn: !Ref CertificateArn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
 
   BasicLifecycleRole:
     Type: AWS::IAM::Role
@@ -182,11 +404,7 @@ Resources:
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
       {%- filter indent(width=6) -%}
-      {% if node.is_hub is defined -%}
-        {% include "components/hub_node_policy.yaml" %}
-      {% else -%}
-        {% include "components/user_node_policy.yaml" %}
-      {% endif -%}
+      {% include "node_policies/{{ node.node_policy }}.yaml" %}
       {%- endfilter %}
 
   NodeInstanceProfile{{ node_name_escaped }}:
@@ -371,8 +589,8 @@ Resources:
                         --set proxy.service.nodePorts.http='${NodeProxyPort}'
                         --set custom.REGISTRY_URI=$REGISTRY_URI
                         --set custom.OAUTH_JUPYTER_URL=$( [ -n '${DeploymentURL}' ] && echo '${DeploymentURL}' || echo 'https://${LoadBalancer.DNSName}' )
-                        --set custom.OAUTH_DNS_NAME='${OAuthDNSName}'
-                        --set custom.CLUSTER_NAME='${CostTagValue}-cluster',custom.OAUTH_POOL_NAME='${OAuthPoolName}',custom.AZ_NAME='${AWS::Region}${AZPostfix}'
+                        --set custom.OAUTH_DNS_NAME='https://${CostTagValue}-cluster.auth.${AWS::Region}.amazoncognito.com'
+                        --set custom.CLUSTER_NAME='${CostTagValue}-cluster',custom.OAUTH_POOL_NAME='${CostTagValue}-cluster',custom.AZ_NAME='${AWS::Region}${AZPostfix}'
                         --set custom.COST_TAG_VALUE='${CostTagValue}'
                         --set custom.COST_TAG_KEY='${CostTagKey}'
                         --set-file hub.extraFiles.hooks.stringData='./hub/helm_config.d/hooks.py'
@@ -460,7 +678,7 @@ Resources:
                       cp services/crons/k8s/deployment.example.yaml services/crons/k8s/deployment.yaml;
                       sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/crons:$CRONS_IMAGE_BUILD|" services/crons/k8s/deployment.yaml;
                       sed -i "s|REGION_NAME_PLACEHOLDER|${AWS::Region}|" services/crons/k8s/deployment.yaml;
-                      sed -i "s|COGNITO_NAME_PLACEHOLDER|${OAuthPoolName}|" services/crons/k8s/deployment.yaml;
+                      sed -i "s|COGNITO_NAME_PLACEHOLDER|${CostTagValue}-cluster|" services/crons/k8s/deployment.yaml;
                       sed -i "s|CLUSTER_NAME_PLACEHOLDER|${CostTagValue}-cluster|" services/crons/k8s/deployment.yaml;
                       sed -i "s|NAMESPACE_PLACEHOLDER|jupyter|" services/crons/k8s/deployment.yaml;
                       sed -i "s|DAYS_VOL_INACTIVE_TILL_TERMINATION_PLACEHOLDER|5|" services/crons/k8s/deployment.yaml;

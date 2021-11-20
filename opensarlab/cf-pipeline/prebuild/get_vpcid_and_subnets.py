@@ -4,6 +4,8 @@ import argparse
 import boto3
 import yaml
 
+from opensarlab.utils.custom_yaml import IndentDumper
+
 def which_subnet_is_az(subnets, az_postfix):
     
     for subid, az in subnets:
@@ -97,11 +99,6 @@ def main(region_name, cluster_name, config, profile_name):
     yaml_config['parameters'].update(others)
 
     with open(config, "w") as f:
-        #https://github.com/yaml/pyyaml/issues/234
-        class IndentDumper(yaml.Dumper):
-            def increase_indent(self, flow=False, *args, **kwargs):
-                return super().increase_indent(flow=flow, indentless=False)
-
         yaml.dump(yaml_config, f, Dumper=IndentDumper)
 
 if __name__ == "__main__":

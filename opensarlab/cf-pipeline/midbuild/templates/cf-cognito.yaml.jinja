@@ -1,51 +1,30 @@
+---
+
+{% set parameters = opensarlab['parameters'] -%}
+
 AWSTemplateFormatVersion: '2010-09-09'
 
 Parameters:
   
-  ClusterDomain:
+  DeploymentURL:
     Type: String
-    Description: "FQDN of cluster (including https://). If the domain isn't known at the time, use default."
-    Default: "https://placeholder.example"
-
-  AdminEmailAddress:
-    Type: String
-    Description: "Email address of SES verified OSL Admin email address (like asf-jupyter-hub@alaska.edu)"
-    Default: "emlundell@alaska.edu"
+    Description: "FQDN of cluster (including https://). If the domain isn't known at the time, use Load Balancer."
+    Default: {{ parameters.deployment_url }}
 
   AdminEmailSNSArn:
     Type: String
     Description: "Arn of AWS SES vertified email address"
-    Default: 'arn:aws:ses:us-west-2:701288258305:identity/emlundell@alaska.edu'
-
-  EmailLambdaBucketName:
-    Type: String
-    Description: "Full name of bucket that contains the python script for the email lambda handler. The key is assumed to be lambda_handler.py"
-    Default: "osl-e-west-lambda"
-
-  EmailLambdaKeyName:
-    Type: String 
-    Description: "The name of the lambda py file. This needs to be changed for subsequent builds to take affect."
-    Default: "lambda_handler.py.1.1.zip"
+    Default: {{ parameters.admin_email_address_sns_arn }}
     
   CostTagKey:
     Type: String
     Description: "The key of the cost tag used for filtering the budget, etc. Note that one part of the cloudformation file needs to be hardcoded."
-    Default: "osl-billing"
+    Default: {{ parameters.cost_tag_key }}
 
   CostTagValue:
     Type: String
     Description: "The value of the cost tag used for filtering the budget, etc."
-    Default: "osl-daac-test"
-
-Outputs:
-
-  OAuthPoolName:
-    Description: "Name of Cognito Pool Name"
-    Value: !Sub ${AWS::StackName}
-
-  OAuthDNSName:
-    Description: "Domain of User Pool"
-    Value: !Sub https://${AWS::StackName}.auth.${AWS::Region}.amazoncognito.com
+    Default: {{ parameters.cost_tag_value }}
 
 Resources:
 
@@ -63,7 +42,7 @@ Resources:
           - sts:AssumeRole
       Path: "/"
       Policies:
-      - PolicyName: !Sub ${AWS::Region}-${AWS::StackName}-cognito-lambda-role
+      - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-cognito-lambda-role
         PolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -103,7 +82,7 @@ Resources:
           import boto3
 
           def lambda_handler(event, context):
-            print("Pre-auth logging function for cluster '${AWS::StackName}'")
+            print("Pre-auth logging function for cluster '${CostTagValue}-cluster'")
 
             user_pool_id = event['userPoolId']
             username = event['userName']
@@ -146,14 +125,8 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
       Code:
-        S3Bucket: !Sub ${EmailLambdaBucketName}
-        S3Key: !Sub ${EmailLambdaKeyName}
-      Environment:
-        Variables:
-          region_name: !Sub "${AWS::Region}"
-          stackname: !Sub "${AWS::StackName}"
-          cluster_domain: !Sub "${ClusterDomain}"
-          admin_email_address: !Sub "${AdminEmailAddress}"
+        S3Bucket: !Sub ${AWS::Region}-${CostTagValue}-lambda
+        S3Key: lambda_handler.py
 
   LogFunction:
     Type: AWS::Lambda::Function
@@ -168,13 +141,14 @@ Resources:
         ZipFile: !Sub |
           def lambda_handler(event, context):
       
-            print("Generic logging function for cluster ${AWS::StackName}")
+            print("Generic logging function for cluster ${CostTagValue}-cluster")
             print(event)
             
             return event
 
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
+    DeletionPolicy: Retain
     Properties:
       AccountRecoverySetting:
         RecoveryMechanisms:
@@ -197,7 +171,7 @@ Resources:
         EmailSendingAccount: DEVELOPER
       EmailVerificationMessage: !Sub | 
         <p style="padding: 3px; border: 3px solid grey;">
-          By signing into <i>${ClusterDomain}</i>,
+          By signing into <i>${DeploymentURL}</i>,
           operated by the Alaska Satellite Facilty (ASF), 
           Users agree to be responsible stewards of server resources and data. 
           While ASF will give reasonable effort to keep data safe and resources running, 
@@ -252,14 +226,14 @@ Resources:
       #SmsVerificationMessage: 'Your verification code is {####}. '
       UsernameConfiguration:
         CaseSensitive: True
-      UserPoolName: !Sub ${AWS::StackName}
+      UserPoolName: !Sub ${CostTagValue}-cluster
       UserPoolTags:
         osl-billing: !Sub ${CostTagValue}
       VerificationMessageTemplate:
         #SmsMessage: 'Your verification code is {####}. '
         EmailMessage: !Sub |
           <p style="padding: 3px; border: 3px solid grey;">
-            By signing into <i>${ClusterDomain}</i>,
+            By signing into <i>${DeploymentURL}</i>,
             operated by the Alaska Satellite Facilty (ASF), 
             Users agree to be responsible stewards of server resources and data. 
             While ASF will give reasonable effort to keep data safe and resources running, 
@@ -275,7 +249,7 @@ Resources:
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties: 
-      Domain: !Sub ${AWS::StackName}
+      Domain: !Sub ${CostTagValue}-cluster
       UserPoolId: !Ref CognitoUserPool
 
   CognitoUserPoolClient:
@@ -287,15 +261,15 @@ Resources:
       AllowedOAuthScopes: 
         - openid
       CallbackURLs: 
-        - !Sub "${ClusterDomain}/hub/oauth_callback"
-      ClientName: !Sub ${AWS::StackName}
+        - !Sub "${DeploymentURL}/hub/oauth_callback"
+      ClientName: !Sub ${CostTagValue}-cluster
       ExplicitAuthFlows: 
         - ALLOW_CUSTOM_AUTH
         - ALLOW_REFRESH_TOKEN_AUTH
         - ALLOW_USER_SRP_AUTH
       GenerateSecret: True
       LogoutURLs:
-        - !Sub "${ClusterDomain}"
+        - !Sub "${DeploymentURL}"
       PreventUserExistenceErrors: ENABLED
       RefreshTokenValidity: 1
       SupportedIdentityProviders: 

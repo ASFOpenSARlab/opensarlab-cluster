@@ -135,13 +135,83 @@ Resources:
                 - export CF_CLUSTER_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-cluster;
                   export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
                   export PYTHONPATH=$PYTHONPATH:$CODEBUILD_SRC_DIR;
-                  echo $CF_CLUSTER_DIR $OSL_HOME $PYTHONPATH;
+                  echo $OSL_HOME $PYTHONPATH;
                 - cd $CODEBUILD_SRC_DIR/opensarlab/cf-pipeline/prebuild
                 - echo "Getting VpcId and Subnets...";
                   python3 get_vpcid_and_subnets.py
                     --region_name=${AWS::Region}
                     --cluster_name=${CostTagValue}-cluster
                     --config=$OSL_HOME/opensarlab.yaml;
+                  yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensarlab.yaml
+                - echo "Render cf-cluster.yaml...";
+                  python3 create_cf_cluster.py
+                    --config $OSL_HOME/opensarlab.yaml
+                    --output_file $CODEBUILD_SRC_DIR/cf-cluster.yaml;
+                  yamllint -c $OSL_HOME/.yamllint $CODEBUILD_SRC_DIR/cf-cluster.yaml
+
+          artifacts:
+            files:
+              - '**/*'
+            secondary-artifacts:
+              PreBuildArtifact:
+                files:
+                  - '**/*'
+
+  MidBuildCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${CostTagValue}-MidBuild
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:4.0
+        ComputeType: BUILD_GENERAL1_SMALL
+        PrivilegedMode: True
+      ServiceRole: !GetAtt ClusterBuildRole.Arn
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+
+          env:
+            shell: bash
+
+          phases:
+            install:
+              runtime-versions:
+                python: 3.8
+            pre_build:
+              on-failure: ABORT
+              commands:
+                - echo "Install pip packages...";
+                  pip3 install jinja2 --upgrade;
+                  pip3 install yamllint --upgrade
+                - echo "IAM build role used is $(aws sts get-caller-identity)"
+            build:
+              on-failure: ABORT
+              commands:
+                - export CF_CLUSTER_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-cluster;
+                  export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
+                  export PYTHONPATH=$PYTHONPATH:$CODEBUILD_SRC_DIR;
+                  echo $CF_CLUSTER_DIR $OSL_HOME $PYTHONPATH;
+                - cd $CODEBUILD_SRC_DIR/opensarlab/cf-pipeline/midbuild
+                - echo "Update opensarlab.yaml:deployment_url...";
+                  python3 update_deployment_url.py 
+                    --config=$OSL_HOME/opensarlab.yaml
+                    --aws_region=${AWS::Region};
+                - echo "Rendering cf-cognito.yaml...";
+                  python3 create_cf_cognito.py --config=$OSL_HOME/opensarlab.yaml;
+                  yamllint -c $OSL_HOME/.yamllint $OSL_HOME/cf-cognito.yaml;
+                  yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensarlab.yaml;
+                - echo "Rendering lambda_handler.py...";
+                  python3 create_lambda_handler.py
+                    --config=$OSL_HOME/opensarlab.yaml
+                    --aws_region=${AWS::Region}
+                    --s3_bucket_name=!Sub ${AWS::Region}-${CostTagValue}-lambda;
                   yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensarlab.yaml
                 - echo "Render aws-auth-cm.yaml...";
                   python3 create_aws_auth.py 
@@ -150,11 +220,6 @@ Resources:
                     --region_name ${AWS::Region}
                     --account_id ${AWS::AccountId};
                   yamllint -c $OSL_HOME/.yamllint $CF_CLUSTER_DIR/configs/aws-auth-cm.yaml
-                - echo "Render cf-cluster.yaml...";
-                  python3 create_cf_cluster.py
-                    --config $OSL_HOME/opensarlab.yaml
-                    --output_file $CODEBUILD_SRC_DIR/cf-cluster.yaml;
-                  yamllint -c $OSL_HOME/.yamllint $CODEBUILD_SRC_DIR/cf-cluster.yaml
                 - echo "Render profiles.py...";
                   python3 create_profiles.py
                     --config $OSL_HOME/opensarlab.yaml
@@ -163,7 +228,7 @@ Resources:
             files:
               - '**/*'
             secondary-artifacts:
-              PreBuildArtifact:
+              MidBuildArtifact:
                 files:
                   - '**/*'
 
@@ -230,22 +295,68 @@ Resources:
                 TemplatePath: PreBuildArtifact::cf-cluster.yaml
               InputArtifacts:
                 - Name: PreBuildArtifact
+              OutputArtifacts:
+                - Name: BuildArtifact
               Region: !Sub ${AWS::Region}
               RoleArn: !GetAtt ClusterBuildRole.Arn
 
-        - Name: !Sub ${CostTagValue}-BuildJupyterHub
+        - Name: !Sub ${CostTagValue}-MidBuild
           Actions:
-            - Name: BuildJupyterHub
+            - Name: MidBuild
+              RunOrder: 1
+              Namespace: MidBuild
               ActionTypeId:
                 Category: Build
                 Owner: AWS
                 Provider: CodeBuild
                 Version: "1"
               Configuration:
-                ProjectName: !Sub ${CostTagValue}-cluster-jupyterhub
+                ProjectName: !Sub ${CostTagValue}-MidBuild
               InputArtifacts:
-                - Name: PreBuildArtifact
+                - Name: BuildArtifact
+              OutputArtifacts:
+                - Name: MidBuildArtifact
               Region: !Sub ${AWS::Region}
+
+        - Name: !Sub ${CostTagValue}-Deploy
+          Actions:
+
+            - Name: !Sub ${CostTagValue}-DeployCluster
+              RunOrder: 1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt ClusterBuildRole.Arn
+                StackName: !Sub ${CostTagValue}-cluster
+                TemplatePath: MidBuildArtifact::cf-cluster.yaml
+              InputArtifacts:
+                - Name: MidBuildArtifact
+              Region: !Sub ${AWS::Region}
+              RoleArn: !GetAtt ClusterBuildRole.Arn
+            
+            - Name: !Sub ${CostTagValue}-DeployCognito
+              RunOrder: 1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt ClusterBuildRole.Arn
+                StackName: !Sub ${CostTagValue}-cognito
+                TemplatePath: MidBuildArtifact::cf-cognito.yaml
+              InputArtifacts:
+                - Name: MidBuildArtifact
+              Region: !Sub ${AWS::Region}
+              RoleArn: !GetAtt ClusterBuildRole.Arn
+
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}

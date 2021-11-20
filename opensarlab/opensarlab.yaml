@@ -6,11 +6,11 @@ parameters:
   cost_tag_key: osl-billing
   cost_tag_value: osl-daac-test
   admin_user_name: emlundell_test1
+  admin_email_address: emlundell@alaska.edu
+  admin_email_address_sns_arn: arn:aws:ses:us-west-2:701288258305:identity/emlundell@alaska.edu
   certificate_arn: arn:aws:acm:us-west-2:701288258305:certificate/f4d36bbc-f7d4-4143-a5d3-9e0ec96324dd
   container_namespace: osl-daac-test-container
-  oauth_pool_name: osl-daac-test-auth
-  oauth_dns_name: https://osl-daac-test-auth.auth.us-west-2.amazoncognito.com
-  #deployment_url: https://osl-daac-test-cluster-cluster-1273112873.us-west-2.elb.amazonaws.com
+  deployment_url: load balancer
   ical_url: https://calendar.google.com/calendar/ical/c_90n3vfk860on0v1kl0fqcj2nss%40group.calendar.google.com/public/basic.ics
   az_postfix: a
 
@@ -19,22 +19,26 @@ nodes:
     instance: t3a.medium
     min_number: 1
     max_number: 2
+    node_policy: hub
     is_hub: True
 
   - name: sar_1
     instance: m5a.2xlarge
     min_number: 0
     max_number: 25
+    node_policy: user
 
   - name: sar_2
     instance: m5a.8xlarge
     min_number: 0
     max_number: 25
+    node_policy: user
 
   - name: gpu
     instance: p3.2xlarge
     min_number: 0
     max_number: 3
+    node_policy: user
     is_gpu: True
 
 profiles:
