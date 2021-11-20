@@ -374,8 +374,8 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  {%- for node in nodes %}
-  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") %}
+  {% for node in nodes -%}
+  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") -%}
 
   {% if node.is_hub is defined -%}
   Repository{{ node_name_escaped }}:
@@ -385,7 +385,7 @@ Resources:
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
-  {% endif -%}
+  {%- endif %}
 
   NodeInstanceRole{{ node_name_escaped }}:
     Type: AWS::IAM::Role
@@ -404,7 +404,7 @@ Resources:
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
       {%- filter indent(width=6) -%}
-      {% include "node_policies/{{ node.node_policy }}.yaml" %}
+      {% include "node_policies/" ~ node.node_policy ~ ".yaml" %}
       {%- endfilter %}
 
   NodeInstanceProfile{{ node_name_escaped }}:
@@ -464,8 +464,7 @@ Resources:
           /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type={{ node_name_escaped }}'
           {% endif -%}
           /opt/aws/bin/cfn-signal --exit-code $? --stack ${AWS::StackName} --resource NodeGroup --region ${AWS::Region}
-
-  {% endfor -%}
+  {%- endfor %}
 
   HubGroupLogs:
     Type: AWS::Logs::LogGroup
