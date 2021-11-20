@@ -20,9 +20,9 @@ def main(config, aws_region, aws_profile):
 
         session = None 
         try:
-            session = boto3.session.Session(aws_region=aws_region, aws_profile=aws_profile)
+            session = boto3.session.Session(region_name=aws_region, profile_name=aws_profile)
         except:
-            session = boto3.session.Session(aws_region=aws_region)
+            session = boto3.session.Session(region_name=aws_region)
         lb = session.client('elbv2')
 
         response = lb.describe_load_balancers(
