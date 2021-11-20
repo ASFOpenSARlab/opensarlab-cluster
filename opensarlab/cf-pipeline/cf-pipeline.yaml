@@ -127,7 +127,8 @@ Resources:
               commands:
                 - echo "Install pip packages...";
                   pip3 install jinja2 --upgrade;
-                  pip3 install yamllint --upgrade
+                  pip3 install yamllint --upgrade;
+                  pip3 install cfn-lint --upgrade;
                 - echo "IAM build role used is $(aws sts get-caller-identity)"
             build:
               on-failure: ABORT
@@ -144,12 +145,14 @@ Resources:
                     --region_name=${AWS::Region}
                     --cluster_name=${CostTagValue}-cluster
                     --config=$OSL_HOME/opensarlab.yaml;
-                  yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensarlab.yaml
+                  yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensarlab.yaml;
+                  cfn-lint $OSL_HOME/opensarlab.yaml
                 - echo "Render cf-cluster.yaml...";
                   python3 create_cf_cluster.py
                     --config $OSL_HOME/opensarlab.yaml
                     --output_file $CODEBUILD_SRC_DIR/cf-cluster.yaml;
-                  yamllint -c $OSL_HOME/.yamllint $CODEBUILD_SRC_DIR/cf-cluster.yaml
+                  yamllint -c $OSL_HOME/.yamllint $CODEBUILD_SRC_DIR/cf-cluster.yaml;
+                  cfn-lint $CODEBUILD_SRC_DIR/cf-cluster.yaml
 
           artifacts:
             files:
@@ -191,7 +194,8 @@ Resources:
               commands:
                 - echo "Install pip packages...";
                   pip3 install jinja2 --upgrade;
-                  pip3 install yamllint --upgrade
+                  pip3 install yamllint --upgrade;
+                  pip3 install cfn-lint --upgrade;
                 - echo "IAM build role used is $(aws sts get-caller-identity)"
             build:
               on-failure: ABORT
@@ -209,12 +213,14 @@ Resources:
                   python3 create_cf_cognito.py --config=$OSL_HOME/opensarlab.yaml;
                   yamllint -c $OSL_HOME/.yamllint $OSL_HOME/cf-cognito.yaml;
                   yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensarlab.yaml;
+                  cfn-lint $OSL_HOME/cf-cognito.yaml $OSL_HOME/opensarlab.yaml;
                 - echo "Rendering lambda_handler.py...";
                   python3 create_lambda_handler.py
                     --config=$OSL_HOME/opensarlab.yaml
                     --aws_region=${AWS::Region}
                     --s3_bucket_name=!Sub ${AWS::Region}-${CostTagValue}-lambda;
-                  yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensarlab.yaml
+                  yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensarlab.yaml;
+                  cfn-lint $OSL_HOME/opensarlab.yaml;
                 - echo "Render aws-auth-cm.yaml...";
                   python3 create_aws_auth.py 
                     --config $OSL_HOME/opensarlab.yaml
@@ -222,6 +228,7 @@ Resources:
                     --region_name ${AWS::Region}
                     --account_id ${AWS::AccountId};
                   yamllint -c $OSL_HOME/.yamllint $CF_CLUSTER_DIR/configs/aws-auth-cm.yaml
+                  cfn-lint $CF_CLUSTER_DIR/configs/aws-auth-cm.yaml;
                 - echo "Render profiles.py...";
                   python3 create_profiles.py
                     --config $OSL_HOME/opensarlab.yaml
