@@ -6,10 +6,10 @@ import yaml
 
 from opensarlab.utils.custom_yaml import IndentDumper
 
-def which_subnet_is_az(subnets, az_postfix):
+def which_subnet_is_az(subnets, az_suffix):
     
     for subid, az in subnets:
-        if az_postfix in az:
+        if az_suffix in az:
             active_subnet = subid
         else:
             other_subnet = subid
@@ -34,7 +34,7 @@ def main(region_name, cluster_name, config, profile_name):
     with open(config, "r") as f:
         yaml_config = yaml.safe_load(f)
 
-    az_postfix = yaml_config['parameters']['az_postfix']
+    az_suffix = yaml_config['parameters']['az_suffix']
     
     try:
         response = eks.describe_cluster(name=cluster_name)
@@ -48,7 +48,7 @@ def main(region_name, cluster_name, config, profile_name):
         all_subnets = [(s['SubnetId'], s['AvailabilityZone']) for s in response['Subnets']]
         
         # Which subnet is -d and which is random?
-        active_subnet, other_subnet = which_subnet_is_az(all_subnets, az_postfix)
+        active_subnet, other_subnet = which_subnet_is_az(all_subnets, az_suffix)
         
     except eks.exceptions.ResourceNotFoundException as e:
         print("Resource not found: ", e)
@@ -81,7 +81,7 @@ def main(region_name, cluster_name, config, profile_name):
         all_subnets = [(s['SubnetId'], s['AvailabilityZone']) for s in response['Subnets']]
     
         # Find AZ -d subnet for ActiveSubnet
-        active_subnet, other_subnet = which_subnet_is_az(all_subnets, az_postfix)
+        active_subnet, other_subnet = which_subnet_is_az(all_subnets, az_suffix)
         
         vpcid = default_vpcid
 

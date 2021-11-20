@@ -14,28 +14,11 @@ env = Environment(
 
 env.filters['regex_replace'] = regex_replace
 
-def checks(yaml_config):
-    all_node_names = []
-    for nodes in yaml_config['nodes']:
-        all_node_names.append(nodes['name'])
-
-    required_fields = ['name', 'description', 'image_name', 'image_tag', 'node_name', 'storage_capacity']
-    for profile in yaml_config['profiles']:
-        # Check to see if all required fields are present.
-        for required in required_fields:
-            if required not in profile.keys():
-                raise Exception(f"Not all required fields found for profile '{ profile['name'] }'. Must have {required_fields}.")
-
-        # Check to see if node_names are valid
-        if profile['node_name'] not in all_node_names:
-            raise Exception(f"Node name '{profile['node_name']}'' is not valid for profile '{ profile['name'] }'. Must be one of '{all_node_names}'.")
-
 def main(config, output_file):
-    with open(config, "r") as infile, open(output_file, 'w') as outfile:
+    with open(config, "r") as infile:
         yaml_config = yaml.safe_load(infile)
 
-        checks(yaml_config)
-
+    with open(output_file, 'w') as outfile:
         template = env.get_template('templates/profiles.py.jinja')
         outfile.write(template.render(profiles=yaml_config['profiles']))
 

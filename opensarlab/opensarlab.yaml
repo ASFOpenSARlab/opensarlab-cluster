@@ -12,7 +12,7 @@ parameters:
   container_namespace: osl-daac-test-container
   deployment_url: load balancer
   ical_url: https://calendar.google.com/calendar/ical/c_90n3vfk860on0v1kl0fqcj2nss%40group.calendar.google.com/public/basic.ics
-  az_postfix: a
+  az_suffix: a
 
 nodes:
   - name: hub

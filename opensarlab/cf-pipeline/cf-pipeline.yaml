@@ -137,6 +137,8 @@ Resources:
                   export PYTHONPATH=$PYTHONPATH:$CODEBUILD_SRC_DIR;
                   echo $OSL_HOME $PYTHONPATH;
                 - cd $CODEBUILD_SRC_DIR/opensarlab/cf-pipeline/prebuild
+                - echo "Check opensarlab.yaml for required fields...";
+                  python3 check_config.py --config $OSL_HOME/opensarlab.yaml
                 - echo "Getting VpcId and Subnets...";
                   python3 get_vpcid_and_subnets.py
                     --region_name=${AWS::Region}
