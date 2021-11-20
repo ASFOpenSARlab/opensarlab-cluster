@@ -10,7 +10,7 @@ def main(config, aws_region, aws_profile):
     with open(config, "r") as infile:
         yaml_config = yaml.safe_load(infile)
 
-    deployment_url = str(yaml_config['parameters']['deployment_url']).trim().lower()
+    deployment_url = str(yaml_config['parameters']['deployment_url']).strip().lower()
     print(f"Deployment url in opensarlab.yaml is '{deployment_url}'")
 
     if deployment_url == 'load balancer':
