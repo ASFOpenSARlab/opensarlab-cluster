@@ -156,7 +156,7 @@ Resources:
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: false
         InviteMessageTemplate:
-          EmailMessage: Your username is {username} and temporary password is {####}.
+          EmailMessage: Your username is {username} and temporary password is {% raw %}{####}{% endraw %}.
           EmailSubject: Your temporary password
           #SMSMessage: 'Your username is {username} and temporary password is {####}. '
         #UnusedAccountValidityDays: 1
@@ -177,7 +177,7 @@ Resources:
         </p>
         <p></p>
         <p></p>
-        Your verification code is <b>{####}</b>.
+        Your verification code is <b>{% raw %}{####}{% endraw %}</b>.
       EmailVerificationSubject: Your verification code
       LambdaConfig:
         PostAuthentication: !GetAtt LogFunction.Arn
@@ -239,7 +239,7 @@ Resources:
           </p>
           <p></p>
           <p></p>
-          Your verification code is <b>{####}</b>.
+          Your verification code is <b>{% raw %}{####}{% endraw %}</b>.
         EmailSubject: Your verification code
         DefaultEmailOption: CONFIRM_WITH_CODE
 
