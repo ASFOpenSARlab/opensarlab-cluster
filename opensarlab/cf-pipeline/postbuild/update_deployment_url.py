@@ -31,7 +31,8 @@ def main(config, aws_region, aws_profile):
                 ]
             )
 
-        deployment_url = response['LoadBalancers'][0]['DNSName']
+        deployment_url = f"https://{response['LoadBalancers'][0]['DNSName']}"
+
         print(f"Deployment url is now {deployment_url}")
 
         others = {}
@@ -40,6 +41,13 @@ def main(config, aws_region, aws_profile):
 
         with open(config, "w") as f:
             yaml.dump(yaml_config, f, Dumper=IndentDumper)
+
+    else:
+        if 'http://' in deployment_url:
+            raise Exception("http is not valid in deployment url. Please fix.")
+        elif 'https://' not in deployment_url:
+            print(f"https is required in deployment url. Prepending to {deployment_url}")
+            deployment_url = f"https://{deployment_url}"
 
 
 if __name__ == "__main__":
