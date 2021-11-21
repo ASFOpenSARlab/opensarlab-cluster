@@ -48,6 +48,9 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
     except s3.exceptions.BucketAlreadyExists as e:
         print(f"Bucket {e.response['Error']['BucketName']} already exists.")
 
+    except s3.exceptions.BucketAlreadyOwnedByYou as e:
+        print(f"Bucket {e.response['Error']['BucketName']} is already owned by you.")
+
     s3.upload_file('lambda_email.py', s3_bucket_name, 'lambda_email.py')
 
 if __name__ == "__main__":
