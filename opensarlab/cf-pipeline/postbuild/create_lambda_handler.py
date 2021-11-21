@@ -18,9 +18,8 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
     with open(config, "r") as infile:
         yaml_config = yaml.safe_load(infile)
 
-    admin_email_address = yaml_config['admin_email_address']
-    deployment_url = yaml_config['deployment_url']
-    cost_tag_value = yaml_config['cost_tag_value']
+    admin_email_address = yaml_config['parameters']['admin_email_address']
+    deployment_url = yaml_config['parameters']['deployment_url']
 
     template = env.get_template('templates/lambda.py.jinja')
 
