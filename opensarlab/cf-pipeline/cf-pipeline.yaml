@@ -295,9 +295,9 @@ Resources:
                 - Name: PreBuildArtifact
               Region: !Sub ${AWS::Region}
 
-        - Name: !Sub ${CostTagValue}-Build-Cluster
+        - Name: !Sub ${CostTagValue}-DeployCluster
           Actions:
-            - Name: BuildCluster
+            - Name: DeployCluster
               RunOrder: 1
               ActionTypeId:
                 Category: Deploy
@@ -333,22 +333,18 @@ Resources:
                 - Name: PostBuildArtifact
               Region: !Sub ${AWS::Region}
 
-        - Name: !Sub ${CostTagValue}-Deploy
+        - Name: !Sub ${CostTagValue}-JupyterHub-Cognito
           Actions:
 
-            - Name: !Sub ${CostTagValue}-DeployCluster
+            - Name: !Sub ${CostTagValue}-BuildJupyterHub
               RunOrder: 1
               ActionTypeId:
-                Category: Deploy
+                Category: Build
                 Owner: AWS
-                Provider: CloudFormation
+                Provider: CodeBuild
                 Version: "1"
               Configuration:
-                ActionMode: CREATE_UPDATE
-                Capabilities: CAPABILITY_NAMED_IAM
-                RoleArn: !GetAtt ClusterBuildRole.Arn
-                StackName: !Sub ${CostTagValue}-cluster
-                TemplatePath: PostBuildArtifact::cf-cluster.yaml
+                ProjectName: !Sub ${CostTagValue}-cluster-jupyterhub
               InputArtifacts:
                 - Name: PostBuildArtifact
               Region: !Sub ${AWS::Region}
