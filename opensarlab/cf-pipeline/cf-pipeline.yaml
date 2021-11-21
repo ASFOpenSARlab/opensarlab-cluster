@@ -214,8 +214,8 @@ Resources:
                     --output_file $CODEBUILD_SRC_DIR/cf-cognito.yaml;
                   yamllint -c $OSL_HOME/.yamllint $CODEBUILD_SRC_DIR/cf-cognito.yaml;
                   cfn-lint $CODEBUILD_SRC_DIR/cf-cognito.yaml;
-                - echo "Rendering lambda_handler.py...";
-                  python3 create_lambda_handler.py
+                - echo "Rendering lambda_email.py...";
+                  python3 create_lambda_email.py
                     --config=$OSL_HOME/opensarlab.yaml
                     --aws_region=${AWS::Region}
                     --s3_bucket_name=${AWS::Region}-${CostTagValue}-lambda;

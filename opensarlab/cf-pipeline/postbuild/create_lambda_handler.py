@@ -21,9 +21,9 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
     admin_email_address = yaml_config['parameters']['admin_email_address']
     deployment_url = yaml_config['parameters']['deployment_url']
 
-    template = env.get_template('templates/lambda.py.jinja')
+    template = env.get_template('templates/lambda_email.py.jinja')
 
-    with open('lambda_handler.py', 'w') as outfile:
+    with open('lambda_email.py', 'w') as outfile:
         outfile.write(template.render(
             aws_region=aws_region, 
             admin_email_address=admin_email_address, 
@@ -43,7 +43,7 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
     except s3.meta.client.exceptions.BucketAlreadyExists as e:
         print(f"Bucket {e.response['Error']['BucketName']} already exists.")
 
-    s3.meta.client.upload_file('lambda_handler.py', s3_bucket_name, 'lambda_handler.py')
+    s3.meta.client.upload_file('lambda_email.py', s3_bucket_name, 'lambda_email.py')
 
 if __name__ == "__main__":
 

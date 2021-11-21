@@ -116,7 +116,7 @@ Resources:
   PostEmailVertificationFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: lambda_handler.lambda_handler
+      Handler: lambda_email.lambda_handler
       Role: !GetAtt LambdaExecutionRole.Arn
       Runtime: python3.8
       Tags:
@@ -124,7 +124,7 @@ Resources:
           Value: !Sub ${CostTagValue}
       Code:
         S3Bucket: !Sub ${AWS::Region}-${CostTagValue}-lambda
-        S3Key: lambda_handler.py
+        S3Key: lambda_email.py
 
   LogFunction:
     Type: AWS::Lambda::Function
