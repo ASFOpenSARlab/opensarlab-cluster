@@ -218,7 +218,7 @@ Resources:
                   python3 create_lambda_handler.py
                     --config=$OSL_HOME/opensarlab.yaml
                     --aws_region=${AWS::Region}
-                    --s3_bucket_name=!Sub ${AWS::Region}-${CostTagValue}-lambda;
+                    --s3_bucket_name=${AWS::Region}-${CostTagValue}-lambda;
                 - echo "Render aws-auth-cm.yaml...";
                   python3 create_aws_auth.py 
                     --config $OSL_HOME/opensarlab.yaml
