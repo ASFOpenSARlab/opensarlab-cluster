@@ -1,6 +1,5 @@
 ---
-
-{% set parameters = opensarlab['parameters'] -%}
+{%- set parameters = opensarlab['parameters'] -%}
 
 AWSTemplateFormatVersion: '2010-09-09'
 
@@ -34,38 +33,38 @@ Resources:
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - lambda.amazonaws.com
-          Action:
-          - sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
       Path: "/"
       Policies:
-      - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-cognito-lambda-role
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Sid: Logs
-            Effect: Allow
-            Action:
-              - logs:*
-            Resource: arn:aws:logs:*:*:*
-          - Sid: Cognito
-            Effect: Allow
-            Action:
-              - cognito-idp:*
-            Resource: "*"
-          - Sid: SES
-            Effect: Allow
-            Action:
-              - ses:*
-            Resource: "*"
-          - Sid: Lambda
-            Effect: Allow
-            Action:
-              - lambda:InvokeFunction
-            Resource: "*"
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-cognito-lambda-role
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: Logs
+                Effect: Allow
+                Action:
+                  - logs:*
+                Resource: arn:aws:logs:*:*:*
+              - Sid: Cognito
+                Effect: Allow
+                Action:
+                  - cognito-idp:*
+                Resource: "*"
+              - Sid: SES
+                Effect: Allow
+                Action:
+                  - ses:*
+                Resource: "*"
+              - Sid: Lambda
+                Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: "*"
 
   PreAuthFunction:
     Type: AWS::Lambda::Function
@@ -148,7 +147,6 @@ Resources:
 
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
-    DeletionPolicy: Retain
     Properties:
       AccountRecoverySetting:
         RecoveryMechanisms:
