@@ -1,5 +1,6 @@
 import pathlib
 import argparse
+from zipfile import ZipFile
 
 import boto3
 import yaml
@@ -31,6 +32,9 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
             )
         )
 
+    with ZipFile('lambda_email.py.zip','w') as zip:
+        zip.write('lambda_email.py')
+
     session = None 
     try:
         session = boto3.session.Session(region_name=aws_region, profile_name=aws_profile_name)
@@ -51,6 +55,7 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
     except s3.exceptions.BucketAlreadyOwnedByYou as e:
         print(f"Bucket {e.response['Error']['BucketName']} is already owned by you.")
 
+    s3.upload_file('lambda_email.py.zip', s3_bucket_name, 'lambda_email.py.zip')
     s3.upload_file('lambda_email.py', s3_bucket_name, 'lambda_email.py')
 
 if __name__ == "__main__":
