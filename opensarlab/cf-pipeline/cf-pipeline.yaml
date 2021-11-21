@@ -236,7 +236,6 @@ Resources:
                     --region_name ${AWS::Region}
                     --account_id ${AWS::AccountId};
                   yamllint -c $OSL_HOME/.yamllint $CF_CLUSTER_DIR/configs/aws-auth-cm.yaml;
-                  cfn-lint $CF_CLUSTER_DIR/configs/aws-auth-cm.yaml;
                 - echo "Render profiles.py...";
                   python3 create_profiles.py
                     --config $OSL_HOME/opensarlab.yaml
