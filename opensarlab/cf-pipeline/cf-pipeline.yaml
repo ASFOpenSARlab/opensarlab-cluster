@@ -84,7 +84,7 @@ Resources:
                   - "sts:AssumeRole"
                 Resource: "*"
 
-  S3Bucket:
+  S3CodepiplineBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub codepipeline-${AWS::Region}-${CostTagValue}
@@ -92,6 +92,16 @@ Resources:
       Tags:
         - Key: Description
           Value: Artifact Bucket
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  S3EmailLambdaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::Region}-${CostTagValue}-lambda
+      Tags:
+        - Key: Description
+          Value: Email Lambda Bucket
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
