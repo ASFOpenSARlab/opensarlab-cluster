@@ -14,7 +14,7 @@ env = Environment(
 
 env.filters['regex_replace'] = regex_replace
 
-def main(config, aws_region, aws_profile_name):
+def main(config, aws_region, s3_bucket_name, aws_profile_name):
     with open(config, "r") as infile:
         yaml_config = yaml.safe_load(infile)
 
@@ -38,8 +38,6 @@ def main(config, aws_region, aws_profile_name):
     except:
         session = boto3.session.Session(region_name=aws_region)
     s3 = session.client('s3')
-
-    s3_bucket_name = f"{aws_region}-{cost_tag_value}-lambda"
 
     try:
         s3.create_bucket(Bucket=s3_bucket_name)
