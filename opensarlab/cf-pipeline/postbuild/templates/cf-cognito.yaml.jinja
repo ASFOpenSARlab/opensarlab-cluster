@@ -29,6 +29,11 @@ Parameters:
     Description: Name of the email verification lambda zip. Must be unique for the code to update.
     Default: {{ parameters.lambda_email_zip }}
 
+  LambdaEmailBase:
+    Type: String
+    Description: Basename of the email verification lambda zip. Needed for lambda handler.
+    Default: {{ parameters.lambda_email_base }}
+
 Resources:
 
   LambdaExecutionRole:
@@ -129,7 +134,7 @@ Resources:
   PostEmailVertificationFunction:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: lambda_email.lambda_handler
+      Handler: !Sub ${LambdaEmailBase}.lambda_handler
       Role: !GetAtt LambdaExecutionRole.Arn
       Runtime: python3.8
       Tags:

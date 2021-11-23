@@ -23,8 +23,9 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
 
     template = env.get_template('templates/lambda_email.py.jinja')
 
-    lambda_email_py = f"lambda_email_zip_{str(uuid.uuid4())[:8]}.py"
-    lambda_email_zip = f"{lambda_email_py}.zip"
+    lambda_email_base = f"lambda_email_zip_{str(uuid.uuid4())[:8]}"
+    lambda_email_py = f"{lambda_email_base}.py"
+    lambda_email_zip = f"{lambda_email_base}.py.zip"
 
     with open(lambda_email_py, 'w') as outfile:
         outfile.write(template.render(
@@ -65,6 +66,7 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
 
     others = {}
     others['lambda_email_zip'] = f"{lambda_email_zip}"
+    others['lambda_email_zip_base'] = f"{lambda_email_base}"
     yaml_config['parameters'].update(others)
 
     with open(config, "w") as f:
