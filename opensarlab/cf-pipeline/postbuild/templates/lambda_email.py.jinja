@@ -9,7 +9,7 @@ def send_email(email):
     print(email)
 
     # Create a new SES resource and specify a region.
-    client = boto3.client('ses', region_name={{ aws_region }})
+    client = boto3.client('ses', region_name='{{ aws_region }}')
     
     # Try to send the email.
     try:
