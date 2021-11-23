@@ -143,8 +143,7 @@ Resources:
             build:
               on-failure: ABORT
               commands:
-                - export CF_CLUSTER_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-cluster;
-                  export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
+                - export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
                   export PYTHONPATH=$PYTHONPATH:$CODEBUILD_SRC_DIR;
                   echo $OSL_HOME $PYTHONPATH;
                 - cd $CODEBUILD_SRC_DIR/opensarlab/cf-pipeline/prebuild
@@ -209,10 +208,10 @@ Resources:
             build:
               on-failure: ABORT
               commands:
-                - export CF_CLUSTER_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-cluster;
-                  export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
+                - export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
                   export PYTHONPATH=$PYTHONPATH:$CODEBUILD_SRC_DIR;
-                  echo $CF_CLUSTER_DIR $OSL_HOME $PYTHONPATH;
+                  export CF_JH_DIR=$CODEBUILD_SRC_DIR/opensarlab/cf-jupyterhub;
+                  echo $OSL_HOME $PYTHONPATH $CF_JH_DIR;
                 - cd $CODEBUILD_SRC_DIR/opensarlab/cf-pipeline/postbuild;
                 - echo "Update deployment_url...";
                   python3 update_deployment_url.py
@@ -232,14 +231,14 @@ Resources:
                 - echo "Render aws-auth-cm.yaml...";
                   python3 create_aws_auth.py 
                     --config $OSL_HOME/opensarlab.yaml
-                    --output_file $CF_CLUSTER_DIR/configs/aws-auth-cm.yaml
+                    --output_file $CF_JH_DIR/configs/aws-auth-cm.yaml
                     --region_name ${AWS::Region}
                     --account_id ${AWS::AccountId};
-                  yamllint -c $OSL_HOME/.yamllint $CF_CLUSTER_DIR/configs/aws-auth-cm.yaml;
+                  yamllint -c $OSL_HOME/.yamllint $CF_JH_DIR/configs/aws-auth-cm.yaml;
                 - echo "Render profiles.py...";
                   python3 create_profiles.py
                     --config $OSL_HOME/opensarlab.yaml
-                    --output_file $CF_CLUSTER_DIR/hub/helm_config.d/profiles.py;
+                    --output_file $CF_JH_DIR/helm/profiles.py;
                 - echo "Rendering cf-jupyterhub.yaml...";
                   python3 create_cf_jupyterhub.py 
                     --config=$OSL_HOME/opensarlab.yaml

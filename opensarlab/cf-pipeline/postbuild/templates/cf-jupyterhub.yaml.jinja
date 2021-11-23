@@ -60,7 +60,7 @@ Resources:
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
-        Image: aws/codebuild/standard:3.0
+        Image: aws/codebuild/standard:5.0
         PrivilegedMode: true
       Artifacts:
         Type: CODEPIPELINE
@@ -87,33 +87,33 @@ Resources:
                     docker: 18
                     python: 3.8
                   commands:
-                    - pip3 install awscli>=1.16.158 --upgrade
                     - pip3 install boto3 --upgrade
                     - pip3 install kubernetes --upgrade
                     - pip3 install jinja2 --upgrade
                     - curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.21.2/2021-07-05/bin/darwin/amd64/kubectl
                     - curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version v3.7.0
                     - export HELM_HOST=127.0.0.1:44134
-                    - curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
-                    - mv /tmp/eksctl /usr/local/bin
-                    - eksctl version
+                    - curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp;
+                      mv /tmp/eksctl /usr/local/bin;
+                      eksctl version;
                 pre_build:
                   commands:
                     - echo "IAM build role used is $(aws sts get-caller-identity)"
-                    - echo "Logging into AWS ECR..."
-                    - $(aws ecr get-login --no-include-email --region ${AWS::Region})
-                    - echo "Logging into Docker Hub user to get latest jupyter image..."
-                    - dh_username=$(echo $DH_CREDS | cut -f1 -d' ')
-                    - echo $DH_CREDS | cut -f2 -d' ' > dh.pass
-                    - cat dh.pass | docker login -u $dh_username --password-stdin
-                    - echo "Install helm charts and update..."
-                    - helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/
-                    - helm repo add autoscaler https://kubernetes.github.io/autoscaler
-                    - helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
-                    - helm repo update
+                    - echo "Logging into AWS ECR...";
+                      aws ecr get-login-password --region ${AWS::Region} | 
+                        docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+                    - echo "Logging into Docker Hub user to get latest jupyter image...";
+                      dh_username=$(echo $DH_CREDS | cut -f1 -d' ');
+                      echo $DH_CREDS | cut -f2 -d' ' > dh.pass;
+                      cat dh.pass | docker login -u $dh_username --password-stdin;
+                    - echo "Install helm charts and update...";
+                      helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/;
+                      helm repo add autoscaler https://kubernetes.github.io/autoscaler;
+                      helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver;
+                      helm repo update;
                 build:
                   commands:
-                    - cd $CODEBUILD_SRC_DIR/opensarlab/cf-cluster/;
+                    - cd $CODEBUILD_SRC_DIR/opensarlab/cf-jupyterhub/;
                     - echo "Update assumed role of cluster-build...";
                       cp configs/cluster-build-assumerolepolicy.template.json assume.json;
                       sed -i "s|CLUSTER_RUN_ARN|arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role|" assume.json;
@@ -154,15 +154,15 @@ Resources:
                       docker push $REGISTRY_URI/hub:latest;
                       cd $PrevWD;
                     - echo "Base64 convert images...";
-                      base64 ./hub/helm_config.d/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png > ASFLogo-Blue2.png.b64;
-                      base64 ./hub/helm_config.d/usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png > alaska_satellite_facility_1000.png.b64;
+                      base64 ./helm/files/usr/local/share/jupyterhub/static/images/ASFLogo-Blue2.png > ASFLogo-Blue2.png.b64;
+                      base64 ./helm/files/usr/local/share/jupyterhub/static/images/alaska_satellite_facility_1000.png > alaska_satellite_facility_1000.png.b64;
                     - echo "Install JupyterHub cluster...";
                       helm upgrade jupyter jupyterhub/jupyterhub
                         --install
                         --create-namespace
                         --namespace jupyter
                         --version 1.1.3
-                        --values ./hub/helm_config.yaml
+                        --values ./helm/helm_config.yaml
                         --timeout=6m0s
                         --atomic
                         --set hub.image.name=$REGISTRY_URI/hub,hub.image.tag=$HUB_IMAGE_BUILD
@@ -174,30 +174,30 @@ Resources:
                         --set custom.CLUSTER_NAME='${CostTagValue}-cluster',custom.OAUTH_POOL_NAME='${CostTagValue}-cluster',custom.AZ_NAME='${AWS::Region}${AZPostfix}'
                         --set custom.COST_TAG_VALUE='${CostTagValue}'
                         --set custom.COST_TAG_KEY='${CostTagKey}'
-                        --set-file hub.extraFiles.hooks.stringData='./hub/helm_config.d/hooks.py'
-                        --set-file hub.extraFiles.hooks-pv.stringData='./hub/helm_config.d/hooks/pv.yaml'
-                        --set-file hub.extraFiles.hooks-pvc.stringData='./hub/helm_config.d/hooks/pvc.yaml'
-                        --set-file hub.extraFiles.profiles.stringData='./hub/helm_config.d/profiles.py'
-                        --set-file hub.extraFiles.services.stringData='./hub/helm_config.d/services.py'
-                        --set-file hub.extraFiles.lib-logout.stringData='./hub/helm_config.d/usr/local/lib/generic_with_logout.py'
-                        --set-file hub.extraFiles.lib-groups.stringData='./hub/helm_config.d/usr/local/lib/jupyterhub/groups.py'
-                        --set-file hub.extraFiles.lib-handlers-groups.stringData='./hub/helm_config.d/usr/local/lib/jupyterhub/handlers/groups.py'
-                        --set-file hub.extraFiles.lib-handlers-init.stringData='./hub/helm_config.d/usr/local/lib/jupyterhub/handlers/__init__.py'
+                        --set-file hub.extraFiles.hooks.stringData='./helm/hooks/hooks.py'
+                        --set-file hub.extraFiles.hooks-pv.stringData='./helm/hooks/pv.yaml'
+                        --set-file hub.extraFiles.hooks-pvc.stringData='./helm/hooks/pvc.yaml'
+                        --set-file hub.extraFiles.profiles.stringData='./helm/profiles.py'
+                        --set-file hub.extraFiles.services.stringData='./helm/services/services.py'
+                        --set-file hub.extraFiles.lib-logout.stringData='./helm/files/usr/local/lib/generic_with_logout.py'
+                        --set-file hub.extraFiles.lib-groups.stringData='./helm/files/usr/local/lib/jupyterhub/groups.py'
+                        --set-file hub.extraFiles.lib-handlers-groups.stringData='./helm/files/usr/local/lib/jupyterhub/handlers/groups.py'
+                        --set-file hub.extraFiles.lib-handlers-init.stringData='./helm/files/usr/local/lib/jupyterhub/handlers/__init__.py'
                         --set-file hub.extraFiles.share-images-alaska_satellite_facility_1000.binaryData='./alaska_satellite_facility_1000.png.b64'
                         --set-file hub.extraFiles.share-images-blue2.binaryData='./ASFLogo-Blue2.png.b64'
-                        --set-file hub.extraFiles.share-nasa_logo.stringData='./hub/helm_config.d/usr/local/share/jupyterhub/static/images/NASA_logo.svg'
-                        --set-file hub.extraFiles.share-js-groups.stringData='./hub/helm_config.d/usr/local/share/jupyterhub/static/js/groups.js'
-                        --set-file hub.extraFiles.share-templates-groups.stringData='./hub/helm_config.d/usr/local/share/jupyterhub/templates/groups.html'
-                        --set-file hub.extraFiles.share-templates-login.stringData='./hub/helm_config.d/usr/local/share/jupyterhub/templates/login.html'
-                        --set-file hub.extraFiles.share-templates-pending.stringData='./hub/helm_config.d/usr/local/share/jupyterhub/templates/pending.html'
-                        --set-file hub.extraFiles.share-templates-custom-page.stringData='./hub/helm_config.d/usr/local/share/jupyterhub/templates/custom/page.html'
-                        --set-file singleuser.extraFiles.user-hooks-sar.stringData='./hub/helm_config.d/user_containers/hooks/sar.sh'
-                        --set-file singleuser.extraFiles.user-hooks-sar_test.stringData='./hub/helm_config.d/user_containers/hooks/sar_test.sh'
-                        --set-file singleuser.extraFiles.user-hooks-sar_dev.stringData='./hub/helm_config.d/user_containers/hooks/sar_dev.sh'
-                        --set-file singleuser.extraFiles.user-hooks-no_smart_git.stringData='./hub/helm_config.d/user_containers/hooks/no_smart_git.sh'
-                        --set-file singleuser.extraFiles.user-hooks-pull.stringData='./hub/helm_config.d/user_containers/hooks/pull.py'
-                        --set-file singleuser.extraFiles.user-others-check_storage.stringData='./hub/helm_config.d/user_containers/others/check_storage.py'
-                        --set-file singleuser.extraFiles.user-custom_magics.stringData='./hub/helm_config.d/user_containers/custom_magics/00-df.py'
+                        --set-file hub.extraFiles.share-nasa_logo.stringData='./helm/files/usr/local/share/jupyterhub/static/images/NASA_logo.svg'
+                        --set-file hub.extraFiles.share-js-groups.stringData='./helm/files/usr/local/share/jupyterhub/static/js/groups.js'
+                        --set-file hub.extraFiles.share-templates-groups.stringData='./helm/files/usr/local/share/jupyterhub/templates/groups.html'
+                        --set-file hub.extraFiles.share-templates-login.stringData='./helm/files/usr/local/share/jupyterhub/templates/login.html'
+                        --set-file hub.extraFiles.share-templates-pending.stringData='./helm/files/usr/local/share/jupyterhub/templates/pending.html'
+                        --set-file hub.extraFiles.share-templates-custom-page.stringData='./helm/files/usr/local/share/jupyterhub/templates/custom/page.html'
+                        --set-file singleuser.extraFiles.user-hooks-sar.stringData='./helm/singleuser/hooks/sar.sh'
+                        --set-file singleuser.extraFiles.user-hooks-sar_test.stringData='./helm/singleuser/hooks/sar_test.sh'
+                        --set-file singleuser.extraFiles.user-hooks-sar_dev.stringData='./helm/singleuser/hooks/sar_dev.sh'
+                        --set-file singleuser.extraFiles.user-hooks-no_smart_git.stringData='./helm/singleuser/hooks/no_smart_git.sh'
+                        --set-file singleuser.extraFiles.user-hooks-pull.stringData='./helm/singleuser/hooks/pull.py'
+                        --set-file singleuser.extraFiles.user-others-check_storage.stringData='./helm/singleuser/others/check_storage.py'
+                        --set-file singleuser.extraFiles.user-custom_magics.stringData='./helm/singleuser/custom_magics/00-df.py'
                     - kubectl -n jupyter rollout status -w deployment.apps/hub
                     - echo "Associate volume provisioner with service account...";
                       kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
@@ -227,10 +227,10 @@ Resources:
                         s/{% raw %}{{read_from_tail}}{% endraw %}/"'$FluentBitReadFromTail'"/'
                       | kubectl apply -f -
                     - echo "Create services namespace";
-                      kubectl apply -f services/namespace.yaml
+                      kubectl apply -f ./helm/services/namespace.yaml
                     - echo "Build Notification Image...";
                       PrevWD=$(pwd); 
-                      cd services/notifications;
+                      cd ./helm/services/notifications;
                       cp dockerfile dockerfile.build;
                       export NOTES_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
                       time docker build -f dockerfile.build -t $REGISTRY_URI/notifications:$NOTES_IMAGE_BUILD -t $REGISTRY_URI/notifications:latest .;
@@ -238,14 +238,17 @@ Resources:
                       docker push $REGISTRY_URI/notifications:latest;
                       cd $PrevWD;
                     - echo "Install notifications service...";
-                      cp services/notifications/k8s/deployment.example.yaml services/notifications/k8s/deployment.yaml;
-                      sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/notifications:$NOTES_IMAGE_BUILD|" services/notifications/k8s/deployment.yaml;
-                      sed -i "s|ICAL_URL_PLACEHOLDER|${ICALUrl}|" services/notifications/k8s/deployment.yaml;
-                      kubectl apply -f services/notifications/k8s/service.yaml;
-                      kubectl apply -f services/notifications/k8s/deployment.yaml;
+                      PrevWD=$(pwd);
+                      cd ./helm/services/notifications;
+                      cp k8s/deployment.example.yaml k8s/deployment.yaml;
+                      sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/notifications:$NOTES_IMAGE_BUILD|" k8s/deployment.yaml;
+                      sed -i "s|ICAL_URL_PLACEHOLDER|${ICALUrl}|" k8s/deployment.yaml;
+                      kubectl apply -f k8s/service.yaml;
+                      kubectl apply -f k8s/deployment.yaml;
                       kubectl -n services rollout status deployment/notifications -w;
                       kubectl -n services scale deployment notifications --replicas=0;
-                      kubectl -n services scale deployment notifications --replicas=1
+                      kubectl -n services scale deployment notifications --replicas=1;
+                      cd $PrevWD;
                     - echo "Build Crons Image...";
                       PrevWD=$(pwd); 
                       cd services/crons;
@@ -256,14 +259,17 @@ Resources:
                       docker push $REGISTRY_URI/crons:latest;
                       cd $PrevWD;
                     - echo "Install Crons service...";
-                      cp services/crons/k8s/deployment.example.yaml services/crons/k8s/deployment.yaml;
-                      sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/crons:$CRONS_IMAGE_BUILD|" services/crons/k8s/deployment.yaml;
-                      sed -i "s|REGION_NAME_PLACEHOLDER|${AWS::Region}|" services/crons/k8s/deployment.yaml;
-                      sed -i "s|COGNITO_NAME_PLACEHOLDER|${CostTagValue}-cluster|" services/crons/k8s/deployment.yaml;
-                      sed -i "s|CLUSTER_NAME_PLACEHOLDER|${CostTagValue}-cluster|" services/crons/k8s/deployment.yaml;
-                      sed -i "s|NAMESPACE_PLACEHOLDER|jupyter|" services/crons/k8s/deployment.yaml;
-                      sed -i "s|DAYS_VOL_INACTIVE_TILL_TERMINATION_PLACEHOLDER|5|" services/crons/k8s/deployment.yaml;
-                      kubectl apply -f services/crons/k8s/deployment.yaml;
+                      PrevWD=$(pwd); 
+                      cd services/crons;
+                      cp k8s/deployment.example.yaml k8s/deployment.yaml;
+                      sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/crons:$CRONS_IMAGE_BUILD|" k8s/deployment.yaml;
+                      sed -i "s|REGION_NAME_PLACEHOLDER|${AWS::Region}|" k8s/deployment.yaml;
+                      sed -i "s|COGNITO_NAME_PLACEHOLDER|${CostTagValue}-cluster|" k8s/deployment.yaml;
+                      sed -i "s|CLUSTER_NAME_PLACEHOLDER|${CostTagValue}-cluster|" k8s/deployment.yaml;
+                      sed -i "s|NAMESPACE_PLACEHOLDER|jupyter|" k8s/deployment.yaml;
+                      sed -i "s|DAYS_VOL_INACTIVE_TILL_TERMINATION_PLACEHOLDER|5|" k8s/deployment.yaml;
+                      kubectl apply -f k8s/deployment.yaml;
                       kubectl -n services rollout status deployment/crons -w;
                       kubectl -n services scale deployment crons --replicas=0;
-                      kubectl -n services scale deployment crons --replicas=1
+                      kubectl -n services scale deployment crons --replicas=1;
+                      cd $PrevWD;

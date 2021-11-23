@@ -22,7 +22,7 @@ conda install -c conda-forge nb_conda_kernels
 
 # copy over our version of pull.py
 # REMINDER: REMOVE IF CHANGES ARE MERGED TO NBGITPULLER
-cp /etc/jupyter-hooks/scripts/pull.py /home/jovyan/.local/lib/python3.8/site-packages/nbgitpuller/pull.py
+cp /etc/jupyter-hooks/scripts/pull.py /home/jovyan/.local/lib/python3.9/site-packages/nbgitpuller/pull.py
 
 # Add Path to local pip execs. 
 export PATH=$HOME/.local/bin:$PATH
