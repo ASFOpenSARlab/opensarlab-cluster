@@ -20,7 +20,7 @@ Parameters:
   CostTagValue:
     Type: String
     Description: "The value of the cost tag used for filtering the budget, etc."
-    Default: "" # should match CostTagValue used in cf-cognito.yaml and cf-cluster.yaml
+    Default: ""
 
 Resources:
   ClusterBuildRole:
@@ -240,6 +240,10 @@ Resources:
                   python3 create_profiles.py
                     --config $OSL_HOME/opensarlab.yaml
                     --output_file $CF_CLUSTER_DIR/hub/helm_config.d/profiles.py;
+                - echo "Rendering cf-jupyterhub.yaml...";
+                  python3 create_cf_jupyterhub.py 
+                    --config=$OSL_HOME/opensarlab.yaml
+                    --output_file $CODEBUILD_SRC_DIR/cf-jupyterhub.yaml;
           artifacts:
             files:
               - '**/*'
@@ -257,6 +261,9 @@ Resources:
       Name: !Sub ${CostTagValue}-Pipeline
       RestartExecutionOnUpdate: True
       RoleArn: !GetAtt ClusterBuildRole.Arn
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
       Stages:
         - Name: !Sub ${CostTagValue}-Source
           Actions:
@@ -332,10 +339,29 @@ Resources:
                 - Name: PostBuildArtifact
               Region: !Sub ${AWS::Region}
 
-        - Name: !Sub ${CostTagValue}-JupyterHub-Cognito
+        - Name: !Sub ${CostTagValue}-DeployJupyterHub
           Actions:
+            - Name: DeployJupyterHub
+              RunOrder: 1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt ClusterBuildRole.Arn
+                StackName: !Sub ${CostTagValue}-jupyterhub
+                TemplatePath: PostBuildArtifact::cf-jupyterhub.yaml
+              InputArtifacts:
+                - Name: PostBuildArtifact
+              Region: !Sub ${AWS::Region}
+              RoleArn: !GetAtt ClusterBuildRole.Arn
 
-            - Name: !Sub ${CostTagValue}-BuildJupyterHub
+        - Name: !Sub ${CostTagValue}-BuildJupyterHub
+          Actions:
+            - Name: BuildJupyterHub
               RunOrder: 1
               ActionTypeId:
                 Category: Build
@@ -347,9 +373,10 @@ Resources:
               InputArtifacts:
                 - Name: PostBuildArtifact
               Region: !Sub ${AWS::Region}
-              RoleArn: !GetAtt ClusterBuildRole.Arn
-            
-            - Name: !Sub ${CostTagValue}-DeployCognito
+
+        - Name: !Sub ${CostTagValue}-DeployCognito
+          Actions:
+            - Name: CognitoDeploy
               RunOrder: 1
               ActionTypeId:
                 Category: Deploy
@@ -366,7 +393,3 @@ Resources:
                 - Name: PostBuildArtifact
               Region: !Sub ${AWS::Region}
               RoleArn: !GetAtt ClusterBuildRole.Arn
-
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
