@@ -113,6 +113,14 @@ Resources:
 
             return event
 
+  PreAuthFunctionInvocationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt PreAuthFunction.Arn
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt CognitoUserPool.Arn
+
   PostEmailVertificationFunction:
     Type: AWS::Lambda::Function
     Properties:
@@ -125,6 +133,14 @@ Resources:
       Code:
         S3Bucket: !Sub ${AWS::Region}-${CostTagValue}-lambda
         S3Key: lambda_email.py.zip
+
+  PostEmailVertificationFunctionInvocationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt PostEmailVertificationFunction.Arn
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt CognitoUserPool.Arn
 
   LogFunction:
     Type: AWS::Lambda::Function
@@ -143,6 +159,14 @@ Resources:
             print(event)
             
             return event
+
+  LogFunctionInvocationPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt LogFunction.Arn
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt CognitoUserPool.Arn
 
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
