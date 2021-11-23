@@ -66,7 +66,7 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
 
     others = {}
     others['lambda_email_zip'] = f"{lambda_email_zip}"
-    others['lambda_email_zip_base'] = f"{lambda_email_base}"
+    others['lambda_email_base'] = f"{lambda_email_base}"
     yaml_config['parameters'].update(others)
 
     with open(config, "w") as f:
