@@ -45,7 +45,7 @@ profiles:
   - name: Required Only
     description: "Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G."
     image_name: sar
-    image_tag: aaa74ac
+    image_tag: 83949b6
     node_name: sar_1
     storage_capacity: 500Gi
     ewewewe: wewew
@@ -53,7 +53,7 @@ profiles:
   - name: SAR 1
     description: "Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G."
     image_name: sar
-    image_tag: aaa74ac
+    image_tag: 83949b6
     hook_script: sar.sh
     memory_guarantee: 6G
     memory_limit: 16G
@@ -64,7 +64,7 @@ profiles:
   - name: SAR 1 - Test
     description: "Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G."
     image_name: sar
-    image_tag: aaa74ac
+    image_tag: 83949b6
     hook_script: sar_test.sh
     memory_guarantee: 6G
     memory_limit: 16G
@@ -74,7 +74,7 @@ profiles:
   - name: SAR 1 - Dev
     description: "Development profile. CPU limit: 8. RAM limit: 16G. Storage: 500G"
     image_name: sar
-    image_tag: aaa74ac
+    image_tag: 83949b6
     hook_script: sar_dev.sh
     memory_guarantee: 6G
     memory_limit: 16G
@@ -84,7 +84,7 @@ profiles:
   - name: SAR 2
     description: "Formally UNAVCO. Contains basic SAR processing packages on a bigger machine. RAM limit: 96G. CPU limit: 8 cpus. Storage: 500 GiB."
     image_name: sar
-    image_tag: aaa74ac
+    image_tag: 83949b6
     hook_script: sar.sh
     memory_guarantee: 32G
     memory_limit: 96G
@@ -95,7 +95,7 @@ profiles:
   - name: SAR 2 - Max
     description: "Similar to SAR 2 but one person per machine. RAM limit: ~128GB. CPU limit: ~30 cpus. Storage: 500 GiB."
     image_name: sar
-    image_tag: aaa74ac
+    image_tag: 83949b6
     hook_script: sar.sh
     cpu_guarantee: 30
     storage_capacity: 500Gi
