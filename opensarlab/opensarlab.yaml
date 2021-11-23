@@ -71,11 +71,11 @@ profiles:
     storage_capacity: 500Gi
     node_name: sar_1
 
-  - name: SAR 1 - Dev
+  - name: SAR 1 - No Pull
     description: "Development profile. CPU limit: 8. RAM limit: 16G. Storage: 500G"
     image_name: sar
     image_tag: 83949b6
-    hook_script: sar_dev.sh
+    hook_script: None
     memory_guarantee: 6G
     memory_limit: 16G
     storage_capacity: 500Gi
