@@ -1,19 +1,18 @@
 import pathlib
 import argparse
 from zipfile import ZipFile
+import uuid
 
 import boto3
 import yaml
 from jinja2 import Environment, FileSystemLoader
 
-from opensarlab.utils.custom_filters import regex_replace
+from opensarlab.utils.custom_yaml import IndentDumper
 
 env = Environment(
     loader=FileSystemLoader(pathlib.Path(__file__).parent),
     autoescape=True
 )
-
-env.filters['regex_replace'] = regex_replace
 
 def main(config, aws_region, s3_bucket_name, aws_profile_name):
     with open(config, "r") as infile:
@@ -24,7 +23,10 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
 
     template = env.get_template('templates/lambda_email.py.jinja')
 
-    with open('lambda_email.py', 'w') as outfile:
+    lambda_email_py = f"lambda_email_zip_{str(uuid.uuid4()[:8])}.py"
+    lambda_email_zip = f"{lambda_email_py}.zip"
+
+    with open(lambda_email_py, 'w') as outfile:
         outfile.write(template.render(
             aws_region=aws_region, 
             admin_email_address=admin_email_address, 
@@ -32,8 +34,8 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
             )
         )
 
-    with ZipFile('lambda_email.py.zip','w') as zip:
-        zip.write('lambda_email.py')
+    with ZipFile(lambda_email_zip,'w') as zip:
+        zip.write(lambda_email_py)
 
     session = None 
     try:
@@ -55,8 +57,18 @@ def main(config, aws_region, s3_bucket_name, aws_profile_name):
     except s3.exceptions.BucketAlreadyOwnedByYou as e:
         print(f"Bucket {e.response['Error']['BucketName']} is already owned by you.")
 
-    s3.upload_file('lambda_email.py.zip', s3_bucket_name, 'lambda_email.py.zip')
-    s3.upload_file('lambda_email.py', s3_bucket_name, 'lambda_email.py')
+    s3.upload_file(lambda_email_zip, s3_bucket_name, lambda_email_zip)
+    s3.upload_file(lambda_email_py, s3_bucket_name, lambda_email_py)
+
+    # Update parameter in config
+    print(f"The lambda email zip file is now {lambda_email_zip}. Adding to parameters...")
+
+    others = {}
+    others['lambda_email_zip'] = f"{lambda_email_zip}"
+    yaml_config['parameters'].update(others)
+
+    with open(config, "w") as f:
+        yaml.dump(yaml_config, f, Dumper=IndentDumper)
 
 if __name__ == "__main__":
 

@@ -24,6 +24,11 @@ Parameters:
     Description: "The value of the cost tag used for filtering the budget, etc."
     Default: {{ parameters.cost_tag_value }}
 
+  LambdaEmailZip:
+    Type: String
+    Description: Name of the email verification lambda zip. Must be unique for the code to update.
+    Default: {{ parameters.lambda_email_zip }}
+
 Resources:
 
   LambdaExecutionRole:
@@ -132,7 +137,7 @@ Resources:
           Value: !Sub ${CostTagValue}
       Code:
         S3Bucket: !Sub ${AWS::Region}-${CostTagValue}-lambda
-        S3Key: lambda_email.py.zip
+        S3Key: !Sub ${LambdaEmailZip}
 
   PostEmailVertificationFunctionInvocationPermission:
     Type: AWS::Lambda::Permission
