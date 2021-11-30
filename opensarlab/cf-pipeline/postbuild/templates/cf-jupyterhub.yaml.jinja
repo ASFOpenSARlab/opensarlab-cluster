@@ -251,8 +251,8 @@ Resources:
                       kubectl -n services scale deployment notifications --replicas=1;
                       cd $PrevWD;
                     - echo "Build Crons Image...";
-                      PrevWD=$(pwd); 
-                      cd services/crons;
+                      PrevWD=$(pwd);
+                      cd ./helm/services/crons;
                       cp dockerfile dockerfile.build;
                       export CRONS_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
                       time docker build -f dockerfile.build -t $REGISTRY_URI/crons:$CRONS_IMAGE_BUILD -t $REGISTRY_URI/crons:latest .;
