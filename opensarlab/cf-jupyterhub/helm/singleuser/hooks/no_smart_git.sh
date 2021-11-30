@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 
+which python
+which pip
+which conda
+which jupyter
+
+python /etc/jupyter-hooks/resource_checks/check_storage.py $1
+
 pip install --user \
     ipywidgets \
     mpldatacursor \
@@ -9,6 +16,8 @@ pip install --user \
     jupyter_nbextensions_configurator \
     pandoc==2.0a4 \
     pypandoc
+
+conda install -c conda-forge nb_conda_kernels
 
 # Add Path to local pip execs. 
 export PATH=$HOME/.local/bin:$PATH
@@ -24,4 +33,39 @@ jupyter serverextension enable --py hide_code --user
 mkdir -p $HOME/.ipython/profile_default/startup/
 cp /etc/jupyter-hooks/custom_magics/00-df.py $HOME/.ipython/profile_default/startup/00-df.py
 
-echo 'No git puller enabled.'
+# Update page and tree
+mv /opt/conda/lib/python3.9/site-packages/notebook/templates/tree.html /opt/conda/lib/python3.9/site-packages/notebook/templates/original_tree.html
+cp /etc/jupyter-hooks/templates/tree.html /opt/conda/lib/python3.9/site-packages/notebook/templates/tree.html
+
+mv /opt/conda/lib/python3.9/site-packages/notebook/templates/page.html /opt/conda/lib/python3.9/site-packages/notebook/templates/original_page.html
+cp /etc/jupyter-hooks/templates/page.html /opt/conda/lib/python3.9/site-packages/notebook/templates/page.html
+
+CONDARC=$HOME/.condarc
+if ! test -f "$CONDARC"; then
+cat <<EOT >> $CONDARC
+channels:
+  - conda-forge
+  - defaults
+
+channel_priority: strict
+
+create_default_packages:
+  - jupyter
+  - kernda
+
+envs_dirs:
+  - /home/jovyan/.local/envs
+  - /opt/conda/envs
+EOT
+fi
+
+conda init
+
+BASH_PROFILE=$HOME/.bash_profile
+if ! test -f "$BASH_PROFILE"; then
+cat <<EOT>> $BASH_PROFILE
+if [ -s ~/.bashrc ]; then
+    source ~/.bashrc;
+fi
+EOT
+fi
