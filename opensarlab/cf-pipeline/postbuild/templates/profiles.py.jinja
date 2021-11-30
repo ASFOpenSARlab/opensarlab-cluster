@@ -67,6 +67,14 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                             }
                         }
                     },
+                    {% else -%}
+                    'lifecycle_hooks': {
+                        "postStart": {
+                            "exec": {
+                                "command": ["/bin/sh", "-c", "echo No hook script ran."]
+                            }
+                        }
+                    },
                     {% endif -%}
                     'args': [
                         "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'{{ profile.name }}'}"
