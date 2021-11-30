@@ -26,9 +26,6 @@ singleuser:
     user-hooks-sar_test:
       mountPath: /etc/jupyter-hooks/sar_test.sh
       mode: 0755
-    user-hooks-sar_dev:
-      mountPath: /etc/jupyter-hooks/sar_dev.sh
-      mode: 0755
     user-hooks-no_smart_git:
       mountPath: /etc/jupyter-hooks/no_smart_git.sh
       mode: 0755
