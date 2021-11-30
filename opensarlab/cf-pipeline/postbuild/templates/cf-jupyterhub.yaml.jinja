@@ -261,7 +261,7 @@ Resources:
                       cd $PrevWD;
                     - echo "Install Crons service...";
                       PrevWD=$(pwd); 
-                      cd services/crons;
+                      cd ./helm/services/crons;
                       cp k8s/deployment.example.yaml k8s/deployment.yaml;
                       sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/crons:$CRONS_IMAGE_BUILD|" k8s/deployment.yaml;
                       sed -i "s|REGION_NAME_PLACEHOLDER|${AWS::Region}|" k8s/deployment.yaml;
