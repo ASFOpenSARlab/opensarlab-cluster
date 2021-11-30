@@ -38,8 +38,10 @@ singleuser:
       mountPath: /etc/jupyter-hooks/custom_magics/00-df.py
     user-template-page:
       mountPath: /etc/jupyter-hooks/templates/page.html
+      mode: 0755
     user-template-tree:
       mountPath: /etc/jupyter-hooks/templates/tree.html
+      mode: 0755
 
 prePuller:
   continuous:
