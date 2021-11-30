@@ -198,7 +198,7 @@ Resources:
                         --set-file singleuser.extraFiles.user-others-check_storage.stringData='./helm/singleuser/others/check_storage.py'
                         --set-file singleuser.extraFiles.user-custom_magics.stringData='./helm/singleuser/custom_magics/00-df.py'
                         --set-file singleuser.extraFiles.user-template-page.stringData='./helm/singleuser/templates/page.html'
-                        --set-file singleuser.extraFiles.user-template_tree.stringData='./helm/singleuser/templates/tree.html'
+                        --set-file singleuser.extraFiles.user-template-tree.stringData='./helm/singleuser/templates/tree.html'
                     - kubectl -n jupyter rollout status -w deployment.apps/hub
                     - echo "Associate volume provisioner with service account...";
                       kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run -o yaml | kubectl apply -f -
