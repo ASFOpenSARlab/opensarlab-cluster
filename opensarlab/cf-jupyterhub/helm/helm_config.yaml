@@ -37,9 +37,9 @@ singleuser:
     user-custom_magics:
       mountPath: /etc/jupyter-hooks/custom_magics/00-df.py
     user-template-page:
-      mountPath: /opt/conda/lib/python3.9/site-packages/notebook/templates/new_page.html
+      mountPath: /etc/jupyter-hooks/templates/page.html
     user-template-tree:
-      mountPath: /opt/conda/lib/python3.9/site-packages/notebook/templates/new_tree.html
+      mountPath: /etc/jupyter-hooks/templates/tree.html
 
 prePuller:
   continuous:
