@@ -218,6 +218,15 @@ def volume_from_snapshot(spawner):
                 else:
                     raise
 
+def organize_custom_templates():
+
+    import pathlib
+
+    pathlib.Path("/opt/conda/lib/python3.9/site-packages/notebook/templates/tree.html").rename("/opt/conda/lib/python3.9/site-packages/notebook/templates/original_tree.html")
+    pathlib.Path("/opt/conda/lib/python3.9/site-packages/notebook/templates/new_tree.html").rename("/opt/conda/lib/python3.9/site-packages/notebook/templates/tree.html")
+
+    pathlib.Path("/opt/conda/lib/python3.9/site-packages/notebook/templates/page.html").rename("/opt/conda/lib/python3.9/site-packages/notebook/templates/original_page.html")
+    pathlib.Path("/opt/conda/lib/python3.9/site-packages/notebook/templates/new_page.html").rename("/opt/conda/lib/python3.9/site-packages/notebook/templates/page.html")
 
 # Before mounting the home directory, check to see if a volume exists.
 # If it doesn't, check for any EBS snapshots.
@@ -226,6 +235,8 @@ def volume_from_snapshot(spawner):
 def my_pre_hook(spawner):
     try:
         volume_from_snapshot(spawner)
+
+        organize_custom_templates()
 
     except Exception as e:
         print(e)
