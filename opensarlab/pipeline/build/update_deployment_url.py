@@ -4,7 +4,7 @@ import argparse
 import yaml
 import boto3
 
-from opensarlab.utils.custom_yaml import IndentDumper
+from utils.custom_yaml import IndentDumper
 
 def main(config, aws_region, aws_profile):
     with open(config, "r") as infile:
@@ -20,9 +20,9 @@ def main(config, aws_region, aws_profile):
 
         session = None 
         try:
-            session = boto3.session.Session(region_name=aws_region, profile_name=aws_profile)
+            session = boto3.Session(region_name=aws_region, profile_name=aws_profile)
         except:
-            session = boto3.session.Session(region_name=aws_region)
+            session = boto3.Session(region_name=aws_region)
         lb = session.client('elbv2')
 
         response = lb.describe_load_balancers(

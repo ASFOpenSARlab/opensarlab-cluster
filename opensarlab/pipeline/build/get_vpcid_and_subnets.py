@@ -4,7 +4,7 @@ import argparse
 import boto3
 import yaml
 
-from opensarlab.utils.custom_yaml import IndentDumper
+from utils.custom_yaml import IndentDumper
 
 def which_subnet_is_az(subnets, az_suffix):
     
@@ -20,9 +20,9 @@ def main(region_name, cluster_name, config, profile_name):
 
     session = None 
     try:
-        session = boto3.session.Session(region_name=region_name, profile_name=profile_name)
+        session = boto3.Session(region_name=region_name, profile_name=profile_name)
     except:
-        session = boto3.session.Session(region_name=region_name)
+        session = boto3.Session(region_name=region_name)
 
     eks = session.client('eks')
     ec2 = session.client('ec2')
