@@ -418,7 +418,7 @@ Resources:
         - Key: k8s.io/cluster-autoscaler/enabled
           Value: "true"
           PropagateAtLaunch: true
-        - Key: !Sub k8s.io/cluster-autoscaler/${CostTagValue}-{{ node_name_escaped }}-cluster
+        - Key: !Sub k8s.io/cluster-autoscaler/${CostTagValue}-cluster
           Value: "true"
           PropagateAtLaunch: true
         - Key: !Sub ${CostTagKey}
