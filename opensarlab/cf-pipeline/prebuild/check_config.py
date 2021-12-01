@@ -41,6 +41,9 @@ def check_nodes(config):
             if required not in nodes.keys():
                 raise Exception(f"Not all required fields found for profile '{ nodes['name'] }'. Must have '{required}'.")
 
+        if not nodes['name'].isalnum():
+            raise Exception(f"{nodes['name']} is not pure alphanumeric (no spaces, underscores, special characters).")
+
 def check_profiles(config):
     all_node_names = []
     for nodes in config['nodes']:
