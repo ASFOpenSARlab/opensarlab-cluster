@@ -157,7 +157,6 @@ Resources:
                     --config=$OSL_HOME/opensarlab.yaml;
                   yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensarlab.yaml;
                 - echo "Render cf-cluster.yaml...";
-                  cp $OSL_HOME/pipeline/node_policies/* .;
                   python3 create_cf_cluster.py
                     --config $OSL_HOME/opensarlab.yaml
                     --output_file $CODEBUILD_SRC_DIR/cf-cluster.yaml

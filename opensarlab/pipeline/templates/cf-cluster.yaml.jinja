@@ -384,7 +384,7 @@ Resources:
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
       {%- filter indent(width=6) -%}
-      {% include "node_policies/" ~ node.node_policy ~ ".yaml" %}
+      {% include node.node_policy ~ "_policy.yaml" %}
       {%- endfilter %}
 
   NodeInstanceProfile{{ node_name_escaped }}:
