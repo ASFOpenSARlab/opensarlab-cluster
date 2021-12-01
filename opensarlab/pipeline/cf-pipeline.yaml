@@ -145,7 +145,8 @@ Resources:
               commands:
                 - export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
                   export PYTHONPATH=$PYTHONPATH:$CODEBUILD_SRC_DIR/opensarlab/pipeline/build;
-                  echo $OSL_HOME $PYTHONPATH;
+                  export TEMPLATE_PATH=$OSL_HOME/pipeline/templates;
+                  echo $OSL_HOME $PYTHONPATH $TEMPLATE_PATH;
                 - cd $OSL_HOME/pipeline/build/
                 - echo "Check opensarlab.yaml for required fields...";
                   python3 check_config.py --config $OSL_HOME/opensarlab.yaml
@@ -160,7 +161,7 @@ Resources:
                   python3 create_cf_cluster.py
                     --config $OSL_HOME/opensarlab.yaml
                     --output_file $CODEBUILD_SRC_DIR/cf-cluster.yaml
-                    --template_path $OSL_HOME/pipeline/templates/cf-cluster.yaml.jinja;
+                    --template_path $TEMPLATE_PATH/cf-cluster.yaml.jinja;
                   yamllint -c $OSL_HOME/.yamllint $CODEBUILD_SRC_DIR/cf-cluster.yaml;
                   cfn-lint $CODEBUILD_SRC_DIR/cf-cluster.yaml
 
@@ -212,7 +213,8 @@ Resources:
               commands:
                 - export OSL_HOME=$CODEBUILD_SRC_DIR/opensarlab;
                   export PYTHONPATH=$PYTHONPATH:$CODEBUILD_SRC_DIR/opensarlab/pipeline/build;
-                  echo $OSL_HOME $PYTHONPATH
+                  export TEMPLATE_PATH=$OSL_HOME/pipeline/templates;
+                  echo $OSL_HOME $PYTHONPATH $TEMPLATE_PATH;
                 - cd $OSL_HOME/pipeline/build;
                 - echo "Update deployment_url...";
                   python3 update_deployment_url.py
@@ -223,19 +225,19 @@ Resources:
                     --config=$OSL_HOME/opensarlab.yaml
                     --aws_region=${AWS::Region}
                     --s3_bucket_name=${AWS::Region}-${CostTagValue}-lambda
-                    --template_path $OSL_HOME/pipeline/templates/lambda_email.py.jinja;
+                    --template_path $TEMPLATE_PATH/lambda_email.py.jinja;
                 - echo "Rendering cf-cognito.yaml...";
                   python3 create_cf_cognito.py 
                     --config=$OSL_HOME/opensarlab.yaml
                     --output_file $CODEBUILD_SRC_DIR/cf-cognito.yaml
-                    --template_path $OSL_HOME/pipeline/templates/cf-cognito.yaml.jinja;
+                    --template_path $TEMPLATE_PATH/cf-cognito.yaml.jinja;
                   yamllint -c $OSL_HOME/.yamllint $CODEBUILD_SRC_DIR/cf-cognito.yaml;
                   cfn-lint $CODEBUILD_SRC_DIR/cf-cognito.yaml;
                 - echo "Render aws-auth-cm.yaml...";
                   python3 create_aws_auth.py 
                     --config $OSL_HOME/opensarlab.yaml
                     --output_file $OSL_HOME/configs/aws-auth-cm.yaml
-                    --template_path $OSL_HOME/pipeline/templates/aws-auth-cm.yaml.jinja
+                    --template_path $TEMPLATE_PATH/aws-auth-cm.yaml.jinja
                     --region_name ${AWS::Region}
                     --account_id ${AWS::AccountId};
                   yamllint -c $OSL_HOME/.yamllint $OSL_HOME/configs/aws-auth-cm.yaml;
@@ -243,12 +245,12 @@ Resources:
                   python3 create_profiles.py
                     --config $OSL_HOME/opensarlab.yaml
                     --output_file $OSL_HOME/jupyterhub/configs/profiles.py
-                    --template_path $OSL_HOME/pipeline/templates/profiles.py.jinja;
+                    --template_path $TEMPLATE_PATH/profiles.py.jinja;
                 - echo "Rendering cf-jupyterhub.yaml...";
                   python3 create_cf_jupyterhub.py
                     --config=$OSL_HOME/opensarlab.yaml
                     --output_file $CODEBUILD_SRC_DIR/cf-jupyterhub.yaml
-                    --template_path $OSL_HOME/pipeline/templates/cf-jupyterhub.yaml.jinja;
+                    --template_path $TEMPLATE_PATH/cf-jupyterhub.yaml.jinja;
           artifacts:
             files:
               - '**/*'
