@@ -243,7 +243,7 @@ Resources:
                 - echo "Render profiles.py...";
                   python3 create_profiles.py
                     --config $OSL_HOME/opensarlab.yaml
-                    --output_file $OSL_HOME/jupyterhub/configs/profiles.py
+                    --output_file $OSL_HOME/jupyterhub/hub/profiles.py
                     --template_path $TEMPLATE_PATH/profiles.py.jinja;
                 - echo "Rendering cf-jupyterhub.yaml...";
                   python3 create_cf_jupyterhub.py
