@@ -235,11 +235,11 @@ Resources:
                 - echo "Render aws-auth-cm.yaml...";
                   python3 create_aws_auth.py 
                     --config $OSL_HOME/opensarlab.yaml
-                    --output_file $OSL_HOME/configs/aws-auth-cm.yaml
+                    --output_file $OSL_HOME/pipeline/configs/aws-auth-cm.yaml
                     --template_path $TEMPLATE_PATH/aws-auth-cm.yaml.jinja
                     --region_name ${AWS::Region}
                     --account_id ${AWS::AccountId};
-                  yamllint -c $OSL_HOME/.yamllint $OSL_HOME/configs/aws-auth-cm.yaml;
+                  yamllint -c $OSL_HOME/.yamllint $OSL_HOME/pipeline/configs/aws-auth-cm.yaml;
                 - echo "Render profiles.py...";
                   python3 create_profiles.py
                     --config $OSL_HOME/opensarlab.yaml
