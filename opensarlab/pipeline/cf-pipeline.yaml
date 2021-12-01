@@ -235,6 +235,7 @@ Resources:
                   python3 create_aws_auth.py 
                     --config $OSL_HOME/opensarlab.yaml
                     --output_file $OSL_HOME/configs/aws-auth-cm.yaml
+                    --template_path $OSL_HOME/pipeline/templates/aws-auth-cm.yaml.jinja
                     --region_name ${AWS::Region}
                     --account_id ${AWS::AccountId};
                   yamllint -c $OSL_HOME/.yamllint $OSL_HOME/configs/aws-auth-cm.yaml;

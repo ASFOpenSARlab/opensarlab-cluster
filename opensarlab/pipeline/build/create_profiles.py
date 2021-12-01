@@ -7,19 +7,21 @@ from jinja2 import Environment, FileSystemLoader
 
 from utils.custom_filters import regex_replace
 
-env = Environment(
-    loader=FileSystemLoader(pathlib.Path(__file__).parent),
-    autoescape=True
-)
-
-env.filters['regex_replace'] = regex_replace
-
 def main(config, output_file, template_path):
+
+    template_path = pathlib.Path(template_path)
+
+    env = Environment(
+        loader=FileSystemLoader(template_path.parent),
+        autoescape=True
+    )
+    env.filters['regex_replace'] = regex_replace
+
     with open(config, "r") as infile:
         yaml_config = yaml.safe_load(infile)
 
     with open(output_file, 'w') as outfile:
-        template = env.get_template(template_path)
+        template = env.get_template(template_path.name)
         outfile.write(template.render(profiles=yaml_config['profiles']))
 
 if __name__ == "__main__":

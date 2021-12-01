@@ -9,19 +9,23 @@ from jinja2 import Environment, FileSystemLoader
 
 from utils.custom_yaml import IndentDumper
 
-env = Environment(
-    loader=FileSystemLoader(pathlib.Path(__file__).parent),
-    autoescape=True
-)
-
 def main(config, aws_region, template_path, s3_bucket_name, aws_profile_name):
+
+    template_path = pathlib.Path(template_path)
+
+    env = Environment(
+        loader=FileSystemLoader(template_path.parent),
+        autoescape=True
+    )
+
     with open(config, "r") as infile:
         yaml_config = yaml.safe_load(infile)
 
     admin_email_address = yaml_config['parameters']['admin_email_address']
     deployment_url = yaml_config['parameters']['deployment_url']
 
-    template = env.get_template(template_path)
+    # Render lambda_email_py template
+    template = env.get_template(template_path.name)
 
     lambda_email_base = f"lambda_email_zip_{str(uuid.uuid4())[:8]}"
     lambda_email_py = f"{lambda_email_base}.py"
@@ -35,9 +39,11 @@ def main(config, aws_region, template_path, s3_bucket_name, aws_profile_name):
             )
         )
 
+    # Zip lambda_email.py
     with ZipFile(lambda_email_zip,'w') as zip:
         zip.write(lambda_email_py)
 
+    # Upload lamda_email.py* to S3
     session = None 
     try:
         session = boto3.Session(region_name=aws_region, profile_name=aws_profile_name)
@@ -64,6 +70,7 @@ def main(config, aws_region, template_path, s3_bucket_name, aws_profile_name):
     # Update parameter in config
     print(f"The lambda email zip file is now {lambda_email_zip}. Adding to parameters...")
 
+    # Update config to reflect lambda_email.zip* version
     others = {}
     others['lambda_email_zip'] = f"{lambda_email_zip}"
     others['lambda_email_base'] = f"{lambda_email_base}"
