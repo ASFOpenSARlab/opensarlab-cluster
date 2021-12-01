@@ -128,16 +128,13 @@ Resources:
                     - echo "Apply ebs csi driver...";
                       helm upgrade aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver
                         --install
-                        --version 2.4.0
+                        --version 2.4.1
                         --namespace kube-system
                         --timeout=6m0s
                         --atomic
-                        --set enableVolumeScheduling=true
-                        --set enableVolumeResizing=true
-                        --set enableVolumeSnapshot=false
-                        --set extraCreateMetadata=true
-                        --set k8sTagClusterId=${CostTagValue}-cluster
-                        --set extraVolumeTags.${CostTagKey}=${CostTagValue}
+                        --set controller.extraCreateMetadata=true
+                        --set controller.k8sTagClusterId=${CostTagValue}-cluster
+                        --set controller.extraVolumeTags.${CostTagKey}=${CostTagValue}
                     - echo "Associate IAM and OIDC for service accounts...";
                       eksctl utils associate-iam-oidc-provider --cluster ${CostTagValue}-cluster --approve
                     - cd $CODEBUILD_SRC_DIR/opensarlab/jupyterhub/;
