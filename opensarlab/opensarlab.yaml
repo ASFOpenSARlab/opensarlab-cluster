@@ -22,13 +22,13 @@ nodes:
     node_policy: hub
     is_hub: True
 
-  - name: sar_1
+  - name: sar1
     instance: m5a.2xlarge
     min_number: 0
     max_number: 25
     node_policy: user
 
-  - name: sar_2
+  - name: sar2
     instance: m5a.8xlarge
     min_number: 0
     max_number: 25
@@ -50,7 +50,7 @@ profiles:
     memory_guarantee: 6G
     memory_limit: 16G
     storage_capacity: 500Gi
-    node_name: sar_1
+    node_name: sar1
     delete_user_volumes: False
 
   - name: SAR 1 - Test
@@ -61,7 +61,7 @@ profiles:
     memory_guarantee: 6G
     memory_limit: 16G
     storage_capacity: 500Gi
-    node_name: sar_1
+    node_name: sar1
 
   - name: SAR 1 - No Pull
     description: "Development profile. CPU limit: 8. RAM limit: 16G. Storage: 500G"
@@ -71,7 +71,7 @@ profiles:
     memory_guarantee: 6G
     memory_limit: 16G
     storage_capacity: 500Gi
-    node_name: sar_1
+    node_name: sar1
 
   - name: SAR 2
     description: "Formally UNAVCO. Contains basic SAR processing packages on a bigger machine. RAM limit: 96G. CPU limit: 8 cpus. Storage: 500 GiB."
@@ -82,7 +82,7 @@ profiles:
     memory_limit: 96G
     cpu_limit: 8
     storage_capacity: 500Gi
-    node_name: sar_2
+    node_name: sar2
 
   - name: SAR 2 - Max
     description: "Similar to SAR 2 but one person per machine. RAM limit: ~128GB. CPU limit: ~30 cpus. Storage: 500 GiB."
@@ -91,5 +91,5 @@ profiles:
     hook_script: sar.sh
     cpu_guarantee: 30
     storage_capacity: 500Gi
-    node_name: sar_2
+    node_name: sar2
     delete_user_volumes: None
