@@ -11,8 +11,12 @@ parameters:
   certificate_arn: arn:aws:acm:us-west-2:701288258305:certificate/f4d36bbc-f7d4-4143-a5d3-9e0ec96324dd
   container_namespace: osl-daac-test-container
   deployment_url: load balancer
-  ical_url: https://calendar.google.com/calendar/ical/c_90n3vfk860on0v1kl0fqcj2nss%40group.calendar.google.com/public/basic.ics
   az_suffix: a
+  
+  # Optional
+  ical_url: https://calendar.google.com/calendar/ical/c_90n3vfk860on0v1kl0fqcj2nss%40group.calendar.google.com/public/basic.ics
+  user_whitelist_bucket: osl-user-whitelists
+  user_whitelist_csv: unavco_2021_users.csv
 
 nodes:
   - name: hub

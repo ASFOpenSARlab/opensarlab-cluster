@@ -72,9 +72,9 @@ def email_reset(userName, userEmail, fullName):
     }
     
     send_email(email_meta)
-    
-def email_signup(userName, userEmail, fullName):
-    
+
+def email_signup_enabled(userName, userEmail, fullName):
+
     """
     # Replace sender@example.com with your "From" address.
     # This address must be verified with Amazon SES.
@@ -84,7 +84,6 @@ def email_signup(userName, userEmail, fullName):
     # is still in the sandbox, this address must be verified.
     RECIPIENT = "recipient@example.com"
     """
-    
     # Send email to Jupyter Group 
     email_meta = {
         'SENDER': '{{ admin_email_address }}', 
@@ -117,7 +116,43 @@ def email_signup(userName, userEmail, fullName):
                 To complete the process, ASF must review your account before confirmation.
                 You will be contacted via email if there are questions about your account.
                 If there are no questions, you will be notified via email when your account has been confirmed.
-                Confirmation may take up to a day. 
+                </p>
+            </body>
+            </html>""".format(userName=userName)
+    }
+    
+    send_email(email_meta)
+
+def email_signup_disabled(userName, userEmail, fullName):
+    # Send email to Jupyter Group 
+    email_meta = {
+        'SENDER': '{{ admin_email_address }}', 
+        'RECIPIENT': "OSL Admin <{{ admin_email_address }}>",
+        'SUBJECT': "OSL User Signup",
+        'BODY_HTML': """<html>
+            <head></head>
+            <body>
+                <p>{fullName} ({userName}) at {userEmail} just signed up for access to {{ deployment_url }}.
+                Their email was whitelisted and their account was enabled. 
+                No further action is required at this time.
+            </body>
+            </html>""".format(userName=userName, userEmail=userEmail, fullName=fullName) 
+    }
+
+    send_email(email_meta)
+    
+    # Send email to user
+    email_meta = {
+        'SENDER': "{{ admin_email_address }}",
+        'RECIPIENT': '"{fullName}" <{userEmail}>'.format(fullName=fullName, userEmail=userEmail),
+        'SUBJECT': "OSL Account Access Pending",
+        'BODY_HTML': """<html>
+            <head></head>
+            <body>
+                <p>
+                You recently have applied for access to {clusterDomain} operated by the Alaska Satellite Facility (ASF). 
+                You are using the username '{userName}'. 
+                This email confirms that your email is verified and your account enabled. 
                 </p>
             </body>
             </html>""".format(userName=userName)
@@ -127,20 +162,45 @@ def email_signup(userName, userEmail, fullName):
      
 def lambda_handler(event, context):
 
+    event_username = event['userName']
+    event_email = event['request']['userAttributes']['email']
+    event_name = event['request']['userAttributes']['name']
+    event_trigger = event['triggerSource']
+    event_user_pool_id = event['userPoolId']
+
     # If resetting password, don't disable.
-    if event['triggerSource'] == 'PostConfirmation_ConfirmForgotPassword':
-        email_reset(event['userName'], event['request']['userAttributes']['email'], event['request']['userAttributes']['name'])
+    if event_trigger == 'PostConfirmation_ConfirmForgotPassword':
+        email_reset(event_username, event_email, event_name)
     
     # If signing up, disable for admin confirmation
-    elif event['triggerSource'] == 'PostConfirmation_ConfirmSignUp':
+    elif event_trigger == 'PostConfirmation_ConfirmSignUp':
+
+        {% if user_whitelist_csv is defined %}
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket('{{ user_whitelist_bucket }}')
+        obj = bucket.Object('{{ user_whitelist_csv }}')
+        body = obj.get()['Body'].read()
+
+        if event_email.encode("utf8").lower() not in body.lower():
+            client = boto3.client('cognito-idp')
+            response = client.admin_disable_user(
+                UserPoolId=event_user_pool_id,
+                Username=event_username
+            )
+            print(response)
+            email_signup_disabled(event_username, event_email, event_name)
+        
+        else:
+            email_signup_enabled(event_username, event_email, event_name)
+
+        {%- else %}
         client = boto3.client('cognito-idp')
         response = client.admin_disable_user(
-            UserPoolId=event['userPoolId'],
-            Username=event['userName']
+            UserPoolId=event_user_pool_id,
+            Username=event_username
         )
-    
         print(response)
-    
-        email_signup(event['userName'], event['request']['userAttributes']['email'], event['request']['userAttributes']['name'])
-    
+        email_signup_disabled(event_username, event_email, event_name)
+        {% endif %}
+
     return event

@@ -1,8 +1,8 @@
 
 set -ex
 
-# ENV variables:
-# DOCKER_REGISTRY
+# Required ENV variables:
+# NOTE_REPO_URI
 
 cp dockerfile dockerfile.build
 

@@ -23,6 +23,8 @@ def main(config, aws_region, template_path, s3_bucket_name, aws_profile_name):
 
     admin_email_address = yaml_config['parameters']['admin_email_address']
     deployment_url = yaml_config['parameters']['deployment_url']
+    user_whitelist_csv = yaml_config['parameters'].get('user_whitelist_csv', None)
+    user_whitelist_bucket = yaml_config['parameters'].get('user_whitelist_bucket', None)
 
     # Render lambda_email_py template
     template = env.get_template(template_path.name)
@@ -35,7 +37,9 @@ def main(config, aws_region, template_path, s3_bucket_name, aws_profile_name):
         outfile.write(template.render(
             aws_region=aws_region, 
             admin_email_address=admin_email_address, 
-            deployment_url=deployment_url
+            deployment_url=deployment_url,
+            user_whitelist_bucket = user_whitelist_bucket,
+            user_whitelist_csv = user_whitelist_csv
             )
         )
 

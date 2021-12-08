@@ -20,12 +20,21 @@ def check_parameters(config):
         'certificate_arn',
         'container_namespace',
         'deployment_url',
-        'ical_url',
         'az_suffix'
     ]
+    optional_fields = [
+        'ical_url',
+        'user_whitelist_bucket',
+        'user_whitelist_csv'
+    ]
+
     for required in required_fields:
         if required not in params.keys():
             raise Exception(f"Not all required fields found for parameters. Must have '{required}'.")
+
+    for optional in optional_fields:
+        if optional in params.keys():
+            print(f"Optional field '{optional}' found.")
 
 def check_nodes(config):
     required_fields = [

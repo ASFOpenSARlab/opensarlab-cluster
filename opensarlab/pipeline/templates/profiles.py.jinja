@@ -77,8 +77,7 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                     },
                     {% endif -%}
                     'args': [
-                        "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'{{ profile.name }}'}",
-                        "--ServerApp.jinja_template_vars={'PROFILE_NAME':'{{ profile.name }}'}"
+                        "--NotebookApp.jinja_template_vars={'PROFILE_NAME':'{{ profile.name }}'}"
                     ],
                     {% if profile.memory_limit is defined -%} 
                         'mem_limit': '{{ profile.memory_limit }}', 
