@@ -86,10 +86,6 @@ def check_profiles(config):
         if profile['node_name'] not in all_node_names:
             raise Exception(f"Node name '{profile['node_name']}'' is not valid for profile '{ profile['name'] }'. Must be one of '{all_node_names}'.")
 
-        for optional in optional_fields:
-            if optional in profile.keys():
-                print(f"Optional field '{optional}' found.")
-
 def main(config):
     with open(config, "r") as infile:
         yaml_config = yaml.safe_load(infile)
