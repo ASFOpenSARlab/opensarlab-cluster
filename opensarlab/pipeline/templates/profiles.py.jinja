@@ -92,13 +92,13 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                     {% if profile.cpu_guarantee is defined -%} 
                         'cpu_guarantee': {{ profile.cpu_guarantee }}, 
                     {% endif -%}
-                    {% if profile.delete_user_volumes is defined -%}
+                    {% if profile.delete_user_volumes is defined and profile.delete_user_volumes == 'True' -%}
                         'delete_pvc': {{ profile.delete_user_volumes }},
                     {% else -%}
                         'delete_pvc': False,
                     {% endif -%}
                     'storage_capacity': '{{ profile.storage_capacity }}',
-                    {% if profile.classic is defined and profile.classic is True -%}
+                    {% if profile.classic is defined and profile.classic == 'True' -%}
                         'default_url': '/tree/'
                     {% else -%} 
                         'default_url': '/lab'

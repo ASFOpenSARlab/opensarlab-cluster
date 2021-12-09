@@ -25,8 +25,7 @@ def check_parameters(config):
     optional_fields = [
         'ical_url',
         'user_whitelist_bucket',
-        'user_whitelist_csv',
-        'classic'
+        'user_whitelist_csv'
     ]
 
     for required in required_fields:
@@ -67,6 +66,16 @@ def check_profiles(config):
         'node_name',
         'storage_capacity'
     ]
+    optional_fields = [
+        'hook_script',
+        'memory_guarantee',
+        'memory_limit',
+        'cpu_guarantee',
+        'cpu_limit',
+        'delete_user_volumes',
+        'classic'
+    ]
+
     for profile in config['profiles']:
         # Check to see if all required fields are present.
         for required in required_fields:
@@ -76,6 +85,10 @@ def check_profiles(config):
         # Check to see if node_names are valid
         if profile['node_name'] not in all_node_names:
             raise Exception(f"Node name '{profile['node_name']}'' is not valid for profile '{ profile['name'] }'. Must be one of '{all_node_names}'.")
+
+        for optional in optional_fields:
+            if optional in profile.keys():
+                print(f"Optional field '{optional}' found.")
 
 def main(config):
     with open(config, "r") as infile:
