@@ -12,8 +12,6 @@ parameters:
   container_namespace: osl-daac-test-container
   deployment_url: load balancer
   az_suffix: a
-  dockerhub_username: asfdaac
-  dockerhub_password: ul3B2drumZdXjJU6moEQ
   
   # Optional
   ical_url: https://calendar.google.com/calendar/ical/c_90n3vfk860on0v1kl0fqcj2nss%40group.calendar.google.com/public/basic.ics

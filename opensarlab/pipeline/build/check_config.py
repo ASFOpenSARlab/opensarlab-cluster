@@ -20,9 +20,7 @@ def check_parameters(config):
         'certificate_arn',
         'container_namespace',
         'deployment_url',
-        'az_suffix',
-        'dockerhub_username',
-        'dockerhub_password'
+        'az_suffix'
     ]
     optional_fields = [
         'ical_url',
