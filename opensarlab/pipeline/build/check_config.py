@@ -25,7 +25,8 @@ def check_parameters(config):
     optional_fields = [
         'ical_url',
         'user_whitelist_bucket',
-        'user_whitelist_csv'
+        'user_whitelist_csv',
+        'classic'
     ]
 
     for required in required_fields:

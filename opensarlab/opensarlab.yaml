@@ -38,15 +38,20 @@ nodes:
     max_number: 25
     node_policy: user
 
-  - name: gpu
-    instance: p3.2xlarge
-    min_number: 0
-    max_number: 3
-    node_policy: user
-    is_gpu: True
-
 profiles:
   - name: SAR 1
+    description: "Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G."
+    image_name: sar
+    image_tag: b1f4e84
+    hook_script: sar.sh
+    memory_guarantee: 6G
+    memory_limit: 16G
+    storage_capacity: 500Gi
+    node_name: sar1
+    delete_user_volumes: False
+    classic: True
+
+  - name: SAR 1 - JupyterLab
     description: "Formerly the General CPU option. Contains basic SAR processing packages: ARIA, ISCE, MintPy, MapReady, TRAIN. CPU limit: 8. RAM limit: 16G. Storage: 500G."
     image_name: sar
     image_tag: b1f4e84
