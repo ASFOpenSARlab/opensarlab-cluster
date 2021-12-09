@@ -99,8 +99,15 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                     {% endif -%}
                     'storage_capacity': '{{ profile.storage_capacity }}',
                     {% if profile.classic is defined and profile.classic == True -%}
+                        'environment': {
+                            'JUPYTERHUB_SINGLEUSER_APP': 'notebook.notebookapp.NotebookApp'
+                        },
                         'default_url': '/tree/'
-                    {% else -%} 
+                    {% else -%} ,
+                        'environment': {
+                            'JUPYTERHUB_SINGLEUSER_APP': 'jupyter_server.serverapp.ServerApp',
+                            'OSL_PROFILE_NAME': {{ profile.name }}
+                        },
                         'default_url': '/lab'
                     {% endif -%}
                 }
