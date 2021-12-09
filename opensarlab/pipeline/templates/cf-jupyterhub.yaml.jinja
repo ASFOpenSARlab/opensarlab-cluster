@@ -40,6 +40,16 @@ Parameters:
     Description: "Letter postfix of AZ."
     Default: {{ parameters.az_suffix }}
 
+  DockerHubUsername:
+    Type: String
+    Description: "Username of Docker Hub credentials."
+    Default: {{ parameters.dockerhub_username }}
+
+  DockerHubPassword:
+    Type: String
+    Description: "Password of Docker Hub credentials."
+    Default: {{ parameters.dockerhub_password }}
+
   NodeProxyPort:
     Description: The port of the hub proxy service opened to the load balancer.
     Type: Number
@@ -79,8 +89,6 @@ Resources:
               version: 0.2
               env:
                 shell: bash
-                secrets-manager:
-                  DH_CREDS: "dockerhub/creds"
               phases:
                 install:
                   runtime-versions:
@@ -102,9 +110,7 @@ Resources:
                       aws ecr get-login-password --region ${AWS::Region} | 
                         docker login --username AWS --password-stdin ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
                     - echo "Logging into Docker Hub user to get latest jupyter image...";
-                      dh_username=$(echo $DH_CREDS | cut -f1 -d' ');
-                      echo $DH_CREDS | cut -f2 -d' ' > dh.pass;
-                      cat dh.pass | docker login -u $dh_username --password-stdin;
+                      echo ${DockerHubPassword} | docker login -u ${DockerHubUsername} --password-stdin;
                     - echo "Install helm charts and update...";
                       helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/;
                       helm repo add autoscaler https://kubernetes.github.io/autoscaler;
