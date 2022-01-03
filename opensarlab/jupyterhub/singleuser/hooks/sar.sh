@@ -8,7 +8,7 @@ which jupyter
 
 python /etc/jupyter-hooks/resource_checks/check_storage.py $1
 
-pip install --user \
+python -m pip install --user \
     nbgitpuller \
     ipywidgets \
     mpldatacursor \
@@ -18,7 +18,7 @@ pip install --user \
     pandoc==2.0a4 \
     pypandoc
 
-conda install -c conda-forge nb_conda_kernels
+mamba install -c conda-forge nb_conda_kernels
 
 # copy over our version of pull.py
 # REMINDER: REMOVE IF CHANGES ARE MERGED TO NBGITPULLER
@@ -38,7 +38,11 @@ jupyter serverextension enable --py hide_code --user
 mkdir -p $HOME/.ipython/profile_default/startup/
 cp /etc/jupyter-hooks/custom_magics/00-df.py $HOME/.ipython/profile_default/startup/00-df.py
 
-gitpuller https://github.com/asfadmin/asf-jupyter-notebooks.git master $HOME/notebooks
+gitpuller https://github.com/ASFOpenSARlab/opensarlab-notebooks.git master $HOME/notebooks
+
+gitpuller https://github.com/ASFOpenSARlab/opensarlab-envs.git main $HOME/conda_environments
+
+gitpuller https://github.com/uafgeoteach/GEOS657_MRS main $HOME/GEOS_657_Labs
 
 # Update page and tree
 mv /opt/conda/lib/python3.9/site-packages/notebook/templates/tree.html /opt/conda/lib/python3.9/site-packages/notebook/templates/original_tree.html

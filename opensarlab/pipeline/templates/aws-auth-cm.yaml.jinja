@@ -16,6 +16,10 @@ data:
       username: cluster-run-role
       groups:
         - system:masters
+    - rolearn: arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-cluster-build-role
+      username: cluster-build-role
+      groups:
+        - system:masters
     {% for node in opensarlab['nodes'] -%}
     {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") -%}
     - rolearn: arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-cluster-{{ node_name_escaped }}-instance-role
