@@ -22,7 +22,7 @@ nodes:
   - name: hub  # Required
     instance: The EC2 instance for the hub node. Type t3a.medium is preferred.
     min_number: 1  # Required
-    max_number: 2  # Required
+    max_number: 1  # Required
     node_policy: hub  # Required
     is_hub: True  # Required
 

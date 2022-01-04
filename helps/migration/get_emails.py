@@ -1,10 +1,22 @@
 
 """
-Get emails from Cognito filtered by days since EC2 tag jupyter-volume-stopping-time
+Write to file list of user emails from Cognito filtered by days since EC2 tag jupyter-volume-stopping-time
+
+Using EC2 snapshot usage as a proxy for activity, get all user's emails from userpool `cognito_userpool_id` and within a 
+certain time period `max_days_since_last_used` for the cluster `eks_cluster_name`.
+
+
+python get_emails.py \
+    --eks_cluster_name osl-daac-cluster \
+    --aws_profile_name osl-e \
+    --cognito_userpool_id us-east-1_bw1NialdW \
+    --max_days_since_last_used 46
+
 """
 
 import os
 import datetime
+import argparse
 
 import boto3
 import escapism
@@ -12,14 +24,17 @@ import colorama
 
 colorama.init(autoreset=True)
 
-###########################
+parser = argparse.ArgumentParser()
+parser.add_argument("--eks_cluster_name")
+parser.add_argument("--aws_profile_name")
+parser.add_argument("--cognito_userpool_id")
+parser.add_argument("--max_days_since_last_used", default=46)
+args = parser.parse_args()
 
-cluster_name = ''
-profile_name = ''
-cognito_userpool_id = ''
-max_days_since_last_used = 14
-
-###########################
+cluster_name = args.eks_cluster_name
+profile_name = args.aws_profile_name
+cognito_userpool_id = args.cognito_userpool_id
+max_days_since_last_used = args.max_days_since_last_used
 
 class BadTagsException(Exception):
     """

@@ -8,9 +8,6 @@ print(f"\n\n\n***************** Starting export logs at {datetime.now()}")
 
 ############ Config Settings #####
 
-migrate_users = False
-migrate_snapshots = True
-
 old_profile = 'jupyterhub'
 old_cluster = 'opensarlab'
 old_region = 'us-east-1'

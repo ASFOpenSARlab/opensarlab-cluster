@@ -1,0 +1,15 @@
+---
+
+old_aws_profile_name: ''
+old_cognito_userpool_id: ''
+old_eks_cluster_name: ''
+old_load_balancer: ''
+old_aws_region: ''
+
+new_aws_profile_name: ''
+new_cognito_userpool_id: ''
+new_eks_cluster_name: ''
+new_preauth_lambda_function_arn: ''
+new_load_balancer: ''
+new_domain: ''  # No https://
+new_aws_region: ''

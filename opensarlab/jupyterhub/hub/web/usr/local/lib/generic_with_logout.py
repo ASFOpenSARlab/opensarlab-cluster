@@ -36,11 +36,18 @@ class GenericParameters():
         user_pools = cognito.list_user_pools(MaxResults=10)
         user_pool_ids = [up['Id'] for up in user_pools['UserPools'] if up['Name'] == pool_name]
 
+        if len(user_pool_ids) > 1:
+            raise Exception(f"More than one user pool foind with name {pool_name}.") 
+
         if user_pool_ids:
             user_pool_id = user_pool_ids[0]
 
             # Assume that the user pool has only one client. This is reasonable since the cluster should only need one client.
             pool_clients = cognito.list_user_pool_clients(UserPoolId=user_pool_id)
+
+            if len(pool_clients['UserPoolClients']) > 1:
+                raise Exception("More than one pool client in the user pool.", pool_clients['UserPoolClients'])
+
             pool_client_id = pool_clients['UserPoolClients'][0]['ClientId']
         
             user_client_info = cognito.describe_user_pool_client(UserPoolId=user_pool_id, ClientId=pool_client_id)
@@ -49,12 +56,18 @@ class GenericParameters():
             client_id = user_client_info['ClientId']
             client_secret = user_client_info['ClientSecret']
 
+            if not client_id or not client_secret:
+                raise Exception("Client ID or Client Secret not definded.")
+
             return client_id, client_secret
+
+        else:
+            raise Exception("No user pools ids found. Cannot authenticate.")
 
     try:
         _OAUTH_CLIENT_ID, _OAUTH_CLIENT_SECRET = _get_client_and_secret(_OAUTH_POOL_NAME, _REGION_NAME)
-    except:
-        print("Unable to get Cognito Client and Secret")
+    except Exception as e:
+        print("Unable to get Cognito Client and Secret.", e)
         raise
 
     _OAUTH_ACCESS_TOKEN_URL = f"{_OAUTH_DNS_NAME}/oauth2/token"

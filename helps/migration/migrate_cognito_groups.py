@@ -1,22 +1,35 @@
-""" These must be ran locally. Do not forget to update the config settings """
+""" 
+
+    **These must be ran locally.**
+
+    Migrate AWS Cognito groups from one userpool to another.
+
+
+    # test
+    python migrate_cognito_groups.py \
+        --old_aws_profile_name osl-e
+        --old_cognito_userpool_id us-east-1_bw1NialdW
+        --new_aws_profile_name osl-e-west
+        --new_cognito_userpool_id us-west-2_o4F8Kassa
+"""
+
+import argparse
 
 import boto3
-import botocore
 import colorama
 
-############ Config Settings #####
+parser = argparse.ArgumentParser()
+parser.add_argument("--old_aws_profile_name")
+parser.add_argument("--old_cognito_userpool_id")
+parser.add_argument("--new_aws_profile_name")
+parser.add_argument("--new_cognito_userpool_id")
+args = parser.parse_args()
 
-old_profile = 'jupyterhub'
-old_cluster = 'opensarlab'
-old_region = 'us-east-1'
-old_userpool_id = 'us-east-1_SRN0dZC66'
+old_profile = args.old_aws_profile_name
+old_userpool_id = args.old_cognito_userpool_id
 
-new_profile = 'osl-e'
-new_cluster = 'osl-daac-cluster'
-new_region = 'us-east-1'
-new_userpool_id = 'us-east-1_bw1NialdW'
-
-##################################
+new_profile = args.new_aws_profile_name
+new_userpool_id = args.new_cognito_userpool_id
 
 colorama.init(autoreset=True)
 

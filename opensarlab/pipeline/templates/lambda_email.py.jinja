@@ -48,16 +48,6 @@ def send_email(email):
         
 def email_reset(userName, userEmail, fullName):
     
-    """
-    # Replace sender@example.com with your "From" address.
-    # This address must be verified with Amazon SES.
-    SENDER = "Sender Name <sender@example.com>"
-    
-    # Replace recipient@example.com with a "To" address. If your account 
-    # is still in the sandbox, this address must be verified.
-    RECIPIENT = "recipient@example.com"
-    """
-    
     # Send email to Jupyter Group 
     email_meta = {
         'SENDER': '{{ admin_email_address }}', 
@@ -73,17 +63,7 @@ def email_reset(userName, userEmail, fullName):
     
     send_email(email_meta)
 
-def email_signup_enabled(userName, userEmail, fullName):
-
-    """
-    # Replace sender@example.com with your "From" address.
-    # This address must be verified with Amazon SES.
-    SENDER = "Sender Name <sender@example.com>"
-    
-    # Replace recipient@example.com with a "To" address. If your account 
-    # is still in the sandbox, this address must be verified.
-    RECIPIENT = "recipient@example.com"
-    """
+def email_signup_disabled(userName, userEmail, fullName):
     # Send email to Jupyter Group 
     email_meta = {
         'SENDER': '{{ admin_email_address }}', 
@@ -123,7 +103,7 @@ def email_signup_enabled(userName, userEmail, fullName):
     
     send_email(email_meta)
 
-def email_signup_disabled(userName, userEmail, fullName):
+def email_signup_enabled(userName, userEmail, fullName):
     # Send email to Jupyter Group 
     email_meta = {
         'SENDER': '{{ admin_email_address }}', 
@@ -150,7 +130,7 @@ def email_signup_disabled(userName, userEmail, fullName):
             <head></head>
             <body>
                 <p>
-                You recently have applied for access to {clusterDomain} operated by the Alaska Satellite Facility (ASF). 
+                You recently have applied for access to {{ deployment_url }} operated by the Alaska Satellite Facility (ASF). 
                 You are using the username '{userName}'. 
                 This email confirms that your email is verified and your account enabled. 
                 </p>
@@ -175,13 +155,20 @@ def lambda_handler(event, context):
     # If signing up, disable for admin confirmation
     elif event_trigger == 'PostConfirmation_ConfirmSignUp':
 
-        {% if user_whitelist_csv is defined %}
+        {% if user_whitelist_csv is defined and user_whitelist_csv != None -%}
+
         s3 = boto3.resource('s3')
         bucket = s3.Bucket('{{ user_whitelist_bucket }}')
         obj = bucket.Object('{{ user_whitelist_csv }}')
         body = obj.get()['Body'].read()
 
-        if event_email.encode("utf8").lower() not in body.lower():
+        {% else -%}
+
+        body = ''
+
+        {% endif -%}
+
+        if event_email.lower() not in body.lower():
             client = boto3.client('cognito-idp')
             response = client.admin_disable_user(
                 UserPoolId=event_user_pool_id,
@@ -192,15 +179,5 @@ def lambda_handler(event, context):
         
         else:
             email_signup_enabled(event_username, event_email, event_name)
-
-        {%- else %}
-        client = boto3.client('cognito-idp')
-        response = client.admin_disable_user(
-            UserPoolId=event_user_pool_id,
-            Username=event_username
-        )
-        print(response)
-        email_signup_disabled(event_username, event_email, event_name)
-        {% endif %}
 
     return event

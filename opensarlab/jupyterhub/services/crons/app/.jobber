@@ -1,3 +1,5 @@
+---
+
 version: 1.4
 
 prefs:
@@ -10,17 +12,37 @@ prefs:
 
 jobs:
   DeleteVolumes:
-    cmd: |
-      echo "\n******** " $(date) >> /home/jobberuser/jobber.log
-      python3 /home/jobberuser/delete_volumes.py >> /home/jobberuser/jobber.log
-      echo "******** " $(date) "\n" >> /home/jobberuser/jobber.log
     time: 0 0 12 * * *  # 12 UTC, 3am AKST
+    cmd: |
+      echo "\n\n******** " $(date)
+      python3 /home/jobberuser/delete_volumes.py
+      echo "******** " $(date) "\n"
     onError: Backoff
+    notifyOnSuccess:
+      - type: stdout
+        data:
+          - stdout
+          - stderr
+    notifyOnFailure:
+      - type: stdout
+        data:
+          - stdout
+          - stderr
 
   DeleteSnapshot:
-    cmd: |
-      echo "\n******** " $(date) >> /home/jobberuser/jobber.log
-      python3 /home/jobberuser/delete_snapshot.py >> /home/jobberuser/jobber.log
-      echo "******** " $(date) "\n" >> /home/jobberuser/jobber.log
     time: 0 0 13 * * *  # 13 UTC, 4am AKST
+    cmd: |
+      echo "\n******** " $(date)
+      python3 /home/jobberuser/delete_snapshot.py
+      echo "******** " $(date) "\n"
     onError: Backoff
+    notifyOnSuccess:
+      - type: stdout
+        data:
+          - stdout
+          - stderr
+    notifyOnFailure:
+      - type: stdout
+        data:
+          - stdout
+          - stderr
