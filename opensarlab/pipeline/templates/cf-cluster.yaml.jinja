@@ -430,13 +430,13 @@ Resources:
     Properties:
       AssociatePublicIpAddress: true
       {% if node.root_volume_size is defined -%}
-        BlockDeviceMappings:
-          - DeviceName: /dev/xvda
-            Ebs:
-              VolumeType: gp2
-              VolumeSize: {{ node.root_volume_size }}
-              DeleteOnTermination: 'true'
-              Encrypted: 'false'
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: {{ node.root_volume_size }}
+            DeleteOnTermination: 'true'
+            Encrypted: 'false'
       {% endif -%}
       IamInstanceProfile: !Ref NodeInstanceProfile{{ node_name_escaped }}
       ImageId: !Ref NodeImageId
