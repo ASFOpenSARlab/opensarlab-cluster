@@ -429,6 +429,15 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: true
+      {% if node.root_volume_size is defined -%}
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp2
+            VolumeSize: {{ node.root_volume_size }}
+            DeleteOnTermination: 'true'
+            Encrypted: 'false'
+      {% endif -%}
       IamInstanceProfile: !Ref NodeInstanceProfile{{ node_name_escaped }}
       ImageId: !Ref NodeImageId
       InstanceType: {{ node.instance }}
@@ -443,5 +452,8 @@ Resources:
           {% else -%}
           /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type={{ node_name_escaped }}'
           {% endif -%}
+          AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+          ROOT_VOLUME_IDS=$(aws ec2 describe-instances --region ${AWS::Region} --instance-id $AWS_INSTANCE_ID --output text --query Reservations[0].Instances[0].BlockDeviceMappings[0].Ebs.VolumeId)
+          aws ec2 create-tags --resources $ROOT_VOLUME_IDS --region ${AWS::Region} --tags Key=${CostTagKey},Value=${CostTagValue} Key=Name,Value=${CostTagValue}-{{ node_name_escaped }}-root
           /opt/aws/bin/cfn-signal --exit-code $? --stack ${AWS::StackName} --resource NodeGroup --region ${AWS::Region}
   {%- endfor %}
