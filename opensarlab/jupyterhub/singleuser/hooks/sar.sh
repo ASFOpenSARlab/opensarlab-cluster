@@ -18,8 +18,6 @@ python -m pip install --user \
     pandoc==2.0a4 \
     pypandoc
 
-mamba install -c conda-forge nb_conda_kernels
-
 # copy over our version of pull.py
 # REMINDER: REMOVE IF CHANGES ARE MERGED TO NBGITPULLER
 cp /etc/jupyter-hooks/scripts/pull.py /home/jovyan/.local/lib/python3.9/site-packages/nbgitpuller/pull.py
@@ -68,6 +66,13 @@ envs_dirs:
   - /home/jovyan/.local/envs
   - /opt/conda/envs
 EOT
+fi
+
+# Add a CondaKernelSpecManager section to jupyter_notebook_config.json to display nicely formatted kernel names
+JN_CONFIG=$HOME/.jupyter/jupyter_notebook_config.json
+if ! grep -q "\"CondaKernelSpecManager\":" "$JN_CONFIG"; then
+jq '. += {"CondaKernelSpecManager": {"name_format": "{display_name}"}}' "$JN_CONFIG" >> temp;
+mv temp "$JN_CONFIG";
 fi
 
 conda init

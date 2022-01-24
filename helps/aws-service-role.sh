@@ -11,7 +11,6 @@
 ####  Some parameters
 #
 #  bash aws-service-role.sh {cluster name} {service account namespace} {service account name} {optional awscli profile name}
-#  bash aws-service-role.sh opensarlab-test jupyter hub jupyterhub
 #
 #
 
@@ -34,8 +33,8 @@ IAM_ROLE_NAME=SA-${CLUSTER_NAME}-${SERVICE_ACCOUNT_NAMESPACE}-${SERVICE_ACCOUNT_
 
 #### 
 
-# Install eksctl to make some things much easier
-echo "Installing eksctl..."
+# Install eksctl to make some things much easier. Uncomment if needed.
+#echo "Installing eksctl..."
 #curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
 #sudo mv /tmp/eksctl /usr/local/bin
 #eksctl version

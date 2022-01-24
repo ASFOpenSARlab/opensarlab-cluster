@@ -22,7 +22,7 @@ nodes:
   - name: hub  # Required
     instance: The EC2 instance for the hub node. Type t3a.medium is preferred.
     min_number: 1  # Required
-    max_number: 1  # Required
+    max_number: 2  # Required
     node_policy: hub  # Required
     is_hub: True  # Required
 
@@ -31,7 +31,6 @@ nodes:
     min_number: Minimum number of running node of this type in the cluster (0)
     max_number: Maximum number of running node of this type in the cluster (25)
     node_policy: Node permission policy (user)
-    root_volume_size: Size of the root volume of the EC2 (GiB) (Optional, range 1 - 16,384)
 
 profiles:
   - name: Name of profile that users can select (SAR 1)

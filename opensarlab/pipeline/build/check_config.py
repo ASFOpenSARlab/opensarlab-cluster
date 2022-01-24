@@ -44,9 +44,6 @@ def check_nodes(config):
         'max_number',
         'node_policy'
     ]
-    optional_fields = [
-        'root_volume_size'
-    ]
     for nodes in config['nodes']:
         # Check to see if all required fields are present.
         for required in required_fields:
@@ -55,16 +52,6 @@ def check_nodes(config):
 
         if not nodes['name'].isalnum():
             raise Exception(f"{nodes['name']} is not pure alphanumeric (no spaces, underscores, special characters).")
-
-        for optional in optional_fields:
-            if optional in nodes.keys():
-                print(f"Optional field '{optional}' found.")
-                if optional == 'root_volume_size':
-                    value = int(nodes['root_volume_size'])
-                    if value < 1:
-                        raise Exception("root_volume_size has value of {value} and is less than 1 GiB")
-                    elif value > 16345:
-                        raise Exception("root_volume_size has value of {value} and is greater than 16345 GiB")
 
 def check_profiles(config):
     all_node_names = []

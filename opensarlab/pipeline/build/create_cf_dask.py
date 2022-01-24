@@ -1,4 +1,3 @@
-
 import pathlib
 import argparse
 
@@ -17,12 +16,11 @@ def main(config, output_file, template_path):
     )
     env.filters['regex_replace'] = regex_replace
 
-    with open(config, "r") as infile:
+    with open(config, "r") as infile, open(output_file, 'w') as outfile:
         yaml_config = yaml.safe_load(infile)
 
-    with open(output_file, 'w') as outfile:
         template = env.get_template(template_path.name)
-        outfile.write(template.render(yaml_config=yaml_config))
+        outfile.write(template.render(opensarlab=yaml_config))
 
 if __name__ == "__main__":
 

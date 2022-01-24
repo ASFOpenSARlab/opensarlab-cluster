@@ -80,6 +80,7 @@ Resources:
                 - cloudformation.amazonaws.com
                 - codepipeline.amazonaws.com
                 - iam.amazonaws.com
+                - ec2.amazonaws.com
             Action: sts:AssumeRole
           - Effect: Allow
             Principal:
@@ -89,6 +90,8 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
         - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
       Policies:
         - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-run-extra-policy
           PolicyDocument:
@@ -429,15 +432,6 @@ Resources:
     Type: AWS::AutoScaling::LaunchConfiguration
     Properties:
       AssociatePublicIpAddress: true
-      {% if node.root_volume_size is defined -%}
-      BlockDeviceMappings:
-        - DeviceName: /dev/xvda
-          Ebs:
-            VolumeType: gp2
-            VolumeSize: {{ node.root_volume_size }}
-            DeleteOnTermination: 'true'
-            Encrypted: 'false'
-      {% endif -%}
       IamInstanceProfile: !Ref NodeInstanceProfile{{ node_name_escaped }}
       ImageId: !Ref NodeImageId
       InstanceType: {{ node.instance }}

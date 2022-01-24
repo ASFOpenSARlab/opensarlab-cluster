@@ -1,3 +1,6 @@
+{% set parameters = yaml_config['parameters'] -%}
+{% set profiles = yaml_config['profiles'] -%}
+
 from typing import List, Dict
 
 import z2jh
@@ -106,7 +109,8 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                     {% else -%}
                         'environment': {
                             'JUPYTERHUB_SINGLEUSER_APP': 'jupyter_server.serverapp.ServerApp',
-                            'OSL_PROFILE_NAME': '{{ profile.name }}'
+                            'OPENSARLAB_PROFILE_NAME': '{{ profile.name }}',
+                            'ICAL_URL': '{{ parameters.ical_url }}'
                         },
                         'default_url': '/lab'
                     {% endif -%}
