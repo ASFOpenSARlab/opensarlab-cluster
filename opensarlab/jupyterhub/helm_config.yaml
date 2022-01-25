@@ -18,11 +18,6 @@ singleuser:
       storageClass: gp2
       pvcNameTemplate: claim-{username}
   defaultUrl: "/lab"
-#  extraEnv:
-#    DASK_GATEWAY__CLUSTER__OPTIONS__IMAGE: '{JUPYTER_IMAGE_SPEC}'
-#    DASK_GATEWAY__ADDRESS: https://opensarlab-test.asf.alaska.edu/services/dask-gateway
-#    DASK_GATEWAY__PROXY_ADDRESS: gateway://traefik-dask-dask-gateway.staging:
-  #  JUPYTERHUB_SINGLEUSER_APP: "jupyter_server.serverapp.ServerApp"
   extraFiles:
     user-hooks-sar:
       mountPath: /etc/jupyter-hooks/sar.sh
@@ -45,22 +40,6 @@ singleuser:
     user-template-tree:
       mountPath: /etc/jupyter-hooks/templates/tree.html
       mode: 0755
-
-#dask-gateway:
-#  gateway:
-#    extraConfig:
-#      optionHandler: |
-#        from dask_gateway_server.options import Options, Integer, Float, String
-#        def option_handler(options):
-#            if ":" not in options.image:
-#                raise ValueError("When specifying an image you must also provide a tag")
-#            return {
-#                "image": options.image,
-#            }
-#        c.Backend.cluster_options = Options(
-#            String("image", default="daskdev/dask-notebook:2021.12.0-py3.9", label="Image"),
-#            handler=option_handler,
-#        )
 
 prePuller:
   continuous:

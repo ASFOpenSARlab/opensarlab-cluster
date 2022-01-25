@@ -364,7 +364,6 @@ Resources:
                 - Name: PostBuildArtifact
               Region: !Sub ${AWS::Region}
 
-
         - Name: !Sub ${CostTagValue}-BuildJupyterHub
           Actions:
             - Name: BuildJupyterHub
@@ -379,25 +378,6 @@ Resources:
               InputArtifacts:
                 - Name: PostBuildArtifact
               Region: !Sub ${AWS::Region}
-
-#        - Name: !Sub ${CostTagValue}-DeployDaskHub
-#          Actions:
-#            - Name: DeployDaskHub
-#              RunOrder: 1
-#              ActionTypeId:
-#                Category: Deploy
-#                Owner: AWS
-#                Provider: CloudFormation
-#                Version: "1"
-#              Configuration:
-#                ActionMode: CREATE_UPDATE
-#                Capabilities: CAPABILITY_NAMED_IAM
-#                RoleArn: !GetAtt ClusterBuildRole.Arn
-#                StackName: !Sub ${CostTagValue}-dask
-#                TemplatePath: PostBuildArtifact::cf-dask.yaml
-#              InputArtifacts:
-#                - Name: PostBuildArtifact
-#              Region: !Sub ${AWS::Region}
 
         - Name: !Sub ${CostTagValue}-DeployCognito
           Actions:

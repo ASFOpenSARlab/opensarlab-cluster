@@ -1,11 +1,6 @@
 #!/bin/bash
 set -e
 
-which python
-which pip
-which conda
-which jupyter
-
 python /etc/jupyter-hooks/resource_checks/check_storage.py $1
 
 python -m pip install --user \

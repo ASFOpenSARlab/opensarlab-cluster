@@ -222,7 +222,7 @@ class DeleteSnapshot():
                     num_days_left = 0
                 
                 email_meta = {
-                    'SENDER': "uaf-jupyterhub-asf+test@alaska.edu",
+                    'SENDER': "uaf-jupyterhub-asf@alaska.edu",
                     'RECIPIENT': '<{user_email_address}>'.format(user_email_address=user_email_address),
                     'SUBJECT': "OpenSARlab Account Notification",
                     'BODY_HTML': """<html>
@@ -246,7 +246,7 @@ class DeleteSnapshot():
                 self._delete_snapshot(snapshot)
 
                 email_meta = {
-                    'SENDER': "uaf-jupyterhub-asf+test@alaska.edu",
+                    'SENDER': "uaf-jupyterhub-asf@alaska.edu",
                     'RECIPIENT': '<{user_email_address}>'.format(user_email_address=user_email_address),
                     'SUBJECT': "OpenSARlab Account Notification",
                     'BODY_HTML': """<html>
