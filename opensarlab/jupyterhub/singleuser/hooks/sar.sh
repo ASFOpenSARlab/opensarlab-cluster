@@ -20,13 +20,17 @@ cp /etc/jupyter-hooks/scripts/pull.py /home/jovyan/.local/lib/python3.9/site-pac
 # Add Path to local pip execs. 
 export PATH=$HOME/.local/bin:$PATH
 
-jupyter serverextension enable --py nbgitpuller
+# Install and enable Jupyter Notebook extensions
 jupyter nbextensions_configurator enable --user
 jupyter nbextension enable --py widgetsnbextension --user
-jupyter-nbextension enable rise --py --user 
+jupyter-nbextension enable rise --py --user
 jupyter nbextension install --py hide_code --user
 jupyter nbextension enable --py hide_code --user
 jupyter serverextension enable --py hide_code --user
+
+# Disable the extension manager in Jupyterlab since server extensions are uninstallable
+# by users and non-server extension installs do not persist over server restarts
+jupyter labextension disable @jupyterlab/extensionmanager-extension
 
 mkdir -p $HOME/.ipython/profile_default/startup/
 cp /etc/jupyter-hooks/custom_magics/00-df.py $HOME/.ipython/profile_default/startup/00-df.py
