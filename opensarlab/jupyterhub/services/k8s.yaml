@@ -1,0 +1,31 @@
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: services
+  labels:
+    name: services
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: custom-services
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["pods", "persistentvolumeclaims", "secrets", "services", "events"]
+  verbs: ["get", "watch", "list", "create", "delete"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: custom-services
+subjects:
+- kind: ServiceAccount
+  namespace: services
+  name: default
+  apiGroup: "" # apiGroup is ""(core/v1) for service_account
+roleRef:
+  kind: ClusterRole
+  name: custom-services
+  apiGroup: rbac.authorization.k8s.io
