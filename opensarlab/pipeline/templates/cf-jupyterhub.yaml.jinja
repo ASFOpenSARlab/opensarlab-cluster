@@ -224,8 +224,8 @@ Resources:
                         s/{% raw %}{{read_from_head}}{% endraw %}/"'$FluentBitReadFromHead'"/;
                         s/{% raw %}{{read_from_tail}}{% endraw %}/"'$FluentBitReadFromTail'"/'
                       | kubectl apply -f -
-                    - echo "Create services namespace";
-                      kubectl apply -f ./services/namespace.yaml
+                    - echo "Apply k8s resources for services...";
+                      kubectl apply -f ./services/k8s.yaml
                     - echo "Build Notification Image...";
                       PrevWD=$(pwd); 
                       cd services/notifications;
