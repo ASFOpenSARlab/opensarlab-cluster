@@ -50,6 +50,9 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
             profile = {
                 'display_name': '{{ profile.name }}',
                 'description': "{{ profile.description }}",
+                {% if profile.default is defined and profile.default == True -%}
+                'default': '{{ profile.default }}',
+                {% endif -%}
                 'kubespawner_override': {
                     'extra_labels': {
                         'server_type': '{{ node_name_escaped }}',

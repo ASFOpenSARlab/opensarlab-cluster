@@ -47,3 +47,4 @@ profiles:
     node_name: Node name as given in above section (sar1)
     delete_user_volumes: If True, deletes user volumes upon server stopping (Optional. Defaults to False.)
     classic: If True, use Classic Notebook interface (Optional. Defaults to False, i.e. JupyterLab.)
+    default: If True, the specific profile is selected by default (Optional. False if not explicity set.)
