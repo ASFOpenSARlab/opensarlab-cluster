@@ -86,7 +86,8 @@ def check_profiles(config):
         'cpu_guarantee',
         'cpu_limit',
         'delete_user_volumes',
-        'classic'
+        'classic',
+        'default'
     ]
 
     for profile in config['profiles']:
