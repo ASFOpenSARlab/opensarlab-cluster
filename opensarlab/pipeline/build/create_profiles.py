@@ -22,7 +22,7 @@ def main(config, output_file, template_path):
 
     with open(output_file, 'w') as outfile:
         template = env.get_template(template_path.name)
-        outfile.write(template.render(profiles=yaml_config['profiles']))
+        outfile.write(template.render(yaml_config=yaml_config))
 
 if __name__ == "__main__":
 

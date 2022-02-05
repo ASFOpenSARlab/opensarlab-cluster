@@ -1,39 +1,22 @@
 #!/bin/bash
-set -e
-
-which python
-which pip
-which conda
-which jupyter
+set -ve
 
 python /etc/jupyter-hooks/resource_checks/check_storage.py $1
 
-python -m pip install --user \
-    nbgitpuller \
-    ipywidgets \
-    mpldatacursor \
-    rise \
-    hide_code \
-    jupyter_nbextensions_configurator \
-    pandoc==2.0a4 \
-    pypandoc
+# Add Path to local pip execs.
+export PATH=$HOME/.local/bin:$PATH
 
-mamba install -c conda-forge nb_conda_kernels
+python /etc/jupyter-hooks/scripts/pkg_clean.py
+
+python -m pip install --user nbgitpuller
 
 # copy over our version of pull.py
 # REMINDER: REMOVE IF CHANGES ARE MERGED TO NBGITPULLER
 cp /etc/jupyter-hooks/scripts/pull.py /home/jovyan/.local/lib/python3.9/site-packages/nbgitpuller/pull.py
 
-# Add Path to local pip execs. 
-export PATH=$HOME/.local/bin:$PATH
-
-jupyter serverextension enable --py nbgitpuller
-jupyter nbextensions_configurator enable --user
-jupyter nbextension enable --py widgetsnbextension --user
-jupyter-nbextension enable rise --py --user 
-jupyter nbextension install --py hide_code --user
-jupyter nbextension enable --py hide_code --user
-jupyter serverextension enable --py hide_code --user
+# Disable the extension manager in Jupyterlab since server extensions are uninstallable
+# by users and non-server extension installs do not persist over server restarts
+jupyter labextension disable @jupyterlab/extensionmanager-extension
 
 mkdir -p $HOME/.ipython/profile_default/startup/
 cp /etc/jupyter-hooks/custom_magics/00-df.py $HOME/.ipython/profile_default/startup/00-df.py
@@ -68,6 +51,26 @@ envs_dirs:
   - /home/jovyan/.local/envs
   - /opt/conda/envs
 EOT
+fi
+
+KERNELS=$HOME/.local/share/jupyter/kernels
+OLD_KERNELS=$HOME/.local/share/jupyter/kernels_old
+FLAG=$HOME/.jupyter/old_kernels_flag.txt
+if ! test -f "$FLAG" && test -d "$KERNELS"; then
+cp /etc/jupyter-hooks/etc/old_kernels_flag.txt $HOME/.jupyter/old_kernels_flag.txt
+mv $KERNELS $OLD_KERNELS
+cp /etc/jupyter-hooks/etc/kernels_rename_README $OLD_KERNELS/kernels_rename_README
+fi
+
+# Add a CondaKernelSpecManager section to jupyter_notebook_config.json to display nicely formatted kernel names
+JN_CONFIG=$HOME/.jupyter/jupyter_notebook_config.json
+if ! test -f "$JN_CONFIG"; then
+echo '{}' > "$JN_CONFIG"
+fi
+
+if ! grep -q "\"CondaKernelSpecManager\":" "$JN_CONFIG"; then
+jq '. += {"CondaKernelSpecManager": {"name_format": "{display_name}"}}' "$JN_CONFIG" >> temp;
+mv temp "$JN_CONFIG";
 fi
 
 conda init

@@ -247,7 +247,7 @@ Resources:
                     --template_path $TEMPLATE_PATH/profiles.py.jinja;
                 - echo "Rendering cf-jupyterhub.yaml...";
                   python3 create_cf_jupyterhub.py
-                    --config=$OSL_HOME/opensarlab.yaml
+                    --config $OSL_HOME/opensarlab.yaml
                     --output_file $CODEBUILD_SRC_DIR/cf-jupyterhub.yaml
                     --template_path $TEMPLATE_PATH/cf-jupyterhub.yaml.jinja;
           artifacts:
@@ -363,7 +363,6 @@ Resources:
               InputArtifacts:
                 - Name: PostBuildArtifact
               Region: !Sub ${AWS::Region}
-              RoleArn: !GetAtt ClusterBuildRole.Arn
 
         - Name: !Sub ${CostTagValue}-BuildJupyterHub
           Actions:

@@ -17,9 +17,7 @@ singleuser:
     dynamic:
       storageClass: gp2
       pvcNameTemplate: claim-{username}
-  #defaultUrl: "/lab"
-  #extraEnv:
-  #  JUPYTERHUB_SINGLEUSER_APP: "jupyter_server.serverapp.ServerApp"
+  defaultUrl: "/lab"
   extraFiles:
     user-hooks-sar:
       mountPath: /etc/jupyter-hooks/sar.sh
@@ -32,6 +30,12 @@ singleuser:
       mode: 0755
     user-hooks-pull:
       mountPath: /etc/jupyter-hooks/scripts/pull.py
+    user-hooks-clean:
+      mountPath: /etc/jupyter-hooks/scripts/pkg_clean.py
+    user-hooks-kernel-flag:
+      mountPath: /etc/jupyter-hooks/etc/old_kernels_flag.txt
+    user-hooks-kernel-flag-readme:
+      mountPath: /etc/jupyter-hooks/etc/kernels_rename_README
     user-others-check_storage:
       mountPath: /etc/jupyter-hooks/resource_checks/check_storage.py
     user-custom_magics:
