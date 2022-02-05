@@ -222,7 +222,7 @@ class DeleteSnapshot():
                     num_days_left = 0
                 
                 email_meta = {
-                    'SENDER': "uaf-jupyterhub-asf@alaska.edu",
+                    'SENDER': "email@example.com",
                     'RECIPIENT': '<{user_email_address}>'.format(user_email_address=user_email_address),
                     'SUBJECT': "OpenSARlab Account Notification",
                     'BODY_HTML': """<html>
@@ -230,7 +230,7 @@ class DeleteSnapshot():
                         <body>
                         <p>The OpenSARlab account for {username} will be deactivated in {num_days_left} days due to inactivity. Any user data will be permanently deleted.</p> 
                         <p>To stop this action, please sign back into your OpenSARlab account and start your server.</p>
-                        <p>If you have any questions please don't hesitate to email the <a href="mailto:uaf-jupyterhub-asf@alaska.edu">OpenSARlab Admin</a>.<p>
+                        <p>If you have any questions please don't hesitate to email the <a href="mailto:email@example.com">OpenSARlab Admin</a>.<p>
                         </body>
                         </html>""".format(username=username, num_days_left=num_days_left)
                 }
@@ -246,14 +246,14 @@ class DeleteSnapshot():
                 self._delete_snapshot(snapshot)
 
                 email_meta = {
-                    'SENDER': "uaf-jupyterhub-asf@alaska.edu",
+                    'SENDER': "email@example.com",
                     'RECIPIENT': '<{user_email_address}>'.format(user_email_address=user_email_address),
                     'SUBJECT': "OpenSARlab Account Notification",
                     'BODY_HTML': """<html>
                         <head></head>
                         <body>
                         <p>The OpenSARlab account for {username} has been deactivated due to {days} days of inactivity. All user data has been permanently deleted and cannot be recovered.</p>                
-                        <p>If you would like to activate your account or have any questions, please don't hesitate to email the <a href="mailto:uaf-jupyterhub-asf@alaska.edu">OpenSARlab Admin</a>.<p>
+                        <p>If you would like to activate your account or have any questions, please don't hesitate to email the <a href="mailto:email@example.com">OpenSARlab Admin</a>.<p>
                         </body>
                         </html>""".format(username=username, days=email_and_action_threshold)
                 }
