@@ -15,7 +15,7 @@ parameters:
   
   # Optional
   ical_url: Public URL address of the notification calendar in ICal format
-  user_whitelist_bucket: S3 bucket that contains the whitelist spreadsheet
+  user_whitelist_bucket: S3 bucket name (do not include "s3://") that contains the whitelist spreadsheet
   user_whitelist_csv: Spreadsheet containing whitelisted users
 
 nodes:
