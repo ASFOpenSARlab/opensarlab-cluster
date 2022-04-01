@@ -161,6 +161,7 @@ def lambda_handler(event, context):
         bucket = s3.Bucket('{{ user_whitelist_bucket }}')
         obj = bucket.Object('{{ user_whitelist_csv }}')
         body = obj.get()['Body'].read()
+        body = body.decode('utf-8')
 
         {% else -%}
 
