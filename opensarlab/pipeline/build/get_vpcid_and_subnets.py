@@ -9,7 +9,7 @@ from utils.custom_yaml import IndentDumper
 def which_subnet_is_az(subnets, az_suffix):
     
     for subid, az in subnets:
-        if az_suffix in az:
+        if az_suffix == az[-1]:
             active_subnet = subid
         else:
             other_subnet = subid
