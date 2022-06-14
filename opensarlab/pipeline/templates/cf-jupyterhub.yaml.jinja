@@ -30,10 +30,12 @@ Parameters:
     Description: "The value of the cost tag used for filtering the budget, etc."
     Default: {{ parameters.cost_tag_value }}
 
+  {% if parameters.ical_url is defined -%}
   ICALUrl:
     Type: String
     Description: "The URL of the Google Calendar used for notifications."
     Default: {{ parameters.ical_url }}
+  {% endif -%}
 
   AZPostfix:
     Type: String
@@ -243,7 +245,9 @@ Resources:
                       cd services/notifications;
                       cp k8s/deployment.example.yaml k8s/deployment.yaml;
                       sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/notifications:$NOTES_IMAGE_BUILD|" k8s/deployment.yaml;
+                      {% if parameters.ical_url is defined -%}
                       sed -i "s|ICAL_URL_PLACEHOLDER|${ICALUrl}|" k8s/deployment.yaml;
+                      {% endif -%}
                       kubectl apply -f k8s/service.yaml;
                       kubectl apply -f k8s/deployment.yaml;
                       kubectl -n services rollout status deployment/notifications -w;
