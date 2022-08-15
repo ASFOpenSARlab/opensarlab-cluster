@@ -27,7 +27,7 @@ nodes:
     is_hub: True  # Required
 
   - name: Name of node type. Must be alphanumeric (no special characters, whitespace, etc.)
-    instance: The EC2 instance for the hub node (m5a.2xlarge)
+    instance: Comma seperated list of EC2 instances for the node, lowest price has precedence (m5a.2xlarge)
     min_number: Minimum number of running node of this type in the cluster (0)
     max_number: Maximum number of running node of this type in the cluster (25)
     node_policy: Node permission policy (user)
