@@ -113,7 +113,9 @@ def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                         'environment': {
                             'JUPYTERHUB_SINGLEUSER_APP': 'jupyter_server.serverapp.ServerApp',
                             'OPENSARLAB_PROFILE_NAME': '{{ profile.name }}',
+                            {% if parameters.ical_url is defined -%}
                             'ICAL_URL': '{{ parameters.ical_url }}'
+                            {% endif -%}
                         },
                         'default_url': '/lab'
                     {% endif -%}

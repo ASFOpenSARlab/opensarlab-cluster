@@ -56,12 +56,15 @@ def main(config, aws_region, template_path, s3_bucket_name, aws_profile_name):
     s3 = session.client('s3')
 
     try:
-        s3.create_bucket(
-            Bucket=s3_bucket_name,
-            CreateBucketConfiguration={
-                'LocationConstraint': f"{aws_region}"
-            },
-        )
+        if aws_region == 'us-east-1':
+            s3.create_bucket(Bucket=s3_bucket_name)
+        else:
+            s3.create_bucket(
+                Bucket=s3_bucket_name,
+                CreateBucketConfiguration={
+                    'LocationConstraint': f"{aws_region}"
+                },
+            )
     except s3.exceptions.BucketAlreadyExists as e:
         print(f"Bucket {e.response['Error']['BucketName']} already exists.")
 
