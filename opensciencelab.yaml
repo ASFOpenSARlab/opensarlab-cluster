@@ -1,0 +1,201 @@
+---
+
+parameters:
+  code_commit_repo_name: opensciencelab-opensarlab-cluster-prod
+  code_commit_branch_name: main
+  lab_short_name: opensarlab
+  cost_tag_key: osl-billing
+  cost_tag_value: osl-opensarlab
+  admin_user_name: emlundell
+  certificate_arn: arn:aws:acm:us-west-2:701288258305:certificate/999b8cc3-d5e9-4bcd-a620-69b235212a1d
+  container_namespace: opensciencelab-opensarlab-prod
+  portal_namespace: opensciencelab-portal-prod
+  lab_domain: load balancer
+  portal_domain: https://opensciencelab.asf.alaska.edu
+  az_suffix: c
+  days_till_volume_deletion: 2
+  days_after_server_stop_till_warning_email: 30,35,40,44,45
+  days_till_snapshot_deletion: 46
+  days_after_server_stop_till_deletion_email: 46
+  utc_hour_of_day_snapshot_cron_runs: 12
+  utc_hour_of_day_volume_cron_runs: 13
+
+nodes:
+  - name: hub  # Required
+    instance: t3a.medium
+    min_number: 1  # Required
+    max_number: 1  # Required
+    node_policy: hub  # Required
+    is_hub: True  # Required
+
+  - name: sar1
+    instance: m5a.2xlarge
+    min_number: 0
+    max_number: 25
+    node_policy: user
+
+  - name: sar1max
+    instance: m5a.2xlarge
+    min_number: 0
+    max_number: 25
+    node_policy: user
+
+  - name: sar2
+    instance: m5a.8xlarge
+    min_number: 0
+    max_number: 25
+    node_policy: user
+
+  - name: sar2max
+    instance: m5a.8xlarge
+    min_number: 0
+    max_number: 25
+    node_policy: user
+
+  - name: servir1
+    instance: m5a.2xlarge
+    min_number: 0
+    max_number: 25
+    node_policy: user
+
+  - name: mapready1
+    instance: m5a.2xlarge
+    min_number: 0
+    max_number: 25
+    node_policy: user
+
+  - name: m6axlarge
+    instance: m6a.xlarge
+    min_number: 0
+    max_number: 200
+    node_policy: user
+
+  - name: m6alarge
+    instance: m6a.large
+    min_number: 0
+    max_number: 200
+    node_policy: user
+
+service_accounts:
+  - name: private-servir-bucket
+    namespace: jupyter
+    permissions:
+      - Effect: "Allow"
+        Action: 
+          - "s3:ListBucket"
+        Resource: "arn:aws:s3:::cropsamz"
+      - Effect: "Allow"
+        Action: 
+          - "s3:DeleteObject"
+          - "s3:GetObject"
+          - "s3:PutObject"
+        Resource: "arn:aws:s3:::cropsamz/*"
+
+profiles:
+  - name: SAR 1
+    description: "JupyterLab - RAM Guarantee: 6G. RAM limit: 16G. CPU limit: 8. Storage: 500G."
+    image_name: sar
+    image_tag: a7a7383
+    hook_script: sar.sh
+    memory_guarantee: 6G
+    memory_limit: 16G
+    storage_capacity: 500Gi
+    node_name: sar1
+    default: True
+
+  - name: SAR 1 - Max
+    description: "Similar to SAR 1 but only one person per machine. JupyterLab - RAM Guarantee: 20G. RAM limit: 32G. CPU limit: 8. Storage: 500G."
+    image_name: sar
+    image_tag: a7a7383
+    hook_script: sar.sh
+    memory_guarantee: 20G
+    #memory_limit: 31G
+    storage_capacity: 500Gi
+    node_name: sar1max
+    default: False
+
+  - name: SAR 1 - No Hook
+    description: "Useful for debugging some server timeouts. This does not run the post-hook."
+    image_name: sar
+    image_tag: a7a7383
+    hook_script: None
+    memory_guarantee: 6G
+    memory_limit: 16G
+    cpu_guarantee: 1.25
+    storage_capacity: 500Gi
+    node_name: sar1
+
+  - name: SAR 2
+    description: "JupyterLab - RAM Guarantee: 32G. RAM limit: 96G. CPU limit: 8 cpus. Storage: 500 GiB."
+    image_name: sar
+    image_tag: a7a7383
+    hook_script: sar.sh
+    memory_guarantee: 32G
+    memory_limit: 96G
+    storage_capacity: 500Gi
+    cpu_limit: 8
+    node_name: sar2
+
+  - name: SAR 2 - No Hook
+    description: "Useful for debugging some server timeouts. This does not run the post-hook."
+    image_name: sar
+    image_tag: a7a7383
+    hook_script: None
+    memory_guarantee: 32G
+    memory_limit: 96G
+    storage_capacity: 500Gi
+    cpu_limit: 8
+    node_name: sar2
+
+  - name: SAR 2 - Max
+    description: "Similar to SAR 2 but one person per machine. RAM limit: ~128GB. CPU limit: ~30 cpus. Storage: 500 GiB."
+    image_name: sar
+    image_tag: a7a7383
+    hook_script: sar.sh
+    storage_capacity: 500Gi
+    cpu_guarantee: 30
+    node_name: sar2max
+
+  - name: SERVIR 1
+    description: "For use on the SERVIR project."
+    image_name: servir
+    image_tag: a7a7383
+    hook_script: servir.sh
+    memory_guarantee: 6G
+    memory_limit: 16G
+    cpu_guarantee: 1.25
+    storage_capacity: 500Gi
+    node_name: servir1
+    service_account: private-servir-bucket
+
+  - name: SERVIR 1 - No Hook
+    description: "Useful for debugging some server timeouts. This does not run the post-hook."
+    image_name: servir
+    image_tag: a7a7383
+    hook_script: None
+    memory_guarantee: 6G
+    memory_limit: 16G
+    cpu_guarantee: 1.25
+    storage_capacity: 500Gi
+    node_name: servir1
+    service_account: private-servir-bucket
+
+  - name: m6a.xlarge - Single User
+    description: "JupyterLab - RAM Guarantee: 10G. RAM limit: 16G. CPU limit: 4. Storage: 500G."
+    image_name: sar
+    image_tag: a7a7383
+    hook_script: sar.sh
+    memory_guarantee: 10G
+    #memory_limit: 15G
+    storage_capacity: 500Gi
+    node_name: m6axlarge
+
+  - name: m6a.large - Single User
+    description: "JupyterLab - RAM Guarantee: 5G. RAM limit: 8G. CPU limit: 2. Storage: 500G."
+    image_name: sar
+    image_tag: a7a7383
+    hook_script: sar.sh
+    memory_guarantee: 5G
+    #memory_limit: 7G
+    storage_capacity: 500Gi
+    node_name: m6alarge

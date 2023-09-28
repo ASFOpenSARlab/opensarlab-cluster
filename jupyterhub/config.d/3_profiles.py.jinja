@@ -1,0 +1,232 @@
+{% set parameters = yaml_config['parameters'] -%}
+{% set nodes = yaml_config['nodes'] -%}
+{% set profiles = yaml_config['profiles'] -%}
+
+from typing import List, Dict
+import logging
+import json
+import traceback
+
+import boto3
+from tornado.httpclient import AsyncHTTPClient
+
+from opensarlab.auth import encryptedjwt
+
+import z2jh
+
+
+class NoProfileException(Exception):
+    """No Profiles found"""
+
+class My401Exception(Exception):
+    pass
+
+async def _get_data_from_auth_api(username: str):
+    try:
+        body = json.dumps({ 'username': f"{username}" })
+        response = await AsyncHTTPClient().fetch(
+                f"{{ parameters.portal_domain }}/portal/hub/auth",
+                body = body,
+                method="POST"
+            )
+
+        if not response.code == 200:
+            logging.error(f"Auth response code is not 200. Code: {response.code}, {response['message']}")
+            raise My401Exception()
+
+        response = json.loads(response.body)
+        if 'ERROR' in response['message']:
+            logging.error(f"{response['message']}")
+            raise My401Exception()
+
+    except Exception as e:
+        logging.error(f"Something went wrong with retrieving authentication. {e}")
+        raise My401Exception()
+
+    try:
+        jwt_data = encryptedjwt.decrypt(response['data'])
+    except Exception as e:
+        self.log.error(f"Profiles.py JWT decryption went wrong: {e}")
+
+    return jwt_data
+
+async def _get_cpus_for_ec2_type(node_name: str=''):
+    # If guarenteed cpus is not given, try to find the number of cpus using the EC2 instance type.
+    # Otherwise, we have no info so make -1.
+    try:
+        node_types = {
+                {% for node in nodes -%}
+                '{{ node.name }}' : '{{ node.instance }}',
+                {% endfor -%}
+            }
+        instance_type = node_types[node_name]
+
+        # Assume us-west-2 stats for now.
+        ec2 = boto3.client('ec2', region_name='us-west-2')
+
+        # the Filter is broken so grab everything anyways
+        resp = ec2.describe_instance_types(InstanceTypes=[str(instance_type)])
+        instance_types = resp['InstanceTypes']
+        if instance_types:
+            cpu_hour = instance_types[0]['VCpuInfo']['DefaultVCpus']
+        else:
+            cpu_hour = -1
+
+    except Exception as e:
+        logging.error(f"Could not find EC2 cpus. {e}")
+        cpu_hour = -1
+
+    return cpu_hour
+
+async def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
+    try:
+        def access_to_groups(user_data):
+            access_data = user_data.get('access', [])
+            lab_short_name = '{{ parameters.lab_short_name }}'
+            for lab in access_data:
+                if lab_short_name in lab.keys():
+                    return lab[lab_short_name].get('lab_profiles', [])
+            return []
+
+        username = spawner.user.name
+        user_data = await _get_data_from_auth_api(username)
+
+        logging.warning(f">>>>>> Auth API data: {user_data}")
+
+        groups_access_for_user = access_to_groups(user_data)
+        groups_for_user = user_data['groups']
+        groups_list_for_user = groups_for_user + groups_access_for_user
+        
+        if not groups_list_for_user:
+            raise NoProfileException()
+
+        print(f"Group list: {groups_list_for_user}")
+
+        profiles_list = []
+
+        {% for profile in profiles -%}
+        {% set node_name_escaped = profile.node_name | regex_replace ("[^A-Za-z0-9]","00") -%}
+
+        # From given Max CPU or insatcne type, get cpu-hours.
+        {% if profile.cpu_limit is defined -%} 
+        opensciencelab_cpu_hour = '{{ profile.cpu_limit }}'
+        {% else %}
+        opensciencelab_cpu_hour = await _get_cpus_for_ec2_type('{{ profile.node_name }}')
+        {% endif %}
+
+        if '{{ profile.name }}' in groups_list_for_user:
+            profile = {
+                'display_name': '{{ profile.name }}',
+                'slug': '{{ profile.name | urlencode }}',
+                'description': "{{ profile.description }}",
+                {% if profile.default is defined and profile.default == True -%}
+                'default': '{{ profile.default }}',
+                {% endif -%}
+                'kubespawner_override': {
+                    'extra_labels': {
+                        'server_type': '{{ node_name_escaped }}',
+                        'profile_name': '{{ profile.name | replace(" ", "_") }}'
+                    },
+                    'node_selector': {
+                        'server_type': '{{ node_name_escaped }}'
+                    },
+                    'image': f"{z2jh.get_config('custom.REGISTRY_URI')}/{{ profile.image_name }}:{{ profile.image_tag }}",
+                    {% if profile.hook_script is defined and profile.hook_script != 'None' -%}
+                    'lifecycle_hooks': {
+                        "postStart": {
+                            "exec": {
+                                "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/{{ profile.hook_script }}"]
+                            }
+                        }
+                    },
+                    {% else -%}
+                    'lifecycle_hooks': {
+                        "postStart": {
+                            "exec": {
+                                "command": ["/bin/sh", "-c", "echo No hook script ran."]
+                            }
+                        }
+                    },
+                    {% endif -%}
+                    'args': [
+                        #"--NotebookApp.jinja_template_vars={'PROFILE_NAME':'{{ profile.name }}'}",
+                        "--ServerApp.jinja_template_vars={'PROFILE_NAME':'{{ profile.name }}', 'LAB_SHORT_NAME':'{{ parameters.lab_short_name }}'}"
+                    ],
+                    {% if profile.memory_limit is defined -%} 
+                        'mem_limit': '{{ profile.memory_limit }}', 
+                    {% endif -%}
+                    {% if profile.memory_guarantee is defined -%} 
+                        'mem_guarantee': '{{ profile.memory_guarantee }}', 
+                    {% endif -%}
+                    {% if profile.cpu_limit is defined -%} 
+                        'cpu_limit': {{ profile.cpu_limit }}, 
+                    {% endif -%}
+                    {% if profile.cpu_guarantee is defined -%} 
+                        'cpu_guarantee': {{ profile.cpu_guarantee }}, 
+                    {% endif -%}
+                    {% if profile.delete_user_volumes is defined and profile.delete_user_volumes == True-%}
+                        'delete_pvc': {{ profile.delete_user_volumes }},
+                    {% else -%}
+                        'delete_pvc': False,
+                    {% endif -%}
+                    'storage_capacity': '{{ profile.storage_capacity }}',
+                    {% if profile.service_account is defined -%}
+                        'service_account': '{{ profile.service_account }}',
+                        'automount_service_account_token': True,
+                    {% endif -%}
+                    {% if profile.classic is defined and profile.classic == True -%}
+                        'environment': {
+                            'JUPYTERHUB_SINGLEUSER_APP': 'notebook.notebookapp.NotebookApp',
+                            'OPENSARLAB_PROFILE_NAME': '{{ profile.name }}', 
+                            'OPENSCIENCELAB_LAB_SHORT_NAME': '{{ parameters.lab_short_name }}',
+                            'OPENSCIENCELAB_PORTAL_DOMAIN': '{{ parameters.portal_domain }}',
+                            'OPENSCIENCELAB_CPU_HOUR': str(opensciencelab_cpu_hour)
+                        },
+                        'default_url': '/tree/'
+                    {% else -%}
+                        'environment': {
+                            'JUPYTERHUB_SINGLEUSER_APP': 'jupyter_server.serverapp.ServerApp',
+                            'OPENSARLAB_PROFILE_NAME': '{{ profile.name }}', 
+                            'OPENSCIENCELAB_LAB_SHORT_NAME': '{{ parameters.lab_short_name }}',
+                            'OPENSCIENCELAB_PORTAL_DOMAIN': '{{ parameters.portal_domain }}',
+                            'OPENSCIENCELAB_CPU_HOUR': str(opensciencelab_cpu_hour)
+                        },
+                        'default_url': '/lab'
+                    {% endif -%}
+                }
+            }
+            profiles_list.append(profile)
+
+        {% endfor -%}
+
+        # This clause for sudo should always be last
+        if 'sudo' in groups_list_for_user:
+            print("Adding sudo privs...")
+            spawner.args.append('--allow-root')
+            spawner.environment["GRANT_SUDO"] = "yes"
+            spawner.gid = 599
+            spawner.allow_privilege_escalation = True
+
+            # Users should know that sudo is enabled in profile before entering
+            for profile in profiles_list:
+                profile['display_name'] += " (Sudo Enabled)"
+        else:
+            print("Sudo privs not given.")
+
+        return profiles_list
+
+    except NoProfileException as e:
+        print(f"No profiles found for user {spawner.user.name}.")
+        print(e)
+
+        return []
+
+    except Exception as e:            
+        print("Something went wrong with the profiles list...")
+        print(e)
+        traceback.print_exc()
+
+        return []
+
+c.KubeSpawner.profile_list = profile_list_hook
+

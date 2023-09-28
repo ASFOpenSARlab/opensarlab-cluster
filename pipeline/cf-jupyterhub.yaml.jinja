@@ -1,0 +1,129 @@
+---
+
+{% set parameters = opensciencelab['parameters'] -%}
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+
+  LabShortName:
+    Description: The short name of the lab deployment, e.g. `mylab` or `daac`. Needs to be URL friendly.
+    Type: String
+    Default: {{ parameters.lab_short_name }}
+
+  PortalDomain:
+    Description: Domain of the Portal. Requires 'http://' or 'https://'.
+    Type: String
+    Default: {{ parameters.portal_domain }}
+
+  LabDomain:
+    Description: Domain of the lab deployment. If not given, the default is the load balancer.
+    Type: String
+    Default: {{ parameters.lab_domain }}
+
+  AdminUserName:
+    Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
+    Type: String
+    Default: {{ parameters.admin_user_name }}
+
+  ContainerNamespace:
+    Description: The full url of the container ECR. Example-- osl-e-dev-container
+    Type: String
+    Default: {{ parameters.container_namespace }}
+
+  PortalNamespace:
+    Description: The container namespace for the portal. Used to find the common sso-token.
+    Type: String
+    Default: {{ parameters.portal_namespace }}
+
+  CostTagKey:
+    Type: String
+    Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
+    Default: {{ parameters.cost_tag_key }}
+
+  CostTagValue:
+    Type: String
+    Description: "The value of the cost tag used for filtering the budget, etc."
+    Default: {{ parameters.cost_tag_value }}
+
+  DaysTillVolumeDeletion:
+    Type: String
+    Description: "The number of days after last server use when the user's volume is deleted."
+    Default: {{ parameters.days_till_volume_deletion }}
+
+  DaysTillSnapshotDeletion:
+    Type: String
+    Description: "The number of days after last server use when the user's snapshot is deleted."
+    Default: {{ parameters.days_till_snapshot_deletion }}
+
+  AZPostfix:
+    Type: String
+    Description: "Letter postfix of AZ."
+    Default: {{ parameters.az_suffix }}
+
+  NodeProxyPort:
+    Description: The port of the hub proxy service opened to the load balancer.
+    Type: Number
+    Default: 30052
+
+Resources:
+
+  HubGroupLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${CostTagValue}-cluster-hub-group"
+      RetentionInDays: 30
+
+  HubProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${CostTagValue}-cluster-jupyterhub
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:6.0
+        PrivilegedMode: true
+      Artifacts:
+        Type: CODEPIPELINE
+      ServiceRole: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
+      TimeoutInMinutes: 45
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Ref HubGroupLogs
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |-
+              version: 0.2
+              env:
+                shell: bash
+                secrets-manager:
+                  SECRET_DH_CREDS: "dockerhub/creds"
+                  SECRET_SSO_TOKEN: "${PortalNamespace}/sso-token"
+              phases:
+                install:
+                  runtime-versions:
+                    python: 3.10
+                build:
+                  commands:
+                    - echo "Run codebuild script...";
+                    - export CODEBUILD_ROOT=$CODEBUILD_SRC_DIR;
+                    - AWS_AccountId=${AWS::AccountId} 
+                        AWS_Region=${AWS::Region} 
+                        ContainerNamespace=${ContainerNamespace} 
+                        CostTagKey=${CostTagKey} 
+                        CostTagValue=${CostTagValue} 
+                        SECRET_SSO_TOKEN=$SECRET_SSO_TOKEN 
+                        LabShortName=${LabShortName} 
+                        PortalDomain=${PortalDomain} 
+                        AdminUserName=${AdminUserName} 
+                        NodeProxyPort=${NodeProxyPort} 
+                        AZPostfix=${AZPostfix} 
+                        DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
+                        DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
+                        SECRET_DH_CREDS=$SECRET_DH_CREDS 
+                        CODEBUILD_ROOT=$CODEBUILD_ROOT 
+                      bash $CODEBUILD_ROOT/pipeline/build/jupyterhub/codebuild.sh;

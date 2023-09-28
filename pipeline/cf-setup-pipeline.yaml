@@ -1,0 +1,316 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Parameters:
+
+  CodeCommitRepoName:
+    Type: String
+    Description: "Name of the code commit repo holding your <deployment_name>-cluster code"
+    Default: ""
+
+  CodeCommitBranchName:
+    Type: String
+    Description: "Name of the branch holding this deployment's cluster code"
+    Default: ""
+
+  CostTagKey:
+    Type: String
+    Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
+    Default: ""
+
+  CostTagValue:
+    Type: String
+    Description: "The value of the cost tag used for filtering the budget, etc."
+    Default: ""
+
+Resources:
+  ClusterBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-build-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+                - codebuild.amazonaws.com
+                - codepipeline.amazonaws.com
+                - eks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AdministratorAccess
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-get-pass-role
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:GetRole
+                  - iam:PassRole
+                Resource: !Sub arn:aws:iam::${AWS::AccountId}:role/*
+                Condition:
+                  "StringEquals":
+                    "iam:PassedToService":
+                      - "eks.amazonaws.com"
+                      - "cloudformation.amazonaws.com"
+                      - "codepipeline.amazonaws.com"
+                      - "codebuild.amazonaws.com"
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-build-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codestar-connections:*"
+                  - "s3:*"
+                  - "dlm:*"
+                  - "logs:*"
+                  - "cloudformation:*"
+                  - "elasticloadbalancing:*"
+                  - "autoscaling:*"
+                  - "codebuild:*"
+                  - "iam:*"
+                  - "secretsmanager:*"
+                  - "ssm:*"
+                  - "ecr:*"
+                  - "ec2:*"
+                  - "eks:*"
+                  - "codepipeline:*"
+                  - "sts:AssumeRole"
+                Resource: "*"
+
+  S3CodepiplineBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub codepipeline-${AWS::Region}-${CostTagValue}
+      AccessControl: PublicRead
+      Tags:
+        - Key: Description
+          Value: Artifact Bucket
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PrebuildCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${CostTagValue}-prebuild-codebuild
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:6.0
+        ComputeType: BUILD_GENERAL1_SMALL
+        PrivilegedMode: True
+      ServiceRole: !GetAtt ClusterBuildRole.Arn
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+
+          env:
+            shell: bash
+
+          phases:
+            install:
+              runtime-versions:
+                python: 3.10
+            pre_build:
+              on-failure: ABORT
+              commands:
+                - echo "Install pip packages...";
+                  pip install --upgrade jinja2 cfn-lint yamllint;
+                - echo "IAM build role used is $(aws sts get-caller-identity)"
+            build:
+              on-failure: ABORT
+              commands:
+                - cd $CODEBUILD_SRC_DIR/pipeline/build/prebuild/
+                - CODEBUILD_SRC_DIR=$CODEBUILD_SRC_DIR 
+                    AWS_REGION=${AWS::Region} 
+                    COST_TAG_VALUE=${CostTagValue} 
+                  bash codebuild.sh;
+          artifacts:
+            files:
+              - '**/*'
+            secondary-artifacts:
+              PreBuildArtifact:
+                files:
+                  - '**/*'
+
+  PostBuildCodeBuild:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${CostTagValue}-PostBuild
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:6.0
+        ComputeType: BUILD_GENERAL1_SMALL
+        PrivilegedMode: True
+      ServiceRole: !GetAtt ClusterBuildRole.Arn
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+
+          env:
+            shell: bash
+
+          phases:
+            install:
+              runtime-versions:
+                python: 3.10
+            pre_build:
+              on-failure: ABORT
+              commands:
+                - echo "Install pip packages...";
+                  pip install --upgrade jinja2 cfn-lint yamllint;
+                - echo "IAM build role used is $(aws sts get-caller-identity)"
+            build:
+              on-failure: ABORT
+              commands:
+                - cd $CODEBUILD_SRC_DIR/pipeline/build/postbuild;
+                - CODEBUILD_SRC_DIR=$CODEBUILD_SRC_DIR 
+                    AWS_REGION=${AWS::Region} 
+                    AWS_ACCOUNT_ID=${AWS::AccountId} 
+                    COST_TAG_VALUE=${CostTagValue} 
+                  bash codebuild.sh;
+          artifacts:
+            files:
+              - '**/*'
+            secondary-artifacts:
+              PostBuildArtifact:
+                files:
+                  - '**/*'
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      ArtifactStore:
+        Type: S3
+        Location: !Sub codepipeline-${AWS::Region}-${CostTagValue}
+      Name: !Sub ${CostTagValue}-Pipeline
+      RestartExecutionOnUpdate: True
+      RoleArn: !GetAtt ClusterBuildRole.Arn
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+      Stages:
+        - Name: !Sub ${CostTagValue}-Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeCommit
+                Version: "1"
+              Configuration:
+                BranchName: !Sub ${CodeCommitBranchName}
+                OutputArtifactFormat: CODE_ZIP
+                PollForSourceChanges: "false"
+                RepositoryName: !Sub ${CodeCommitRepoName}
+              OutputArtifacts:
+                - Name: SourceArtifact
+              Region: !Sub ${AWS::Region}
+              Namespace: SourceVariables
+
+        - Name: !Sub ${CostTagValue}-PreBuild
+          Actions:
+            - Name: PreBuild
+              RunOrder: 1
+              Namespace: prebuild
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Ref PrebuildCodeBuild
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: PreBuildArtifact
+              Region: !Sub ${AWS::Region}
+
+        - Name: !Sub ${CostTagValue}-DeployCluster
+          Actions:
+            - Name: DeployCluster
+              RunOrder: 1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt ClusterBuildRole.Arn
+                StackName: !Sub ${CostTagValue}-cluster
+                TemplatePath: PreBuildArtifact::cf-cluster.yaml
+              InputArtifacts:
+                - Name: PreBuildArtifact
+              Region: !Sub ${AWS::Region}
+              RoleArn: !GetAtt ClusterBuildRole.Arn
+
+        - Name: !Sub ${CostTagValue}-PostBuild
+          Actions:
+            - Name: PostBuild
+              RunOrder: 1
+              Namespace: PostBuild
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Sub ${CostTagValue}-PostBuild
+              InputArtifacts:
+                - Name: PreBuildArtifact
+              OutputArtifacts:
+                - Name: PostBuildArtifact
+              Region: !Sub ${AWS::Region}
+
+        - Name: !Sub ${CostTagValue}-DeployJupyterHub
+          Actions:
+            - Name: DeployJupyterHub
+              RunOrder: 1
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: "1"
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                Capabilities: CAPABILITY_NAMED_IAM
+                RoleArn: !GetAtt ClusterBuildRole.Arn
+                StackName: !Sub ${CostTagValue}-jupyterhub
+                TemplatePath: PostBuildArtifact::cf-jupyterhub.yaml
+              InputArtifacts:
+                - Name: PostBuildArtifact
+              Region: !Sub ${AWS::Region}
+
+        - Name: !Sub ${CostTagValue}-BuildJupyterHub
+          Actions:
+            - Name: BuildJupyterHub
+              RunOrder: 1
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName: !Sub ${CostTagValue}-cluster-jupyterhub
+              InputArtifacts:
+                - Name: PostBuildArtifact
+              Region: !Sub ${AWS::Region}
