@@ -11,8 +11,6 @@ def check_parameters(config):
 
     # Check to see if all required fields are present.
     required_fields = [
-        'code_commit_repo_name',
-        'code_commit_branch_name',
         'lab_short_name',
         'cost_tag_key',
         'cost_tag_value',

@@ -1,8 +1,6 @@
 ---
 
 parameters:
-  code_commit_repo_name: Repository name of the AWS Code Commit repo
-  code_commit_branch_name: Branch name of the AWS Code Commit repo
   lab_short_name: The url-friendly short name of the lab deployment.
   cost_tag_key: Name of the cost allocation tag
   cost_tag_value: Value of the cost allocation tag

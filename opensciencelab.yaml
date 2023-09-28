@@ -1,8 +1,6 @@
 ---
 
 parameters:
-  code_commit_repo_name: opensciencelab-opensarlab-cluster-prod
-  code_commit_branch_name: main
   lab_short_name: opensarlab
   cost_tag_key: osl-billing
   cost_tag_value: osl-opensarlab

@@ -2,15 +2,19 @@ AWSTemplateFormatVersion: "2010-09-09"
 
 Parameters:
 
-  CodeCommitRepoName:
+  CodeStarConnectionArn:
     Type: String
-    Description: "Name of the code commit repo holding your <deployment_name>-cluster code"
-    Default: ""
+    Description: The Arn goes here. Connection created via https://docs.aws.amazon.com/dtconsole/latest/userguide/connections-create-github.html
+    Default: ''
 
-  CodeCommitBranchName:
+  GitHubFullRepo:
     Type: String
-    Description: "Name of the branch holding this deployment's cluster code"
-    Default: ""
+    Description: Owner/RepoName of desired GitHub path https://github.com/Owner/RepoName. 
+    Default: 'ASFOpenSARlab/opensarlab-cluster'
+
+  GitHubBranchName:
+    Type: String
+    Default: 'main'
 
   CostTagKey:
     Type: String
@@ -94,6 +98,13 @@ Resources:
           Value: Artifact Bucket
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
+
+  DockerHubCredsSecretsManager:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: DockerHub creds for cluster build. Must be a string with format "username password".  
+      Name: !Sub dockerhub/${AWS::Region}-${CostTagValue}-cluster-creds
+      SecretString: "ReplaceMeOrYouWillAlwaysFail"
 
   PrebuildCodeBuild:
     Type: AWS::CodeBuild::Project
@@ -207,23 +218,23 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
       Stages:
-        - Name: !Sub ${CostTagValue}-Source
+        - Name: !Sub ${CostTagValue}-GitHub-Source
           Actions:
-            - Name: Source
+            - Name: source
+              InputArtifacts: []
               ActionTypeId:
-                Category: Source
+                Version: '1'
                 Owner: AWS
-                Provider: CodeCommit
-                Version: "1"
-              Configuration:
-                BranchName: !Sub ${CodeCommitBranchName}
-                OutputArtifactFormat: CODE_ZIP
-                PollForSourceChanges: "false"
-                RepositoryName: !Sub ${CodeCommitRepoName}
+                Category: Source
+                Provider: CodeStarSourceConnection
               OutputArtifacts:
                 - Name: SourceArtifact
-              Region: !Sub ${AWS::Region}
-              Namespace: SourceVariables
+              RunOrder: 1
+              Configuration:
+                ConnectionArn: !Sub ${CodeStarConnectionArn}
+                FullRepositoryId: !Sub ${GitHubFullRepo}
+                BranchName: !Sub ${GitHubBranchName}
+                OutputArtifactFormat: CODEBUILD_CLONE_REF
 
         - Name: !Sub ${CostTagValue}-PreBuild
           Actions:
