@@ -153,7 +153,8 @@ def check_profiles(config):
         'delete_user_volumes',
         'classic',
         'default',
-        'service_account'
+        'service_account',
+        'desktop'
     ]
 
     for profile in config['profiles']:

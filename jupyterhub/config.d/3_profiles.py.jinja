@@ -182,6 +182,15 @@ async def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                             'OPENSCIENCELAB_CPU_HOUR': str(opensciencelab_cpu_hour)
                         },
                         'default_url': '/tree/'
+                    {% elif profile.desktop is defined and profile.desktop == True -%}
+                        'environment': {
+                            'JUPYTERHUB_SINGLEUSER_APP': 'jupyter_server.serverapp.ServerApp',
+                            'OPENSARLAB_PROFILE_NAME': '{{ profile.name }}', 
+                            'OPENSCIENCELAB_LAB_SHORT_NAME': '{{ parameters.lab_short_name }}',
+                            'OPENSCIENCELAB_PORTAL_DOMAIN': '{{ parameters.portal_domain }}',
+                            'OPENSCIENCELAB_CPU_HOUR': str(opensciencelab_cpu_hour)
+                        },
+                        'default_url': '/desktop'
                     {% else -%}
                         'environment': {
                             'JUPYTERHUB_SINGLEUSER_APP': 'jupyter_server.serverapp.ServerApp',

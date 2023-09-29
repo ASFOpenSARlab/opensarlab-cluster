@@ -205,3 +205,14 @@ profiles:
     #memory_limit: 7G
     storage_capacity: 500Gi
     node_name: m6alarge
+
+  - name: m6a.large - Desktop
+    description: "Virtual Desktop - RAM Guarantee: 5G. RAM limit: 8G. CPU limit: 2. Storage: 500G."
+    image_name: sar
+    image_tag: a7a7383
+    hook_script: sar.sh
+    memory_guarantee: 5G
+    #memory_limit: 7G
+    storage_capacity: 500Gi
+    node_name: m6alarge
+    desktop: true
