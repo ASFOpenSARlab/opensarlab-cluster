@@ -15,7 +15,6 @@ set -ex
 #       AZPostfix=${AZPostfix} 
 #       DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
 #       DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
-#       SECRET_DH_CREDS=$SECRET_DH_CREDS 
 #       CODEBUILD_ROOT=$CODEBUILD_ROOT
 #       KUBECTL_VERSION=${KUBECTL_VERSION}
 #       HELM_3_VERSION=${HELM_3_VERSION}
@@ -79,11 +78,6 @@ printf "\n\n%s\n" "******* IAM build role used is... $(aws sts get-caller-identi
 printf "\n\n%s\n" "******* Logging into AWS ECR...";
 aws ecr get-login-password --region ${AWS_Region} | \
     docker login --username AWS --password-stdin ${AWS_AccountId}.dkr.ecr.${AWS_Region}.amazonaws.com
-
-printf "\n\n%s\n" "******* Logging into Docker Hub user to get latest jupyter image...";
-dh_username=$(echo ${SECRET_DH_CREDS} | cut -f1 -d' ');
-echo ${SECRET_DH_CREDS} | cut -f2 -d' ' > dh.pass;
-cat dh.pass | docker login -u $dh_username --password-stdin;
 
 printf "\n\n%s\n" "******* Install helm charts and update...";
 helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/;

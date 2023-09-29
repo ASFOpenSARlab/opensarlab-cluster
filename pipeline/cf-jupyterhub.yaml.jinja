@@ -98,13 +98,6 @@ Parameters:
 
 Resources:
 
-  DockerHubCredsSecretsManager:
-    Type: AWS::SecretsManager::Secret
-    Properties: 
-      Description: DockerHub creds for cluster build. Must be a string with format "username password".  
-      Name: !Sub dockerhub/${AWS::Region}-${CostTagValue}-cluster-creds
-      SecretString: "ReplaceMeOrYouWillAlwaysFail"
-
   SSOTokenSecretsManager:
     Type: AWS::SecretsManager::Secret
     Properties: 
@@ -144,8 +137,6 @@ Resources:
               version: 0.2
               env:
                 shell: bash
-                secrets-manager:
-                  SECRET_DH_CREDS: "dockerhub/${AWS::Region}-${CostTagValue}-creds"
               phases:
                 install:
                   runtime-versions:
@@ -166,7 +157,6 @@ Resources:
                         AZPostfix=${AZPostfix} 
                         DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
                         DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
-                        SECRET_DH_CREDS=$SECRET_DH_CREDS 
                         CODEBUILD_ROOT=$CODEBUILD_ROOT 
                         KUBECTL_VERSION=${KUBECTL_VERSION}
                         HELM_3_VERSION=${HELM_3_VERSION}
