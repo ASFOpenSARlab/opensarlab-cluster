@@ -20,7 +20,7 @@ from opensarlab.auth import encryptedjwt
 logging.basicConfig(format='%(asctime)s %(levelname)s (%(lineno)d) - %(message)s', level=logging.INFO)
 log = logging.getLogger(__name__)
 
-def _send_error_report(errors_found: list, cluster_name: str, portal_domain: str, dry_run: bool) -> None:
+def _send_error_report(errors_found: list, cluster_name: str, portal_domain: str, sso_token: str, dry_run: bool) -> None:
 
     errors_report = ""
     for each_error in errors_found:
@@ -45,7 +45,7 @@ def _send_error_report(errors_found: list, cluster_name: str, portal_domain: str
         """
     }
 
-    data = encryptedjwt.encrypt(payload)
+    data = encryptedjwt.encrypt(payload, sso_token=sso_token)
     url = f"{portal_domain}/user/email/send"
 
     if dry_run:
@@ -89,6 +89,8 @@ def delete_volumes(
             session = boto3.Session(region_name=aws_region, profile_name=aws_profile)
         else:
             session = boto3.Session(region_name=aws_region)
+
+        secrets_manager = session.client('secretsmanager')
         ec2 = session.client('ec2')
 
         log.info(f"Searching for volumes in cluster '{cluster_name}' to delete...")
@@ -243,7 +245,8 @@ def delete_volumes(
         errors_found.append({"volume_id": "N/A", "error_msg": str(e)})
 
     if errors_found:
-        _send_error_report(errors_found, cluster_name, portal_domain, dry_run)
+        _sso_token = secrets_manager.get_secret_value(SecretId=f"sso-token/{aws_region}-{cluster_name}")
+        _send_error_report(errors_found, cluster_name, portal_domain, _sso_token, dry_run)
 
     log.info("Done.")
 

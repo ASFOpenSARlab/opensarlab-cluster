@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
-import os
+
 import datetime
-import json
-import secrets
-
-import requests
-
-from opensarlab.auth import encryptedjwt
+import boto3
+import z2jh
 
 import logging
 logging.basicConfig(format='%(asctime)s %(levelname)s (%(lineno)d) - %(message)s', level=logging.INFO)
@@ -232,11 +228,6 @@ def volume_from_snapshot(spawner):
                     raise
 
 def server_starting_tag(spawner):
-    import datetime
-
-    import boto3
-
-    import z2jh
 
     pvc_name = spawner.pvc_name
     cluster_name = z2jh.get_config('custom.CLUSTER_NAME')
@@ -285,50 +276,12 @@ def server_starting_tag(spawner):
             ]
         )
 
-def report_starting_time_to_quota(spawner) -> None:
-
-    try:
-        osl_profile_name = ''
-        osl_cpu_hour = ''
-        slug = (spawner.user_options)['profile']
-        for profile in dict(vars(spawner)).get('_profile_list', []):
-            if profile['slug'] == slug:
-                osl_profile_name = profile['kubespawner_override']['environment']['OPENSARLAB_PROFILE_NAME']
-                osl_cpu_hour = profile['kubespawner_override']['environment']['OPENSCIENCELAB_CPU_HOUR']
-                break
-    except Exception as e:
-        log.error(f"***** {e}")
-
-    portal_domain = os.environ.get('OPENSCIENCELAB_PORTAL_DOMAIN', '')
-    lab_name = os.environ.get('JUPYTERHUB_LAB_NAME', '')
-
-    username =  spawner.user.name
-    spawner_instance_id = spawner.common_labels['spawner_instance_id'] = str(secrets.token_hex(nbytes=16))
-
-    payload = {
-        "start_time": str(datetime.datetime.now()),
-        "username": username, 
-        "lab_short_name": lab_name, 
-        "spawner_instance_id": spawner_instance_id,
-        "profile_name": osl_profile_name,
-        "cpu_hour": osl_cpu_hour
-    }
-
-    url = f"{portal_domain}/user/quota/clock/start"
-
-    try:
-        data = encryptedjwt.encrypt(payload)
-        requests.post(url=url, data=data, timeout=15)
-    except Exception as e:
-        log.error("Something went wrong with reporting the starting time to quota.")
-
 # Before mounting the home directory, check to see if a volume exists.
 # If it doesn't, check for any EBS snapshots.
 # If a snapshot exists, create a volume from the snapshot.
 # Otherwise, JupyterHub will do the mounting and other volume handling.
 def my_pre_hook(spawner):
     try:
-        report_starting_time_to_quota(spawner)
         volume_from_snapshot(spawner)
         server_starting_tag(spawner)
 

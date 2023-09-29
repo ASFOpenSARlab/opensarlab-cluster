@@ -41,6 +41,9 @@ class SnapshotManagement():
         else:
             session = boto3.Session(region_name=aws_region)
 
+        secrets_manager = session.client('secretsmanager')
+        self.sso_token = secrets_manager.get_secret_value(SecretId=f"sso-token/{aws_region}-{cluster_name}")
+
         self.ec2 = session.client('ec2')
         self.cluster_name = cluster_name
         self.lab_short_name = lab_short_name
@@ -90,7 +93,7 @@ class SnapshotManagement():
             return ''
 
     def _post_email(self, payload: dict) -> int:
-        data = encryptedjwt.encrypt(payload)
+        data = encryptedjwt.encrypt(payload, sso_token=self.sso_token)
         url = f"{self.portal_domain}/user/email/send"
 
         if self.dry_run:

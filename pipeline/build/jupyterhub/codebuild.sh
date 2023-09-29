@@ -8,7 +8,6 @@ set -ex
 #       ContainerNamespace=${ContainerNamespace} 
 #       CostTagKey=${CostTagKey} 
 #       CostTagValue=${CostTagValue} 
-#       SECRET_SSO_TOKEN=$SECRET_SSO_TOKEN 
 #       LabShortName=${LabShortName} 
 #       PortalDomain=${PortalDomain} 
 #       AdminUserName=${AdminUserName} 
@@ -38,9 +37,7 @@ NodeProxyPort=${NodeProxyPort}
 AZPostfix=${AZPostfix} 
 DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
 DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
-CODEBUILD_ROOT=${CODEBUILD_ROOT}
-SECRET_SSO_TOKEN="
-printf "%s\n\n" ${SECRET_SSO_TOKEN} | cut -c1-20
+CODEBUILD_ROOT=${CODEBUILD_ROOT}"
 
 # https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
 export KUBECTL_VERSION='1.24.7/2022-10-31'
@@ -157,7 +154,6 @@ docker push $REGISTRY_URI/crons:$CRONS_IMAGE_BUILD;
 docker push $REGISTRY_URI/crons:latest;
 
 # Secret applied later
-#sed -i "s|SSO_PLACEHOLDER|${SECRET_SSO_TOKEN}|" k8s/crons.yaml;
 sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/crons:$CRONS_IMAGE_BUILD|" k8s/crons.yaml;
 kubectl apply -f k8s/crons.yaml;
 
@@ -182,12 +178,6 @@ printf "%s\n" "REGISTRY_URI $REGISTRY_URI";
 printf "%s\n" "HUB_IMAGE_BUILD $HUB_IMAGE_BUILD";
 
 #######
-printf "\n\n%s\n" "******* Apply additional k8s resources: create sso-token-secret...";
-kubectl create namespace jupyter --dry-run=client -o yaml | kubectl apply -f -
-kubectl -n jupyter create secret generic sso-token-secret --save-config --dry-run=client --from-literal=sso_token="${SECRET_SSO_TOKEN}" -o yaml | kubectl apply -f -;
-kubectl -n services create secret generic sso-token-secret --save-config --dry-run=client --from-literal=sso_token="${SECRET_SSO_TOKEN}" -o yaml | kubectl apply -f -;
-
-#######
 printf "\n\n%s\n" "******* Install JupyterHub cluster...";
 cd ${CODEBUILD_ROOT}/jupyterhub/;
 helm upgrade jupyter jupyterhub/jupyterhub \
@@ -208,6 +198,7 @@ helm upgrade jupyter jupyterhub/jupyterhub \
     --set custom.REGISTRY_URI=$REGISTRY_URI \
     --set custom.CLUSTER_NAME="${CostTagValue}-cluster" \
     --set custom.AZ_NAME="${AWS_Region}${AZPostfix}" \
+    --set custom.AWS_REGION="${AWS_REGION}" \
     --set custom.COST_TAG_VALUE="${CostTagValue}" \
     --set custom.COST_TAG_KEY="${CostTagKey}" \
     --set custom.DAYS_TILL_VOLUME_DELETION="${DaysTillVolumeDeletion}" \

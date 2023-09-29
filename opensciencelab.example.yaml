@@ -7,7 +7,6 @@ parameters:
   admin_user_name: Username of initial JupyterHub admin
   certificate_arn: AWS arn of the SSL certificate held in Certificate Manager
   container_namespace: A namespaced path within AWS ECR containing custom images
-  portal_namespace: The namespace added to Portal resources
   lab_domain: Domain of JupyterHub deployment. Use `load balancer` if not known.
   portal_domain: Domain of the OSL Portal. Used to communicate with email services, etc.
   az_suffix: Availabilty Zone "letter" (us-west-2a) of the JupyterHub deployment. This should not be changed after initial deployment.

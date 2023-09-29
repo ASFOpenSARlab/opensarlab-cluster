@@ -61,8 +61,7 @@ async def _get_cpus_for_ec2_type(node_name: str=''):
             }
         instance_type = node_types[node_name]
 
-        # Assume us-west-2 stats for now.
-        ec2 = boto3.client('ec2', region_name='us-west-2')
+        ec2 = boto3.client('ec2', region_name=f"{z2jh.get_config('custom.AWS_REGION')}")
 
         # the Filter is broken so grab everything anyways
         resp = ec2.describe_instance_types(InstanceTypes=[str(instance_type)])

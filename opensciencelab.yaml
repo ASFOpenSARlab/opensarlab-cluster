@@ -7,7 +7,6 @@ parameters:
   admin_user_name: emlundell
   certificate_arn: arn:aws:acm:us-west-2:701288258305:certificate/999b8cc3-d5e9-4bcd-a620-69b235212a1d
   container_namespace: opensciencelab-opensarlab-prod
-  portal_namespace: opensciencelab-portal-prod
   lab_domain: load balancer
   portal_domain: https://opensciencelab.asf.alaska.edu
   az_suffix: c

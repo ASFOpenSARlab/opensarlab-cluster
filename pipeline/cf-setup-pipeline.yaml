@@ -99,13 +99,6 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  DockerHubCredsSecretsManager:
-    Type: AWS::SecretsManager::Secret
-    Properties: 
-      Description: DockerHub creds for cluster build. Must be a string with format "username password".  
-      Name: !Sub dockerhub/${AWS::Region}-${CostTagValue}-cluster-creds
-      SecretString: "ReplaceMeOrYouWillAlwaysFail"
-
   PrebuildCodeBuild:
     Type: AWS::CodeBuild::Project
     Properties:

@@ -31,11 +31,6 @@ Parameters:
     Type: String
     Default: {{ parameters.container_namespace }}
 
-  PortalNamespace:
-    Description: The container namespace for the portal. Used to find the common sso-token.
-    Type: String
-    Default: {{ parameters.portal_namespace }}
-
   CostTagKey:
     Type: String
     Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
@@ -67,6 +62,20 @@ Parameters:
     Default: 30052
 
 Resources:
+
+  DockerHubCredsSecretsManager:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: DockerHub creds for cluster build. Must be a string with format "username password".  
+      Name: !Sub dockerhub/${AWS::Region}-${CostTagValue}-cluster-creds
+      SecretString: "ReplaceMeOrYouWillAlwaysFail"
+
+  SSOTokenSecretsManager:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: SSO Token to communicate with the Portal.
+      Name: !Sub sso-token/${AWS::Region}-${CostTagValue}-cluster
+      SecretString: "ReplaceMeOrYouWillAlwaysFail"
 
   HubGroupLogs:
     Type: AWS::Logs::LogGroup
@@ -101,8 +110,7 @@ Resources:
               env:
                 shell: bash
                 secrets-manager:
-                  SECRET_DH_CREDS: "dockerhub/creds"
-                  SECRET_SSO_TOKEN: "${PortalNamespace}/sso-token"
+                  SECRET_DH_CREDS: "dockerhub/${AWS::Region}-${CostTagValue}-creds"
               phases:
                 install:
                   runtime-versions:
@@ -115,8 +123,7 @@ Resources:
                         AWS_Region=${AWS::Region} 
                         ContainerNamespace=${ContainerNamespace} 
                         CostTagKey=${CostTagKey} 
-                        CostTagValue=${CostTagValue} 
-                        SECRET_SSO_TOKEN=$SECRET_SSO_TOKEN 
+                        CostTagValue=${CostTagValue}
                         LabShortName=${LabShortName} 
                         PortalDomain=${PortalDomain} 
                         AdminUserName=${AdminUserName} 

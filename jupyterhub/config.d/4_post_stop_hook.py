@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
-import os
+
+import boto3
 import datetime
-import json
-
-import requests
-
-from opensarlab.auth import encryptedjwt
 
 import logging
 logging.basicConfig(format='%(asctime)s %(levelname)s (%(lineno)d) - %(message)s', level=logging.INFO)
 log = logging.getLogger(__name__)
+
+import z2jh
 
 def _get_delta_time(days: int) -> datetime:
     """
@@ -21,16 +19,9 @@ def _get_delta_time(days: int) -> datetime:
     return the_future_in_utc.replace(second=0, microsecond=0)
 
 def server_stopping_tags(spawner):
-    import datetime
-
-    import boto3
-
-    import z2jh
-
     pvc_name = spawner.pvc_name
     cluster_name = z2jh.get_config('custom.CLUSTER_NAME')
-    az_name =  z2jh.get_config('custom.AZ_NAME')
-    region_name = az_name[:-1]
+    region_name = z2jh.get_config('custom.REGION_NAME')
 
     days_till_volume_deletion = z2jh.get_config('custom.DAYS_TILL_VOLUME_DELETION')
     days_till_snapshot_deletion = z2jh.get_config('custom.DAYS_TILL_SNAPSHOT_DELETION')
@@ -85,29 +76,9 @@ def server_stopping_tags(spawner):
             ]
         )
 
-def report_stopping_time_to_quota(spawner) -> None:
-
-    portal_domain = os.environ.get('OPENSCIENCELAB_PORTAL_DOMAIN', '')
-    spawner_instance_id = spawner.common_labels.get('spawner_instance_id', 'There is no spawner instance id')
-
-    payload = {
-        "stop_time": str(datetime.datetime.now()), 
-        "spawner_instance_id": spawner_instance_id
-    }
-
-    url = f"{portal_domain}/user/quota/clock/stop"
-
-    try:
-        data = encryptedjwt.encrypt(payload)
-        requests.post(url=url, data=data, timeout=15)
-    except Exception as e:
-        log.error("Something went wrong with reporting the stopping time to quota.")
-
-
 # After stopping the notebook server, tag the volume with the current "stopping" time. This will help determine which volumes are active.
 def my_post_hook(spawner):
     try:
-        report_stopping_time_to_quota(spawner)
         server_stopping_tags(spawner)
 
     except Exception as e:

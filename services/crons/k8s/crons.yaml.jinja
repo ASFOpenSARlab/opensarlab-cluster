@@ -35,18 +35,6 @@ spec:
                 - "--portal-domain={{ parameters.portal_domain }}"
                 - "--cluster-name={{ cluster_name }}"
                 - "--region={{ region_name }}"
-              env:
-                - name: OPENSARLAB_SSO_TOKEN_PATH
-                  value: "/tmp/secrets/sso_token"
-              volumeMounts:
-                - name: sso-token
-                  mountPath: /tmp/secrets/sso_token
-                  subPath: sso_token
-                  readOnly: true
-          volumes:
-            - name: sso-token
-              secret:
-                secretName: sso-token-secret
           restartPolicy: OnFailure
           terminationGracePeriodSeconds: 0
 
@@ -75,17 +63,5 @@ spec:
                 - "--cluster-name={{ cluster_name }}"
                 - "--region={{ region_name }}"
                 - "--portal-domain={{ parameters.portal_domain }}"
-              env:
-                - name: OPENSARLAB_SSO_TOKEN_PATH
-                  value: "/tmp/secrets/sso_token"
-              volumeMounts:
-                - name: sso-token
-                  mountPath: /tmp/secrets/sso_token
-                  subPath: sso_token
-                  readOnly: true
-          volumes:
-            - name: sso-token
-              secret:
-                secretName: sso-token-secret
           restartPolicy: OnFailure
           terminationGracePeriodSeconds: 0
