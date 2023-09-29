@@ -3,7 +3,6 @@
 {% set parameters = opensciencelab['parameters'] -%}
 {% set nodes = opensciencelab['nodes'] -%}
 {% set profiles = opensciencelab['profiles'] -%}
-{% set cluster = opensciencelab['cluster'] -%}
 
 AWSTemplateFormatVersion: 2010-09-09
 
@@ -58,13 +57,13 @@ Parameters:
   NodeImageId:
     Description: AMI id for the node instances of K8s
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
-    Default: /aws/service/eks/optimized-ami/{{ cluster.eks_version }}/amazon-linux-2/recommended/image_id
+    Default: /aws/service/eks/optimized-ami/{{ parameters.eks_version }}/amazon-linux-2/recommended/image_id
 
   # Software versions
   EksVersion:
     Description: The version of the EKS Cluster. 
     Type: String
-    Default: {{ cluster.eks_version }}
+    Default: {{ parameters.eks_version }}
 
 Outputs:
   AppUrl:

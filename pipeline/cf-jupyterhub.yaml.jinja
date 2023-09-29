@@ -1,7 +1,6 @@
 ---
 
 {% set parameters = opensciencelab['parameters'] -%}
-{% set cluster = opensciencelab['cluster'] -%}
 
 AWSTemplateFormatVersion: 2010-09-09
 
@@ -65,32 +64,37 @@ Parameters:
   KUBECTL_VERSION:
     Description: Version of Kubectl used during jupyterhub build. 
     Type: String
-    Default: {{ cluster.kubectl_version }}
+    Default: {{ parameters.kubectl_version }}
 
   HELM_3_VERSION:
     Description: Version of helm software used during jupyterhub build.
     Type: String
-    Default: {{ cluster.helm_3_version }}
+    Default: {{ parameters.helm_3_version }}
 
   AWS_EBS_CSI_DRIVER_VERSION:
     Description: Version of the AWS EBS CSI volume driver.
     Type: String
-    Default: {{ cluster.aws_ebs_csi_driver_version }}
+    Default: {{ parameters.aws_ebs_csi_driver_version }}
 
   JUPYTERHUB_HELM_VERSION:
     Description: Version of JupyterHub Helm chart.
     Type: String
-    Default: {{ cluster.jupyterhub_helm_version }}
+    Default: {{ parameters.jupyterhub_helm_version }}
+
+  JUPYTERHUB_HUB_IMAGE_VERSION:
+    Description: Version of the JupyterHub hub image. Must match equivalent JupyterHub helm version.
+    Type: String
+    Default: {{ parameters.jupyterhub_hub_image_version }}
 
   AWS_K8S_CNI_VERSION:
     Description: Version of the AWS K8s CNI plugin for EKS.
     Type: String
-    Default: {{ cluster.aws_k8s_cni_version }}
+    Default: {{ parameters.aws_k8s_cni_version }}
 
   CLUSTER_AUTOSCALER_HELM_VERSION:
     Description: Version of the EKS autoscaler helm chart.
     Type: String
-    Default: {{ cluster.cluster_autoscaler_helm_version }}
+    Default: {{ parameters.cluster_autoscaler_helm_version }}
 
 Resources:
 
@@ -170,4 +174,5 @@ Resources:
                         JUPYTERHUB_HELM_VERSION=${JUPYTERHUB_HELM_VERSION}
                         AWS_K8S_CNI_VERSION=${AWS_K8S_CNI_VERSION}
                         CLUSTER_AUTOSCALER_HELM_VERSION=${CLUSTER_AUTOSCALER_HELM_VERSION}
+                        JUPYTERHUB_HUB_IMAGE_VERSION=${JUPYTERHUB_HUB_IMAGE_VERSION}
                       bash $CODEBUILD_ROOT/pipeline/build/jupyterhub/codebuild.sh;

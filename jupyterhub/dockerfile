@@ -1,4 +1,4 @@
-FROM jupyterhub/k8s-hub:2.0.0 as release
+FROM jupyterhub/k8s-hub:JUPYTERHUB_HUB_IMAGE_VERSION_PLACEHOLDER as release
 
 # By default, the notebook base image is set to non-sudo user joyvan. This makes root-ful actions difficult.
 USER root
@@ -24,7 +24,8 @@ RUN python3 -m pip install --upgrade \
         kubernetes \
         kubernetes_asyncio \
         opensarlab-backend==1.0.4 \
-        jupyterhub-kubespawner==4.3.0
+        #jupyterhub-kubespawner==4.3.0 \
+        --
 
 COPY ./config.d/ /usr/local/etc/jupyterhub/jupyterhub_config.d/
 COPY ./hub/web/usr/local/lib/jupyterhub/portal_auth.py /usr/local/lib/python3.9/site-packages/jupyterhub/portal_auth.py
