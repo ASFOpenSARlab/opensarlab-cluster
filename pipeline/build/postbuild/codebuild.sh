@@ -36,6 +36,15 @@ python3 create_crons.py \
     --cluster_name=${COST_TAG_VALUE}-cluster;
 yamllint -c $OSL_HOME/.yamllint $OSL_HOME/services/crons/k8s/crons.yaml;
 
+echo "Render hook scripts...";
+python3 create_hook_scripts.py \
+    --origin_hook_scripts_dir=$OSL_HOME/singleuser_hooks/ \
+    --dest_hook_scripts_dir=$OSL_HOME/jupyterhub/singleuser/hooks/ \
+    --helm_config_template=$OSL_HOME/jupyterhub/helm_config.yaml.j2 \
+    --helm_config=$OSL_HOME/jupyterhub/helm_config.yaml \
+    --jupyterhub_codebuild_template=$OSL_HOME/pipeline/build/jupyterhub/codebuild.sh.j2 \
+    --jupyterhub_codebuild=$OSL_HOME/pipeline/build/jupyterhub/codebuild.sh;
+
 echo "Render files within jupyterhub_config.d...";
 python3 create_config_d.py \
     --config $OSL_HOME/opensciencelab.yaml \

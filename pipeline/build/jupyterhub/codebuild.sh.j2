@@ -197,12 +197,6 @@ helm upgrade jupyter jupyterhub/jupyterhub \
     --set custom.COST_TAG_KEY="${CostTagKey}" \
     --set custom.DAYS_TILL_VOLUME_DELETION="${DaysTillVolumeDeletion}" \
     --set custom.DAYS_TILL_SNAPSHOT_DELETION="${DaysTillSnapshotDeletion}" \
-    --set-file singleuser.extraFiles.user-hooks-sar.stringData='./singleuser/hooks/sar.sh' \
-    --set-file singleuser.extraFiles.user-hooks-mapready.stringData='./singleuser/hooks/mapready.sh' \
-    --set-file singleuser.extraFiles.user-hooks-mapready-no-git.stringData='./singleuser/hooks/mapready_no_git.sh' \
-    --set-file singleuser.extraFiles.user-hooks-servir.stringData='./singleuser/hooks/servir.sh' \
-    --set-file singleuser.extraFiles.user-hooks-sar_test.stringData='./singleuser/hooks/sar_test.sh' \
-    --set-file singleuser.extraFiles.user-hooks-no_smart_git.stringData='./singleuser/hooks/no_smart_git.sh' \
     --set-file singleuser.extraFiles.user-hooks-pull.stringData='./singleuser/hooks/etc/pull.py' \
     --set-file singleuser.extraFiles.user-hooks-clean.stringData='./singleuser/hooks/etc/pkg_clean.py' \
     --set-file singleuser.extraFiles.user-hooks-kernel-flag.stringData='./singleuser/hooks/etc/old_kernels_flag.txt' \
@@ -211,6 +205,10 @@ helm upgrade jupyter jupyterhub/jupyterhub \
     --set-file singleuser.extraFiles.user-custom_magics.stringData='./singleuser/custom_magics/00-df.py' \
     --set-file singleuser.extraFiles.user-template-page.stringData='./singleuser/templates/page.html' \
     --set-file singleuser.extraFiles.user-template-tree.stringData='./singleuser/templates/tree.html'
+    {% for file_name in hook_script_filenames -%}
+    --set-file singleuser.extraFiles.user-hooks-{{ file_name | replace('.sh', '') }}.stringData='./singleuser/hooks/{{ file_name }}' \
+    {% endfor -%}
+    --
 
 kubectl -n jupyter rollout status -w deployment.apps/hub
 
@@ -247,19 +245,19 @@ export FluentBitReadFromHead='Off';
 [[ -z $FluentBitHttpPort ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On';
 
 curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml > cwagent-fluent-bit-quickstart.yaml;
-sed -i "s|{{cluster_name}}|${CostTagValue}-cluster|" cwagent-fluent-bit-quickstart.yaml;
-sed -i "s|{{region_name}}|${AWS_Region}|" cwagent-fluent-bit-quickstart.yaml;
-sed -i "s|{{http_server_toggle}}|\"$FluentBitHttpServer\"|" cwagent-fluent-bit-quickstart.yaml;
-sed -i "s|{{http_server_port}}|\"$FluentBitHttpPort\"|" cwagent-fluent-bit-quickstart.yaml;
-sed -i "s|{{read_from_head}}|\"$FluentBitReadFromHead\"|" cwagent-fluent-bit-quickstart.yaml;
-sed -i "s|{{read_from_tail}}|\"$FluentBitReadFromTail\"|" cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{cluster_name}}{% endraw %}|${CostTagValue}-cluster|" cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{region_name}}{% endraw %}|${AWS_Region}|" cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{http_server_toggle}}{% endraw %}|\"$FluentBitHttpServer\"|" cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{http_server_port}}{% endraw %}|\"$FluentBitHttpPort\"|" cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{read_from_head}}{% endraw %}|\"$FluentBitReadFromHead\"|" cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{read_from_tail}}{% endraw %}|\"$FluentBitReadFromTail\"|" cwagent-fluent-bit-quickstart.yaml;
 kubectl apply -f cwagent-fluent-bit-quickstart.yaml;
 
 #######
 printf "\n\n%s\n" "******* Install Prometheus for CloudWatch Insights";
 cd ${CODEBUILD_ROOT}/pipeline/configs/;
 
-sed -i "s|{{cluster_name}}|${CostTagValue}-cluster|; s|{{region_name}}|${AWS_Region}|" cwagent-prometheus.yaml;
+sed -i "s|{% raw %}{{cluster_name}}{% endraw %}|${CostTagValue}-cluster|; s|{% raw %}{{region_name}}{% endraw %}|${AWS_Region}|" cwagent-prometheus.yaml;
 
 kubectl apply -f cwagent-prometheus.yaml
 

@@ -19,41 +19,28 @@ singleuser:
       pvcNameTemplate: claim-{username}
   defaultUrl: "/lab"
   extraFiles:
-    user-hooks-sar:
-      mountPath: /etc/jupyter-hooks/sar.sh
+    {%- for file_name in hook_script_filenames %}
+    user-hooks-{{ file_name | replace('.sh', '') }}:
+      mountPath: /etc/singleuser/{{ file_name }}
       mode: 0755
-    user-hooks-mapready:
-      mountPath: /etc/jupyter-hooks/mapready.sh
-      mode: 0755
-    user-hooks-mapready-no-git:
-      mountPath: /etc/jupyter-hooks/mapready_no_git.sh
-      mode: 0755
-    user-hooks-servir:
-      mountPath: /etc/jupyter-hooks/servir.sh
-      mode: 0755
-    user-hooks-sar_test:
-      mountPath: /etc/jupyter-hooks/sar_test.sh
-      mode: 0755
-    user-hooks-no_smart_git:
-      mountPath: /etc/jupyter-hooks/no_smart_git.sh
-      mode: 0755
+    {%- endfor %}
     user-hooks-pull:
-      mountPath: /etc/jupyter-hooks/scripts/pull.py
+      mountPath: /etc/singleuser/scripts/pull.py
     user-hooks-clean:
-      mountPath: /etc/jupyter-hooks/scripts/pkg_clean.py
+      mountPath: /etc/singleuser/scripts/pkg_clean.py
     user-hooks-kernel-flag:
-      mountPath: /etc/jupyter-hooks/etc/old_kernels_flag.txt
+      mountPath: /etc/singleuser/etc/old_kernels_flag.txt
     user-hooks-kernel-flag-readme:
-      mountPath: /etc/jupyter-hooks/etc/kernels_rename_README
+      mountPath: /etc/singleuser/etc/kernels_rename_README
     user-others-check_storage:
-      mountPath: /etc/jupyter-hooks/resource_checks/check_storage.py
+      mountPath: /etc/singleuser/resource_checks/check_storage.py
     user-custom_magics:
-      mountPath: /etc/jupyter-hooks/custom_magics/00-df.py
+      mountPath: /etc/singleuser/custom_magics/00-df.py
     user-template-page:
-      mountPath: /etc/jupyter-hooks/templates/page.html
+      mountPath: /etc/singleuser/templates/page.html
       mode: 0755
     user-template-tree:
-      mountPath: /etc/jupyter-hooks/templates/tree.html
+      mountPath: /etc/singleuser/templates/tree.html
       mode: 0755
 
 prePuller:
