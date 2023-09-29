@@ -17,6 +17,15 @@ parameters:
   utc_hour_of_day_snapshot_cron_runs: 12
   utc_hour_of_day_volume_cron_runs: 13
 
+cluster:
+  eks_version: 1.28  # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
+  kubectl_version: '1.28.1/2023-09-14'  # https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
+  helm_3_version: 'v3.13.0'  # https://github.com/helm/helm/releases
+  aws_ebs_csi_driver_version: '2.23'  # https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases
+  jupyterhub_helm_version: '3.0.3'  # https://jupyterhub.github.io/helm-chart/
+  aws_k8s_cni_version: 'v1.15.0'  # https://docs.aws.amazon.com/eks/latest/userguide/managing-vpc-cni.html
+  cluster_autoscaler_helm_version: '9.29.3'  # https://github.com/kubernetes/autoscaler/releases > cluster-autoscaler-chart
+
 nodes:
   - name: hub  # Required
     instance: t3a.medium

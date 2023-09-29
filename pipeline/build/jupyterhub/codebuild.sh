@@ -16,7 +16,13 @@ set -ex
 #       DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
 #       DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
 #       SECRET_DH_CREDS=$SECRET_DH_CREDS 
-#       CODEBUILD_ROOT=$CODEBUILD_ROOT 
+#       CODEBUILD_ROOT=$CODEBUILD_ROOT
+#       KUBECTL_VERSION=${KUBECTL_VERSION}
+#       HELM_3_VERSION=${HELM_3_VERSION}
+#       AWS_EBS_CSI_DRIVER_VERSION=${AWS_EBS_CSI_DRIVER_VERSION}
+#       JUPYTERHUB_HELM_VERSION=${JUPYTERHUB_HELM_VERSION}
+#       AWS_K8S_CNI_VERSION=${AWS_K8S_CNI_VERSION}
+#       CLUSTER_AUTOSCALER_HELM_VERSION=${CLUSTER_AUTOSCALER_HELM_VERSION}
 #      bash codebuild.sh
 #
 #######
@@ -37,26 +43,14 @@ NodeProxyPort=${NodeProxyPort}
 AZPostfix=${AZPostfix} 
 DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
 DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
-CODEBUILD_ROOT=${CODEBUILD_ROOT}"
-
-# https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
-export KUBECTL_VERSION='1.24.7/2022-10-31'
-
-# https://github.com/helm/helm/releases
-export HELM_3_VERSION='v3.10.3'
-
-# https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases
-export AWS_EBS_CSI_DRIVER_VERSION='2.15.1'
-
-# https://jupyterhub.github.io/helm-chart/
-export JUPYTERHUB_HELM_VERSION='2.0.1-0.dev.git.5898.hc1abc4b9'  #'1.1.3-n772.hf133567f'
-
-# https://docs.aws.amazon.com/eks/latest/userguide/managing-vpc-cni.html
-export AWS_K8S_CNI_VERSION='v1.12.0'
-
-# https://github.com/kubernetes/autoscaler/releases > cluster-autoscaler-chart
-export CLUSTER_AUTOSCALER_HELM_VERSION='9.21.1'
-
+CODEBUILD_ROOT=${CODEBUILD_ROOT}
+KUBECTL_VERSION=${KUBECTL_VERSION}
+HELM_3_VERSION=${HELM_3_VERSION}
+AWS_EBS_CSI_DRIVER_VERSION=${AWS_EBS_CSI_DRIVER_VERSION}
+JUPYTERHUB_HELM_VERSION=${JUPYTERHUB_HELM_VERSION}
+AWS_K8S_CNI_VERSION=${AWS_K8S_CNI_VERSION}
+CLUSTER_AUTOSCALER_HELM_VERSION=${CLUSTER_AUTOSCALER_HELM_VERSION}
+"
 
 ####### ******************
 # Install
