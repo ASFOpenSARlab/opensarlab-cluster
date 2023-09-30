@@ -1,19 +1,19 @@
 ---
 
 parameters:
-  lab_short_name: opensarlab
+  lab_short_name: smce-test-opensarlab
   cost_tag_key: osl-billing
-  cost_tag_value: osl-opensarlab
+  cost_tag_value: smce-test-opensarlab
   admin_user_name: emlundell
-  certificate_arn: arn:aws:acm:us-west-2:701288258305:certificate/999b8cc3-d5e9-4bcd-a620-69b235212a1d
-  container_namespace: opensciencelab-opensarlab-prod
+  certificate_arn: arn:aws:acm:us-west-2:233535791844:certificate/ea76b92b-7bd5-449b-9e3d-1b9a4787258a
+  container_namespace: smce-test-opensarlab
   lab_domain: load balancer
-  portal_domain: https://opensciencelab.asf.alaska.edu
-  az_suffix: c
+  portal_domain: https://opensciencelab-test.asf.alaska.edu
+  az_suffix: a
   days_till_volume_deletion: 2
-  days_after_server_stop_till_warning_email: 30,35,40,44,45
-  days_till_snapshot_deletion: 46
-  days_after_server_stop_till_deletion_email: 46
+  days_after_server_stop_till_warning_email: 3
+  days_till_snapshot_deletion: 5
+  days_after_server_stop_till_deletion_email: 4
   utc_hour_of_day_snapshot_cron_runs: 12
   utc_hour_of_day_volume_cron_runs: 13
   eks_version: 1.28  # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
@@ -100,7 +100,7 @@ profiles:
   - name: SAR 1
     description: "JupyterLab - RAM Guarantee: 6G. RAM limit: 16G. CPU limit: 8. Storage: 500G."
     image_name: sar
-    image_tag: a7a7383
+    image_tag: e60da3b
     hook_script: sar.sh
     memory_guarantee: 6G
     memory_limit: 16G
@@ -111,7 +111,7 @@ profiles:
   - name: SAR 1 - Max
     description: "Similar to SAR 1 but only one person per machine. JupyterLab - RAM Guarantee: 20G. RAM limit: 32G. CPU limit: 8. Storage: 500G."
     image_name: sar
-    image_tag: a7a7383
+    image_tag: e60da3b
     hook_script: sar.sh
     memory_guarantee: 20G
     #memory_limit: 31G
@@ -122,7 +122,7 @@ profiles:
   - name: SAR 1 - No Hook
     description: "Useful for debugging some server timeouts. This does not run the post-hook."
     image_name: sar
-    image_tag: a7a7383
+    image_tag: e60da3b
     hook_script: None
     memory_guarantee: 6G
     memory_limit: 16G
@@ -133,7 +133,7 @@ profiles:
   - name: SAR 2
     description: "JupyterLab - RAM Guarantee: 32G. RAM limit: 96G. CPU limit: 8 cpus. Storage: 500 GiB."
     image_name: sar
-    image_tag: a7a7383
+    image_tag: e60da3b
     hook_script: sar.sh
     memory_guarantee: 32G
     memory_limit: 96G
@@ -144,7 +144,7 @@ profiles:
   - name: SAR 2 - No Hook
     description: "Useful for debugging some server timeouts. This does not run the post-hook."
     image_name: sar
-    image_tag: a7a7383
+    image_tag: e60da3b
     hook_script: None
     memory_guarantee: 32G
     memory_limit: 96G
@@ -155,7 +155,7 @@ profiles:
   - name: SAR 2 - Max
     description: "Similar to SAR 2 but one person per machine. RAM limit: ~128GB. CPU limit: ~30 cpus. Storage: 500 GiB."
     image_name: sar
-    image_tag: a7a7383
+    image_tag: e60da3b
     hook_script: sar.sh
     storage_capacity: 500Gi
     cpu_guarantee: 30
@@ -164,7 +164,7 @@ profiles:
   - name: SERVIR 1
     description: "For use on the SERVIR project."
     image_name: servir
-    image_tag: a7a7383
+    image_tag: e60da3b
     hook_script: servir.sh
     memory_guarantee: 6G
     memory_limit: 16G
@@ -176,7 +176,7 @@ profiles:
   - name: SERVIR 1 - No Hook
     description: "Useful for debugging some server timeouts. This does not run the post-hook."
     image_name: servir
-    image_tag: a7a7383
+    image_tag: e60da3b
     hook_script: None
     memory_guarantee: 6G
     memory_limit: 16G
@@ -188,7 +188,7 @@ profiles:
   - name: m6a.xlarge - Single User
     description: "JupyterLab - RAM Guarantee: 10G. RAM limit: 16G. CPU limit: 4. Storage: 500G."
     image_name: sar
-    image_tag: a7a7383
+    image_tag: e60da3b
     hook_script: sar.sh
     memory_guarantee: 10G
     #memory_limit: 15G
@@ -198,7 +198,7 @@ profiles:
   - name: m6a.large - Single User
     description: "JupyterLab - RAM Guarantee: 5G. RAM limit: 8G. CPU limit: 2. Storage: 500G."
     image_name: sar
-    image_tag: a7a7383
+    image_tag: e60da3b
     hook_script: sar.sh
     memory_guarantee: 5G
     #memory_limit: 7G
@@ -208,7 +208,7 @@ profiles:
   - name: m6a.large - Desktop
     description: "Virtual Desktop - RAM Guarantee: 5G. RAM limit: 8G. CPU limit: 2. Storage: 500G."
     image_name: sar
-    image_tag: a7a7383
+    image_tag: e60da3b
     hook_script: sar.sh
     memory_guarantee: 5G
     #memory_limit: 7G
