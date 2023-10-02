@@ -92,7 +92,11 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub codepipeline-${AWS::Region}-${CostTagValue}
-      AccessControl: PublicRead
+      PublicAccessBlockConfiguration:
+          BlockPublicAcls: false
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: ObjectWriter
       Tags:
         - Key: Description
           Value: Artifact Bucket
