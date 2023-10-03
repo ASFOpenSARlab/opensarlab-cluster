@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import boto3
 import z2jh
@@ -31,8 +32,9 @@ try:
     secrets_manager = boto3.client('secretsmanager', region_name=f"{z2jh.get_config('custom.AWS_REGION')}")
     _sso_token = secrets_manager.get_secret_value(SecretId=f"sso-token/{z2jh.get_config('custom.AWS_REGION')}-{z2jh.get_config('custom.CLUSTER_NAME')}")
     sso_token_path = os.environ.get('OPENSARLAB_SSO_TOKEN_PATH', '/run/secrets/sso_token')
-    with open(sso_token_path, 'w') as f:
-        f.write(_sso_token)
+    file = Path(sso_token_path)
+    file.parent.mkdir(parents=True, exist_ok=True)
+    file.write_text(_sso_token)
 
 except Exception as e:
     print(e)
