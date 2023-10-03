@@ -55,6 +55,8 @@ python3 create_cf_jupyterhub.py \
     --config $OSL_HOME/opensciencelab.yaml \
     --output_file ${CODEBUILD_SRC_DIR}/cf-jupyterhub.yaml \
     --template_path $OSL_HOME/pipeline/cf-jupyterhub.yaml.jinja ;
+yamllint -c ${CODEBUILD_SRC_DIR}/cf-jupyterhub.yaml;
+cfn-lint ${CODEBUILD_SRC_DIR}/cf-jupyterhub.yaml
 
 echo "Rendering possible_profiles.py....";
 python3 create_possible_profiles.py \
