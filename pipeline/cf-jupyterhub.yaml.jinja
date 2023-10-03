@@ -16,11 +16,6 @@ Parameters:
     Type: String
     Default: {{ parameters.portal_domain }}
 
-  LabDomain:
-    Description: Domain of the lab deployment. If not given, the default is the load balancer.
-    Type: String
-    Default: {{ parameters.lab_domain }}
-
   AdminUserName:
     Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
     Type: String
