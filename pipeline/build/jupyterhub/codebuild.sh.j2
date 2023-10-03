@@ -201,7 +201,7 @@ helm upgrade jupyter jupyterhub/jupyterhub \
     --set-file singleuser.extraFiles.user-others-check_storage.stringData='./singleuser/others/check_storage.py' \
     --set-file singleuser.extraFiles.user-custom_magics.stringData='./singleuser/custom_magics/00-df.py' \
     --set-file singleuser.extraFiles.user-template-page.stringData='./singleuser/templates/page.html' \
-    --set-file singleuser.extraFiles.user-template-tree.stringData='./singleuser/templates/tree.html'
+    --set-file singleuser.extraFiles.user-template-tree.stringData='./singleuser/templates/tree.html' \
     {% for file_name in hook_script_filenames -%}
     --set-file singleuser.extraFiles.user-hooks-{{ file_name | replace('.sh', '') }}.stringData='./singleuser/hooks/{{ file_name }}' \
     {% endfor -%}
