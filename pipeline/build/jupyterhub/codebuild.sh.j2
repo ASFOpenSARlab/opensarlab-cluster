@@ -16,13 +16,13 @@ set -ex
 #       DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
 #       DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
 #       CODEBUILD_ROOT=$CODEBUILD_ROOT
-#       KUBECTL_VERSION=${KUBECTL_VERSION}
-#       HELM_3_VERSION=${HELM_3_VERSION}
-#       AWS_EBS_CSI_DRIVER_VERSION=${AWS_EBS_CSI_DRIVER_VERSION}
-#       JUPYTERHUB_HELM_VERSION=${JUPYTERHUB_HELM_VERSION}
-#       AWS_K8S_CNI_VERSION=${AWS_K8S_CNI_VERSION}
-#       CLUSTER_AUTOSCALER_HELM_VERSION=${CLUSTER_AUTOSCALER_HELM_VERSION}
-#       JUPYTERHUB_HUB_IMAGE_VERSION=${JUPYTERHUB_HUB_IMAGE_VERSION}
+#       KubectlVersion=${KubectlVersion}
+#       Helm3Version=${Helm3Version}
+#       AWSEbsCsiDriverVersion=${AWSEbsCsiDriverVersion}
+#       JupyterHubHelmVersion=${JupyterHubHelmVersion}
+#       AWSK8sCNIVersion=${AWSK8sCNIVersion}
+#       ClusterAutoscalerHelmVersion=${ClusterAutoscalerHelmVersion}
+#       JupyterHubImageVersion=${JupyterHubImageVersion}
 #      bash codebuild.sh
 #
 #######
@@ -44,13 +44,13 @@ AZPostfix=${AZPostfix}
 DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
 DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
 CODEBUILD_ROOT=${CODEBUILD_ROOT}
-KUBECTL_VERSION=${KUBECTL_VERSION}
-HELM_3_VERSION=${HELM_3_VERSION}
-AWS_EBS_CSI_DRIVER_VERSION=${AWS_EBS_CSI_DRIVER_VERSION}
-JUPYTERHUB_HELM_VERSION=${JUPYTERHUB_HELM_VERSION}
-AWS_K8S_CNI_VERSION=${AWS_K8S_CNI_VERSION}
-CLUSTER_AUTOSCALER_HELM_VERSION=${CLUSTER_AUTOSCALER_HELM_VERSION}
-JUPYTERHUB_HUB_IMAGE_VERSION=${JUPYTERHUB_HUB_IMAGE_VERSION}
+KubectlVersion=${KubectlVersion}
+Helm3Version=${Helm3Version}
+AWSEbsCsiDriverVersion=${AWSEbsCsiDriverVersion}
+JupyterHubHelmVersion=${JupyterHubHelmVersion}
+AWSK8sCNIVersion=${AWSK8sCNIVersion}
+ClusterAutoscalerHelmVersion=${ClusterAutoscalerHelmVersion}
+JupyterHubImageVersion=${JupyterHubImageVersion}
 "
 
 ####### ******************
@@ -60,9 +60,9 @@ pip3 install boto3 --upgrade
 pip3 install kubernetes --upgrade
 pip3 install jinja2 --upgrade
 
-curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/$KUBECTL_VERSION/bin/darwin/amd64/kubectl
+curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/$KubectlVersion/bin/darwin/amd64/kubectl
 
-curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version $HELM_3_VERSION
+curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version $Helm3Version
 
 export HELM_HOST=127.0.0.1:44134
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp;
@@ -120,7 +120,7 @@ printf "\n\n%s\n" "******* Apply ebs csi driver...";
 # if there is an error, then `kubectl delete csidriver ebs.csi.aws.com` and reapply. Warning: This will break volume management until reran.
 helm upgrade aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
     --install \
-    --version $AWS_EBS_CSI_DRIVER_VERSION \
+    --version $AWSEbsCsiDriverVersion \
     --namespace kube-system \
     --timeout=6m0s \
     --atomic \
@@ -157,7 +157,7 @@ printf "\n\n%s\n" "******* Build JupyterHub Image...";
 cd ${CODEBUILD_ROOT}/jupyterhub/;
 
 cp dockerfile dockerfile.build;
-sed -i "s|JUPYTERHUB_HUB_IMAGE_VERSION_PLACEHOLDER|JUPYTERHUB_HUB_IMAGE_VERSION|" dockerfile.build;
+sed -i "s|JupyterHubImageVersion_PLACEHOLDER|JupyterHubImageVersion|" dockerfile.build;
 export HUB_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
 time docker build -f dockerfile.build -t $REGISTRY_URI/hub:$HUB_IMAGE_BUILD -t $REGISTRY_URI/hub:latest .;
 docker push $REGISTRY_URI/hub:$HUB_IMAGE_BUILD;
@@ -175,7 +175,7 @@ helm upgrade jupyter jupyterhub/jupyterhub \
     --install \
     --create-namespace \
     --namespace jupyter \
-    --version $JUPYTERHUB_HELM_VERSION \
+    --version $JupyterHubHelmVersion \
     --values helm_config.yaml \
     --timeout=6m0s \
     --atomic \
@@ -213,7 +213,7 @@ printf "\n\n%s\n" "******* Associate volume provisioner with service account..."
 kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run=true -o yaml | kubectl apply -f -;
 
 printf "\n\n%s\n" "******* Apply CNI. This must be updated on every cluster upgrade...";
-curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/$AWS_K8S_CNI_VERSION/config/master/aws-k8s-cni.yaml;
+curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/$AWSK8sCNIVersion/config/master/aws-k8s-cni.yaml;
 
 sed -i "s/us-west-2/${AWS_Region}/" aws-k8s-cni.yaml;
 kubectl apply -f aws-k8s-cni.yaml
@@ -222,7 +222,7 @@ kubectl apply -f aws-k8s-cni.yaml
 printf "\n\n%s\n" "******* Install autoscaler...";
 helm upgrade autoscaler autoscaler/cluster-autoscaler \
     --install \
-    --version $CLUSTER_AUTOSCALER_HELM_VERSION \
+    --version $ClusterAutoscalerHelmVersion \
     --create-namespace \
     --namespace autoscaler \
     --atomic \
