@@ -157,9 +157,8 @@ printf "\n\n%s\n" "******* Build JupyterHub Image...";
 cd ${CODEBUILD_ROOT}/jupyterhub/;
 
 cp dockerfile dockerfile.build;
-sed -i "s|JUPYTERHUB_HUB_IMAGE_VERSION_PLACEHOLDER|${JupyterHubHelmVersion}|" dockerfile.build;
 export HUB_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
-time docker build -f dockerfile.build -t $REGISTRY_URI/hub:$HUB_IMAGE_BUILD -t $REGISTRY_URI/hub:latest .;
+time docker build --build-arg JUPYTERHUB_HUB_HELM_VERSION=${JupyterHubHelmVersion} -f dockerfile.build -t $REGISTRY_URI/hub:$HUB_IMAGE_BUILD -t $REGISTRY_URI/hub:latest .;
 docker push $REGISTRY_URI/hub:$HUB_IMAGE_BUILD;
 docker push $REGISTRY_URI/hub:latest;
 

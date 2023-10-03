@@ -1,4 +1,5 @@
-FROM jupyterhub/k8s-hub:JUPYTERHUB_HUB_IMAGE_VERSION_PLACEHOLDER as release
+ARG JUPYTERHUB_HUB_HELM_VERSION
+FROM jupyterhub/k8s-hub:$JUPYTERHUB_HUB_HELM_VERSION as release
 
 # By default, the notebook base image is set to non-sudo user joyvan. This makes root-ful actions difficult.
 USER root
@@ -28,9 +29,11 @@ RUN python3 -m pip install --upgrade \
         --
 
 COPY ./config.d/ /usr/local/etc/jupyterhub/jupyterhub_config.d/
-COPY ./hub/web/usr/local/lib/jupyterhub/portal_auth.py /usr/local/lib/python3.9/site-packages/jupyterhub/portal_auth.py
-COPY ./hub/web/usr/local/lib/jupyterhub/handlers/*.py /usr/local/lib/python3.9/site-packages/jupyterhub/handlers/
 COPY ./hub/web/usr/local/share/jupyterhub/templates/custom/ /usr/local/share/jupyterhub/templates/custom/
+
+COPY ./hub/web/usr/local/lib/jupyterhub/portal_auth.py /tmp/site-packages/jupyterhub/portal_auth.py
+COPY ./hub/web/usr/local/lib/jupyterhub/handlers/*.py /tmp/site-packages/jupyterhub/handlers/
+RUN cp -r /tmp/site-packages/* /usr/local/lib/python*/site-packages
 
 ENV PYTHONPATH=$PYTHONPATH:/usr/local/lib/osl
 
