@@ -71,7 +71,7 @@ Parameters:
     Type: String
     Default: "{{ parameters.helm_3_version }}"
 
-  AWSEbsCsiDriverVersion
+  AWSEbsCsiDriverVersion:
     Description: Version of the AWS EBS CSI volume driver.
     Type: String
     Default: "{{ parameters.aws_ebs_csi_driver_version }}"
@@ -81,7 +81,7 @@ Parameters:
     Type: String
     Default: "{{ parameters.jupyterhub_helm_version }}"
 
-  JupyterHubImageVersion
+  JupyterHubImageVersion:
     Description: Version of the JupyterHub hub image. Must match equivalent JupyterHub helm version.
     Type: String
     Default: "{{ parameters.jupyterhub_hub_image_version }}"
