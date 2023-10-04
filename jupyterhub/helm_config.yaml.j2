@@ -87,12 +87,11 @@ hub:
   extraEnv:
     JUPYTERHUB_LAB_NAME: JUPYTERHUB_LAB_NAME_PLACEHOLDER
     OPENSCIENCELAB_PORTAL_DOMAIN: OPENSCIENCELAB_PORTAL_DOMAIN_PLACEHOLDER
-    OPENSARLAB_SSO_TOKEN_PATH: /usr/local/etc/jupyterhub/existing-secret/sso_token
+    OPENSARLAB_SSO_TOKEN_PATH: /tmp/sso_token
   image:
     pullPolicy: Always
     name: HUB_IMAGE_NAME_PLACEHOLDER
     tag: HUB_IMAGE_TAG_PLACEHOLDER
-
   extraConfig:
     customTemplates.py: |
       c.JupyterHub.template_paths = ["/usr/local/share/jupyterhub/templates/custom/"]
