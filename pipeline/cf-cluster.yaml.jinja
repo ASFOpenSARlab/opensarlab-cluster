@@ -167,7 +167,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - "ssm:GetParameter"
-                Resource: "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
 
   NodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
