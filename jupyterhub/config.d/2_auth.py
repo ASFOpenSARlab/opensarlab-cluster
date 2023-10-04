@@ -32,7 +32,7 @@ try:
     _sso_token = secrets_manager.get_secret_value(SecretId=f"sso-token/{z2jh.get_config('custom.AWS_REGION')}-{z2jh.get_config('custom.CLUSTER_NAME')}")
     sso_token_path = os.environ.get('OPENSARLAB_SSO_TOKEN_PATH', '')
     with open(sso_token_path, 'w') as file:
-        file.write(_sso_token)
+        file.write(_sso_token['SecretString'])
 
 except Exception as e:
     print(e)
