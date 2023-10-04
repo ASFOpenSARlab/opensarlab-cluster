@@ -107,7 +107,8 @@ printf "\n\n%s\n" "******* Update kubeconfig and apply config files...";
 aws eks update-kubeconfig --name ${CostTagValue}-cluster --role-arn arn:aws:iam::${AWS_AccountId}:role/${AWS_Region}-${CostTagValue}-cluster-build-role;
 
 #######
-printf "\n\n%s\n" "******* Apply aws-auth.yaml...";
+printf "\n\n%s\n" "******* Apply eks console bindings and aws-auth.yaml...";
+kubectl apply -f https://s3.us-west-2.amazonaws.com/amazon-eks/docs/eks-console-full-access.yaml
 kubectl apply -f aws-auth-cm.yaml
 
 #######

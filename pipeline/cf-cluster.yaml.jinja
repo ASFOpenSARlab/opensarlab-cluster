@@ -162,7 +162,12 @@ Resources:
               - Effect: Allow
                 Action:
                   - "eks:*"
+                  - "iam:ListRoles"
                 Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameter"
+                Resource: "arn:aws:ssm:*:${AWS::Region}:parameter/*"
 
   NodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
