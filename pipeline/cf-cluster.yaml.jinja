@@ -390,6 +390,8 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
         - arn:aws:iam::aws:policy/AutoScalingFullAccess
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/CloudWatchAgentAdminPolicy
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
       {%- filter indent(width=6) -%}
       {% include "policies/" ~ node.node_policy ~ "_policy.yaml" %}
       {%- endfilter %}
