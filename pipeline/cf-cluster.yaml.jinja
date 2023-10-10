@@ -148,47 +148,47 @@ Resources:
     Properties:
       GroupName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-ro-group
       Policies:
-        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-ro-group
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "eks:ListFargateProfiles"
-                  - "eks:DescribeNodegroup"
-                  - "eks:ListNodegroups"
-                  - "eks:ListUpdates"
-                  - "eks:AccessKubernetesApi"
-                  - "eks:ListAddons"
-                  - "eks:DescribeCluster"
-                  - "eks:DescribeAddonVersions"
-                  - "eks:ListClusters"
-                  - "eks:ListIdentityProviderConfigs"
-                  - "iam:ListRoles"
-                Resource: "*"
-              - Effect: Allow
-                Action:
-                  - "ssm:GetParameter"
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+      - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-ro-group
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "eks:ListFargateProfiles"
+                - "eks:DescribeNodegroup"
+                - "eks:ListNodegroups"
+                - "eks:ListUpdates"
+                - "eks:AccessKubernetesApi"
+                - "eks:ListAddons"
+                - "eks:DescribeCluster"
+                - "eks:DescribeAddonVersions"
+                - "eks:ListClusters"
+                - "eks:ListIdentityProviderConfigs"
+                - "iam:ListRoles"
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - "ssm:GetParameter"
+              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
 
   ClusterUserAccessFullGroup:
     Type: AWS::IAM::Group
     Properties:
       GroupName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-full-group
       Policies:
-        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-full-group
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - "eks:*"
-                  - "iam:ListRoles"
-                Resource: "*"
-              - Effect: Allow
-                Action:
-                  - "ssm:GetParameter"
-                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+      - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-full-group
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - "eks:*"
+                - "iam:ListRoles"
+              Resource: "*"
+            - Effect: Allow
+              Action:
+                - "ssm:GetParameter"
+              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
 
   NodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
