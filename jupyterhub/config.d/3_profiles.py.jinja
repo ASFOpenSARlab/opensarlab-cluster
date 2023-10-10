@@ -134,7 +134,7 @@ async def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                     'lifecycle_hooks': {
                         "postStart": {
                             "exec": {
-                                "command": ["/bin/sh", "-c", "/etc/jupyter-hooks/{{ profile.hook_script }}"]
+                                "command": ["/bin/sh", "-c", "/etc/singleuser/{{ profile.hook_script }}"]
                             }
                         }
                     },
