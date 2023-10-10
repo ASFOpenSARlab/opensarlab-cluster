@@ -11,7 +11,7 @@ data:
     - rolearn: arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-cluster-user-full-access
       username: cluster-user-full-access
       groups:
-        - eks-console-dashboard-full-access-group
+        - system:masters
     - rolearn: arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-cluster-user-ro-access
       username: cluster-user-ro-access
       groups:
