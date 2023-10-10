@@ -1,6 +1,9 @@
 #!/bin/bash
 set -ve
 
+# Get python version
+PYTHON_VER=$(python -c "import sys; print(f\"python{sys.version_info.major}.{sys.version_info.minor}\")")
+
 python /etc/singleuser/resource_checks/check_storage.py $1
 
 # Add Path to local pip execs.
@@ -12,7 +15,7 @@ python -m pip install --user nbgitpuller
 
 # copy over our version of pull.py
 # REMINDER: REMOVE IF CHANGES ARE MERGED TO NBGITPULLER
-cp /etc/singleuser/scripts/pull.py /home/jovyan/.local/lib/python3.10/site-packages/nbgitpuller/pull.py
+cp /etc/singleuser/scripts/pull.py /home/jovyan/.local/lib/$PYTHON_VER/site-packages/nbgitpuller/pull.py
 
 # Disable the extension manager in Jupyterlab since server extensions are uninstallable
 # by users and non-server extension installs do not persist over server restarts
@@ -28,11 +31,11 @@ gitpuller https://github.com/ASFOpenSARlab/opensarlab-envs.git main $HOME/conda_
 gitpuller https://github.com/uafgeoteach/GEOS657_MRS main $HOME/GEOS_657_Labs
 
 # Update page and tree
-mv /opt/conda/lib/python3.10/site-packages/notebook/templates/tree.html /opt/conda/lib/python3.10/site-packages/notebook/templates/original_tree.html
-cp /etc/singleuser/templates/tree.html /opt/conda/lib/python3.10/site-packages/notebook/templates/tree.html
+mv /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/tree.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/original_tree.html
+cp /etc/singleuser/templates/tree.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/tree.html
 
-mv /opt/conda/lib/python3.10/site-packages/notebook/templates/page.html /opt/conda/lib/python3.10/site-packages/notebook/templates/original_page.html
-cp /etc/singleuser/templates/page.html /opt/conda/lib/python3.10/site-packages/notebook/templates/page.html
+mv /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/page.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/original_page.html
+cp /etc/singleuser/templates/page.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/page.html
 
 CONDARC=$HOME/.condarc
 if ! test -f "$CONDARC"; then
