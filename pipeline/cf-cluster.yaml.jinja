@@ -143,19 +143,73 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  UserAccessRole:
+  ClusterUserAccessFullGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-full-group
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-full-group
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "sts:AssumeRole"
+                Resource: !GetAtt ClusterUserAccessFullRole.Arn
+
+  ClusterUserAccessFullRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-full-access
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Effect: Deny
+          - Effect: Allow
             Principal:
               AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-full-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "eks:*"
+                  - "iam:ListRoles"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameter"
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+
+  ClusterUserAccessReadOnlyGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-ro-group
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-ro-group
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "sts:AssumeRole"
+                Resource: !GetAtt ClusterUserAccessReadOnlyRole.Arn
+
+  ClusterUserAccessReadOnlyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-ro-access
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-ro-access
           PolicyDocument:
             Version: 2012-10-17
             Statement:
