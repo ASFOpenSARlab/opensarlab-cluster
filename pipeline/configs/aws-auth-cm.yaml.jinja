@@ -23,10 +23,10 @@ data:
       groups:
         - system:bootstrappers
         - system:nodes
-    {% endfor %}
+    {% endfor -%}
   mapUsers: |
     - rolearn: arn:aws:iam::{{ account_id }}:group/{{ region_name }}-{{ cost_tag_value }}-cluster-user-access-ro-group
-      username: cluster-user-access-ro-group
+      username: cluster-user-access-full-group
       groups:
         - eks-console-dashboard-full-access-group
     - rolearn: arn:aws:iam::{{ account_id }}:group/{{ region_name }}-{{ cost_tag_value }}-cluster-user-access-full-group
