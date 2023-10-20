@@ -21,7 +21,7 @@ def _get_delta_time(days: int) -> datetime:
 def server_stopping_tags(spawner):
     pvc_name = spawner.pvc_name
     cluster_name = z2jh.get_config('custom.CLUSTER_NAME')
-    region_name = z2jh.get_config('custom.REGION_NAME')
+    region_name = z2jh.get_config('custom.AWS_REGION')
 
     days_till_volume_deletion = z2jh.get_config('custom.DAYS_TILL_VOLUME_DELETION')
     days_till_snapshot_deletion = z2jh.get_config('custom.DAYS_TILL_SNAPSHOT_DELETION')
