@@ -100,7 +100,7 @@ profiles:
   - name: SAR 1
     description: "JupyterLab - RAM Guarantee: 6G. RAM limit: 16G. CPU limit: 8. Storage: 500G."
     image_name: sar
-    image_tag: e60da3b
+    image_tag: b80403b
     hook_script: sar.sh
     memory_guarantee: 6G
     memory_limit: 16G
@@ -111,7 +111,7 @@ profiles:
   - name: SAR 1 - Max
     description: "Similar to SAR 1 but only one person per machine. JupyterLab - RAM Guarantee: 20G. RAM limit: 32G. CPU limit: 8. Storage: 500G."
     image_name: sar
-    image_tag: e60da3b
+    image_tag: b80403b
     hook_script: sar.sh
     memory_guarantee: 20G
     #memory_limit: 31G
@@ -122,7 +122,7 @@ profiles:
   - name: SAR 1 - No Hook
     description: "Useful for debugging some server timeouts. This does not run the post-hook."
     image_name: sar
-    image_tag: e60da3b
+    image_tag: b80403b
     hook_script: None
     memory_guarantee: 6G
     memory_limit: 16G
@@ -133,7 +133,7 @@ profiles:
   - name: SAR 2
     description: "JupyterLab - RAM Guarantee: 32G. RAM limit: 96G. CPU limit: 8 cpus. Storage: 500 GiB."
     image_name: sar
-    image_tag: e60da3b
+    image_tag: b80403b
     hook_script: sar.sh
     memory_guarantee: 32G
     memory_limit: 96G
@@ -144,7 +144,7 @@ profiles:
   - name: SAR 2 - No Hook
     description: "Useful for debugging some server timeouts. This does not run the post-hook."
     image_name: sar
-    image_tag: e60da3b
+    image_tag: b80403b
     hook_script: None
     memory_guarantee: 32G
     memory_limit: 96G
@@ -155,7 +155,7 @@ profiles:
   - name: SAR 2 - Max
     description: "Similar to SAR 2 but one person per machine. RAM limit: ~128GB. CPU limit: ~30 cpus. Storage: 500 GiB."
     image_name: sar
-    image_tag: e60da3b
+    image_tag: b80403b
     hook_script: sar.sh
     storage_capacity: 500Gi
     cpu_guarantee: 30
@@ -164,7 +164,7 @@ profiles:
   - name: SERVIR 1
     description: "For use on the SERVIR project."
     image_name: servir
-    image_tag: e60da3b
+    image_tag: b80403b
     hook_script: servir.sh
     memory_guarantee: 6G
     memory_limit: 16G
@@ -176,7 +176,7 @@ profiles:
   - name: SERVIR 1 - No Hook
     description: "Useful for debugging some server timeouts. This does not run the post-hook."
     image_name: servir
-    image_tag: e60da3b
+    image_tag: b80403b
     hook_script: None
     memory_guarantee: 6G
     memory_limit: 16G
@@ -188,7 +188,7 @@ profiles:
   - name: m6a.xlarge - Single User
     description: "JupyterLab - RAM Guarantee: 10G. RAM limit: 16G. CPU limit: 4. Storage: 500G."
     image_name: sar
-    image_tag: e60da3b
+    image_tag: b80403b
     hook_script: sar.sh
     memory_guarantee: 10G
     #memory_limit: 15G
@@ -198,7 +198,7 @@ profiles:
   - name: m6a.large - Single User
     description: "JupyterLab - RAM Guarantee: 5G. RAM limit: 8G. CPU limit: 2. Storage: 500G."
     image_name: sar
-    image_tag: e60da3b
+    image_tag: b80403b
     hook_script: sar.sh
     memory_guarantee: 5G
     #memory_limit: 7G
@@ -208,7 +208,7 @@ profiles:
   - name: m6a.large - Desktop
     description: "Virtual Desktop - RAM Guarantee: 5G. RAM limit: 8G. CPU limit: 2. Storage: 500G."
     image_name: sar
-    image_tag: e60da3b
+    image_tag: b80403b
     hook_script: sar.sh
     memory_guarantee: 5G
     #memory_limit: 7G
