@@ -38,7 +38,7 @@ yamllint -c $OSL_HOME/.yamllint $OSL_HOME/services/crons/k8s/crons.yaml;
 
 echo "Render singleuser scripts...";
 python3 create_singleuser_scripts.py \
-    --origin_hook_scripts_dir=$OSL_HOME/singleuser_hooks/ \
+    --origin_hook_scripts_dir=$OSL_HOME/singleuser/ \
     --dest_hook_scripts_dir=$OSL_HOME/jupyterhub/singleuser/hooks/ \
     --dest_override_scripts_dir=$OSL_HOME/jupyterhub/singleuser/overrides/ \
     --helm_config_template=$OSL_HOME/jupyterhub/helm_config.yaml.j2 \
