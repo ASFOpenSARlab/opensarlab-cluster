@@ -295,6 +295,8 @@ def add_extension_override(spawner) -> None:
         default_override = Path('/etc/singleuser/overrides/default.json')
         default_override_exists = default_override.exists()
 
+        Path('/opt/conda/share/jupyter/lab/settings/').mkdir(parents=True, exist_ok=True)
+
         if not extension_override and default_override_exists:
             Path('/etc/singleuser/overrides/default.json').rename(Path('/opt/conda/share/jupyter/lab/settings/overrides.json'))
 
