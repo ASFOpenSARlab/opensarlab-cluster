@@ -90,6 +90,7 @@ if __name__ == "__main__":
     main(
         args.origin_singleuser_scripts_dir,
         args.dest_hook_scripts_dir,
+        args.dest_extension_override_dir,
         args.helm_config_template,
         args.helm_config,
         args.jupyterhub_codebuild_template,
