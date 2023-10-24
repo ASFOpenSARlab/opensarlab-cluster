@@ -146,6 +146,7 @@ def check_profiles(config):
     ]
     optional_fields = [
         'hook_script',
+        'extension_override',
         'memory_guarantee',
         'memory_limit',
         'cpu_guarantee',
