@@ -45,7 +45,7 @@ def main(
     # Move scripts to new location
     for hook_name in hook_names:
         try:
-            shutil.copy2( origin_singleuser_scripts_dir/hook_name, dest_hook_scripts_dir/hook_name)
+            shutil.copy2( origin_singleuser_scripts_dir/"hooks"/hook_name, dest_hook_scripts_dir/hook_name)
         except shutil.SameFileError:
             print(f"Could not copy file due to SameFileError for {hook_name}.")
 
@@ -55,7 +55,7 @@ def main(
     # Move scripts to new location
     for overrides_name in overrides_names:
         try:
-            shutil.copy2( origin_singleuser_scripts_dir/overrides_name, dest_hook_scripts_dir/overrides_name)
+            shutil.copy2( origin_singleuser_scripts_dir/"overrides"/overrides_name, dest_hook_scripts_dir/overrides_name)
         except shutil.SameFileError:
             print(f"Could not copy file due to SameFileError for {overrides_name}.")
 
