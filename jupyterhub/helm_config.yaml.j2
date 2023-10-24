@@ -19,7 +19,7 @@ singleuser:
       pvcNameTemplate: claim-{username}
   defaultUrl: "/lab"
   extraFiles:
-    {%- for file_name in override_script_filenames %}
+    {%- for file_name in extension_override_filenames %}
     user-overrides-{{ file_name | replace('.json', '') }}:
       mountPath: /etc/singleuser/overrides/{{ file_name }}
       mode: 0755

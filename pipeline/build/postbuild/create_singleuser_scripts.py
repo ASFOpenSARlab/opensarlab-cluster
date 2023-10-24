@@ -22,7 +22,7 @@ from jinja2 import Environment, FileSystemLoader
 def main(
         origin_singleuser_scripts_dir: str,
         dest_hook_scripts_dir: str,
-        dest_override_scripts_dir: str,
+        dest_extension_override_dir: str,
         helm_config_template: str,
         helm_config: str,
         jupyterhub_codebuild_template: str,
@@ -32,7 +32,7 @@ def main(
     # Convert file paths to pathlib
     origin_singleuser_scripts_dir = pathlib.Path(origin_singleuser_scripts_dir)
     dest_hook_scripts_dir = pathlib.Path(dest_hook_scripts_dir)
-    dest_override_scripts_dir = pathlib.Path(dest_override_scripts_dir)
+    dest_extension_override_dir = pathlib.Path(dest_extension_override_dir)
     helm_config_template = pathlib.Path(helm_config_template)
     helm_config = pathlib.Path(helm_config)
     jupyterhub_codebuild_template = pathlib.Path(jupyterhub_codebuild_template)
@@ -62,7 +62,7 @@ def main(
     # Render helm_config templates
     environment = Environment(loader=FileSystemLoader(helm_config_template.parent))
     template = environment.get_template(helm_config_template.name)
-    content = template.render(hook_script_filenames=hook_names, override_script_filenames=overrides_names)
+    content = template.render(hook_script_filenames=hook_names, extension_override_filenames=overrides_names)
 
     with open(helm_config, 'w') as outfile:
         outfile.write(content)
@@ -70,7 +70,7 @@ def main(
     # Render jupyterhub codebuild config templates
     environment = Environment(loader=FileSystemLoader(jupyterhub_codebuild_template.parent))
     template = environment.get_template(jupyterhub_codebuild_template.name)
-    content = template.render(hook_script_filenames=hook_names, override_script_filenames=overrides_names)
+    content = template.render(hook_script_filenames=hook_names, extension_override_filenames=overrides_names)
 
     with open(jupyterhub_codebuild, 'w') as outfile:
         outfile.write(content)
@@ -80,7 +80,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--origin_singleuser_scripts_dir', default=None)
     parser.add_argument('--dest_hook_scripts_dir', default=None)
-    parser.add_argument('--dest_override_scripts_dir', default=None)
+    parser.add_argument('--dest_extension_override_dir', default=None)
     parser.add_argument('--helm_config_template', default=None)
     parser.add_argument('--helm_config', default=None)
     parser.add_argument('--jupyterhub_codebuild_template', default=None)

@@ -206,7 +206,7 @@ helm upgrade jupyter jupyterhub/jupyterhub \
     {% for file_name in hook_script_filenames -%}
     --set-file singleuser.extraFiles.user-hooks-{{ file_name | replace('.sh', '') }}.stringData='./singleuser/hooks/{{ file_name }}' \
     {% endfor -%}
-    {% for file_name in override_script_filenames -%}
+    {% for file_name in extension_override_filenames -%}
     --set-file singleuser.extraFiles.user-overrides-{{ file_name | replace('.json', '') }}.stringData='./singleuser/overrides/{{ file_name }}' \
     {% endfor -%}
     --
