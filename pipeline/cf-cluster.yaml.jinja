@@ -65,6 +65,36 @@ Parameters:
     Type: String
     Default: {{ parameters.eks_version }}
 
+  # Squid stuff
+  SquidAmiId:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Description: AMI ID pointer in AWS Systems Manager Parameter Store. Default value points to the
+      latest Amazon Linux 2 AMI ID.
+
+  SquidInstanceType:
+    Type: String
+    Default: t3.small
+    Description: Instance type to use to launch the NAT instances.
+    AllowedValues:
+      - t3.nano
+      - t3.micro
+      - t3.small
+      - t3.medium
+      - t3.large
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m5.large
+      - m5.xlarge
+      - m5.2xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.large
+      - c5.large
+      - c5.xlarge
+      - c5.large
+
 Outputs:
   AppUrl:
     Value: !GetAtt LoadBalancer.DNSName
@@ -547,3 +577,287 @@ Resources:
               - Key: !Sub ${CostTagKey}
                 Value: !Sub ${CostTagValue}
   {%- endfor %}
+
+  ######
+  # Firewall using squid. Squid is ran in an EC2 within a ASG. Configs are initially created and put into S3 via a lambda.
+  #
+  # Since EKS only uses one subnet (the other one required by the load balancer is ignored), we will use this subnet for the squid and rely on security groups to handle ports, etc.
+  ######
+
+  SquidSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${CostTagValue}-squid
+      GroupDescription: Security group for squid
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  #NodeSecurityGroupFromSquid:
+  #  Type: AWS::EC2::SecurityGroupIngress
+  #  Properties:
+  #    Description: Allow worker Kubelets and pods to receive communication from the squid
+  #    GroupId: !Ref NodeSecurityGroup
+  #    SourceSecurityGroupId: !GetAtt SquidSecurityGroup.GroupId
+  #    IpProtocol: tcp
+  #    FromPort: 3080
+  #    ToPort: !Ref NodeProxyPort
+
+  SquidConfS3Bucket:
+    Type: AWS::S3::Bucket
+
+  SquidInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/CloudWatchAgentAdminPolicy
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListObject
+                Resource: !Sub '${SquidConfS3Bucket.Arn}*'
+              - Effect: Allow
+                Action:
+                  - ec2:ModifyInstanceAttribute
+                Resource: '*'
+
+  SquidInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref SquidInstanceRole
+      Path: /
+  
+  ### ???
+#TargetGroupSquid:
+#  Type: AWS::ElasticLoadBalancingV2::TargetGroup
+#  Properties:
+#    Name: !Sub ${CostTagValue}-tgs
+#    VpcId: !Ref VpcId
+#    Protocol: HTTP
+#    Port: 3080
+#    #HealthCheckPath: /lab/{{ parameters.lab_short_name }}/hub/health
+#    #HealthCheckIntervalSeconds: 120
+#    #HealthyThresholdCount: 2
+#    Tags:
+#      - Key: !Sub ${CostTagKey}
+#        Value: !Sub ${CostTagValue}
+
+  SquidInstanceASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      DesiredCapacity: 1
+      HealthCheckGracePeriod: 300
+      HealthCheckType: EC2
+      LaunchTemplate:
+        LaunchTemplateId: !Ref SquidInstanceLaunchTemplate
+        Version: !GetAtt SquidInstanceLaunchTemplate.LatestVersionNumber
+      MaxSize: 1
+      MinSize: 1
+      VPCZoneIdentifier: !Ref ActiveSubnets
+#      TargetGroupARNs: 
+#        - !Ref TargetGroupSquid
+      Tags:
+        - Key: Name
+          Value: !Sub 'Squid Instance - ${AWS::StackName}'
+          PropagateAtLaunch: True
+    #CreationPolicy:
+    #  ResourceSignal:
+    #    Count: 1
+    #    Timeout: PT10M
+
+  SquidInstanceLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub ${CostTagValue}-squid-launch-template
+      LaunchTemplateData:
+        IamInstanceProfile: 
+          Arn: !GetAtt SquidInstanceProfile.Arn
+        InstanceType: !Ref SquidInstanceType
+        ImageId: !Ref SquidAmiId
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            Groups: 
+              - !Ref SquidSecurityGroup
+            AssociatePublicIpAddress: True
+        UserData:
+          Fn::Base64:
+            !Sub |
+              #!/bin/bash -xe
+              # Redirect the user-data output to the console logs
+              exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
+              # Apply the latest security patches
+              yum update -y --security
+
+              # Disable source / destination check. It cannot be disabled from the launch configuration
+              region=${AWS::Region}
+              instanceid=`curl -s http://169.254.169.254/latest/meta-data/instance-id`
+              aws ec2 modify-instance-attribute --no-source-dest-check --instance-id $instanceid --region $region
+
+              # Install and start Squid
+              yum install -y squid
+              systemctl start squid || service squid start
+              
+              # Since the security groups handle the ports, we can ignore this setting
+              #iptables -t nat -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3129
+        
+              # We are not using 443 since that is terminated at the load balancer.
+              #iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 3130
+            
+              # Create a SSL certificate for the SslBump Squid module
+              #mkdir /etc/squid/ssl
+              #cd /etc/squid/ssl
+              #openssl genrsa -out squid.key 4096
+              #openssl req -new -key squid.key -out squid.csr -subj "/C=XX/ST=XX/L=squid/O=squid/CN=squid"
+              #openssl x509 -req -days 3650 -in squid.csr -signkey squid.key -out squid.crt
+              #cat squid.key squid.crt >> squid.pem
+
+              # Push squid conf to S3
+              echo "Pushing Squid conf to s3://${SquidConfS3Bucket}."
+              
+              cat > /tmp/squid.conf << 'EOF'
+              visible_hostname squid
+              cache deny all
+
+              # Log format and rotation
+              logformat squid %ts.%03tu %6tr %>a %Ss/%03>Hs %<st %rm %ru %ssl::>sni %Sh/%<a %mt
+              logfile_rotate 10
+              debug_options rotate=10
+
+              # Handle HTTP requests
+              http_port 3128
+              http_port 3080 intercept
+
+              # Handle HTTPS requests
+              https_port 3443 cert=/etc/squid/ssl/squid.pem ssl-bump intercept
+              acl SSL_port port 443
+              http_access allow SSL_port
+              acl step1 at_step SslBump1
+              acl step2 at_step SslBump2
+              acl step3 at_step SslBump3
+              ssl_bump peek step1 all
+
+              # Deny requests to proxy instance metadata
+              acl instance_metadata dst 169.254.169.254
+              http_access deny instance_metadata
+
+              # Filter HTTP requests based on the whitelist
+              acl allowed_http_sites dstdomain "/etc/squid/whitelist.txt"
+              http_access allow allowed_http_sites
+
+              # Filter HTTPS requests based on the whitelist
+              acl allowed_https_sites ssl::server_name "/etc/squid/whitelist.txt"
+              ssl_bump peek step2 allowed_https_sites
+              ssl_bump splice step3 allowed_https_sites
+              ssl_bump terminate step2 all
+              
+              http_access deny all
+
+              EOF
+              
+              aws s3 copy /tmp/squid.conf s3://${SquidConfS3Bucket}/squid.conf
+              
+              # Push squid conf to S3 if conf doesn't exist
+              # List of whitelisted domains separated by a comma. Enter ".example.com" to whitelist all the sub-domains of example.com.
+              aws s3api head-object --bucket ${SquidConfS3Bucket} --key whitelist.txt || NOT_EXIST=true
+              if [ $NOT_EXIST ]; then
+                echo "Whitelist text does not exist at s3://${SquidConfS3Bucket}. Pushing original copy..."
+                
+                cat > /tmp/whitelist.txt << 'EOF'
+                .amazonaws.com              
+                EOF
+                
+                aws s3 copy /tmp/whitelist.txt s3://${SquidConfS3Bucket}/whitelist.txt
+              fi
+
+              # Refresh the Squid configuration files from S3
+              mkdir /etc/squid/old
+              cat > /etc/squid/squid-conf-refresh.sh << 'EOF'
+              cp /etc/squid/* /etc/squid/old/
+              aws s3 sync s3://${SquidConfS3Bucket} /etc/squid
+              /usr/sbin/squid -k parse && /usr/sbin/squid -k reconfigure || (cp /etc/squid/old/* /etc/squid/; exit 1)
+              EOF
+              chmod +x /etc/squid/squid-conf-refresh.sh
+              /etc/squid/squid-conf-refresh.sh
+
+              # Schedule tasks
+              cat > ~/mycron << 'EOF'
+              * * * * * /etc/squid/squid-conf-refresh.sh
+              0 0 * * * sleep $(($RANDOM % 3600)); yum -y update --security
+              0 0 * * * /usr/sbin/squid -k rotate
+              EOF
+              crontab ~/mycron
+              rm ~/mycron
+
+              # Install and configure the CloudWatch Agent
+              rpm -Uvh https://amazoncloudwatch-agent-${AWS::Region}.s3.${AWS::Region}.amazonaws.com/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+              cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'EOF'
+              {
+                "agent": {
+                  "metrics_collection_interval": 10,
+                  "omit_hostname": true
+                },
+                "metrics": {
+                  "metrics_collected": {
+                    "procstat": [
+                      {
+                        "pid_file": "/var/run/squid.pid",
+                        "measurement": [
+                          "cpu_usage"
+                        ]
+                      }
+                    ]
+                  },
+                  "append_dimensions": {
+                    "AutoScalingGroupName": "${!aws:AutoScalingGroupName}"
+                  },
+                  "force_flush_interval": 5
+                },
+                "logs": {
+                  "logs_collected": {
+                    "files": {
+                      "collect_list": [
+                        {
+                          "file_path": "/var/log/squid/access.log*",
+                          "log_group_name": "/filtering-nat-instance/access.log",
+                          "log_stream_name": "{instance_id}",
+                          "timezone": "Local"
+                        },
+                        {
+                          "file_path": "/var/log/squid/cache.log*",
+                          "log_group_name": "/filtering-nat-instance/cache.log",
+                          "log_stream_name": "{instance_id}",
+                          "timezone": "Local"
+                        }
+                      ]
+                    }
+
+                  }
+                }
+              }
+              EOF
+              /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+
+              # CloudFormation signal
+              yum update -y aws-cfn-bootstrap
+              /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource SquidInstanceASG --region ${AWS::Region}
