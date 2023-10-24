@@ -282,36 +282,10 @@ def server_starting_tag(spawner):
             ]
         )
 
-def add_extension_override(spawner) -> None:
-    """
-    Check pod labels. If 'extension_override' exists, use value as override file.
-    """
-
-    from pathlib import Path
-
-    try:
-        extension_override = spawner.extra_labels.get('extension_override', '')
-
-        default_override = Path('/etc/singleuser/overrides/default.json')
-        default_override_exists = default_override.exists()
-
-        Path('/opt/conda/share/jupyter/lab/settings/').mkdir(parents=True, exist_ok=True)
-
-        if not extension_override and default_override_exists:
-            Path('/etc/singleuser/overrides/default.json').rename(Path('/opt/conda/share/jupyter/lab/settings/overrides.json'))
-
-        elif extension_override:
-            Path(f'/etc/singleuser/overrides/{extension_override}').rename(Path('/opt/conda/share/jupyter/lab/settings/overrides.json'))
-
-    except Exception as e:
-        log.error(e)
-        log.error("Something went wrong with getting extension overrides. Using none.")
-
 def my_pre_hook(spawner):
     try:
         volume_from_snapshot(spawner)
         server_starting_tag(spawner)
-        add_extension_override(spawner)
 
     except Exception as e:
         log.error(e)

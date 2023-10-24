@@ -102,7 +102,6 @@ profiles:
     image_name: sar
     image_tag: feac54e
     hook_script: sar.sh
-    extension_override: default.json
     memory_guarantee: 6G
     memory_limit: 16G
     storage_capacity: 500Gi

@@ -124,13 +124,7 @@ async def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                 'kubespawner_override': {
                     'extra_labels': {
                         'server_type': '{{ node_name_escaped }}',
-                        'profile_name': '{{ profile.name | replace(" ", "_") }}',
-                    {% if profile.hook_script is defined and profile.hook_script != 'None' -%} 
-                        'hook_script': '{{ profile.hook_script }}', 
-                    {% endif -%}
-                    {% if profile.extension_override is defined and profile.extension_override != 'None' -%} 
-                        'extension_override': '{{ profile.extension_override }}', 
-                    {% endif -%}
+                        'profile_name': '{{ profile.name | replace(" ", "_") }}'
                     },
                     'node_selector': {
                         'server_type': '{{ node_name_escaped }}'
