@@ -687,6 +687,8 @@ Resources:
 
   SquidInstanceLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
+    DependsOn:
+      - SquidConfS3Bucket
     Properties:
       LaunchTemplateName: !Sub ${CostTagValue}-squid-launch-template
       LaunchTemplateData:
@@ -710,9 +712,9 @@ Resources:
               yum update -y --security
 
               # Disable source / destination check. It cannot be disabled from the launch configuration
-              region=${AWS::Region}
-              instanceid=`curl -s http://169.254.169.254/latest/meta-data/instance-id`
-              aws ec2 modify-instance-attribute --no-source-dest-check --instance-id $instanceid --region $region
+              METADATA_TOKEN=`curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"`
+              INSTANCE_ID=`curl -s -H "X-aws-ec2-metadata-token: $METADATA_TOKEN" http://169.254.169.254/latest/meta-data/instance-id/`
+              aws ec2 modify-instance-attribute --no-source-dest-check --instance-id $INSTANCE_ID --region ${AWS::Region}
 
               # Install and start Squid
               yum install -y squid
@@ -785,7 +787,6 @@ Resources:
                 
                 cat > /tmp/whitelist.txt << 'EOF'
                 .amazonaws.com
-                    
                 EOF
                 
                 aws s3 cp /tmp/whitelist.txt s3://${SquidConfS3Bucket}/whitelist.txt
