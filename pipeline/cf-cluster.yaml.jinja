@@ -68,7 +68,7 @@ Parameters:
   # Squid stuff
   SquidAmiId:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
-    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+    Default: '/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64'
     Description: AMI ID pointer in AWS Systems Manager Parameter Store. Default value points to the
       latest Amazon Linux 2 AMI ID.
 
@@ -775,7 +775,7 @@ Resources:
 
               EOF
               
-              aws s3 copy /tmp/squid.conf s3://${SquidConfS3Bucket}/squid.conf
+              aws s3 cp /tmp/squid.conf s3://${SquidConfS3Bucket}/squid.conf
               
               # Push squid conf to S3 if conf doesn't exist
               # List of whitelisted domains separated by a comma. Enter ".example.com" to whitelist all the sub-domains of example.com.
@@ -784,10 +784,11 @@ Resources:
                 echo "Whitelist text does not exist at s3://${SquidConfS3Bucket}. Pushing original copy..."
                 
                 cat > /tmp/whitelist.txt << 'EOF'
-                .amazonaws.com              
+                .amazonaws.com
+                    
                 EOF
                 
-                aws s3 copy /tmp/whitelist.txt s3://${SquidConfS3Bucket}/whitelist.txt
+                aws s3 cp /tmp/whitelist.txt s3://${SquidConfS3Bucket}/whitelist.txt
               fi
 
               # Refresh the Squid configuration files from S3
