@@ -711,6 +711,55 @@ Resources:
               # Apply the latest security patches
               yum update -y --security
 
+              # Install and configure the CloudWatch Agent
+              rpm -Uvh https://amazoncloudwatch-agent-${AWS::Region}.s3.${AWS::Region}.amazonaws.com/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
+              cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'EOF'
+              {
+                "agent": {
+                  "metrics_collection_interval": 10,
+                  "omit_hostname": true
+                },
+                "metrics": {
+                  "metrics_collected": {
+                    "procstat": [
+                      {
+                        "pid_file": "/var/run/squid.pid",
+                        "measurement": [
+                          "cpu_usage"
+                        ]
+                      }
+                    ]
+                  },
+                  "append_dimensions": {
+                    "AutoScalingGroupName": "${!aws:AutoScalingGroupName}"
+                  },
+                  "force_flush_interval": 5
+                },
+                "logs": {
+                  "logs_collected": {
+                    "files": {
+                      "collect_list": [
+                        {
+                          "file_path": "/var/log/squid/access.log*",
+                          "log_group_name": "/squid/access.log",
+                          "log_stream_name": "{instance_id}",
+                          "timezone": "Local"
+                        },
+                        {
+                          "file_path": "/var/log/squid/cache.log*",
+                          "log_group_name": "/squid/cache.log",
+                          "log_stream_name": "{instance_id}",
+                          "timezone": "Local"
+                        }
+                      ]
+                    }
+
+                  }
+                }
+              }
+              EOF
+              /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+
               # Disable source / destination check. It cannot be disabled from the launch configuration
               METADATA_TOKEN=`curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"`
               INSTANCE_ID=`curl -s -H "X-aws-ec2-metadata-token: $METADATA_TOKEN" http://169.254.169.254/latest/meta-data/instance-id/`
@@ -785,20 +834,22 @@ Resources:
               if [ $NOT_EXIST ]; then
                 echo "Whitelist text does not exist at s3://${SquidConfS3Bucket}. Pushing original copy..."
                 
-                cat > /tmp/whitelist.txt << 'EOF'
+              cat > /tmp/whitelist.txt << 'EOF'
                 .amazonaws.com
-                EOF
+              EOF
                 
                 aws s3 cp /tmp/whitelist.txt s3://${SquidConfS3Bucket}/whitelist.txt
               fi
 
               # Refresh the Squid configuration files from S3
               mkdir /etc/squid/old
+
               cat > /etc/squid/squid-conf-refresh.sh << 'EOF'
               cp /etc/squid/* /etc/squid/old/
               aws s3 sync s3://${SquidConfS3Bucket} /etc/squid
               /usr/sbin/squid -k parse && /usr/sbin/squid -k reconfigure || (cp /etc/squid/old/* /etc/squid/; exit 1)
               EOF
+
               chmod +x /etc/squid/squid-conf-refresh.sh
               /etc/squid/squid-conf-refresh.sh
 
@@ -810,55 +861,6 @@ Resources:
               EOF
               crontab ~/mycron
               rm ~/mycron
-
-              # Install and configure the CloudWatch Agent
-              rpm -Uvh https://amazoncloudwatch-agent-${AWS::Region}.s3.${AWS::Region}.amazonaws.com/amazon_linux/amd64/latest/amazon-cloudwatch-agent.rpm
-              cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json << 'EOF'
-              {
-                "agent": {
-                  "metrics_collection_interval": 10,
-                  "omit_hostname": true
-                },
-                "metrics": {
-                  "metrics_collected": {
-                    "procstat": [
-                      {
-                        "pid_file": "/var/run/squid.pid",
-                        "measurement": [
-                          "cpu_usage"
-                        ]
-                      }
-                    ]
-                  },
-                  "append_dimensions": {
-                    "AutoScalingGroupName": "${!aws:AutoScalingGroupName}"
-                  },
-                  "force_flush_interval": 5
-                },
-                "logs": {
-                  "logs_collected": {
-                    "files": {
-                      "collect_list": [
-                        {
-                          "file_path": "/var/log/squid/access.log*",
-                          "log_group_name": "/filtering-nat-instance/access.log",
-                          "log_stream_name": "{instance_id}",
-                          "timezone": "Local"
-                        },
-                        {
-                          "file_path": "/var/log/squid/cache.log*",
-                          "log_group_name": "/filtering-nat-instance/cache.log",
-                          "log_stream_name": "{instance_id}",
-                          "timezone": "Local"
-                        }
-                      ]
-                    }
-
-                  }
-                }
-              }
-              EOF
-              /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
 
               # CloudFormation signal
               yum update -y aws-cfn-bootstrap
