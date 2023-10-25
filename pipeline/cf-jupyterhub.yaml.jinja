@@ -46,11 +46,6 @@ Parameters:
     Description: "The number of days after last server use when the user's snapshot is deleted."
     Default: {{ parameters.days_till_snapshot_deletion }}
 
-  AZPostfix:
-    Type: String
-    Description: "Letter postfix of AZ."
-    Default: {{ parameters.az_suffix }}
-
   NodeProxyPort:
     Description: The port of the hub proxy service opened to the load balancer.
     Type: Number
@@ -148,8 +143,7 @@ Resources:
                         LabShortName=${LabShortName} 
                         PortalDomain=${PortalDomain} 
                         AdminUserName=${AdminUserName} 
-                        NodeProxyPort=${NodeProxyPort} 
-                        AZPostfix=${AZPostfix} 
+                        NodeProxyPort=${NodeProxyPort}
                         DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
                         DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
                         CODEBUILD_ROOT=$CODEBUILD_ROOT 

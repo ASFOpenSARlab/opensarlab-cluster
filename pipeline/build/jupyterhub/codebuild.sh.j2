@@ -12,7 +12,6 @@ set -ex
 #       PortalDomain=${PortalDomain} 
 #       AdminUserName=${AdminUserName} 
 #       NodeProxyPort=${NodeProxyPort} 
-#       AZPostfix=${AZPostfix} 
 #       DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
 #       DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
 #       CODEBUILD_ROOT=$CODEBUILD_ROOT
@@ -39,8 +38,7 @@ CostTagValue=${CostTagValue}
 LabShortName=${LabShortName} 
 PortalDomain=${PortalDomain} 
 AdminUserName=${AdminUserName} 
-NodeProxyPort=${NodeProxyPort} 
-AZPostfix=${AZPostfix} 
+NodeProxyPort=${NodeProxyPort}
 DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
 DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
 CODEBUILD_ROOT=${CODEBUILD_ROOT}
@@ -169,6 +167,10 @@ printf "%s\n" "REGISTRY_URI $REGISTRY_URI";
 printf "%s\n" "HUB_IMAGE_BUILD $HUB_IMAGE_BUILD";
 
 #######
+export DESIGNATED_AZ=a
+printf "\n\n%s\n" "******* Availability Zone for EKS cluster and related resources is $DESIGNATED_AZ...";
+
+#######
 printf "\n\n%s\n" "******* Install JupyterHub cluster...";
 cd ${CODEBUILD_ROOT}/jupyterhub/;
 helm upgrade jupyter jupyterhub/jupyterhub \
@@ -188,7 +190,7 @@ helm upgrade jupyter jupyterhub/jupyterhub \
     --set proxy.service.nodePorts.http=${NodeProxyPort} \
     --set custom.REGISTRY_URI=$REGISTRY_URI \
     --set custom.CLUSTER_NAME="${CostTagValue}-cluster" \
-    --set custom.AZ_NAME="${AWS_Region}${AZPostfix}" \
+    --set custom.AZ_NAME="${AWS_Region}$DESIGNATED_AZ" \
     --set custom.AWS_REGION="${AWS_REGION}" \
     --set custom.COST_TAG_VALUE="${CostTagValue}" \
     --set custom.COST_TAG_KEY="${CostTagKey}" \

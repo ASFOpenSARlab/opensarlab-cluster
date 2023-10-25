@@ -27,30 +27,14 @@ Parameters:
     Description: "The value of the cost tag used for filtering the budget, etc."
     Default: {{ parameters.cost_tag_value }}
 
-  # The following are dynamically added by the pipeline
-  VpcId:
-    Description: The VPC of the worker instances
-    Type: AWS::EC2::VPC::Id
-    Default: {{ parameters.vpc_id }}
-
-  Subnets:
-    Description: The subnets where workers can be created.
-    Type: List<AWS::EC2::Subnet::Id>
-    Default: {{ parameters.all_subnets }}
-
-  ActiveSubnets:
-    Description: The subnets actually used by resources in the cluster. Typically only one (e.g., subnet for AZ -d).
-    Type: List<AWS::EC2::Subnet::Id>
-    Default: {{ parameters.active_subnets }}
-
   # The following values require defaults.
-  LoadBalancerCidrBlock:
-    Description: The range of allowed IPv4 addresses for the load balancer. This only firewalls the load balancer URL and not the cluster in general.
+  EKSLoadBalancerCidrBlock:
+    Description: The range of allowed IPv4 addresses for the EKS load balancer. This only firewalls the load balancer URL and not the cluster in general.
     Type: String
     Default: 0.0.0.0/0
 
   NodeProxyPort:
-    Description: The port of the hub proxy service opened to the load balancer.
+    Description: The port of the hub proxy service opened to the EKS load balancer.
     Type: Number
     Default: 30052
 
@@ -97,10 +81,119 @@ Parameters:
 
 Outputs:
   AppUrl:
-    Value: !GetAtt LoadBalancer.DNSName
+    Value: !GetAtt EKSLoadBalancer.DNSName
 
 Resources:
 
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/23
+      Tags:
+        - Key: Name
+          Value: !Sub 'vpc-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PrivateSubnetActive:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.0.0/24
+      MapPublicIpOnLaunch: False
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      Tags:
+        - Key: Name
+          Value: !Sub 'subnet-private-active-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  # Used only by the Load Balancer and Squid Internet Gateway
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: True
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      Tags:
+        - Key: Name
+          Value: !Sub 'subnet-public-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  # Not used but required by EKS
+  PrivateSubnetInactive:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: False
+      AvailabilityZone: !Sub "${AWS::Region}c"
+      Tags:
+        - Key: Name
+          Value: !Sub 'subnet-private-inactive-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  #####
+  # Load Balancer for EKS
+  #####
+  EKSLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${AWS::Region}-${CostTagValue}-cluster-load-balancer
+      GroupDescription: !Sub Security group for ${CostTagValue}-cluster load balancer
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - CidrIp: !Ref EKSLoadBalancerCidrBlock
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+        - CidrIp: !Ref EKSLoadBalancerCidrBlock
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+
+  EKSLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${CostTagValue}
+      Subnets: !Ref PublicSubnet
+      SecurityGroups:
+        - !GetAtt EKSLoadBalancerSecurityGroup.GroupId
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref EKSLoadBalancer
+      Protocol: HTTP
+      Port: 80
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            StatusCode: HTTP_301
+            Protocol: HTTPS
+            Port: "443"
+
+  HttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref EKSLoadBalancer
+      Protocol: HTTPS
+      Port: 443
+      Certificates:
+        - CertificateArn: !Ref CertificateArn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref HubTargetGroup
+
+  #####
+  # Cluster
+  #####
   ClusterRunRole:
     Type: AWS::IAM::Role
     Properties:
@@ -158,7 +251,9 @@ Resources:
       Name: !Sub ${CostTagValue}-cluster
       RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
       ResourcesVpcConfig:
-        SubnetIds: !Ref Subnets
+        SubnetIds:
+          - !Ref PrivateSubnetActive
+          - !Ref PrivateSubnetInactive
         SecurityGroupIds:
           - !GetAtt ClusterSecurityGroup.GroupId
       Version: !Sub ${EksVersion}
@@ -168,7 +263,7 @@ Resources:
     Properties:
       GroupName: !Sub ${CostTagValue}-cluster
       GroupDescription: !Sub Security group for the ${CostTagValue}-cluster EKS cluster
-      VpcId: !Ref VpcId
+      VpcId: !Ref VPC
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
@@ -262,12 +357,42 @@ Resources:
                   - "ssm:GetParameter"
                 Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
 
+  NodeInstanceRole{{ node_name_escaped }}:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-{{ node_name_escaped }}-instance-role
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/CloudWatchAgentAdminPolicy
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      {%- filter indent(width=6) -%}
+      {% include "policies/" ~ node.node_policy ~ "_policy.yaml" %}
+      {%- endfilter %}
+
+  NodeInstanceProfile{{ node_name_escaped }}:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${AWS::Region}-${CostTagValue}-cluster-{{ node_name_escaped }}-instance-profile
+      Roles:
+        - !Ref NodeInstanceRole{{ node_name_escaped }}
+
+
   NodeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: !Sub ${CostTagValue}-cluster-instance
       GroupDescription: !Sub Security group for instances in the ${CostTagValue}-cluster EKS cluster
-      VpcId: !Ref VpcId
+      VpcId: !Ref VPC
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
@@ -297,7 +422,7 @@ Resources:
     Properties:
       Description: Allow worker Kubelets and pods to receive communication from the load balancer
       GroupId: !Ref NodeSecurityGroup
-      SourceSecurityGroupId: !GetAtt LoadBalancerSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt EKSLoadBalancerSecurityGroup.GroupId
       IpProtocol: tcp
       FromPort: !Ref NodeProxyPort
       ToPort: !Ref NodeProxyPort
@@ -342,72 +467,9 @@ Resources:
       ToPort: 443
       FromPort: 443
 
-  TargetGroup:
-    Type: AWS::ElasticLoadBalancingV2::TargetGroup
-    Properties:
-      Name: !Sub ${AWS::Region}-${CostTagValue}
-      VpcId: !Ref VpcId
-      Protocol: HTTP
-      Port: !Ref NodeProxyPort
-      HealthCheckPath: /lab/{{ parameters.lab_short_name }}/hub/health
-      HealthCheckIntervalSeconds: 120
-      HealthyThresholdCount: 2
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  LoadBalancerSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: !Sub ${AWS::Region}-${CostTagValue}-cluster-load-balancer
-      GroupDescription: !Sub Security group for ${CostTagValue}-cluster load balancer
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - CidrIp: !Ref LoadBalancerCidrBlock
-          IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-        - CidrIp: !Ref LoadBalancerCidrBlock
-          IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-
-  LoadBalancer:
-    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
-    Properties:
-      Name: !Sub ${CostTagValue}
-      Subnets: !Ref Subnets
-      SecurityGroups:
-        - !GetAtt LoadBalancerSecurityGroup.GroupId
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  HttpListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref LoadBalancer
-      Protocol: HTTP
-      Port: 80
-      DefaultActions:
-        - Type: redirect
-          RedirectConfig:
-            StatusCode: HTTP_301
-            Protocol: HTTPS
-            Port: "443"
-
-  HttpsListener:
-    Type: AWS::ElasticLoadBalancingV2::Listener
-    Properties:
-      LoadBalancerArn: !Ref LoadBalancer
-      Protocol: HTTPS
-      Port: 443
-      Certificates:
-        - CertificateArn: !Ref CertificateArn
-      DefaultActions:
-        - Type: forward
-          TargetGroupArn: !Ref TargetGroup
-
+  #####
+  # Lifecycle Policies
+  #####
   BasicLifecycleRole:
     Type: AWS::IAM::Role
     Properties:
@@ -445,6 +507,9 @@ Resources:
               Count: 1
             CopyTags: true
 
+  #####
+  # ECR Repos
+  #####
   CronsRepository:
     Type: AWS::ECR::Repository
     Properties:
@@ -467,34 +532,22 @@ Resources:
           Value: !Sub ${CostTagValue}
   {%- endif %}
 
-  NodeInstanceRole{{ node_name_escaped }}:
-    Type: AWS::IAM::Role
+  #####
+  # Autoscaler
+  #####
+  HubTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-{{ node_name_escaped }}-instance-role
-      AssumeRolePolicyDocument:
-        Statement:
-          Effect: Allow
-          Principal:
-            Service: ec2.amazonaws.com
-          Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
-        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
-        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
-        - arn:aws:iam::aws:policy/AutoScalingFullAccess
-        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
-        - arn:aws:iam::aws:policy/CloudWatchAgentAdminPolicy
-        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-      {%- filter indent(width=6) -%}
-      {% include "policies/" ~ node.node_policy ~ "_policy.yaml" %}
-      {%- endfilter %}
-
-  NodeInstanceProfile{{ node_name_escaped }}:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      InstanceProfileName: !Sub ${AWS::Region}-${CostTagValue}-cluster-{{ node_name_escaped }}-instance-profile
-      Roles:
-        - !Ref NodeInstanceRole{{ node_name_escaped }}
+      Name: !Sub ${AWS::Region}-${CostTagValue}
+      VpcId: !Ref VPC
+      Protocol: HTTP
+      Port: !Ref NodeProxyPort
+      HealthCheckPath: /lab/{{ parameters.lab_short_name }}/hub/health
+      HealthCheckIntervalSeconds: 120
+      HealthyThresholdCount: 2
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
 
   AutoScalingGroup{{ node_name_escaped }}:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -512,10 +565,10 @@ Resources:
             {%- endfor %}
       MinSize: "{{ node.min_number}}"
       MaxSize: "{{ node.max_number}}"
-      VPCZoneIdentifier: !Ref ActiveSubnets
+      VPCZoneIdentifier: !Ref PrivateSubnetActive
       {% if node.is_hub is defined -%}
       TargetGroupARNs:
-        - !Ref TargetGroup
+        - !Ref HubTargetGroup
       {% endif -%}
       Tags:
         - Key: Name
@@ -584,12 +637,51 @@ Resources:
   # Since EKS only uses one subnet (the other one required by the load balancer is ignored), we will use this subnet for the squid and rely on security groups to handle ports, etc.
   ######
 
+  SquidInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub 'igw-squid-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  SquidAttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref SquidInternetGateway
+
+  SquidPublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'prt-squid-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  SquidPublicRouteTableEntry:
+    Type: AWS::EC2::Route
+    DependsOn: SquidAttachGateway
+    Properties:
+      RouteTableId: !Ref SquidPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref SquidInternetGateway
+
+  SquidPublicRouteTableSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref SquidPublicRouteTable
+
   SquidSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupName: !Sub ${CostTagValue}-squid
       GroupDescription: Security group for squid
-      VpcId: !Ref VpcId
+      VpcId: !Ref VPC
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
@@ -646,21 +738,6 @@ Resources:
       Roles:
         - !Ref SquidInstanceRole
       Path: /
-  
-  ### ???
-#TargetGroupSquid:
-#  Type: AWS::ElasticLoadBalancingV2::TargetGroup
-#  Properties:
-#    Name: !Sub ${CostTagValue}-tgs
-#    VpcId: !Ref VpcId
-#    Protocol: HTTP
-#    Port: 3080
-#    #HealthCheckPath: /lab/{{ parameters.lab_short_name }}/hub/health
-#    #HealthCheckIntervalSeconds: 120
-#    #HealthyThresholdCount: 2
-#    Tags:
-#      - Key: !Sub ${CostTagKey}
-#        Value: !Sub ${CostTagValue}
 
   SquidInstanceASG:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -673,9 +750,7 @@ Resources:
         Version: !GetAtt SquidInstanceLaunchTemplate.LatestVersionNumber
       MaxSize: 1
       MinSize: 1
-      VPCZoneIdentifier: !Ref ActiveSubnets
-#      TargetGroupARNs: 
-#        - !Ref TargetGroupSquid
+      VPCZoneIdentifier: !Ref PublicSubnet
       Tags:
         - Key: Name
           Value: !Sub 'Squid Instance - ${AWS::StackName}'
