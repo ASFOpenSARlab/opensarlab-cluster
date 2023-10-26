@@ -4,26 +4,6 @@ Policies:
     PolicyDocument:
       Version: "2012-10-17"
       Statement:
-        #- Sid: SAHubDeleteVolumes
-        #  Effect: Allow
-        #  Action:
-        #    - ec2:DescribeSnapshots
-        #    - ec2:DescribeVolumes
-        #  Resource: "*"
-        #- Sid: SAHubDeleteSnapshots
-        #  Effect: Allow
-        #  Action:
-        #    - ec2:DescribeSnapshots
-        #    - ec2:DeleteSnapshot
-        #    - ec2:DescribeVolumes
-        #    #- ses:SendEmail
-        #  Resource: "*"
-        #- Sid: SAHubForceDeactivation
-        #  Effect: Allow
-        #  Action:
-        #    - ec2:DescribeSnapshots
-        #    - ec2:DeleteSnapshot
-        #  Resource: "*"
         - Sid: SAHubVolumeFromSnapshot
           Effect: Allow
           Action:
