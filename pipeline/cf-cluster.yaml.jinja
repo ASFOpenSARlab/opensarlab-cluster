@@ -524,7 +524,7 @@ Resources:
       Roles:
         - !Ref NodeInstanceRole{{ node_name_escaped }}
 
-  {%- endfor %}
+  {% endfor %}
 
   #####
   # Lifecycle Policies
@@ -604,7 +604,7 @@ Resources:
 
   {% for node in nodes -%}
   {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") -%}
-  {%- set node_instance = node.instance.replace(' ', '').split(',') -%}
+  {%- set node_instance = node.instance.replace(' ', '').split(',') %}
 
   AutoScalingGroup{{ node_name_escaped }}:
     Type: AWS::AutoScaling::AutoScalingGroup
