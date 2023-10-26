@@ -101,7 +101,7 @@ Resources:
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/22
+      CidrBlock: 10.0.0.0/16
       Tags:
         - Key: Name
           Value: !Sub 'vpc-${AWS::Region}-${CostTagValue}'
@@ -110,10 +110,11 @@ Resources:
 
   PrivateSubnetActive:
     # Used by EKS and other resources
+    # IP range: 10.0.0.0 - 10.0.63.255
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.0.0/24
+      CidrBlock: 10.0.0.0/18
       MapPublicIpOnLaunch: false
       AvailabilityZone: !Sub "${AWS::Region}${ActiveClusterAvailabilityZoneLetter}"
       Tags:
@@ -124,10 +125,11 @@ Resources:
   
   PublicSubnetActive:
     # Used only by the Load Balancer, ALB Internet Gateway, Squid, and Squid Internet Gateway
+    # IP range: 10.0.64.0 - 10.0.127.255
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.1.0/24
+      CidrBlock: 10.0.64.0/18
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Sub "${AWS::Region}${ActiveClusterAvailabilityZoneLetter}"
       Tags:
@@ -138,10 +140,11 @@ Resources:
 
   PublicSubnetInctive:
     # Required by the Load Balancer
+    # IP range: 10.0.255.0 - 10.0.255.127
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.2.0/24
+      CidrBlock: 10.0.255.0/25
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Sub "${AWS::Region}${InactiveClusterAvailabilityZoneLetter}"
       Tags:
@@ -152,10 +155,11 @@ Resources:
 
   PrivateSubnetInactive:
     # Not used but required by EKS
+    # IP range: 10.0.255.128 - 10.0.255.255
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.3.0/24
+      CidrBlock: 10.0.255.128/25
       MapPublicIpOnLaunch: false
       AvailabilityZone: !Sub "${AWS::Region}${InactiveClusterAvailabilityZoneLetter}"
       Tags:
