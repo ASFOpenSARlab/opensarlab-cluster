@@ -696,6 +696,13 @@ Resources:
 
   SquidConfS3Bucket:
     Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::Region}-${CostTagValue}-squid-conf'
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::Region}-${CostTagValue}-squid-conf'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
 
   SquidInstanceRole:
     Type: AWS::IAM::Role
