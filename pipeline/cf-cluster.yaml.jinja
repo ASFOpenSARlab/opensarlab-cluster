@@ -43,6 +43,16 @@ Parameters:
     Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
     Default: /aws/service/eks/optimized-ami/{{ parameters.eks_version }}/amazon-linux-2/recommended/image_id
 
+  ActiveClusterAvailabilityZoneLetter:
+    Description: Letter of AZ for active subnets. This cannot change once resources are built. Otherwise resources like volumes, EKS cluster, networking could get destroyed.
+    Type: String
+    Default: a
+
+  InactiveClusterAvailabilityZoneLetter:
+    Description: Letter of AZ for inactive subnets needed to satisfy requirements. This will not be actively used by the networks. This cannot change once resources are built. Otherwise resources like volumes, EKS cluster, networking could get destroyed.
+    Type: String
+    Default: c
+
   # Software versions
   EksVersion:
     Description: The version of the EKS Cluster. 
@@ -91,7 +101,7 @@ Resources:
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/23
+      CidrBlock: 10.0.0.0/22
       Tags:
         - Key: Name
           Value: !Sub 'vpc-${AWS::Region}-${CostTagValue}'
@@ -104,25 +114,39 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.0.0/24
-      MapPublicIpOnLaunch: False
-      AvailabilityZone: !Sub "${AWS::Region}a"
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Sub "${AWS::Region}${ActiveClusterAvailabilityZoneLetter}"
       Tags:
         - Key: Name
           Value: !Sub 'subnet-private-active-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
   
-  PublicSubnet:
+  PublicSubnetActive:
     # Used only by the Load Balancer, ALB Internet Gateway, Squid, and Squid Internet Gateway
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.1.0/24
-      MapPublicIpOnLaunch: True
-      AvailabilityZone: !Sub "${AWS::Region}a"
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Sub "${AWS::Region}${ActiveClusterAvailabilityZoneLetter}"
       Tags:
         - Key: Name
-          Value: !Sub 'subnet-public-${AWS::Region}-${CostTagValue}'
+          Value: !Sub 'subnet-public-active-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PublicSubnetInctive:
+    # Required by the Load Balancer
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Sub "${AWS::Region}${InactiveClusterAvailabilityZoneLetter}"
+      Tags:
+        - Key: Name
+          Value: !Sub 'subnet-public-inactive-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
@@ -131,9 +155,9 @@ Resources:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
-      CidrBlock: 10.0.2.0/24
-      MapPublicIpOnLaunch: False
-      AvailabilityZone: !Sub "${AWS::Region}c"
+      CidrBlock: 10.0.3.0/24
+      MapPublicIpOnLaunch: false
+      AvailabilityZone: !Sub "${AWS::Region}${InactiveClusterAvailabilityZoneLetter}"
       Tags:
         - Key: Name
           Value: !Sub 'subnet-private-inactive-${AWS::Region}-${CostTagValue}'
@@ -176,7 +200,7 @@ Resources:
   PublicRouteTableSubnetAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PublicSubnet
+      SubnetId: !Ref PublicSubnetActive
       RouteTableId: !Ref PublicRouteTable
 
   ClusterControlPlaneSecurityGroup:
@@ -212,47 +236,59 @@ Resources:
       GroupName: !Sub ${CostTagValue}-cluster-instance
       GroupDescription: !Sub Security group for instances in the ${CostTagValue}-cluster EKS cluster
       VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
-          SourceSecurityGroupId: !GetAtt ClusterControlPlaneSecurityGroup.GroupId
-          IpProtocol: tcp
-          FromPort: 1025
-          ToPort: 65535
-        - Description: Allow worker Kubelets and pods to receive communication from the load balancer
-          SourceSecurityGroupId: !GetAtt EKSLoadBalancerSecurityGroup.GroupId
-          IpProtocol: tcp
-          FromPort: !Ref NodeProxyPort
-          ToPort: !Ref NodeProxyPort
-        - Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
-          SourceSecurityGroupId: !GetAtt ClusterControlPlaneSecurityGroup.GroupId
-          IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-      SecurityGroupEgress:
-        - Description: Allow kubelet and pods to communicate with Squid on port 80
-          DestinationSecurityGroupId: !GetAtt SquidSecurityGroup.GroupId
-          IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-        - Description: Allow kubelet and pods to communicate with Squid on port 443
-          DestinationSecurityGroupId: !GetAtt SquidSecurityGroup.GroupId
-          IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  NodeSecurityGroupIngress:
-    # This ingress resource is needed to avoid circular dependency errors if inline ingress was used instead
+  NodeSecurityGroupIngress1:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
-      Description: Allow instances to communicate with each other
-      GroupId: !Ref NodeSecurityGroup
-      SourceSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: "-1"
-      FromPort: 0
+      Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt ClusterControlPlaneSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 1025
       ToPort: 65535
+
+  NodeSecurityGroupIngress2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt ClusterControlPlaneSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+
+  NodeSecurityGroupIngress3:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow worker Kubelets and pods to receive communication from the load balancer
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt EKSLoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: !Ref NodeProxyPort
+      ToPort: !Ref NodeProxyPort
+
+  NodeSecurityGroupEgress1:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow kubelet and pods to communicate with Squid on port 80
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      DestinationSecurityGroupId: !GetAtt SquidSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 80
+      ToPort: 80
+
+  NodeSecurityGroupEgress2:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow kubelet and pods to communicate with Squid on port 443
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      DestinationSecurityGroupId: !GetAtt SquidSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
 
   EKSLoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -310,7 +346,8 @@ Resources:
     Properties:
       Name: !Sub ${CostTagValue}
       Subnets: 
-        - !Ref PublicSubnet
+        - !Ref PublicSubnetActive
+        - !Ref PublicSubnetInctive
       SecurityGroups:
         - !GetAtt EKSLoadBalancerSecurityGroup.GroupId
       Tags:
@@ -764,15 +801,15 @@ Resources:
       MaxSize: 1
       MinSize: 1
       VPCZoneIdentifier: 
-        - !Ref PublicSubnet
+        - !Ref PublicSubnetActive
       Tags:
         - Key: Name
           Value: !Sub 'Squid Instance - ${AWS::StackName}'
-          PropagateAtLaunch: True
-    #CreationPolicy:
-    #  ResourceSignal:
-    #    Count: 1
-    #    Timeout: PT10M
+          PropagateAtLaunch: true
+  # CreationPolicy:
+  #  ResourceSignal:
+  #    Count: 1
+  #    Timeout: PT10M
 
   SquidInstanceLaunchTemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -789,7 +826,7 @@ Resources:
           - DeviceIndex: 0
             Groups: 
               - !Ref SquidSecurityGroup
-            AssociatePublicIpAddress: True
+            AssociatePublicIpAddress: true
         UserData:
           Fn::Base64:
             !Sub |
