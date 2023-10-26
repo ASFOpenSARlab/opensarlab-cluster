@@ -213,11 +213,6 @@ Resources:
       GroupDescription: !Sub Security group for instances in the ${CostTagValue}-cluster EKS cluster
       VpcId: !Ref VPC
       SecurityGroupIngress:
-        - Description: Allow instances to communicate with each other
-          SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
-          IpProtocol: "-1"
-          FromPort: 0
-          ToPort: 65535
         - Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
           SourceSecurityGroupId: !GetAtt ClusterControlPlaneSecurityGroup.GroupId
           IpProtocol: tcp
@@ -235,18 +230,29 @@ Resources:
           ToPort: 443
       SecurityGroupEgress:
         - Description: Allow kubelet and pods to communicate with Squid on port 80
-          DestinationSecurityGroupId: !Ref SquidSecurityGroup.GroupId
+          DestinationSecurityGroupId: !GetAtt SquidSecurityGroup.GroupId
           IpProtocol: tcp
           FromPort: 80
           ToPort: 80
         - Description: Allow kubelet and pods to communicate with Squid on port 443
-          DestinationSecurityGroupId: !Ref SquidSecurityGroup.GroupId
+          DestinationSecurityGroupId: !GetAtt SquidSecurityGroup.GroupId
           IpProtocol: tcp
           FromPort: 443
           ToPort: 443
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
+
+  NodeSecurityGroupIngress:
+    # This ingress resource is needed to avoid circular dependency errors if inline ingress was used instead
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow instances to communicate with each other
+      GroupId: !Ref NodeSecurityGroup
+      SourceSecurityGroupId: !Ref NodeSecurityGroup
+      IpProtocol: "-1"
+      FromPort: 0
+      ToPort: 65535
 
   EKSLoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -303,7 +309,8 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Sub ${CostTagValue}
-      Subnets: !Ref PublicSubnet
+      Subnets: 
+        - !Ref PublicSubnet
       SecurityGroups:
         - !GetAtt EKSLoadBalancerSecurityGroup.GroupId
       Tags:
@@ -622,7 +629,8 @@ Resources:
             {%- endfor %}
       MinSize: "{{ node.min_number}}"
       MaxSize: "{{ node.max_number}}"
-      VPCZoneIdentifier: !Ref PrivateSubnetActive
+      VPCZoneIdentifier: 
+        - !Ref PrivateSubnetActive
       {% if node.is_hub is defined -%}
       TargetGroupARNs:
         - !Ref HubTargetGroup
@@ -755,7 +763,8 @@ Resources:
         Version: !GetAtt SquidInstanceLaunchTemplate.LatestVersionNumber
       MaxSize: 1
       MinSize: 1
-      VPCZoneIdentifier: !Ref PublicSubnet
+      VPCZoneIdentifier: 
+        - !Ref PublicSubnet
       Tags:
         - Key: Name
           Value: !Sub 'Squid Instance - ${AWS::StackName}'
