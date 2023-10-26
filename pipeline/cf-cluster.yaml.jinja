@@ -492,6 +492,9 @@ Resources:
                   - "ssm:GetParameter"
                 Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
 
+  {% for node in nodes -%}
+  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") -%}
+
   NodeInstanceRole{{ node_name_escaped }}:
     Type: AWS::IAM::Role
     Properties:
@@ -520,6 +523,8 @@ Resources:
       InstanceProfileName: !Sub ${AWS::Region}-${CostTagValue}-cluster-{{ node_name_escaped }}-instance-profile
       Roles:
         - !Ref NodeInstanceRole{{ node_name_escaped }}
+
+  {%- endfor %}
 
   #####
   # Lifecycle Policies
@@ -562,7 +567,7 @@ Resources:
             CopyTags: true
 
   #####
-  # ECR Repos
+  # ECR Repos for Crons and Hub. Other image repos are created via the image build process in opensarlab-containers.
   #####
   CronsRepository:
     Type: AWS::ECR::Repository
@@ -572,19 +577,13 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  {% for node in nodes -%}
-  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") -%}
-  {%- set node_instance = node.instance.replace(' ', '').split(',') -%}
-
-  {% if node.is_hub is defined -%}
-  Repository{{ node_name_escaped }}:
+  HubRepository:
     Type: AWS::ECR::Repository
     Properties:
-      RepositoryName: !Sub "${ContainerNamespace}/{{ node_name_escaped }}"
+      RepositoryName: !Sub "${ContainerNamespace}/hub"
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
-  {%- endif %}
 
   #####
   # Autoscaler
@@ -602,6 +601,10 @@ Resources:
       Tags:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
+
+  {% for node in nodes -%}
+  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") -%}
+  {%- set node_instance = node.instance.replace(' ', '').split(',') -%}
 
   AutoScalingGroup{{ node_name_escaped }}:
     Type: AWS::AutoScaling::AutoScalingGroup
@@ -693,6 +696,13 @@ Resources:
 
   SquidConfS3Bucket:
     Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::Region}-${CostTagValue}-squid-conf'
+      Tags:
+        - Key: Name
+          Value: !Sub '${AWS::Region}-${CostTagValue}-squid-conf'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
 
   SquidInstanceRole:
     Type: AWS::IAM::Role
