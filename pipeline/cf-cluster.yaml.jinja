@@ -85,6 +85,9 @@ Outputs:
 
 Resources:
 
+  #####
+  # Networking
+  #####
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -96,6 +99,7 @@ Resources:
           Value: !Sub ${CostTagValue}
 
   PrivateSubnetActive:
+    # Used by EKS and other resources
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
@@ -107,9 +111,9 @@ Resources:
           Value: !Sub 'subnet-private-active-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
-
-  # Used only by the Load Balancer and Squid Internet Gateway
+  
   PublicSubnet:
+    # Used only by the Load Balancer, ALB Internet Gateway, Squid, and Squid Internet Gateway
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
@@ -122,8 +126,8 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  # Not used but required by EKS
   PrivateSubnetInactive:
+    # Not used but required by EKS
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
@@ -136,9 +140,114 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  #####
-  # Load Balancer for EKS
-  #####
+  SquidInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub 'igw-squid-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  SquidAttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref SquidInternetGateway
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'public-route-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PublicRouteTableEntry1:
+    Type: AWS::EC2::Route
+    DependsOn: SquidAttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref SquidInternetGateway
+
+  PublicRouteTableSubnetAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  ClusterControlPlaneSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${CostTagValue}-cluster
+      GroupDescription: !Sub Security group for the ${CostTagValue}-cluster EKS cluster
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - Description: Allow pods to communicate with the cluster API Server
+          SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+          IpProtocol: tcp
+          ToPort: 443
+          FromPort: 443
+      SecurityGroupEgress:
+        - Description: Allow the cluster control plane to communicate with worker Kubelet and pods
+          DestinationSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: 1025
+          ToPort: 65535
+        - Description: Allow the cluster control plane to communicate with pods running extension API servers on port 443
+          DestinationSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  NodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${CostTagValue}-cluster-instance
+      GroupDescription: !Sub Security group for instances in the ${CostTagValue}-cluster EKS cluster
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - Description: Allow instances to communicate with each other
+          SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+          IpProtocol: "-1"
+          FromPort: 0
+          ToPort: 65535
+        - Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
+          SourceSecurityGroupId: !GetAtt ClusterControlPlaneSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: 1025
+          ToPort: 65535
+        - Description: Allow worker Kubelets and pods to receive communication from the load balancer
+          SourceSecurityGroupId: !GetAtt EKSLoadBalancerSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: !Ref NodeProxyPort
+          ToPort: !Ref NodeProxyPort
+        - Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
+          SourceSecurityGroupId: !GetAtt ClusterControlPlaneSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+      SecurityGroupEgress:
+        - Description: Allow kubelet and pods to communicate with Squid on port 80
+          DestinationSecurityGroupId: !Ref SquidSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+        - Description: Allow kubelet and pods to communicate with Squid on port 443
+          DestinationSecurityGroupId: !Ref SquidSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
   EKSLoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -146,15 +255,50 @@ Resources:
       GroupDescription: !Sub Security group for ${CostTagValue}-cluster load balancer
       VpcId: !Ref VPC
       SecurityGroupIngress:
-        - CidrIp: !Ref EKSLoadBalancerCidrBlock
+        - Description: Allow incoming internet requests on port 80 to Load Balancer
+          CidrIp: !Ref EKSLoadBalancerCidrBlock
           IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-        - CidrIp: !Ref EKSLoadBalancerCidrBlock
+        - Description: Allow incoming internet requests on port 443 to Load Balancer
+          CidrIp: !Ref EKSLoadBalancerCidrBlock
           IpProtocol: tcp
           FromPort: 443
           ToPort: 443
+      SecurityGroupEgress:
+        - Description: Allow requests from Load Balancer to EC2 Target on Hub port
+          DestinationSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: !Ref NodeProxyPort
+          ToPort: !Ref NodeProxyPort
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
 
+  SquidSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${CostTagValue}-squid
+      GroupDescription: Security group for squid
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - Description: Allow squid to recieve traffic from nodes on port 80
+          SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+        - Description: Allow squid to recieve traffic from nodes on port 443
+          SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  #####
+  # Load Balancer for EKS
+  #####
   EKSLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
@@ -192,7 +336,7 @@ Resources:
           TargetGroupArn: !Ref HubTargetGroup
 
   #####
-  # Cluster
+  # Cluster Control Plane
   #####
   ClusterRunRole:
     Type: AWS::IAM::Role
@@ -255,18 +399,9 @@ Resources:
           - !Ref PrivateSubnetActive
           - !Ref PrivateSubnetInactive
         SecurityGroupIds:
-          - !GetAtt ClusterSecurityGroup.GroupId
+          - !GetAtt ClusterControlPlaneSecurityGroup.GroupId
       Version: !Sub ${EksVersion}
 
-  ClusterSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: !Sub ${CostTagValue}-cluster
-      GroupDescription: !Sub Security group for the ${CostTagValue}-cluster EKS cluster
-      VpcId: !Ref VPC
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
 
   ClusterUserAccessFullGroup:
     Type: AWS::IAM::Group
@@ -385,87 +520,6 @@ Resources:
       InstanceProfileName: !Sub ${AWS::Region}-${CostTagValue}-cluster-{{ node_name_escaped }}-instance-profile
       Roles:
         - !Ref NodeInstanceRole{{ node_name_escaped }}
-
-
-  NodeSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: !Sub ${CostTagValue}-cluster-instance
-      GroupDescription: !Sub Security group for instances in the ${CostTagValue}-cluster EKS cluster
-      VpcId: !Ref VPC
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  NodeSecurityGroupIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow instances to communicate with each other
-      GroupId: !Ref NodeSecurityGroup
-      SourceSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: "-1"
-      FromPort: 0
-      ToPort: 65535
-
-  NodeSecurityGroupFromControlPlaneIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
-      GroupId: !Ref NodeSecurityGroup
-      SourceSecurityGroupId: !GetAtt ClusterSecurityGroup.GroupId
-      IpProtocol: tcp
-      FromPort: 1025
-      ToPort: 65535
-
-  NodeSecurityGroupFromLoadBalancer:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow worker Kubelets and pods to receive communication from the load balancer
-      GroupId: !Ref NodeSecurityGroup
-      SourceSecurityGroupId: !GetAtt EKSLoadBalancerSecurityGroup.GroupId
-      IpProtocol: tcp
-      FromPort: !Ref NodeProxyPort
-      ToPort: !Ref NodeProxyPort
-
-  ControlPlaneEgressToNodeSecurityGroup:
-    Type: AWS::EC2::SecurityGroupEgress
-    Properties:
-      Description: Allow the cluster control plane to communicate with worker Kubelet and pods
-      GroupId: !GetAtt ClusterSecurityGroup.GroupId
-      DestinationSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: tcp
-      FromPort: 1025
-      ToPort: 65535
-
-  NodeSecurityGroupFromControlPlaneOn443Ingress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
-      GroupId: !Ref NodeSecurityGroup
-      SourceSecurityGroupId: !GetAtt ClusterSecurityGroup.GroupId
-      IpProtocol: tcp
-      FromPort: 443
-      ToPort: 443
-
-  ControlPlaneEgressToNodeSecurityGroupOn443:
-    Type: AWS::EC2::SecurityGroupEgress
-    Properties:
-      Description: Allow the cluster control plane to communicate with pods running extension API servers on port 443
-      GroupId: !GetAtt ClusterSecurityGroup.GroupId
-      DestinationSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: tcp
-      FromPort: 443
-      ToPort: 443
-
-  ClusterControlPlaneSecurityGroupIngress:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: Allow pods to communicate with the cluster API Server
-      GroupId: !GetAtt ClusterSecurityGroup.GroupId
-      SourceSecurityGroupId: !Ref NodeSecurityGroup
-      IpProtocol: tcp
-      ToPort: 443
-      FromPort: 443
 
   #####
   # Lifecycle Policies
@@ -636,65 +690,6 @@ Resources:
   #
   # Since EKS only uses one subnet (the other one required by the load balancer is ignored), we will use this subnet for the squid and rely on security groups to handle ports, etc.
   ######
-
-  SquidInternetGateway:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Sub 'igw-squid-${AWS::Region}-${CostTagValue}'
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  SquidAttachGateway:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      VpcId: !Ref VPC
-      InternetGatewayId: !Ref SquidInternetGateway
-
-  SquidPublicRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub 'prt-squid-${AWS::Region}-${CostTagValue}'
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  SquidPublicRouteTableEntry:
-    Type: AWS::EC2::Route
-    DependsOn: SquidAttachGateway
-    Properties:
-      RouteTableId: !Ref SquidPublicRouteTable
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref SquidInternetGateway
-
-  SquidPublicRouteTableSubnetAssociation:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnet
-      RouteTableId: !Ref SquidPublicRouteTable
-
-  SquidSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupName: !Sub ${CostTagValue}-squid
-      GroupDescription: Security group for squid
-      VpcId: !Ref VPC
-      Tags:
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  #NodeSecurityGroupFromSquid:
-  #  Type: AWS::EC2::SecurityGroupIngress
-  #  Properties:
-  #    Description: Allow worker Kubelets and pods to receive communication from the squid
-  #    GroupId: !Ref NodeSecurityGroup
-  #    SourceSecurityGroupId: !GetAtt SquidSecurityGroup.GroupId
-  #    IpProtocol: tcp
-  #    FromPort: 3080
-  #    ToPort: !Ref NodeProxyPort
 
   SquidConfS3Bucket:
     Type: AWS::S3::Bucket
