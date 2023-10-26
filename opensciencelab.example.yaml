@@ -9,7 +9,6 @@ parameters:
   container_namespace: A namespaced path within AWS ECR containing custom images
   lab_domain: Domain of JupyterHub deployment. Use `load balancer` if not known.
   portal_domain: Domain of the OSL Portal. Used to communicate with email services, etc.
-  az_suffix: Availabilty Zone "letter" (us-west-2a) of the JupyterHub deployment. This should not be changed after initial deployment.
   days_till_volume_deletion: The number of integer days after last server use when the user's volume is deleted. To never delete volume, use value 365000.
   days_till_snapshot_deletion: The number of integer days after last server use when the user's snapshot is deleted. To never delete snapshot, use value 365000.
   days_after_server_stop_till_warning_email: Comma seperated list of integer days after last server use when user gets warning email. Must have minimum one value. To never send emails, use value 365000

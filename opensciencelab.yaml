@@ -9,7 +9,6 @@ parameters:
   container_namespace: smce-test-opensarlab
   lab_domain: load balancer
   portal_domain: https://opensciencelab-test.asf.alaska.edu
-  az_suffix: a
   days_till_volume_deletion: 2
   days_after_server_stop_till_warning_email: 3
   days_till_snapshot_deletion: 5

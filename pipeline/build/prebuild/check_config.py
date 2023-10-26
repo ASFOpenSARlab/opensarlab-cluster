@@ -19,7 +19,6 @@ def check_parameters(config):
         'container_namespace',
         'lab_domain',
         'portal_domain',
-        'az_suffix',
         'days_till_volume_deletion',
         'days_till_snapshot_deletion',
         'days_after_server_stop_till_warning_email',

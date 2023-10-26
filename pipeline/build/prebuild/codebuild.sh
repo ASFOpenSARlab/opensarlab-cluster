@@ -10,13 +10,6 @@ python3 check_config.py \
     --config $OSL_HOME/opensciencelab.yaml;
 yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensciencelab.yaml;
 
-echo "Getting VpcId and Subnets...";
-python3 get_vpcid_and_subnets.py \
-    --region_name=${AWS_REGION} \
-    --cluster_name=${COST_TAG_VALUE}-cluster \
-    --config=$OSL_HOME/opensciencelab.yaml;
-yamllint -c $OSL_HOME/.yamllint $OSL_HOME/opensciencelab.yaml;
-
 echo "Render cf-cluster.yaml...";
 python3 create_cf_cluster.py \
     --config $OSL_HOME/opensciencelab.yaml \
