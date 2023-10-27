@@ -183,29 +183,101 @@ Resources:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref SquidInternetGateway
 
-  PublicRouteTable:
+  PublicRouteTableActive:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub 'public-route-${AWS::Region}-${CostTagValue}'
+          Value: !Sub 'public-route-active-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  PublicRouteTableEntry1:
+  PublicRouteTableEntryActive:
     Type: AWS::EC2::Route
     DependsOn: SquidAttachGateway
     Properties:
-      RouteTableId: !Ref PublicRouteTable
+      RouteTableId: !Ref PublicRouteTableActive
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref SquidInternetGateway
 
-  PublicRouteTableSubnetAssociation:
+  PublicRouteTableSubnetAssociationActive:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnetActive
-      RouteTableId: !Ref PublicRouteTable
+      RouteTableId: !Ref PublicRouteTableActive
+
+  PublicRouteTableInactive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'public-route-inactive-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PublicRouteTableEntryInactive:
+    Type: AWS::EC2::Route
+    DependsOn: SquidAttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTableInactive
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref SquidInternetGateway
+
+  PublicRouteTableSubnetAssociationInactive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetInactive
+      RouteTableId: !Ref PublicRouteTableInactive
+
+  PrivateRouteTableActive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'private-route-active-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PrivateRouteTableEntryActive:
+    Type: AWS::EC2::Route
+    DependsOn: SquidAttachGateway
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableActive
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref SquidInternetGateway
+
+  PrivateRouteTableSubnetAssociationActive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetActive
+      RouteTableId: !Ref PrivateRouteTableActive
+
+  PrivateRouteTableInactive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'private-route-inactive-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PrivateRouteTableEntryInactive:
+    Type: AWS::EC2::Route
+    DependsOn: SquidAttachGateway
+    Properties:
+      RouteTableId: !Ref PrivateRouteTableInactive
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref SquidInternetGateway
+
+  PrivateRouteTableSubnetAssociationInactive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetInactive
+      RouteTableId: !Ref PrivateRouteTableInactive
 
   ClusterControlPlaneSecurityGroup:
     Type: AWS::EC2::SecurityGroup
