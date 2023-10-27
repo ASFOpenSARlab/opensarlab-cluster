@@ -98,7 +98,7 @@ cd ${CODEBUILD_ROOT}/pipeline/configs/;
 cp cluster-build-assumerolepolicy.template.json assume.json;
 sed -i "s|CLUSTER_RUN_ARN|arn:aws:iam::${AWS_AccountId}:role/${AWS_Region}-${CostTagValue}-cluster-run-role|" assume.json;
 aws iam update-assume-role-policy --role-name ${AWS_Region}-${CostTagValue}-cluster-build-role --policy-document file://assume.json;
-sleep 10
+sleep 15
 
 #######
 printf "\n\n%s\n" "******* Update kubeconfig and apply config files...";
@@ -106,8 +106,15 @@ aws eks update-kubeconfig --name ${CostTagValue}-cluster --role-arn arn:aws:iam:
 
 #######
 printf "\n\n%s\n" "******* Apply eks console bindings and aws-auth.yaml...";
-kubectl apply -f https://s3.us-west-2.amazonaws.com/amazon-eks/docs/eks-console-full-access.yaml
-kubectl apply -f aws-auth-cm.yaml
+cd ${CODEBUILD_ROOT}/pipeline/configs/;
+kubectl apply -f https://s3.us-west-2.amazonaws.com/amazon-eks/docs/eks-console-full-access.yaml;
+kubectl apply -f aws-auth-cm.yaml;
+
+#######
+printf "\n\n%s\n" "******* Reapply storage class, in case it was updated...";
+cd ${CODEBUILD_ROOT}/pipeline/configs/;
+kubectl delete sc gp3 || true;
+kubectl apply -f csi-sc.yaml
 
 #######
 printf "\n\n%s\n" "******* Render Service Accounts...";
@@ -124,9 +131,9 @@ time docker build -f dockerfile.build -t $REGISTRY_URI/crons:$CRONS_IMAGE_BUILD 
 docker push $REGISTRY_URI/crons:$CRONS_IMAGE_BUILD;
 docker push $REGISTRY_URI/crons:latest;
 
-# Secret applied later
 sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/crons:$CRONS_IMAGE_BUILD|" k8s/crons.yaml;
 kubectl apply -f k8s/crons.yaml;
+# Any secrets for cron will be applied later
 
 #######
 printf "\n\n%s\n" "******* Apply k8s resources for services...";
@@ -142,11 +149,6 @@ export HUB_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
 time docker build --build-arg JUPYTERHUB_HUB_HELM_VERSION=${JupyterHubHelmVersion} -f dockerfile.build -t $REGISTRY_URI/hub:$HUB_IMAGE_BUILD -t $REGISTRY_URI/hub:latest .;
 docker push $REGISTRY_URI/hub:$HUB_IMAGE_BUILD;
 docker push $REGISTRY_URI/hub:latest;
-
-#######
-printf "\n\n%s\n" "******* Reapply storage class...";
-kubectl delete sc gp3 || true;
-kubectl apply -f csi-sc.yaml
 
 #######
 printf "\n\n%s\n" "******* Apply ebs csi driver...";
@@ -217,7 +219,9 @@ kubectl -n jupyter rollout status -w deployment.apps/hub
 printf "\n\n%s\n" "******* Associate volume provisioner with service account...";
 kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run=true -o yaml | kubectl apply -f -;
 
+######
 printf "\n\n%s\n" "******* Apply CNI. This must be updated on every cluster upgrade...";
+cd ${CODEBUILD_ROOT}/jupyterhub/;
 curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/$AWSK8sCNIVersion/config/master/aws-k8s-cni.yaml;
 
 sed -i "s/us-west-2/${AWS_Region}/" aws-k8s-cni.yaml;
