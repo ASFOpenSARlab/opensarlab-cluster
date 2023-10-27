@@ -30,7 +30,7 @@ spec:
                   values:
                     - {region_name}
     persistentVolumeReclaimPolicy: Delete
-    storageClassName: gp2
+    storageClassName: gp3
     volumeMode: Filesystem
     claimRef:
         namespace: {namespace}

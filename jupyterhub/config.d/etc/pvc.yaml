@@ -13,6 +13,6 @@ spec:
     resources:
         requests:
             storage: {vol_size}Gi
-    storageClassName: gp2
+    storageClassName: gp3
     volumeMode: Filesystem
     volumeName: {vol_id}

@@ -132,7 +132,7 @@ def volume_from_snapshot(spawner):
                 Encrypted=False,
                 Size=vol_size,
                 SnapshotId=snapshot['SnapshotId'],
-                VolumeType='gp2',
+                VolumeType='gp3',
                 DryRun=False,
                 TagSpecifications=[
                     {
