@@ -706,7 +706,7 @@ Resources:
         BlockDeviceMappings:
           - DeviceName: /dev/xvda
             Ebs:
-              VolumeType: gp2
+              VolumeType: gp3
               VolumeSize: {{ node.root_volume_size }}
               DeleteOnTermination: 'true'
               Encrypted: 'false'
