@@ -138,7 +138,7 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  PublicSubnetInctive:
+  PublicSubnetInactive:
     # Required by the Load Balancer
     # IP range: 10.0.255.0 - 10.0.255.127
     Type: AWS::EC2::Subnet
@@ -423,7 +423,7 @@ Resources:
       Name: !Sub ${CostTagValue}
       Subnets: 
         - !Ref PublicSubnetActive
-        - !Ref PublicSubnetInctive
+        - !Ref PublicSubnetInactive
       SecurityGroups:
         - !GetAtt EKSLoadBalancerSecurityGroup.GroupId
       Tags:
