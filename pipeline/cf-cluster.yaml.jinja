@@ -346,6 +346,14 @@ Resources:
       FromPort: !Ref NodeProxyPort
       ToPort: !Ref NodeProxyPort
 
+  NodeSecurityGroupIngress4:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow instances to communicate with each other
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+      IpProtocol: "-1"
+
   NodeSecurityGroupEgress1:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
@@ -365,6 +373,24 @@ Resources:
       IpProtocol: tcp
       FromPort: 443
       ToPort: 443
+
+  NodeSecurityGroupEgress3:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow kubelet and pods to communicate with cluster control plane on port 443
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      DestinationSecurityGroupId: !GetAtt ClusterControlPlaneSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+
+  NodeSecurityGroupEgress4:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow instances to communicate with each other
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      DestinationSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+      IpProtocol: "-1"
 
   EKSLoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
