@@ -96,8 +96,11 @@ Outputs:
 Resources:
 
   #####
+  # 
   # Networking
+  # 
   #####
+
   VPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -105,6 +108,52 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub 'vpc-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+  
+  ### Subnets
+  PublicSubnetALBActive:
+    # Used only by the Load Balancer and ALB Internet Gateway
+    # IP range: 10.0.64.0 - 10.0.127.255
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.64.0/18
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Sub "${AWS::Region}${ActiveClusterAvailabilityZoneLetter}"
+      Tags:
+        - Key: Name
+          Value: !Sub 'subnet-public-active-alb-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PublicSubnetSquidActive:
+    # Used only by Squid and Squid Internet Gateway
+    # IP range: 10.0.128.0 - 	10.0.191.255
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.128.0/18
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Sub "${AWS::Region}${ActiveClusterAvailabilityZoneLetter}"
+      Tags:
+        - Key: Name
+          Value: !Sub 'subnet-public-active-squid-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PublicSubnetALBInactive:
+    # Required by the Load Balancer
+    # IP range: 10.0.255.0 - 10.0.255.127
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.255.0/25
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Sub "${AWS::Region}${InactiveClusterAvailabilityZoneLetter}"
+      Tags:
+        - Key: Name
+          Value: !Sub 'subnet-public-inactive-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
@@ -120,36 +169,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub 'subnet-private-active-${AWS::Region}-${CostTagValue}'
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-  
-  PublicSubnetActive:
-    # Used only by the Load Balancer, ALB Internet Gateway, Squid, and Squid Internet Gateway
-    # IP range: 10.0.64.0 - 10.0.127.255
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.64.0/18
-      MapPublicIpOnLaunch: true
-      AvailabilityZone: !Sub "${AWS::Region}${ActiveClusterAvailabilityZoneLetter}"
-      Tags:
-        - Key: Name
-          Value: !Sub 'subnet-public-active-${AWS::Region}-${CostTagValue}'
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  PublicSubnetInactive:
-    # Required by the Load Balancer
-    # IP range: 10.0.255.0 - 10.0.255.127
-    Type: AWS::EC2::Subnet
-    Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.255.0/25
-      MapPublicIpOnLaunch: true
-      AvailabilityZone: !Sub "${AWS::Region}${InactiveClusterAvailabilityZoneLetter}"
-      Tags:
-        - Key: Name
-          Value: !Sub 'subnet-public-inactive-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
@@ -168,6 +187,128 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
+  ### Route Tables
+  PublicRouteTableALBActive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'public-route-alb-active-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PublicRouteTableALBInactive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'public-route-alb-inactive-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PublicRouteTableSquidActive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'public-route-squid-active-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PrivateRouteTableActive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'private-route-active-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PrivateRouteTableInactive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'private-route-inactive-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  ### Subnet Route Assocations
+  PublicRouteTableSubnetAssociationALBActive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetALBActive
+      RouteTableId: !Ref PublicRouteTableALBActive
+
+  PublicRouteTableSubnetAssociationALBInactive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetALBInactive
+      RouteTableId: !Ref PublicRouteTableALBInactive
+
+  PublicRouteTableSubnetAssociationSquidActive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetSquidActive
+      RouteTableId: !Ref PublicRouteTableSquidActive
+
+  PrivateRouteTableSubnetAssociationActive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetActive
+      RouteTableId: !Ref PrivateRouteTableActive
+      
+  PrivateRouteTableSubnetAssociationInactive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnetInactive
+      RouteTableId: !Ref PrivateRouteTableInactive 
+
+#  ### Routes with route tables
+#  PublicRouteTableEntryALBActive:
+#    Type: AWS::EC2::Route
+#    Properties:
+#      RouteTableId: !Ref PublicRouteTableALBActive
+#      DestinationCidrBlock: 0.0.0.0/0
+#      GatewayId: !Ref SquidInternetGateway
+#
+#  PublicRouteTableEntryALBInactive:
+#    Type: AWS::EC2::Route
+#    Properties:
+#      RouteTableId: !Ref PublicRouteTableALBInactive
+#      DestinationCidrBlock: 0.0.0.0/0
+#      GatewayId: !Ref SquidInternetGateway
+#
+#  PublicRouteTableEntrySquidActive:
+#    Type: AWS::EC2::Route
+#    DependsOn: SquidAttachGateway
+#    Properties:
+#      RouteTableId: !Ref PublicRouteTableSquidActive
+#      DestinationCidrBlock: 0.0.0.0/0
+#      GatewayId: !Ref SquidInternetGateway
+#
+#  PrivateRouteTableEntryActive:
+#    Type: AWS::EC2::Route
+#    DependsOn: SquidInstanceASG
+#    Properties:
+#      RouteTableId: !Ref PrivateRouteTableActive
+#      DestinationCidrBlock: 0.0.0.0/0
+#      NetworkInterfaceId: !Ref SquidInstanceASG
+#
+#  PrivateRouteTableEntryInactive:
+#    Type: AWS::EC2::Route
+#    DependsOn: SquidInstanceASG
+#    Properties:
+#      RouteTableId: !Ref PrivateRouteTableInactive
+#      DestinationCidrBlock: 0.0.0.0/0
+#      NetworkInterfaceId: !Ref SquidInstanceASG 
+
+  ### Gateways and stuff
   SquidInternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
@@ -183,102 +324,7 @@ Resources:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref SquidInternetGateway
 
-  PublicRouteTableActive:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub 'public-route-active-${AWS::Region}-${CostTagValue}'
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  PublicRouteTableEntryActive:
-    Type: AWS::EC2::Route
-    DependsOn: SquidAttachGateway
-    Properties:
-      RouteTableId: !Ref PublicRouteTableActive
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref SquidInternetGateway
-
-  PublicRouteTableSubnetAssociationActive:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnetActive
-      RouteTableId: !Ref PublicRouteTableActive
-
-  PublicRouteTableInactive:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub 'public-route-inactive-${AWS::Region}-${CostTagValue}'
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  PublicRouteTableEntryInactive:
-    Type: AWS::EC2::Route
-    DependsOn: SquidAttachGateway
-    Properties:
-      RouteTableId: !Ref PublicRouteTableInactive
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref SquidInternetGateway
-
-  PublicRouteTableSubnetAssociationInactive:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PublicSubnetInactive
-      RouteTableId: !Ref PublicRouteTableInactive
-
-  PrivateRouteTableActive:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub 'private-route-active-${AWS::Region}-${CostTagValue}'
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  PrivateRouteTableEntryActive:
-    Type: AWS::EC2::Route
-    DependsOn: SquidAttachGateway
-    Properties:
-      RouteTableId: !Ref PrivateRouteTableActive
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref SquidInternetGateway
-
-  PrivateRouteTableSubnetAssociationActive:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PrivateSubnetActive
-      RouteTableId: !Ref PrivateRouteTableActive
-
-  PrivateRouteTableInactive:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref VPC
-      Tags:
-        - Key: Name
-          Value: !Sub 'private-route-inactive-${AWS::Region}-${CostTagValue}'
-        - Key: !Sub ${CostTagKey}
-          Value: !Sub ${CostTagValue}
-
-  PrivateRouteTableEntryInactive:
-    Type: AWS::EC2::Route
-    DependsOn: SquidAttachGateway
-    Properties:
-      RouteTableId: !Ref PrivateRouteTableInactive
-      DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref SquidInternetGateway
-
-  PrivateRouteTableSubnetAssociationInactive:
-    Type: AWS::EC2::SubnetRouteTableAssociation
-    Properties:
-      SubnetId: !Ref PrivateSubnetInactive
-      RouteTableId: !Ref PrivateRouteTableInactive
-
+  ### Security Groups, Ingress, Egress
   ClusterControlPlaneSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -441,15 +487,17 @@ Resources:
           Value: !Sub ${CostTagValue}
 
   #####
+  #
   # Load Balancer for EKS
+  #
   #####
   EKSLoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     Properties:
       Name: !Sub ${CostTagValue}
       Subnets: 
-        - !Ref PublicSubnetActive
-        - !Ref PublicSubnetInactive
+        - !Ref PublicSubnetALBActive
+        - !Ref PublicSubnetALBInactive
       SecurityGroups:
         - !GetAtt EKSLoadBalancerSecurityGroup.GroupId
       Tags:
@@ -903,7 +951,7 @@ Resources:
       MaxSize: 1
       MinSize: 1
       VPCZoneIdentifier: 
-        - !Ref PublicSubnetActive
+        - !Ref PublicSubnetSquidActive
       Tags:
         - Key: Name
           Value: !Sub 'Squid Instance - ${AWS::StackName}'
