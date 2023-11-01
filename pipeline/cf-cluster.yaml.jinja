@@ -82,7 +82,7 @@ Resources:
           Value: !Sub ${CostTagValue}
 
   ### Internet Gateway
-  InternetGateway:
+  PublicInternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
@@ -91,11 +91,11 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  AttachGateway:
+  AttachPublicGateway:
     Type: AWS::EC2::VPCGatewayAttachment
     Properties:
       VpcId: !Ref VPC
-      InternetGatewayId: !Ref InternetGateway
+      InternetGatewayId: !Ref PublicInternetGateway
   
   ### Subnets
   PublicSubnetALBActive:
@@ -227,19 +227,19 @@ Resources:
   ### Routes with route tables
   PublicRouteTableEntryALBActive:
     Type: AWS::EC2::Route
-    DependsOn: AttachGateway
+    DependsOn: AttachPublicGateway
     Properties:
       RouteTableId: !Ref PublicRouteTableALBActive
       DestinationCidrBlock: 0.0.0.0/0
-      GatewayId: !Ref InternetGateway
+      GatewayId: !Ref PublicInternetGateway
 
   ProtectedRouteTableEntryActive:
     Type: AWS::EC2::Route
-    DependsOn: AttachGateway
+    DependsOn: AttachPublicGateway
     Properties:
       RouteTableId: !Ref ProtectedRouteTableActive
       DestinationCidrBlock: 0.0.0.0/0
-      NetworkInterfaceId: !Ref InternetGateway
+      GatewayId: !Ref PublicInternetGateway
 
   ### Security Groups, Ingress, Egress
   ClusterControlPlaneSecurityGroup:
