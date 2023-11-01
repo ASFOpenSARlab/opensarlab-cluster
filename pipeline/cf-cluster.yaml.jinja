@@ -157,33 +157,33 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  PrivateSubnetActive:
+  ProtectedSubnetActive:
     # Used by EKS and other resources
     # IP range: 10.0.0.0 - 10.0.63.255
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.0.0/18
-      MapPublicIpOnLaunch: false
+      MapPublicIpOnLaunch: true
       AvailabilityZone: !Sub "${AWS::Region}${ActiveClusterAvailabilityZoneLetter}"
       Tags:
         - Key: Name
-          Value: !Sub 'subnet-private-active-${AWS::Region}-${CostTagValue}'
+          Value: !Sub 'subnet-protected-active-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  PrivateSubnetInactive:
+  ProtectedSubnetInactive:
     # Not used but required by EKS
     # IP range: 10.0.255.128 - 10.0.255.255
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref VPC
       CidrBlock: 10.0.255.128/25
-      MapPublicIpOnLaunch: false
+      MapPublicIpOnLaunch: true
       AvailabilityZone: !Sub "${AWS::Region}${InactiveClusterAvailabilityZoneLetter}"
       Tags:
         - Key: Name
-          Value: !Sub 'subnet-private-inactive-${AWS::Region}-${CostTagValue}'
+          Value: !Sub 'subnet-protected-inactive-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
@@ -218,23 +218,23 @@ Resources:
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  PrivateRouteTableActive:
+  ProtectedRouteTableActive:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub 'private-route-active-${AWS::Region}-${CostTagValue}'
+          Value: !Sub 'protected-route-active-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
-  PrivateRouteTableInactive:
+  ProtectedRouteTableInactive:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
       Tags:
         - Key: Name
-          Value: !Sub 'private-route-inactive-${AWS::Region}-${CostTagValue}'
+          Value: !Sub 'protected-route-inactive-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
           Value: !Sub ${CostTagValue}
 
@@ -257,17 +257,17 @@ Resources:
       SubnetId: !Ref PublicSubnetSquidActive
       RouteTableId: !Ref PublicRouteTableSquidActive
 
-  PrivateRouteTableSubnetAssociationActive:
+  ProtectedRouteTableSubnetAssociationActive:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PrivateSubnetActive
-      RouteTableId: !Ref PrivateRouteTableActive
+      SubnetId: !Ref ProtectedSubnetActive
+      RouteTableId: !Ref ProtectedRouteTableActive
       
-  PrivateRouteTableSubnetAssociationInactive:
+  ProtectedRouteTableSubnetAssociationInactive:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PrivateSubnetInactive
-      RouteTableId: !Ref PrivateRouteTableInactive 
+      SubnetId: !Ref ProtectedSubnetInactive
+      RouteTableId: !Ref ProtectedRouteTableInactive 
 
 #  ### Routes with route tables
 #  PublicRouteTableEntryALBActive:
@@ -292,19 +292,19 @@ Resources:
 #      DestinationCidrBlock: 0.0.0.0/0
 #      GatewayId: !Ref SquidInternetGateway
 #
-#  PrivateRouteTableEntryActive:
+#  ProtectedRouteTableEntryActive:
 #    Type: AWS::EC2::Route
 #    DependsOn: SquidInstanceASG
 #    Properties:
-#      RouteTableId: !Ref PrivateRouteTableActive
+#      RouteTableId: !Ref ProtectedRouteTableActive
 #      DestinationCidrBlock: 0.0.0.0/0
 #      NetworkInterfaceId: !Ref SquidInstanceASG
 #
-#  PrivateRouteTableEntryInactive:
+#  ProtectedRouteTableEntryInactive:
 #    Type: AWS::EC2::Route
 #    DependsOn: SquidInstanceASG
 #    Properties:
-#      RouteTableId: !Ref PrivateRouteTableInactive
+#      RouteTableId: !Ref ProtectedRouteTableInactive
 #      DestinationCidrBlock: 0.0.0.0/0
 #      NetworkInterfaceId: !Ref SquidInstanceASG 
 
@@ -590,8 +590,8 @@ Resources:
       RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
       ResourcesVpcConfig:
         SubnetIds:
-          - !Ref PrivateSubnetActive
-          - !Ref PrivateSubnetInactive
+          - !Ref ProtectedSubnetActive
+          - !Ref ProtectedSubnetInactive
         SecurityGroupIds:
           - !GetAtt ClusterControlPlaneSecurityGroup.GroupId
       Version: !Sub ${EksVersion}
@@ -817,7 +817,7 @@ Resources:
       MinSize: "{{ node.min_number}}"
       MaxSize: "{{ node.max_number}}"
       VPCZoneIdentifier: 
-        - !Ref PrivateSubnetActive
+        - !Ref ProtectedSubnetActive
       {% if node.is_hub is defined -%}
       TargetGroupARNs:
         - !Ref HubTargetGroup
