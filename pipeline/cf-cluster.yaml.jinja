@@ -316,6 +316,8 @@ Resources:
       GroupId: !GetAtt NodeSecurityGroup.GroupId
       SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
       IpProtocol: "-1"
+      FromPort: 0
+      ToPort: 65535
 
   NodeSecurityGroupEgress1:
     Type: AWS::EC2::SecurityGroupEgress

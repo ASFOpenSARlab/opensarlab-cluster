@@ -24,7 +24,15 @@ def check_parameters(config):
         'days_after_server_stop_till_warning_email',
         'days_after_server_stop_till_deletion_email',
         'utc_hour_of_day_snapshot_cron_runs',
-        'utc_hour_of_day_volume_cron_runs'
+        'utc_hour_of_day_volume_cron_runs',
+        'eks_version',
+        'kubectl_version',
+        'helm_3_version',
+        'aws_ebs_csi_driver_version',
+        'jupyterhub_helm_version',
+        'jupyterhub_hub_image_version',
+        'aws_k8s_cni_version',
+        'cluster_autoscaler_helm_version'
     ]
 
     optional_fields = []
