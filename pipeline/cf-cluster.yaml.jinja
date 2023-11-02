@@ -321,6 +321,7 @@ Resources:
     Type: AWS::EC2::SecurityGroupEgress
     Properties:
       Description: Allow instances to communicate out to anyone
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
       CidrIp: 0.0.0.0/0
       IpProtocol: "-1"
 
