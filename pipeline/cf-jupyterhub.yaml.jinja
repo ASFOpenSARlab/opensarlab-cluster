@@ -132,6 +132,7 @@ Resources:
                   runtime-versions:
                     python: 3.10
                 build:
+                  on-failure: ABORT
                   commands:
                     - echo "Run codebuild script...";
                     - export CODEBUILD_ROOT=$CODEBUILD_SRC_DIR;
