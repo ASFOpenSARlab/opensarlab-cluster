@@ -315,7 +315,7 @@ Resources:
     Properties:
       Description: Allow instances to communicate with each other
       GroupId: !GetAtt NodeSecurityGroup.GroupId
-      SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+      # SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
       IpProtocol: "-1"
       CidrIp: 0.0.0.0/0
 
