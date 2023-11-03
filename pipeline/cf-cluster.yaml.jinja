@@ -86,6 +86,7 @@ Resources:
   PublicInternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
+      Tags:
         - Key: Name
           Value: !Sub 'igw-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
