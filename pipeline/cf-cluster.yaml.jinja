@@ -326,7 +326,6 @@ Resources:
     Properties:
       Description: Allow instances outbound communication with everything 
       GroupId: !GetAtt NodeSecurityGroup.GroupId
-      SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
       IpProtocol: "-1"   
       CidrIp: 0.0.0.0/0
   
