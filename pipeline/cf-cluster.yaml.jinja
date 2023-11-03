@@ -317,16 +317,15 @@ Resources:
       GroupId: !GetAtt NodeSecurityGroup.GroupId
       SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
       IpProtocol: "-1"
-      FromPort: 0
-      ToPort: 65535
-
-  NodeSecurityGroupEgress1:
-    Type: AWS::EC2::SecurityGroupEgress
-    Properties:
-      Description: Allow instances to communicate out to anyone
-      GroupId: !GetAtt NodeSecurityGroup.GroupId
       CidrIp: 0.0.0.0/0
-      IpProtocol: "-1"
+
+#  NodeSecurityGroupEgress1:
+#    Type: AWS::EC2::SecurityGroupEgress
+#    Properties:
+#      Description: Allow instances to communicate out to anyone
+#      GroupId: !GetAtt NodeSecurityGroup.GroupId
+#      CidrIp: 0.0.0.0/0
+#      IpProtocol: "-1"
 
   EKSLoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
