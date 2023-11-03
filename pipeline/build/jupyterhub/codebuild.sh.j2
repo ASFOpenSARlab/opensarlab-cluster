@@ -95,20 +95,16 @@ curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/$KubectlVersion/bi
 chmod +x ./kubectl
 mkdir -p $HOME/bin && mv ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
 kubectl version
+kubectl cluster-info
+kubectl config view
 
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 #export HELM_HOST=127.0.0.1:44134
 helm version
-
+helm ls
 
 ####### *******************
 # Build
-
-printf "\n\n%s\n" "******* Install helm charts and update...";
-helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/;
-helm repo add autoscaler https://kubernetes.github.io/autoscaler;
-helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver;
-helm repo update;
 
 #######
 printf "\n\n%s\n" "******* Apply eks console bindings and aws-auth-cm.yaml...";
@@ -196,8 +192,8 @@ docker push $REGISTRY_URI/hub:latest;
 #######
 printf "\n\n%s\n" "******* Apply ebs csi driver...";
 # if there is an error, then `kubectl delete csidriver ebs.csi.aws.com` and reapply. Warning: This will break volume management until reran.
-helm upgrade aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
-    --install \
+helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver;
+helm install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
     --version $AWSEbsCsiDriverVersion \
     --namespace kube-system \
     --timeout=6m0s \
@@ -218,8 +214,8 @@ printf "\n\n%s\n" "******* Availability Zone for EKS cluster and related resourc
 #######
 printf "\n\n%s\n" "******* Install JupyterHub cluster...";
 cd ${CODEBUILD_ROOT}/jupyterhub/;
-helm upgrade jupyter jupyterhub/jupyterhub \
-    --install \
+helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/;
+helm install jupyter jupyterhub/jupyterhub \
     --create-namespace \
     --namespace jupyter \
     --version $JupyterHubHelmVersion \
@@ -264,8 +260,8 @@ kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-vol
 
 #######
 printf "\n\n%s\n" "******* Install autoscaler...";
-helm upgrade autoscaler autoscaler/cluster-autoscaler \
-    --install \
+helm repo add autoscaler https://kubernetes.github.io/autoscaler;
+helm install autoscaler autoscaler/cluster-autoscaler \
     --version $ClusterAutoscalerHelmVersion \
     --create-namespace \
     --namespace autoscaler \
