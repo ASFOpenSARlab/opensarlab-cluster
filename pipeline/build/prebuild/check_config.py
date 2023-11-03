@@ -27,7 +27,6 @@ def check_parameters(config):
         'utc_hour_of_day_volume_cron_runs',
         'eks_version',
         'kubectl_version',
-        'helm_3_version',
         'aws_ebs_csi_driver_version',
         'jupyterhub_helm_version',
         'jupyterhub_hub_image_version',

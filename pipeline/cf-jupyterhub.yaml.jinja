@@ -56,11 +56,6 @@ Parameters:
     Type: String
     Default: "{{ parameters.kubectl_version }}"
 
-  Helm3Version:
-    Description: Version of helm software used during jupyterhub build.
-    Type: String
-    Default: "{{ parameters.helm_3_version }}"
-
   AWSEbsCsiDriverVersion:
     Description: Version of the AWS EBS CSI volume driver.
     Type: String
@@ -149,7 +144,6 @@ Resources:
                         DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
                         CODEBUILD_ROOT=$CODEBUILD_ROOT 
                         KubectlVersion=${KubectlVersion}
-                        Helm3Version=${Helm3Version}
                         AWSEbsCsiDriverVersion=${AWSEbsCsiDriverVersion}
                         JupyterHubHelmVersion=${JupyterHubHelmVersion}
                         AWSK8sCNIVersion=${AWSK8sCNIVersion}
