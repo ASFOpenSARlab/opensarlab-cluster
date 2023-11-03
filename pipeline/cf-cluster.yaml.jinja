@@ -74,7 +74,8 @@ Resources:
   VPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: 10.0.0.0/16
+      - CidrBlock: 10.0.0.0/16
+      - EnableDnsHostnames : true
       Tags:
         - Key: Name
           Value: !Sub 'vpc-${AWS::Region}-${CostTagValue}'
@@ -85,7 +86,6 @@ Resources:
   PublicInternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
-      Tags:
         - Key: Name
           Value: !Sub 'igw-${AWS::Region}-${CostTagValue}'
         - Key: !Sub ${CostTagKey}
