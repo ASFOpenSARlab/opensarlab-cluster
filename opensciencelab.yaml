@@ -16,7 +16,7 @@ parameters:
   utc_hour_of_day_snapshot_cron_runs: 12
   utc_hour_of_day_volume_cron_runs: 13
   eks_version: 1.28  # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
-  kubectl_version: '1.28.1/2023-09-14'  # https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
+  kubectl_version: '1.28.2/2023-10-17'  # https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
   aws_ebs_csi_driver_version: '2.24.0'  # https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases
   jupyterhub_helm_version: '3.1.0'  # https://jupyterhub.github.io/helm-chart/
   jupyterhub_hub_image_version: '4.0.2'  # Match App Version of JupyterHub Helm

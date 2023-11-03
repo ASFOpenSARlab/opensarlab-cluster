@@ -56,36 +56,12 @@ pip3 install boto3 --upgrade
 pip3 install kubernetes --upgrade
 pip3 install jinja2 --upgrade
 
-curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/$KubectlVersion/bin/darwin/amd64/kubectl
-kubectl version
-
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-helm version
-#export HELM_HOST=127.0.0.1:44134
-
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp;
 mv /tmp/eksctl /usr/local/bin;
 eksctl version;
 
-
 ####### ******************
 # Prebuild
-
-printf "\n\n%s\n" "******* IAM build role used is... $(aws sts get-caller-identity)"
-
-printf "\n\n%s\n" "******* Logging into AWS ECR...";
-aws ecr get-login-password --region ${AWS_Region} | \
-    docker login --username AWS --password-stdin ${AWS_AccountId}.dkr.ecr.${AWS_Region}.amazonaws.com
-
-printf "\n\n%s\n" "******* Install helm charts and update...";
-helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/;
-helm repo add autoscaler https://kubernetes.github.io/autoscaler;
-helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver;
-helm repo update;
-
-
-####### *******************
-# Build
 
 printf "\n\n%s\n" "******* Get registry URI..";
 export REGISTRY_URI=${AWS_AccountId}.dkr.ecr.${AWS_Region}.amazonaws.com/${ContainerNamespace}
@@ -94,15 +70,45 @@ printf "%s\n" "REGISTRY_URI: $REGISTRY_URI"
 #######
 printf "\n\n%s\n" "******* Update assumed role of cluster-build...";
 cd ${CODEBUILD_ROOT}/pipeline/configs/;
-
 cp cluster-build-assumerolepolicy.template.json assume.json;
 sed -i "s|CLUSTER_RUN_ARN|arn:aws:iam::${AWS_AccountId}:role/${AWS_Region}-${CostTagValue}-cluster-run-role|" assume.json;
 aws iam update-assume-role-policy --role-name ${AWS_Region}-${CostTagValue}-cluster-build-role --policy-document file://assume.json;
+printf "\n\n%s\n" "******* Sleep for 15 seconds to make sure the chnage in IAM role has propagated...";
 sleep 15
 
 #######
 printf "\n\n%s\n" "******* Update kubeconfig and apply config files...";
 aws eks update-kubeconfig --name ${CostTagValue}-cluster --role-arn arn:aws:iam::${AWS_AccountId}:role/${AWS_Region}-${CostTagValue}-cluster-build-role;
+
+#######
+printf "\n\n%s\n" "******* IAM build role used is... $(aws sts get-caller-identity)"
+
+#######
+printf "\n\n%s\n" "******* Logging into AWS ECR...";
+aws ecr get-login-password --region ${AWS_Region} | \
+    docker login --username AWS --password-stdin ${AWS_AccountId}.dkr.ecr.${AWS_Region}.amazonaws.com
+
+#######
+printf "\n\n%s\n" "******* Install kubectl and Helm (now that the cluster authentication is finished)...";
+cd ${CODEBUILD_ROOT}
+curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/$KubectlVersion/bin/linux/amd64/kubectl
+chmod +x ./kubectl
+mkdir -p $HOME/bin && mv ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
+kubectl version
+
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+#export HELM_HOST=127.0.0.1:44134
+helm version
+
+
+####### *******************
+# Build
+
+printf "\n\n%s\n" "******* Install helm charts and update...";
+helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/;
+helm repo add autoscaler https://kubernetes.github.io/autoscaler;
+helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver;
+helm repo update;
 
 #######
 printf "\n\n%s\n" "******* Apply eks console bindings and aws-auth-cm.yaml...";
