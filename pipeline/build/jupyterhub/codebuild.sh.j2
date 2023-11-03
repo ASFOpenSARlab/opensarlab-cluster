@@ -16,7 +16,6 @@ set -ex
 #       DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
 #       CODEBUILD_ROOT=$CODEBUILD_ROOT
 #       KubectlVersion=${KubectlVersion}
-#       Helm3Version=${Helm3Version}
 #       AWSEbsCsiDriverVersion=${AWSEbsCsiDriverVersion}
 #       JupyterHubHelmVersion=${JupyterHubHelmVersion}
 #       AWSK8sCNIVersion=${AWSK8sCNIVersion}
@@ -43,7 +42,6 @@ DaysTillVolumeDeletion=${DaysTillVolumeDeletion}
 DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
 CODEBUILD_ROOT=${CODEBUILD_ROOT}
 KubectlVersion=${KubectlVersion}
-Helm3Version=${Helm3Version}
 AWSEbsCsiDriverVersion=${AWSEbsCsiDriverVersion}
 JupyterHubHelmVersion=${JupyterHubHelmVersion}
 AWSK8sCNIVersion=${AWSK8sCNIVersion}
@@ -59,10 +57,12 @@ pip3 install kubernetes --upgrade
 pip3 install jinja2 --upgrade
 
 curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/$KubectlVersion/bin/darwin/amd64/kubectl
+kubectl version
 
-curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash -s -- --version $Helm3Version
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+helm version
+#export HELM_HOST=127.0.0.1:44134
 
-export HELM_HOST=127.0.0.1:44134
 curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp;
 mv /tmp/eksctl /usr/local/bin;
 eksctl version;
