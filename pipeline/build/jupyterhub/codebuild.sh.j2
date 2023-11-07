@@ -193,7 +193,7 @@ docker push $REGISTRY_URI/hub:latest;
 printf "\n\n%s\n" "******* Apply ebs csi driver...";
 # if there is an error, then `kubectl delete csidriver ebs.csi.aws.com` and reapply. Warning: This will break volume management until reran.
 helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver;
-helm install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
+helm upgrade --install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
     --version $AWSEbsCsiDriverVersion \
     --namespace kube-system \
     --timeout=6m0s \
@@ -215,7 +215,7 @@ printf "\n\n%s\n" "******* Availability Zone for EKS cluster and related resourc
 printf "\n\n%s\n" "******* Install JupyterHub cluster...";
 cd ${CODEBUILD_ROOT}/jupyterhub/;
 helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/;
-helm install jupyter jupyterhub/jupyterhub \
+helm upgrade --install jupyter jupyterhub/jupyterhub \
     --create-namespace \
     --namespace jupyter \
     --version $JupyterHubHelmVersion \
@@ -261,7 +261,7 @@ kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-vol
 #######
 printf "\n\n%s\n" "******* Install autoscaler...";
 helm repo add autoscaler https://kubernetes.github.io/autoscaler;
-helm install autoscaler autoscaler/cluster-autoscaler \
+helm upgrade --install autoscaler autoscaler/cluster-autoscaler \
     --version $ClusterAutoscalerHelmVersion \
     --create-namespace \
     --namespace autoscaler \
