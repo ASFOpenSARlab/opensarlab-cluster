@@ -7,6 +7,8 @@ RUN apt update && \
         requests \
         kubernetes \
         opensarlab-backend==1.0.4 \
-        escapism
+        escapism \
+        jinja2 \
+        yamllint
 
 COPY ./app /app

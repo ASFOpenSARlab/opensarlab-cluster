@@ -1,0 +1,53 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: external
+
+---
+{%- for workload in workloads %}
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: {{ workload['profile'] }}-{{ workload['lab'] }}
+  namespace: external
+spec:
+  hosts:
+  {%- for host in workload['hosts'] %}
+    - "{{ host }}"
+  {%- endfor %}
+  ports:
+    - number: 80
+      name: http
+      protocol: HTTP
+    - number: 443
+      name: https
+      protocol: HTTPS
+  resolution: DNS
+  location: MESH_EXTERNAL
+  exportTo:
+    - "."
+    - "{{ workload['namespace'] }}"
+
+---
+
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: {{ workload['profile'] }}-{{ workload['lab'] }}
+  namespace: {{ workload['namespace'] }}
+spec:
+  outboundTrafficPolicy: 
+    mode: "REGISTRY_ONLY"
+  workloadSelector:
+    labels:
+      se-profile: {{ workload['profile'] }}
+      se-lab: {{ workload['lab'] }}
+  egress:
+    - hosts:
+      {%- for host in workload['hosts'] %}
+        - "external/{{ host }}"
+      {%- endfor %}
+
+---
+{% endfor %}

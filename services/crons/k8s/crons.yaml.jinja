@@ -65,3 +65,30 @@ spec:
                 - "--portal-domain={{ parameters.portal_domain }}"
           restartPolicy: OnFailure
           terminationGracePeriodSeconds: 0
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: domain-cron
+  namespace: services
+spec:
+  schedule: "0 1 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      parallelism: 1
+      completions: 1
+      template:
+        spec:
+          containers:
+            - name: domains-cron
+              image: IMAGE_PLACEHOLDER
+              command:
+                - "python3"
+                - "/app/domain_management.py"
+                - "--lab-short-name={{ parameters.lab_short_name }}"
+                - "--cluster-name={{ cluster_name }}"
+                - "--region={{ region_name }}"
+          restartPolicy: OnFailure
+          terminationGracePeriodSeconds: 0
