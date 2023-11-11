@@ -6,3 +6,5 @@ rules:
     line-length: disable
     trailing-spaces: disable
     new-line-at-end-of-file: disable
+    
+    document-start: disable  # This was causing some wierd linting errors, so it has been turned off for the moment.

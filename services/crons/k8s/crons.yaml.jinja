@@ -86,8 +86,8 @@ spec:
               image: IMAGE_PLACEHOLDER
               command:
                 - "python3"
-                - "/app/domain_management.py"
-                - "--lab-short-name={{ parameters.lab_short_name }}"
+                - "/app/domain_management/domain_management.py"
+                - "--domain-whitelist-bucket={{ parameters.domain_whitelist_bucket }}"
                 - "--cluster-name={{ cluster_name }}"
                 - "--region={{ region_name }}"
           restartPolicy: OnFailure

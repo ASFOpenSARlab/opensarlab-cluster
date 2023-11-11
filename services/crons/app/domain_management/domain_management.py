@@ -20,7 +20,7 @@ from kubernetes import config as k8s_config
 from kubernetes import utils
 from kubernetes.client.rest import ApiException
 
-from .domain_management import build as build_configs
+import build as build_configs
 
 class BadTimeTagsException(Exception):
     """ If the time tags are bad or in the wrong order """
@@ -70,7 +70,7 @@ class SnapshotManagement():
             k8s_config.load_config()
         self.k8s_api = k8s_client.CoreV1Api()
 
-    def _get_file_folders(s3_client, bucket_name, prefix=""):
+    def _get_file_folders(self, s3_client, bucket_name, prefix=""):
         file_names = []
         folders = []
 
@@ -79,6 +79,8 @@ class SnapshotManagement():
             "Prefix": prefix
         }
         next_token = ""
+
+        log.info(f"Getting files from bucket '{bucket_name}' with prefix '{prefix}'.")
 
         while next_token is not None:
             updated_kwargs = default_kwargs.copy()
@@ -100,7 +102,7 @@ class SnapshotManagement():
         return file_names, folders
 
 
-    def _download_files(s3_client, bucket_name, local_path, file_names, folders):
+    def _download_files(self, s3_client, bucket_name, local_path, file_names, folders):
 
         local_path = pathlib.Path(local_path)
 
@@ -122,7 +124,6 @@ class SnapshotManagement():
         try:
             # Make temp folders
             pathlib.Path("/tmp/whitelists/configs/").mkdir(parents=True, exist_ok=True)
-            pathlib.Path("/tmp/whitelists/egress/").mkdir(parents=True, exist_ok=True)
 
             # Download latest whitelist files from S3 to /temp
             file_names, folders = self._get_file_folders(self.s3, self.domain_bucket, prefix=self.cluster_name)
@@ -135,30 +136,26 @@ class SnapshotManagement():
             )
 
             # Parse whitelist configs
-            build_configs.main(
-                "/tmp/whitelists/configs/", 
-                "/tmp/whitelists/egress/",
-                "/app/domain_management.d/egress.yaml.j2"
-            )
+            build_configs.main("/tmp/whitelists/configs/", "/app/domain_management/")
 
             # Lint configs
             ## yamllint -c $HERE/.yamllint $HERE/k8s/egress/
-            lint_config = YamlLintConfig.is_yaml_file('/app/domain_management.d/.yamllint')
-            lint_problems = linter.run('/tmp/whitelists/egress/egress.yaml', lint_config)
+            lint_config = YamlLintConfig(file='/app/domain_management/.yamllint')
+            lint_config.validate()
+            lint_problems = linter.run('/app/domain_management/egress.yaml', lint_config)
+            lint_problems = list(lint_problems)
             if lint_problems:
-                log.error(list(lint_problems))
-                raise Exception("Problems found in the egress yaml")
+                raise Exception(f"Problems found in the egress yaml.\n{list(lint_problems)}")
 
             # Apply egress config
             ## kubectl apply -f $HERE/k8s/egress/egress.yaml
-            utils.create_from_yaml(self.k8s_api, '/tmp/whitelists/egress/egress.yaml', verbose=True)
-
-            # Apply configs to cluster
             if self.dry_run:
                 log.info("Dry run. Skipping applying of domains to cluster...")
             else:
-                namespace = 'jupyter'
-                #self.k8s_api.delete_namespaced_persistent_volume_claim(body=k8s_client.V1DeleteOptions(), name=pvc_name, namespace=namespace)
+                log.info("Applying domains to cluster...")
+                utils.create_from_yaml(self.k8s_api, '/app/domain_management/egress.yaml', verbose=True)
+                pass
+
         except ApiException as e:
             log.error("Something went wrong with K8s...")
             raise
@@ -168,7 +165,7 @@ class SnapshotManagement():
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Check usage status of snapshots in lab deployment and send emails, remove users as needed.')
-    parser.add_argument('--domain-bucket', help="Name of S3 bucket containing domain whitelists", dest="domain_bucker", required=True)
+    parser.add_argument('--domain-whitelist-bucket', help="Name of S3 bucket containing domain whitelists", dest="domain_bucket", required=True)
     parser.add_argument('--cluster-name', help='K8s cluster name (not short lab name)', dest='cluster_name', required=True)
     parser.add_argument('--region', help='AWS Region name', dest='aws_region', required=True)
     parser.add_argument('--profile', help='AWS profile largely for local development', dest='aws_profile', required=False)

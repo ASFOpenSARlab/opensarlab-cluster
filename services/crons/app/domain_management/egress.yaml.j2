@@ -1,15 +1,17 @@
 ---
+
 apiVersion: v1
 kind: Namespace
 metadata:
   name: external
 
 ---
+
 {%- for workload in workloads %}
 apiVersion: networking.istio.io/v1beta1
 kind: ServiceEntry
 metadata:
-  name: {{ workload['profile'] }}-{{ workload['lab'] }}
+  name: {{ workload['lab'] }}-{{ workload['profile'] }}
   namespace: external
 spec:
   hosts:
@@ -34,15 +36,15 @@ spec:
 apiVersion: networking.istio.io/v1beta1
 kind: Sidecar
 metadata:
-  name: {{ workload['profile'] }}-{{ workload['lab'] }}
+  name: {{ workload['lab'] }}-{{ workload['profile'] }}
   namespace: {{ workload['namespace'] }}
 spec:
   outboundTrafficPolicy: 
     mode: "REGISTRY_ONLY"
   workloadSelector:
     labels:
-      se-profile: {{ workload['profile'] }}
       se-lab: {{ workload['lab'] }}
+      se-profile: {{ workload['profile'] }}
   egress:
     - hosts:
       {%- for host in workload['hosts'] %}

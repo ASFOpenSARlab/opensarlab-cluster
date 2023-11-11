@@ -4,10 +4,10 @@ import argparse
 import logging
 
 log = logging.getLogger(__file__)
-console_handler = logging.StreamHandler(sys.stdout)
-console_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-console_handler.setFormatter(console_formatter)
-log.addHandler(console_handler)
+#console_handler = logging.StreamHandler(sys.stdout)
+#console_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+#console_handler.setFormatter(console_formatter)
+#log.addHandler(console_handler)
 log.setLevel(logging.DEBUG)
 
 from jinja2 import Environment, FileSystemLoader
@@ -156,26 +156,25 @@ def parse_config_files(config_files: [], includes_workloads: []) -> []:
 
             log.info(
                 f"""To apply firewall config '{name}', apply pod labels: 
-                    \"se-profile: {name}\"
-                    \"se-lab: {lab}\"              
+                    \"se-lab: {lab}\"
+                    \"se-profile: {name}\"              
                 """    
             )
         
         else:
             log.warning(f"No valid hosts found for '{name}'. No egress configuration will be created.")
 
-    log.info("Done chekcing host config files.\n")
+    log.info("Done checking host config files.\n")
 
     return workloads
 
-def main(configs_path: str, output_folder: str, template_path: str) -> None:
+def main(configs_path: str, template_path: str) -> None:
 
     configs_path = pathlib.Path(configs_path)
     template_path = pathlib.Path(template_path)
-    output_folder = pathlib.Path(output_folder)
 
     env = Environment(
-        loader=FileSystemLoader(template_path.parent),
+        loader=FileSystemLoader(template_path),
         autoescape=True
     )
 
@@ -185,16 +184,15 @@ def main(configs_path: str, output_folder: str, template_path: str) -> None:
     config_files = configs_path.glob("*.conf")
     workloads = parse_config_files(config_files, includes_workloads)
     
-    template = env.get_template(template_path.name)
-    with open(output_folder / "egress.yaml", 'w') as outfile:
+    template = env.get_template('egress.yaml.j2')
+    with open(template_path / "egress.yaml", 'w') as outfile:
         outfile.write(template.render(workloads=workloads))
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--configs_path', default=None)
-    parser.add_argument('--output_folder', default=None)
     parser.add_argument('--template_path', default=None)
     args = parser.parse_args()
 
-    main(args.configs_path, args.output_folder, args.template_path)
+    main(args.configs_path, args.template_path)
