@@ -161,8 +161,8 @@ kubectl delete sc gp3 || true;
 kubectl apply -f csi-sc.yaml
 
 #######
-# If $IstioVersion is "", then don't install
-if [ "$IstioVersion" != "" ]; then
+# If IstioVersion is None, then don't install
+if [ "$IstioVersion" != "None" ]; then
     printf "\n\n%s\n" "******* Install Istiod client, actual Istio, and enable injection...";
     curl -L https://istio.io/downloadIstio | ISTIO_VERSION=$IstioVersion TARGET_ARCH=x86_64 sh - && \
         cd istio-$IstioVersion && \
@@ -173,9 +173,9 @@ if [ "$IstioVersion" != "" ]; then
     # REGISTRY_ONLY to block all egress implicit traffic 
     istioctl install -y --set profile=minimal --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY;
 
-    # Inject istio sidecars into $JUPYTERHUB_NAMESPACEnamespace
-    kubectl create namespace $JUPYTERHUB_NAMESPACE--dry-run=client -o yaml | kubectl apply -f -;
-    kubectl label namespace $JUPYTERHUB_NAMESPACEistio-injection=enabled --overwrite;
+    # Inject istio sidecars into $JUPYTERHUB_NAMESPACE namespace
+    kubectl create namespace $JUPYTERHUB_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -;
+    kubectl label namespace $JUPYTERHUB_NAMESPACE istio-injection=enabled --overwrite;
 fi
 
 #######

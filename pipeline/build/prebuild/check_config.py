@@ -35,7 +35,9 @@ def check_parameters(config):
         'istio_client_version'
     ]
 
-    optional_fields = []
+    optional_fields = [
+        'domain_whitelist_bucket_name'
+    ]
 
     for required in required_fields:
         if required not in params.keys():
@@ -83,6 +85,14 @@ def check_parameters(config):
             results = re.search(pattern, value)
             if not results:
                 raise Exception(f"Missing http:// or https:// in url '{value}'")
+            
+        if required == 'istio_client_version':
+            value = params.get('istio_client_version', None)
+
+            if value:
+                domain_whitelist_bucket_name = params.get('domain_whitelist_bucket_name', None)
+                if not domain_whitelist_bucket_name:
+                    raise Exception("Parameter 'domain_whitelist_bucket_name' is required if 'istio_client_version' is not None.")
 
     for optional in optional_fields:
         if optional in params.keys():
@@ -117,16 +127,6 @@ def check_nodes(config):
                         raise Exception("root_volume_size has value of {value} and is less than 1 GiB")
                     elif value > 16345:
                         raise Exception("root_volume_size has value of {value} and is greater than 16345 GiB")
-
-def check_istio(config):
-    for wl in config.get('istio', ''):
-        is_enabled = wl.get('is_enabled', None)
-        if type(is_enabled) != bool:
-            raise Exception(f"Domain whitelist is_enabled is '{is_enabled}'. Is required and must be a boolean.")
-        
-        domain_whitelist_bucket_name = wl.get('domain_whitelist_bucket_name', None)
-        if domain_whitelist_bucket_name is None:
-            raise Exception(f"domain_whitelist_bucket_name is given as '{domain_whitelist_bucket_name} and is required.")
 
 def check_service_accounts(config):
     for sa in config.get('service_accounts', ''):

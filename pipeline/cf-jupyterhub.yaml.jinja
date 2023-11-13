@@ -1,7 +1,6 @@
 ---
 
 {% set parameters = opensciencelab['parameters'] -%}
-{% set istio = opensciencelab['istio'] -%}
 
 AWSTemplateFormatVersion: 2010-09-09
 
@@ -85,11 +84,7 @@ Parameters:
   IstioVersion:
     Description: Version of Istio service mesh.
     Type: String
-    {% if istio is defined and istio.enabled == True -%}
     Default: "{{ parameters.istio_version }}"
-    {% else %}
-    Default: ""
-    {% endif %}
 
 Resources:
 
