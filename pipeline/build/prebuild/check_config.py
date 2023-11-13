@@ -32,7 +32,7 @@ def check_parameters(config):
         'jupyterhub_hub_image_version',
         'aws_k8s_cni_version',
         'cluster_autoscaler_helm_version',
-        'istio_client_version'
+        'istio_version'
     ]
 
     optional_fields = [
@@ -86,13 +86,13 @@ def check_parameters(config):
             if not results:
                 raise Exception(f"Missing http:// or https:// in url '{value}'")
             
-        if required == 'istio_client_version':
-            value = params.get('istio_client_version', None)
+        if required == 'istio_version':
+            value = params.get('istio_version', None)
 
             if value:
                 domain_whitelist_bucket_name = params.get('domain_whitelist_bucket_name', None)
                 if not domain_whitelist_bucket_name:
-                    raise Exception("Parameter 'domain_whitelist_bucket_name' is required if 'istio_client_version' is not None.")
+                    raise Exception("Parameter 'domain_whitelist_bucket_name' is required if 'istio_version' is not None.")
 
     for optional in optional_fields:
         if optional in params.keys():
