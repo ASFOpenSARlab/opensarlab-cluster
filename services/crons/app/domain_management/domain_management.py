@@ -25,7 +25,7 @@ import build as build_configs
 class BadTimeTagsException(Exception):
     """ If the time tags are bad or in the wrong order """
 
-class SnapshotManagement():
+class DomainManagement():
 
     def __init__(
             self,
@@ -53,7 +53,7 @@ class SnapshotManagement():
         self.cluster_name = cluster_name
         self.dry_run = dry_run
 
-        self.log.info(f"""Checking snapshots with
+        self.log.info(f"""Getting domain whitelists with
             domain_bucket: '{domain_bucket}',
             cluster_name: '{cluster_name}',
             region: '{aws_region}',
@@ -164,7 +164,7 @@ class SnapshotManagement():
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description='Check usage status of snapshots in lab deployment and send emails, remove users as needed.')
+    parser = argparse.ArgumentParser(description='Pull in latest domain whitelist and apply to Istio service mesh.')
     parser.add_argument('--domain-whitelist-bucket', help="Name of S3 bucket containing domain whitelists", dest="domain_bucket", required=True)
     parser.add_argument('--cluster-name', help='K8s cluster name (not short lab name)', dest='cluster_name', required=True)
     parser.add_argument('--region', help='AWS Region name', dest='aws_region', required=True)
@@ -173,5 +173,5 @@ if __name__ == "__main__":
     parser.add_argument('--dry-run', help='Dry run email, removal, and deletions.', dest='dry_run', action='store_true', required=False)
     args = vars(parser.parse_args())
 
-    vm = SnapshotManagement(**args)
+    vm = DomainManagement(**args)
     vm.main()
