@@ -32,7 +32,7 @@ def check_parameters(config):
         'jupyterhub_hub_image_version',
         'aws_k8s_cni_version',
         'cluster_autoscaler_helm_version',
-        'istio_client_version'
+        'istio_version'
     ]
 
     optional_fields = [
