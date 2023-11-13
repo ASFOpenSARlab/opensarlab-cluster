@@ -197,7 +197,6 @@ def main(config):
 
     check_parameters(yaml_config)
     check_nodes(yaml_config)
-    check_istio(yaml_config)
     check_service_accounts(yaml_config)
     check_profiles(yaml_config)
 
