@@ -8,7 +8,6 @@ parameters:
   certificate_arn: arn:aws:acm:us-west-2:233535791844:certificate/ea76b92b-7bd5-449b-9e3d-1b9a4787258a
   container_namespace: smce-test-opensarlab
   lab_domain: load balancer
-  domain_whitelist_bucket: us-west-2-opensciencelab-domain-whitelist
   portal_domain: https://opensciencelab-test.asf.alaska.edu
   days_till_volume_deletion: 2
   days_after_server_stop_till_warning_email: 3
@@ -23,6 +22,11 @@ parameters:
   jupyterhub_hub_image_version: '4.0.2'  # Match App Version of JupyterHub Helm
   aws_k8s_cni_version: 'v1.15.0'  # https://docs.aws.amazon.com/eks/latest/userguide/managing-vpc-cni.html
   cluster_autoscaler_helm_version: '9.29.3'  # https://github.com/kubernetes/autoscaler/releases > cluster-autoscaler-chart
+  istio_version: '1.19.3'  # https://github.com/istio/istio/releases
+
+istio:
+    is_enabled: true
+    domain_whitelist_bucket_name: us-west-2-opensciencelab-domain-whitelist
 
 nodes:
   - name: hub  # Required

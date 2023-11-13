@@ -20,6 +20,7 @@ set -ex
 #       JupyterHubHelmVersion=${JupyterHubHelmVersion}
 #       AWSK8sCNIVersion=${AWSK8sCNIVersion}
 #       ClusterAutoscalerHelmVersion=${ClusterAutoscalerHelmVersion}
+#       IstioVersion=${IstioVersion}
 #       JupyterHubImageVersion=${JupyterHubImageVersion}
 #      bash codebuild.sh
 #
@@ -46,8 +47,12 @@ AWSEbsCsiDriverVersion=${AWSEbsCsiDriverVersion}
 JupyterHubHelmVersion=${JupyterHubHelmVersion}
 AWSK8sCNIVersion=${AWSK8sCNIVersion}
 ClusterAutoscalerHelmVersion=${ClusterAutoscalerHelmVersion}
+IstioVersion=${IstioVersion}
 JupyterHubImageVersion=${JupyterHubImageVersion}
 "
+
+printf "\n\n%s\n" "******* Set K8s namespace for JupyterHub related items...";
+JUPYTERHUB_NAMESPACE=jupyter
 
 ####### ******************
 # Install
@@ -156,6 +161,24 @@ kubectl delete sc gp3 || true;
 kubectl apply -f csi-sc.yaml
 
 #######
+# If $IstioVersion is "", then don't install
+if [ "$IstioVersion" != "" ]; then
+    printf "\n\n%s\n" "******* Install Istiod client, actual Istio, and enable injection...";
+    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=$IstioVersion TARGET_ARCH=x86_64 sh - && \
+        cd istio-$IstioVersion && \
+        export PATH="$PATH:$PWD/bin";
+    istioctl x precheck;
+
+    # minimal profile includes ingress gateway even though it is not used
+    # REGISTRY_ONLY to block all egress implicit traffic 
+    istioctl install -y --set profile=minimal --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY;
+
+    # Inject istio sidecars into $JUPYTERHUB_NAMESPACEnamespace
+    kubectl create namespace $JUPYTERHUB_NAMESPACE--dry-run=client -o yaml | kubectl apply -f -;
+    kubectl label namespace $JUPYTERHUB_NAMESPACEistio-injection=enabled --overwrite;
+fi
+
+#######
 printf "\n\n%s\n" "******* Render addtional user Service Accounts...";
 cd ${CODEBUILD_ROOT}/pipeline/build/jupyterhub/;
 python3 service_accounts.py
@@ -217,7 +240,7 @@ cd ${CODEBUILD_ROOT}/jupyterhub/;
 helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/;
 helm upgrade --install jupyter jupyterhub/jupyterhub \
     --create-namespace \
-    --namespace jupyter \
+    --namespace $JUPYTERHUB_NAMESPACE \
     --version $JupyterHubHelmVersion \
     --values helm_config.yaml \
     --timeout=6m0s \
@@ -253,7 +276,7 @@ helm upgrade --install jupyter jupyterhub/jupyterhub \
     {% endfor -%}
     --
 
-kubectl -n jupyter rollout status -w deployment.apps/hub
+kubectl -n $JUPYTERHUB_NAMESPACE rollout status -w deployment.apps/hub
 
 printf "\n\n%s\n" "******* Associate volume provisioner with service account...";
 kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run=true -o yaml | kubectl apply -f -;

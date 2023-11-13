@@ -1,6 +1,7 @@
 ---
 
 {% set parameters = opensciencelab['parameters'] -%}
+{% set istio = opensciencelab['istio'] -%}
 
 AWSTemplateFormatVersion: 2010-09-09
 
@@ -81,6 +82,15 @@ Parameters:
     Type: String
     Default: "{{ parameters.cluster_autoscaler_helm_version }}"
 
+  IstioVersion:
+    Description: Version of Istio service mesh.
+    Type: String
+    {% if istio is defined and istio.enabled == True -%}
+    Default: "{{ parameters.istio_version }}"
+    {% else %}
+    Default: ""
+    {% endif %}
+
 Resources:
 
   SSOTokenSecretsManager:
@@ -148,5 +158,6 @@ Resources:
                         JupyterHubHelmVersion=${JupyterHubHelmVersion}
                         AWSK8sCNIVersion=${AWSK8sCNIVersion}
                         ClusterAutoscalerHelmVersion=${ClusterAutoscalerHelmVersion}
+                        IstioVersion=${IstioVersion}
                         JupyterHubImageVersion=${JupyterHubImageVersion}
                       bash $CODEBUILD_ROOT/pipeline/build/jupyterhub/codebuild.sh;
