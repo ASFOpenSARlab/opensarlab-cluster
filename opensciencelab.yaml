@@ -22,6 +22,9 @@ parameters:
   jupyterhub_hub_image_version: '4.0.2'  # Match App Version of JupyterHub Helm
   aws_k8s_cni_version: 'v1.15.0'  # https://docs.aws.amazon.com/eks/latest/userguide/managing-vpc-cni.html
   cluster_autoscaler_helm_version: '9.29.3'  # https://github.com/kubernetes/autoscaler/releases > cluster-autoscaler-chart
+  istio_version: '1.19.3'  # https://github.com/istio/istio/releases; set to None if disabling Istio
+
+  domain_whitelist_bucket_name: us-west-2-opensciencelab-domain-whitelist
 
 nodes:
   - name: hub  # Required
@@ -105,6 +108,8 @@ profiles:
     storage_capacity: 500Gi
     node_name: sar1
     default: True
+    disable_domain_whitelist: True
+    disable_rate_limit: True
 
   - name: SAR 1 - Max
     description: "Similar to SAR 1 but only one person per machine. JupyterLab - RAM Guarantee: 20G. RAM limit: 32G. CPU limit: 8. Storage: 500G."

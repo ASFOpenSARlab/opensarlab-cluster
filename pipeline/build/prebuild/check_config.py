@@ -31,10 +31,13 @@ def check_parameters(config):
         'jupyterhub_helm_version',
         'jupyterhub_hub_image_version',
         'aws_k8s_cni_version',
-        'cluster_autoscaler_helm_version'
+        'cluster_autoscaler_helm_version',
+        'istio_client_version'
     ]
 
-    optional_fields = []
+    optional_fields = [
+        'domain_whitelist_bucket_name'
+    ]
 
     for required in required_fields:
         if required not in params.keys():
@@ -82,6 +85,14 @@ def check_parameters(config):
             results = re.search(pattern, value)
             if not results:
                 raise Exception(f"Missing http:// or https:// in url '{value}'")
+            
+        if required == 'istio_client_version':
+            value = params.get('istio_client_version', None)
+
+            if value:
+                domain_whitelist_bucket_name = params.get('domain_whitelist_bucket_name', None)
+                if not domain_whitelist_bucket_name:
+                    raise Exception("Parameter 'domain_whitelist_bucket_name' is required if 'istio_client_version' is not None.")
 
     for optional in optional_fields:
         if optional in params.keys():
@@ -160,7 +171,9 @@ def check_profiles(config):
         'classic',
         'default',
         'service_account',
-        'desktop'
+        'desktop',
+        'disable_domain_whitelist',
+        'disable_rate_limit'
     ]
 
     for profile in config['profiles']:
@@ -184,6 +197,7 @@ def main(config):
 
     check_parameters(yaml_config)
     check_nodes(yaml_config)
+    check_istio(yaml_config)
     check_service_accounts(yaml_config)
     check_profiles(yaml_config)
 

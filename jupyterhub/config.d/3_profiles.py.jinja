@@ -124,7 +124,15 @@ async def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                 'kubespawner_override': {
                     'extra_labels': {
                         'server_type': '{{ node_name_escaped }}',
-                        'profile_name': '{{ profile.name | replace(" ", "_") }}'
+                        'profile_name': '{{ profile.name | replace(" ", "_") }}',
+                    {% if profile.disable_domain_whitelist is not defined or (profile.disable_domain_whitelist is defined and profile.disable_domain_whitelist == False) -%}
+                        'se-lab': '{{ parameters.lab_short_name }}',
+                        'se-profile': '{{ profile.name | replace(" ", "_") }}',
+                    {% endif %}
+                    {% if profile.disable_rate_limit is not defined or (profile.disable_rate_limit is defined and profile.disable_rate_limit == False) -%}
+                        'rate-limit-lab': '{{ parameters.lab_short_name }}',
+                        'rate-limit-profile': '{{ profile.name | replace(" ", "_") }}',
+                    {% endif %}
                     },
                     'node_selector': {
                         'server_type': '{{ node_name_escaped }}'

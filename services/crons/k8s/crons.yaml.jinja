@@ -65,3 +65,33 @@ spec:
                 - "--portal-domain={{ parameters.portal_domain }}"
           restartPolicy: OnFailure
           terminationGracePeriodSeconds: 0
+
+{%- if parameters.istio_version is defined and parameters.istio_version != "None" %}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: domain-cron
+  namespace: services
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      parallelism: 1
+      completions: 1
+      template:
+        spec:
+          containers:
+            - name: domains-cron
+              image: IMAGE_PLACEHOLDER
+              command:
+                - "python3"
+                - "/app/domain_management/domain_management.py"
+                - "--domain-whitelist-bucket={{ parameters.domain_whitelist_bucket_name }}"
+                - "--cluster-name={{ cluster_name }}"
+                - "--region={{ region_name }}"
+          restartPolicy: OnFailure
+          terminationGracePeriodSeconds: 0
+{% endif %}
