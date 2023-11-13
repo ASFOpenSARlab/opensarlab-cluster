@@ -74,7 +74,7 @@ metadata:
   name: domain-cron
   namespace: services
 spec:
-  schedule: "0 1 * * *"
+  schedule: "*/10 * * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
