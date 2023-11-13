@@ -171,7 +171,9 @@ def check_profiles(config):
         'classic',
         'default',
         'service_account',
-        'desktop'
+        'desktop',
+        'disable_domain_whitelist',
+        'disable_rate_limit'
     ]
 
     for profile in config['profiles']:

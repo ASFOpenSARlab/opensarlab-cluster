@@ -110,6 +110,8 @@ profiles:
     storage_capacity: 500Gi
     node_name: sar1
     default: True
+    disable_domain_whitelist: True
+    disable_rate_limit: True
 
   - name: SAR 1 - Max
     description: "Similar to SAR 1 but only one person per machine. JupyterLab - RAM Guarantee: 20G. RAM limit: 32G. CPU limit: 8. Storage: 500G."

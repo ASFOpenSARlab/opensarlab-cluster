@@ -147,6 +147,10 @@ def parse_config_files(config_files: [], includes_workloads: []) -> []:
             if not lab:
                 raise Exception("A lab name must be set.")
 
+            # Labels cannot have any spaces so make sure they don't
+            name = name.replace(" ", "_")
+            lab = lab.replace(" ", "_")
+
             workloads.append({
                 'profile': name,
                 'namespace': namespace,
