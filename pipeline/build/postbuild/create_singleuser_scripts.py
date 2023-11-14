@@ -50,19 +50,19 @@ def main(
             print(f"Could not copy file due to SameFileError for {hook_name}.")
 
     ### Overrides
-    overrides_names = [pathlib.Path(filename).name for filename in glob.glob(str(origin_singleuser_scripts_dir / "overrides" / "*.json"))]
+    extension_overrides_names = [pathlib.Path(filename).name for filename in glob.glob(str(origin_singleuser_scripts_dir / "extension_overrides" / "*.json"))]
 
     # Move scripts to new location
-    for overrides_name in overrides_names:
+    for extension_overrides_name in extension_overrides_names:
         try:
-            shutil.copy2( origin_singleuser_scripts_dir/"overrides"/overrides_name, dest_extension_override_dir/overrides_name)
+            shutil.copy2( origin_singleuser_scripts_dir/"extension_overrides"/extension_overrides_name, dest_extension_override_dir/extension_overrides_name)
         except shutil.SameFileError:
-            print(f"Could not copy file due to SameFileError for {overrides_name}.")
+            print(f"Could not copy file due to SameFileError for {extension_overrides_name}.")
 
     # Render helm_config templates
     environment = Environment(loader=FileSystemLoader(helm_config_template.parent))
     template = environment.get_template(helm_config_template.name)
-    content = template.render(hook_script_filenames=hook_names, extension_override_filenames=overrides_names)
+    content = template.render(hook_script_filenames=hook_names, extension_override_filenames=extension_overrides_names)
 
     with open(helm_config, 'w') as outfile:
         outfile.write(content)
@@ -70,7 +70,7 @@ def main(
     # Render jupyterhub codebuild config templates
     environment = Environment(loader=FileSystemLoader(jupyterhub_codebuild_template.parent))
     template = environment.get_template(jupyterhub_codebuild_template.name)
-    content = template.render(hook_script_filenames=hook_names, extension_override_filenames=overrides_names)
+    content = template.render(hook_script_filenames=hook_names, extension_override_filenames=extension_overrides_names)
 
     with open(jupyterhub_codebuild, 'w') as outfile:
         outfile.write(content)
