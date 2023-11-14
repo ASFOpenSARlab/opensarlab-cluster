@@ -36,6 +36,8 @@ spec:
                 - "--cluster-name={{ cluster_name }}"
                 - "--region={{ region_name }}"
           restartPolicy: OnFailure
+          nodeSelector:
+            server_type: core
           terminationGracePeriodSeconds: 0
 
 ---
@@ -64,6 +66,8 @@ spec:
                 - "--region={{ region_name }}"
                 - "--portal-domain={{ parameters.portal_domain }}"
           restartPolicy: OnFailure
+          nodeSelector:
+            server_type: core
           terminationGracePeriodSeconds: 0
 
 {%- if parameters.istio_version is defined and parameters.istio_version != "None" %}
@@ -93,5 +97,7 @@ spec:
                 - "--cluster-name={{ cluster_name }}"
                 - "--region={{ region_name }}"
           restartPolicy: Never
+          nodeSelector:
+            server_type: core
           terminationGracePeriodSeconds: 0
 {% endif %}
