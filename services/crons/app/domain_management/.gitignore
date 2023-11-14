@@ -1,8 +1,0 @@
-**
-!.gitignore
-!.yamllint
-!build.py
-!domain_management.py
-!egress.yaml.j2
-!domain_configs
-!domain_configs/**
