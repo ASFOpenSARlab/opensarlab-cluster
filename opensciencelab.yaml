@@ -26,7 +26,7 @@ parameters:
 
 nodes:
   - name: hub  # Required
-    instance: t3a.medium
+    instance: t3a.large
     min_number: 1  # Required
     max_number: 1  # Required
     node_policy: hub  # Required
