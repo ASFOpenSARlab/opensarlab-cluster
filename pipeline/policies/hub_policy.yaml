@@ -44,3 +44,13 @@ Policies:
             - ec2:DetachVolume
             - ec2:ModifyVolume
           Resource: "*"
+{% if parameters.istio_version is defined and parameters.istio_version != "None" %}
+  - PolicyName: !Sub ${AWS::Region}-${Cluster}-{{ node.name }}-DomainWhitelist_Cron_Policy
+    PolicyDocument:
+      Version: "2012-10-17"
+      Statement:
+        - Effect: Allow
+          Action:
+            - s3:*
+          Resource: "arn:aws:s3:::{{ parameters.domain_whitelist_bucket_name }}"
+{% endif -%}
