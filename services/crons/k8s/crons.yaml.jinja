@@ -92,6 +92,6 @@ spec:
                 - "--domain-whitelist-bucket={{ parameters.domain_whitelist_bucket_name }}"
                 - "--cluster-name={{ cluster_name }}"
                 - "--region={{ region_name }}"
-          restartPolicy: OnFailure
+          restartPolicy: Never
           terminationGracePeriodSeconds: 0
 {% endif %}
