@@ -172,13 +172,14 @@ def parse_config_files(config_files: [], includes_workloads: []) -> []:
 
     return workloads
 
-def main(configs_path: str, template_path: str) -> None:
+def main(configs_path: str, template_path: str, output_path: str) -> None:
 
     configs_path = pathlib.Path(configs_path)
     template_path = pathlib.Path(template_path)
+    output_path = pathlib.Path(output_path)
 
     env = Environment(
-        loader=FileSystemLoader(template_path),
+        loader=FileSystemLoader(template_path.parent),
         autoescape=True
     )
 
@@ -188,8 +189,8 @@ def main(configs_path: str, template_path: str) -> None:
     config_files = configs_path.glob("*.conf")
     workloads = parse_config_files(config_files, includes_workloads)
     
-    template = env.get_template('egress.yaml.j2')
-    with open(template_path / "egress.yaml", 'w') as outfile:
+    template = env.get_template(template_path.name)
+    with open(output_path, 'w') as outfile:
         outfile.write(template.render(workloads=workloads))
 
 if __name__ == "__main__":
@@ -197,6 +198,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--configs_path', default=None)
     parser.add_argument('--template_path', default=None)
+    parser.add_argument('--output_file', default=None)
     args = parser.parse_args()
 
-    main(args.configs_path, args.template_path)
+    main(args.configs_path, args.template_path, args.output_file)

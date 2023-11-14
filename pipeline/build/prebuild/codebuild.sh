@@ -16,4 +16,11 @@ python3 create_cf_cluster.py \
     --output_file $CODEBUILD_SRC_DIR/cf-cluster.yaml \
     --template_path $OSL_HOME/pipeline/cf-cluster.yaml.jinja;
 yamllint -c $OSL_HOME/.yamllint $CODEBUILD_SRC_DIR/cf-cluster.yaml;
-cfn-lint $CODEBUILD_SRC_DIR/cf-cluster.yaml
+cfn-lint $CODEBUILD_SRC_DIR/cf-cluster.yaml;
+
+echo "Render domain whitelist...";
+python3 create_domain_whitelist.py \
+    --configs_path $OSL_HOME/domain_configs/ \
+    --output_file $OSL_HOME/pipeline/domain_management/egress.yaml \
+    --template_path $OSL_HOME/pipeline/domain_management/egress.yaml.j2;
+yamllint -c $OSL_HOME/.yamllint $OSL_HOME/pipeline/domain_management/egress.yaml;

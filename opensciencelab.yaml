@@ -24,8 +24,6 @@ parameters:
   cluster_autoscaler_helm_version: '9.29.3'  # https://github.com/kubernetes/autoscaler/releases > cluster-autoscaler-chart
   istio_version: '1.19.3'  # https://github.com/istio/istio/releases; set to None if disabling Istio
 
-  domain_whitelist_bucket_name: us-west-2-opensciencelab-domain-whitelist
-
 nodes:
   - name: hub  # Required
     instance: t3a.medium
@@ -108,8 +106,7 @@ profiles:
     storage_capacity: 500Gi
     node_name: sar1
     default: True
-    disable_domain_whitelist: True
-    disable_rate_limit: True
+    egress_config: sar1
 
   - name: SAR 1 - Max
     description: "Similar to SAR 1 but only one person per machine. JupyterLab - RAM Guarantee: 20G. RAM limit: 32G. CPU limit: 8. Storage: 500G."
@@ -121,6 +118,7 @@ profiles:
     storage_capacity: 500Gi
     node_name: sar1max
     default: False
+    egress_config: None
 
   - name: SAR 1 - No Hook
     description: "Useful for debugging some server timeouts. This does not run the post-hook."
@@ -143,6 +141,7 @@ profiles:
     storage_capacity: 500Gi
     cpu_limit: 8
     node_name: sar2
+    egress_config: sar2
 
   - name: SAR 2 - No Hook
     description: "Useful for debugging some server timeouts. This does not run the post-hook."
