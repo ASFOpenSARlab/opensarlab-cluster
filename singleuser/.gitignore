@@ -4,5 +4,5 @@
 !.gitignore
 !hooks/
 !hooks/*.sh
-!overrides/
-!overrides/*.json
+!extension_overrides/
+!extension_overrides/*.json
