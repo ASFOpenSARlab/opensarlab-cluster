@@ -172,7 +172,7 @@ if [ "$IstioVersion" != "None" ]; then
 
     # minimal profile includes ingress gateway even though it is not used
     # REGISTRY_ONLY to block all egress implicit traffic 
-    istioctl install -y --set profile=minimal --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY;
+    istioctl install -y --set profile=minimal --set meshConfig.outboundTrafficPolicy.mode=ALLOW_ANY;
 
     # Inject istio sidecars into $JUPYTERHUB_NAMESPACE namespace
     kubectl create namespace $JUPYTERHUB_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -;
