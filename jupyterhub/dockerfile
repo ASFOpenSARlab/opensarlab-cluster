@@ -38,6 +38,7 @@ RUN cp -r /tmp/site-packages/* /usr/local/lib/python*/site-packages
 ENV PYTHONPATH=$PYTHONPATH:/usr/local/lib/osl
 
 RUN mkdir -p -m 775 /usr/local/secrets && chown 1000:root /usr/local/secrets
+ENV OPENSARLAB_SSO_TOKEN_PATH /tmp/sso_token
 
 #RUN chmod 0755 /usr/local/etc/jupyterhub/jupyterhub_config.d/etc/pv.yaml 
 #RUN chmod 0755 /usr/local/etc/jupyterhub/jupyterhub_config.d/etc/pvc.yaml
