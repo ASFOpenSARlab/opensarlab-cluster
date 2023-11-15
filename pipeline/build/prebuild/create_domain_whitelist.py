@@ -35,11 +35,11 @@ def parse_includes_files(include_files: []) -> []:
                 elif line.startswith('#'):
                     continue
 
-                elif line.startswith('include'):
+                elif line.startswith('%include'):
                     log.info(f"Cannot include other files like '{line}'. Ignoring....")
 
-                elif line.startswith('lab'):
-                    lab = line.lstrip('lab').strip()
+                elif line.startswith('%lab'):
+                    lab = line.lstrip('%lab').strip()
 
                 elif line.startswith('!'):
                     line = line.lstrip('!').strip()
@@ -47,8 +47,8 @@ def parse_includes_files(include_files: []) -> []:
                     if line in hosts:
                         hosts.remove(line)
 
-                elif line.startswith('namespace'):
-                    line = line.lstrip('namespace').strip()
+                elif line.startswith('%namespace'):
+                    line = line.lstrip('%namespace').strip()
                     namespace = line
 
                 elif '*' in line:
@@ -97,8 +97,8 @@ def parse_config_files(config_files: [], includes_workloads: []) -> []:
                 elif line.startswith('#'):
                     continue
 
-                elif line.startswith('include'):
-                    line = line.lstrip('include').strip()
+                elif line.startswith('%include'):
+                    line = line.lstrip('%include').strip()
                     include_workload = [w for w in includes_workloads if w['name'] == line]
 
                     if include_workload:
@@ -108,14 +108,14 @@ def parse_config_files(config_files: [], includes_workloads: []) -> []:
                         if include_workload.get('lab', None):
                             lab = include_workload['lab']
 
-                        if include_workload.get('namespace', None):
+                        if include_workload.get('%namespace', None):
                             namespace = include_workload['namespace']
 
                         if include_workload.get('hosts', None):
                             hosts.extend(include_workload['hosts'])
 
-                elif line.startswith('lab'):
-                    lab = line.lstrip('lab').strip()
+                elif line.startswith('%lab'):
+                    lab = line.lstrip('%lab').strip()
 
                 elif line.startswith('!'):
                     line = line.lstrip('!').strip()
@@ -123,8 +123,8 @@ def parse_config_files(config_files: [], includes_workloads: []) -> []:
                     if line in hosts:
                         hosts.remove(line)
 
-                elif line.startswith('namespace'):
-                    line = line.lstrip('namespace').strip()
+                elif line.startswith('%namespace'):
+                    line = line.lstrip('%namespace').strip()
                     namespace = line
 
                 elif '*' in line:
