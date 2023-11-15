@@ -108,7 +108,7 @@ def parse_config_files(config_files: [], includes_workloads: []) -> []:
                         if include_workload.get('lab', None):
                             lab = include_workload['lab']
 
-                        if include_workload.get('%namespace', None):
+                        if include_workload.get('namespace', None):
                             namespace = include_workload['namespace']
 
                         if include_workload.get('hosts', None):
