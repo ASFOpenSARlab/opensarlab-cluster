@@ -88,6 +88,13 @@ Parameters:
 
 Resources:
 
+  SSOTokenSecretsManager:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: SSO Token to communicate with the Portal.
+      Name: !Sub sso-token/${AWS::Region}-${CostTagValue}-cluster
+      SecretString: "ReplaceMeOrYouWillAlwaysFail"
+
   HubGroupLogs:
     Type: AWS::Logs::LogGroup
     Properties:
