@@ -51,44 +51,7 @@ IstioVersion=${IstioVersion}
 JupyterHubImageVersion=${JupyterHubImageVersion}
 "
 
-printf "\n\n%s\n" "******* Explicitly set K8s namespaces...";
-JUPYTERHUB_NAMESPACE=jupyter
-
-kubectl create namespace $JUPYTERHUB_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -;
-kubectl create namespace amazon-cloudwatch --dry-run=client -o yaml | kubectl apply -f -;
-kubectl create namespace autoscaler --dry-run=client -o yaml | kubectl apply -f -;
-kubectl create namespace cw-prometheus --dry-run=client -o yaml | kubectl apply -f -;
-kubectl create namespace services --dry-run=client -o yaml | kubectl apply -f -;
-kubectl create namespace default --dry-run=client -o yaml | kubectl apply -f -;
-
-#######
-# If IstioVersion is None, then don't install
-# NOTE that any unwanted reosurces will have to be manually deleted. This includes the istio-system namespace. 
-if [ "$IstioVersion" != "None" ]; then
-    printf "\n\n%s\n" "******* Install Istiod client, actual Istio, and enable injection...";
-    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=$IstioVersion TARGET_ARCH=x86_64 sh - && \
-        cd istio-$IstioVersion && \
-        export PATH="$PATH:$PWD/bin";
-    istioctl x precheck;
-
-    # note: minimal profile does not include ingress gateway
-    # REGISTRY_ONLY to block all egress implicit traffic, ALLOW_ANY passthroughs unknown services 
-    istioctl install -y --set profile=minimal --set meshConfig.outboundTrafficPolicy.mode=ALLOW_ANY;
-
-    printf "\n\n%s\n" "******* Implicitly enable Istio injection in jupyter namespace...";
-    kubectl label namespace $JUPYTERHUB_NAMESPACE istio-injection=enabled --overwrite;
-
-    printf "\n\n%s\n" "******* Explicitly disable Istio injection in all other namespaces...";
-    kubectl label namespace amazon-cloudwatch istio-injection=disabled
-    kubectl label namespace autoscaler istio-injection=disabled
-    kubectl label namespace cw-prometheus istio-injection=disabled
-    kubectl label namespace default istio-injection=disabled
-    kubectl label namespace services istio-injection=disabled
-
-    # Apply domain whitelist
-    kubectl apply -f ${CODEBUILD_ROOT}/pipeline/domain_management/egress.yaml
-fi
-
+###################################################################################
 ####### ******************
 # Install
 
@@ -100,6 +63,7 @@ curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/d
 mv /tmp/eksctl /usr/local/bin;
 eksctl version;
 
+###################################################################################
 ####### ******************
 # Prebuild
 
@@ -143,10 +107,10 @@ curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 helm version
 helm ls
 
+###################################################################################
 ####### *******************
 # Build
 
-#######
 printf "\n\n%s\n" "******* Apply eks console bindings and aws-auth-cm.yaml...";
 cd ${CODEBUILD_ROOT}/pipeline/configs/;
 kubectl apply -f https://s3.us-west-2.amazonaws.com/amazon-eks/docs/eks-console-full-access.yaml;
@@ -155,13 +119,51 @@ kubectl apply -f aws-auth-cm.yaml;
 printf "\n\n%s\n" "******* Show aws-auth-cm.yaml...";
 cat aws-auth-cm.yaml
 
-######
+#######
 printf "\n\n%s\n" "******* Apply CNI. This must be updated on every cluster upgrade...";
 cd ${CODEBUILD_ROOT}/jupyterhub/;
 curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/$AWSK8sCNIVersion/config/master/aws-k8s-cni.yaml;
 
 sed -i "s/us-west-2/${AWS_Region}/" aws-k8s-cni.yaml;
 kubectl apply -f aws-k8s-cni.yaml
+
+#######
+printf "\n\n%s\n" "******* Explicitly set K8s namespaces...";
+JUPYTERHUB_NAMESPACE=jupyter
+
+kubectl create namespace $JUPYTERHUB_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace amazon-cloudwatch --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace autoscaler --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace cw-prometheus --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace services --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace default --dry-run=client -o yaml | kubectl apply -f -;
+
+# If IstioVersion is None, then don't install
+# NOTE that any unwanted reosurces will have to be manually deleted. This includes the istio-system namespace. 
+if [ "$IstioVersion" != "None" ]; then
+    printf "\n\n%s\n" "******* Install Istiod client, actual Istio, and enable injection...";
+    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=$IstioVersion TARGET_ARCH=x86_64 sh - && \
+        cd istio-$IstioVersion && \
+        export PATH="$PATH:$PWD/bin";
+    istioctl x precheck;
+
+    # note: minimal profile does not include ingress gateway
+    # REGISTRY_ONLY to block all egress implicit traffic, ALLOW_ANY passthroughs unknown services 
+    istioctl install -y --set profile=minimal --set meshConfig.outboundTrafficPolicy.mode=ALLOW_ANY;
+
+    printf "\n\n%s\n" "******* Implicitly enable Istio injection in jupyter namespace...";
+    kubectl label namespace $JUPYTERHUB_NAMESPACE istio-injection=enabled --overwrite;
+
+    printf "\n\n%s\n" "******* Explicitly disable Istio injection in all other namespaces...";
+    kubectl label namespace amazon-cloudwatch istio-injection=disabled
+    kubectl label namespace autoscaler istio-injection=disabled
+    kubectl label namespace cw-prometheus istio-injection=disabled
+    kubectl label namespace default istio-injection=disabled
+    kubectl label namespace services istio-injection=disabled
+
+    # Apply domain whitelist
+    kubectl apply -f ${CODEBUILD_ROOT}/pipeline/domain_management/egress.yaml
+fi
 
 #######
 printf "\n\n%s\n" "******* Install Fluent Bit for AWS Container Insights...";
