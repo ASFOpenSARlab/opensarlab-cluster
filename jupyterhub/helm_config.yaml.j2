@@ -4,6 +4,8 @@
 # Possible values are scattered throughout the doc starting at https://z2jh.jupyter.org/en/latest/setup-jupyterhub.html
 
 proxy:
+  labels:
+    sidecar.istio.io/inject: "false"
   https:
     enabled: false
   service:
@@ -82,6 +84,8 @@ custom:
   DAYS_TILL_SNAPSHOT_DELETION: DAYS_TILL_SNAPSHOT_DELETION
 
 hub:
+  labels:
+    sidecar.istio.io/inject: "false"
   baseUrl: /lab/JUPYTERHUB_LAB_NAME_PLACEHOLDER/
   config:
     JupyterHub:
