@@ -56,18 +56,15 @@ prePuller:
   hook:
     enabled: false
 
-#cull:
-#  enabled: true
-#  timeout: 3600
-#  every: 300
+# culler is enabled within 1_service_creds.py.jinja
 
 scheduling:
-  labels:
-    sidecar.istio.io/inject: "false"
   userPlaceholder:
     enabled: false
   userScheduler:
     enabled: true
+    labels:
+      sidecar.istio.io/inject: "false"
   corePods:
     nodeAffinity:
       matchNodePurpose: require # hub.jupyter.org/node-purpose=core
