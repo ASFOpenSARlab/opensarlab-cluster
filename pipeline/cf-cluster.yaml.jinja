@@ -234,11 +234,27 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref PublicInternetGateway
 
+  PublicRouteTableEntryALBInactive:
+    Type: AWS::EC2::Route
+    DependsOn: AttachPublicGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTableALBInactive
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref PublicInternetGateway
+
   ProtectedRouteTableEntryActive:
     Type: AWS::EC2::Route
     DependsOn: AttachPublicGateway
     Properties:
       RouteTableId: !Ref ProtectedRouteTableActive
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref PublicInternetGateway
+
+  ProtectedRouteTableEntryInactive:
+    Type: AWS::EC2::Route
+    DependsOn: AttachPublicGateway
+    Properties:
+      RouteTableId: !Ref ProtectedRouteTableInactive
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref PublicInternetGateway
 
