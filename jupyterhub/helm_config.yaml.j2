@@ -62,6 +62,8 @@ prePuller:
 #  every: 300
 
 scheduling:
+  labels:
+    sidecar.istio.io/inject: "false"
   userPlaceholder:
     enabled: false
   userScheduler:

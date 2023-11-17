@@ -136,6 +136,7 @@ kubectl create namespace amazon-cloudwatch --dry-run=client -o yaml | kubectl ap
 kubectl create namespace autoscaler --dry-run=client -o yaml | kubectl apply -f -;
 kubectl create namespace cw-prometheus --dry-run=client -o yaml | kubectl apply -f -;
 kubectl create namespace services --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace external --dry-run=client -o yaml | kubectl apply -f -;
 kubectl create namespace default --dry-run=client -o yaml | kubectl apply -f -;
 
 # If IstioVersion is None, then don't install
@@ -158,8 +159,9 @@ if [ "$IstioVersion" != "None" ]; then
     kubectl label namespace amazon-cloudwatch istio-injection=disabled
     kubectl label namespace autoscaler istio-injection=disabled
     kubectl label namespace cw-prometheus istio-injection=disabled
-    kubectl label namespace default istio-injection=disabled
+    kubectl label namespace external istio-injection=disabled
     kubectl label namespace services istio-injection=disabled
+    kubectl label namespace default istio-injection=disabled
 
     # Apply domain whitelist
     kubectl apply -f ${CODEBUILD_ROOT}/pipeline/domain_management/egress.yaml
