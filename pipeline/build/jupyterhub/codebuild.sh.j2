@@ -164,7 +164,7 @@ if [ "$IstioVersion" != "None" ]; then
     kubectl label namespace default istio-injection=disabled
 
     # Apply domain whitelist
-    kubectl apply -f ${CODEBUILD_ROOT}/pipeline/domain_management/egress.yaml
+    kubectl apply -f ${CODEBUILD_ROOT}/pipeline/build/prebuild/render_egress.d/egress.yaml
 fi
 
 #######

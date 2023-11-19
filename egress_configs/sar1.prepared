@@ -1,0 +1,26 @@
+@profile sar1
+
+#>>>>>>>>>>>>>>>>
+# The following is included from 'base'
+#
+
+@namespace jupyter
+@lab smce-test-opensarlab
+@rate 10
+
+@port 8081
+hub.jupyter.svc.cluster.local
+
+@port 80,443
+opensciencelab.asf.alaska.edu
+amazonaws.com
+s3.amazonaws.com
+
+#<<<<<<<<<<<<<<<<<<
+
+
+de.wikipedia.com
+en.wikipedia.com
+*.example.com
+httpbin.org
+www.httpbin.org
