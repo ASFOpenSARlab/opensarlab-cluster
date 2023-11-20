@@ -18,9 +18,10 @@ python3 create_cf_cluster.py \
 yamllint -c $OSL_HOME/.yamllint $CODEBUILD_SRC_DIR/cf-cluster.yaml;
 cfn-lint $CODEBUILD_SRC_DIR/cf-cluster.yaml;
 
-echo "Render domain whitelist...";
-python3 create_domain_whitelist.py \
-    --configs_path $OSL_HOME/domain_configs/ \
-    --output_file $OSL_HOME/pipeline/domain_management/egress.yaml \
-    --template_path $OSL_HOME/pipeline/domain_management/egress.yaml.j2;
-yamllint -c $OSL_HOME/.yamllint $OSL_HOME/pipeline/domain_management/egress.yaml;
+echo "Render egress whitelist...";
+python3 render_egress.py \
+    --configs-dir $OSL_HOME/egress_configs/ \
+    --includes-dir $OSL_HOME/egress_configs/includes/ \
+    --egress-output-file $OSL_HOME/pipeline/build/prebuild/render_egress.d/egress.yaml \
+    --egress-template $OSL_HOME/pipeline/build/prebuild/render_egress.d/egress.yaml.j2;
+yamllint -c $OSL_HOME/.yamllint $OSL_HOME/pipeline/build/prebuild/render_egress.d/egress.yaml;
