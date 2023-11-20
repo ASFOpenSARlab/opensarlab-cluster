@@ -134,7 +134,7 @@ Resources:
               on-failure: ABORT
               commands:
                 - echo "Install pip packages...";
-                  pip install --upgrade jinja2 cfn-lint yamllint;
+                  pip install --upgrade jinja2 cfn-lint yamllint pandas;
                 - echo "IAM build role used is $(aws sts get-caller-identity)"
             build:
               on-failure: ABORT
