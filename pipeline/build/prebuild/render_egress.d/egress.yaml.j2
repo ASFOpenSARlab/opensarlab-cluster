@@ -14,24 +14,18 @@ metadata:
 {%- set port = service_entry['port'] %}
 {%- set lab = service_entry['lab'] %}
 {%- set namespace = service_entry['namespace'] %}
+
+{%- if hosts is defined and hosts | length > 0 %}
 apiVersion: networking.istio.io/v1beta1
 kind: ServiceEntry
 metadata:
   name: {{ lab }}-{{ profile }}-{{ port }}
   namespace: external
 spec:
-  {%- if hosts is defined and hosts | length > 0 %}
   hosts:
   {%- for host in hosts %}
     - "{{ host }}"
   {%- endfor %}
-  {%- endif %}
-  {%- if ips is defined and ips | length > 0 %}
-  addresses:
-  {%- for ip in ips %}
-    - "{{ ip }}"
-  {%- endfor %}
-  {%- endif %}
   ports:
     - number: {{ port }}
       name: http-{{ port }}
@@ -45,9 +39,39 @@ spec:
   exportTo:
     - "."
     - "{{ namespace }}"
-
 ---
+
+{%- endif %}
+
+{%- if ips is defined and ips | length > 0 %}
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: {{ lab }}-{{ profile }}-{{ port }}-ips
+  namespace: external
+spec:
+  addresses:
+  {%- for ip in ips %}
+    - "{{ ip }}"
+  {%- endfor %}
+  ports:
+    - number: {{ port }}
+      name: http-{{ port }}
+      {%- if port in [443] %}
+      protocol: HTTPS
+      {%- else %}
+      protocol: HTTP
+      {%- endif %}
+  resolution: NONE
+  location: MESH_EXTERNAL
+  exportTo:
+    - "."
+    - "{{ namespace }}"
+---
+
+{%- endif %}
 {% endfor %}
+
 {%- for sidecar in workloads['sidecar'] %}
 {%- set lab = sidecar['lab'] %}
 {%- set profile = sidecar['profile'] %}
