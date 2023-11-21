@@ -7,6 +7,18 @@ metadata:
 
 ---
 
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: istio-system
+spec:
+  accessLogging:
+    - providers:
+        - name: envoy
+
+---
+
 {%- for service_entry in workloads['service_entry'] %}
 {%- set hosts = service_entry['host'] %}
 {%- set ips = service_entry['ip'] %}
