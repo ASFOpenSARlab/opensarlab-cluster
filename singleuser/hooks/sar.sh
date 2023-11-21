@@ -2,7 +2,7 @@
 set -ve
 
 # Sleep for 30 seconds and hope that the Istio proxy will be done setting up.
-sleep 30
+#sleep 30
 
 # Get python version
 PYTHON_VER=$(python -c "import sys; print(f\"python{sys.version_info.major}.{sys.version_info.minor}\")")

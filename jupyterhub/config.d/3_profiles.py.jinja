@@ -122,6 +122,9 @@ async def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                 'default': '{{ profile.default }}',
                 {% endif -%}
                 'kubespawner_override': {
+                    'extra_annotations': {
+                        'proxy.istio.io/config': "holdApplicationUntilProxyStarts: true\nextraStatTags: [\"lab: {{ parameters.lab_short_name }}\", \"profile: {{ profile.name  }}\"]"
+                    },
                     'extra_labels': {
                         'server_type': '{{ node_name_escaped }}',
                         'profile_name': '{{ profile.name | replace(" ", "_") }}',
