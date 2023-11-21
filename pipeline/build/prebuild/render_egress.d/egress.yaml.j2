@@ -51,7 +51,7 @@ metadata:
   namespace: external
 spec:
   hosts:
-    local.local
+    - "local.local"
   addresses:
   {%- for ip in ips %}
     - "{{ ip }}"
