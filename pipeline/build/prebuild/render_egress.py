@@ -1,6 +1,7 @@
 import pathlib
 import argparse
 import re
+import ipaddress
 import logging
 
 log = logging.getLogger(__file__)
@@ -8,6 +9,21 @@ log.setLevel(logging.DEBUG)
 
 from jinja2 import Environment, FileSystemLoader
 import pandas as pd
+
+# https://stackoverflow.com/a/71037719
+def _valid_ip_or_cidr(ip):
+    try:
+        ipaddress.IPv4Address(ip)
+        print('valid as address')
+        return True
+    except:
+        try:
+            ipaddress.IPv4Network(ip)
+            print('valid as network')
+            return True
+        except:
+            print('invalid as both an address and network')
+            return False
 
 # https://codereview.stackexchange.com/a/235484
 def _is_fqdn(hostname):
@@ -77,6 +93,7 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
             for line in f:
 
                 line_host = None
+                line_ip = None
 
                 line = line.strip()
 
@@ -129,13 +146,19 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                     log.warning(f"Host '{line}' cannot contain wildcards. Ignoring...")
                     continue
 
+                elif line.startswith('@ip'):
+                    line = line.lstrip('@ip').strip()
+                    if not line:
+                        raise Exception(f"Line: '{line}'. Keyword '@ip' does not have any required following arguments: ip_address")
+                    line_ip = line
+
                 else:
                     log.info(f"Adding host '{line}'")
                     line_host = line.strip()
                     if not _is_fqdn(line_host):
                         raise Exception(f"Line: '{line}'. Hostname is not a fqdn.")
 
-                if line_host:
+                if line_host or line_ip:
 
                     missing_parts = []
                     if not config_namespace:
@@ -163,6 +186,7 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                         entries.append(
                             {
                                 'host': line_host,
+                                'ip': line_ip,
                                 'port': port,
                                 'namespace': config_namespace,
                                 'lab': config_lab,
@@ -186,11 +210,14 @@ def reduce_workloads(workloads: []) -> {}:
 
     df = pd.DataFrame(workloads)
 
-    # For service entry, group hosts by [port,lab,profile,namespace]
-    service_entry_df = df.groupby(['port', 'lab', 'profile', 'namespace'])['host'].apply(list).reset_index()
+    # For service entry, group hosts and ips by [port,lab,profile,namespace]
+    service_entry_hosts = df.groupby(['port', 'lab', 'profile', 'namespace'])['host'].apply(lambda x: list(set([i for i in x if i != None])))
+    service_entry_ips = df.groupby(['port', 'lab', 'profile', 'namespace'])['ip'].apply(lambda x: list(set([i for i in x if i != None])))
+
+    service_entry_df = pd.concat([service_entry_hosts,service_entry_ips], axis=1).reset_index()
 
      # For sidecar, group hosts by [lab,profile,namespace] independent of port
-    sidecar_df = df.groupby(['lab', 'profile', 'namespace'])['host'].apply(list).reset_index()
+    sidecar_df = df.groupby(['lab', 'profile', 'namespace'])['host'].apply(lambda x: list(set([i for i in x if i != None]))).reset_index()
 
     return {
         'service_entry': service_entry_df.to_dict('records'),
