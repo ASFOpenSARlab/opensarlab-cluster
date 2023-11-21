@@ -50,6 +50,8 @@ metadata:
   name: {{ lab }}-{{ profile }}-{{ port }}-ips
   namespace: external
 spec:
+  hosts:
+    local.local
   addresses:
   {%- for ip in ips %}
     - "{{ ip }}"
