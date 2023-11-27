@@ -40,7 +40,7 @@ spec:
   {%- endfor %}
 
   ports:
-  {%- if not port in [443] %}
+  {%- if port not in [443] %}
     - number: {{ port }}
       name: http-{{ port }}
       protocol: HTTP
