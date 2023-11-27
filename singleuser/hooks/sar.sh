@@ -52,10 +52,6 @@ channels:
 
 channel_priority: strict
 
-create_default_packages:
-  - jupyter
-  - kernda
-
 envs_dirs:
   - /home/jovyan/.local/envs
   - /opt/conda/envs
