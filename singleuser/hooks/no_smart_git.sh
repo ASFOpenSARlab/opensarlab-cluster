@@ -21,9 +21,6 @@ cp /etc/singleuser/scripts/pull.py /home/jovyan/.local/lib/$PYTHON_VER/site-pack
 # by users and non-server extension installs do not persist over server restarts
 jupyter labextension disable @jupyterlab/extensionmanager-extension
 
-mkdir -p $HOME/.ipython/profile_default/startup/
-cp /etc/singleuser/custom_magics/00-df.py $HOME/.ipython/profile_default/startup/00-df.py
-
 # Update page and tree
 mv /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/tree.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/original_tree.html
 cp /etc/singleuser/templates/tree.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/tree.html

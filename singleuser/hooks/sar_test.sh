@@ -21,9 +21,6 @@ cp /etc/singleuser/scripts/pull.py /home/jovyan/.local/lib/$PYTHON_VER/site-pack
 # by users and non-server extension installs do not persist over server restarts
 jupyter labextension disable @jupyterlab/extensionmanager-extension
 
-mkdir -p $HOME/.ipython/profile_default/startup/
-cp /etc/singleuser/custom_magics/00-df.py $HOME/.ipython/profile_default/startup/00-df.py
-
 gitpuller https://github.com/ASFOpenSARlab/opensarlab-notebooks.git master $HOME/notebooks
 
 gitpuller https://github.com/ASFOpenSARlab/opensarlab-envs.git main $HOME/conda_environments
