@@ -23,7 +23,7 @@ singleuser:
   extraFiles:
     {%- for file_name in extension_override_filenames %}
     user-overrides-{{ file_name | replace('.json', '') }}:
-      mountPath: /etc/singleuser/extension_overrides/{{ file_name }}
+      mountPath: /etc/singleuser/overrides/{{ file_name }}
       mode: 0755
     {%- endfor %}
     {%- for file_name in hook_script_filenames %}
