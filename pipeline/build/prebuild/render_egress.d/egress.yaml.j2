@@ -38,14 +38,18 @@ spec:
   {%- for host in hosts %}
     - "{{ host }}"
   {%- endfor %}
+
   ports:
+  {%- if port not in [443] %}
     - number: {{ port }}
       name: http-{{ port }}
-      {%- if port in [443] %}
-      protocol: HTTPS
-      {%- else %}
       protocol: HTTP
-      {%- endif %}
+  {%- endif %}
+    - number: 443
+      name: https-{{ port }}
+      protocol: HTTPS
+   
+
   resolution: DNS
   location: MESH_EXTERNAL
   exportTo:
