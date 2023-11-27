@@ -21,7 +21,7 @@ python -m pip install --user nbgitpuller
 cp /etc/singleuser/scripts/pull.py /home/jovyan/.local/lib/$PYTHON_VER/site-packages/nbgitpuller/pull.py
 
 # Copy over extension override
-cp /etc/singleuser/extension_overrides/default.json /opt/conda/share/jupyter/lab/settings/overrides.json
+cp /etc/singleuser/overrides/default.json /opt/conda/share/jupyter/lab/settings/overrides.json
 
 # Disable the extension manager in Jupyterlab since server extensions are uninstallable
 # by users and non-server extension installs do not persist over server restarts
