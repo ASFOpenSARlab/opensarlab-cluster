@@ -67,9 +67,7 @@ def main(
     for extension_overrides_name in extension_overrides_names:
         try:
             shutil.copy2(
-                origin_singleuser_scripts_dir
-                / "extension_overrides"
-                / extension_overrides_name,
+                origin_singleuser_scripts_dir / "overrides" / extension_overrides_name,
                 dest_extension_override_dir / extension_overrides_name,
             )
         except shutil.SameFileError:
