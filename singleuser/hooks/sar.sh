@@ -55,6 +55,12 @@ envs_dirs:
 EOT
 fi
 
+# remove deprecated 00-df.py from startup, if exists
+DF_MAGIC=$HOME/.ipython/profile_default/startup/00-df.py
+if test -f "$DF_MAGIC"; then
+rm "$DF_MAGIC"
+fi
+
 KERNELS=$HOME/.local/share/jupyter/kernels
 OLD_KERNELS=$HOME/.local/share/jupyter/kernels_old
 FLAG=$HOME/.jupyter/old_kernels_flag.txt
