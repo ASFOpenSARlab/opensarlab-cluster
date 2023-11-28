@@ -40,14 +40,14 @@ spec:
   {%- endfor %}
 
   ports:
-  {%- if port != "443" %}
     - number: {{ port }}
-      name: http-{{ port }}
-      protocol: HTTP
-  {%- endif %}
-    - number: 443
+      {%- if port == "443" %}
       name: https-{{ port }}
       protocol: HTTPS
+      {%- else %}
+      name: http-{{ port }}
+      protocol: HTTP
+      {%- endif %}
    
 
   resolution: DNS
