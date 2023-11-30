@@ -74,10 +74,11 @@ spec:
   {%- endfor %}
   ports:
     - number: {{ port }}
-      name: http-{{ port }}
-      {%- if port in [443] %}
+      {%- if port == "443" %}
+      name: https-{{ port }}
       protocol: HTTPS
       {%- else %}
+      name: http-{{ port }}
       protocol: HTTP
       {%- endif %}
   resolution: NONE
