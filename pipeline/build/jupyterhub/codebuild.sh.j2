@@ -165,6 +165,11 @@ if [ "$IstioVersion" != "None" ]; then
 
     # Apply domain whitelist
     kubectl apply -f ${CODEBUILD_ROOT}/pipeline/build/prebuild/render_egress.d/egress.yaml
+
+    # TODO DELETE ME
+    aws s3 cp ${CODEBUILD_ROOT}/pipeline/build/prebuild/render_egress.d/egress.yaml s3://opensciencelab-temp-debug/egress.yaml
+
+
 fi
 
 #######
