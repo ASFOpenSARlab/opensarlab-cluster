@@ -107,7 +107,7 @@ spec:
   workloadSelector:
     labels:
       se-lab: {{ lab }}
-      se-profile: {{ profile }}
+      server_type: {{ profile }}
   egress:
     - hosts:
       {%- for host in hosts %}
