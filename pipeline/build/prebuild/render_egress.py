@@ -40,6 +40,18 @@ def lint_includes(includes_dir: pathlib.Path) -> None:
 
                 if line.startswith('@include'):
                     raise Exception(f"Line: '{line}'. Cannot have 'includes' in an includes file.")
+                
+                elif line.startswith('@profile'):
+                    raise Exception(f"Line: '{line}'. Cannot have 'profile' in an includes file.")
+                
+                elif line.startswith('@namespace'):
+                    raise Exception(f"Line: '{line}'. Cannot have 'namespace' in an includes file.")
+                
+                elif line.startswith('@lab'):
+                    raise Exception(f"Line: '{line}'. Cannot have 'lab' in an includes file.")
+
+                elif line.startswith('@rate'):
+                    raise Exception(f"Line: '{line}'. Cannot have 'rate' in an includes file.")
 
 def prepare_confs(conf_dir: pathlib.Path, includes_dir: pathlib.Path) -> None:
 
@@ -82,8 +94,9 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
         config_profile = None
         config_namespace = None
         config_lab = None
-        config_ports = None
         config_rate_limit = None
+
+        line_ports = None
 
         hosts = []
 
@@ -92,10 +105,10 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
         with open(conf_file, 'r') as f:
             for line in f:
 
+                line = line.strip()
+
                 line_host = None
                 line_ip = None
-
-                line = line.strip()
 
                 if not line:
                     continue
@@ -107,49 +120,57 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                     line = line.lstrip('@profile').strip()
                     if not line:
                         raise Exception(f"Line: '{line}'. Keyword '@profile' does not have any required following arguments: profile_name")
-                    config_profile = line
+                    # Any profiles later found after the first will be ignored
+                    if config_profile == None:
+                        config_profile = line
 
                 elif line.startswith('@lab'):
                     line = line.lstrip('@lab').strip()
                     if not line:
                         raise Exception(f"Line: '{line}'. Keyword '@lab' does not have any required following arguments: lab_short_name")
-                    config_lab = line
-
-                elif line.startswith('!'):
-                    line = line.lstrip('!').strip()
-                    if not line:
-                        raise Exception(f"Line: '{line}'. Keyword '!' does not have any required following arguments: host")                
-                    log.info(f"Remove host '{line}' from list of hosts")
-                    for element in hosts:
-                        if element['host'] == line:
-                            hosts.remove(element)
+                    # Any labs later found after the first will be ignored
+                    if config_lab == None:
+                        config_lab = line
 
                 elif line.startswith('@namespace'):
                     line = line.lstrip('@namespace').strip()
                     if not line:
                         raise Exception(f"Line: '{line}'. Keyword '@namespace' does not have any required following arguments: namespace")
-                    config_namespace = line.strip()
-
-                elif line.startswith('@port'):
-                    line = line.lstrip('@port').strip()
-                    if not line:
-                        raise Exception(f"Line: '{line}'. Keyword '@port' does not have any required following arguments: port_number(s)")
-                    config_ports = line
+                    # Any namsepaces later found after the first will be ignored
+                    if config_namespace == None:
+                        config_namespace = line
 
                 elif line.startswith('@rate'):
                     line = line.lstrip('@rate').strip()
                     if not line:
                         raise Exception(f"Line: '{line}'. Keyword '@rate' does not have any required following arguments: rate_limit")
-                    config_rate_limit = line
+                    # Any rates later found after the first will be ignored
+                    if config_rate_limit == None:
+                        config_rate_limit = line
+
+                elif line.startswith('^'):
+                    line = line.lstrip('^').strip()
+                    if not line:
+                        raise Exception(f"Line: '{line}'. Keyword '^' does not have any required following arguments: host")                
+                    log.info(f"Remove host '{line}' from list of hosts")
+                    for element in hosts:
+                        if element['host'] == line:
+                            hosts.remove(element)
+
+                elif line.startswith(':port'):
+                    line = line.lstrip(':port').strip()
+                    if not line:
+                        raise Exception(f"Line: '{line}'. Keyword ':port' does not have any required following arguments: port_number(s)") 
+                    line_ports = line
 
                 elif '*' in line:
                     log.warning(f"Host '{line}' cannot contain wildcards. Ignoring...")
                     continue
 
-                elif line.startswith('@ip'):
-                    line = line.lstrip('@ip').strip()
+                elif line.startswith('+ip'):
+                    line = line.lstrip('+ip').strip()
                     if not line:
-                        raise Exception(f"Line: '{line}'. Keyword '@ip' does not have any required following arguments: ip_address")
+                        raise Exception(f"Line: '{line}'. Keyword '+ip' does not have any required following arguments: ip_address")
                     line_ip = line
 
                 else:
@@ -170,8 +191,8 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                     if not config_profile:
                         missing_parts.append("Server Profile must be defined for host. Did you forget to put a @profile at the beginning?")
 
-                    if not config_ports:
-                        missing_parts.append("Host Port must be defined for host. Did you forget to put a @port at the beginning?")
+                    if not line_ports:
+                        missing_parts.append("Host Port must be defined for host. Did you forget to put a :port at the beginning?")
 
                     if not config_rate_limit:
                         missing_parts.append("Rate limit (requests/min) must be defined for host. To turn off, set to None. Did you forget to put a @rate at the beginning?")
@@ -182,12 +203,23 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                     entries = []
 
                     # If more than one port given, split into seperate entries
-                    for port in config_ports.split(','):
+                    for line_port in line_ports.split(','):
+                        line_port_redirect = None
+                        if "=>" in line_port:
+                            line_port, line_port_redirect = line_port.split('=>')
+
+                        if int(line_port) < 1 or int(line_port) > 65535:
+                            raise Exception(f"'line_port' must have a value between 1 and 65535")
+                        
+                        if line_port_redirect is not None and (int(line_port_redirect) < 1 or int(line_port_redirect) > 65535):
+                            raise Exception(f"'line_port_redirect' must have a value between 1 and 65535")
+
                         entries.append(
                             {
                                 'host': line_host,
                                 'ip': line_ip,
-                                'port': port,
+                                'port': line_port,
+                                'port_redirect': line_port_redirect,
                                 'namespace': config_namespace,
                                 'lab': config_lab,
                                 'profile': config_profile,
@@ -210,18 +242,40 @@ def reduce_workloads(workloads: []) -> {}:
 
     df = pd.DataFrame(workloads)
 
-    # For service entry, group hosts and ips by [port,lab,profile,namespace]
-    service_entry_hosts = df.groupby(['port', 'lab', 'profile', 'namespace'])['host'].apply(lambda x: list(set([i for i in x if i != None])))
-    service_entry_ips = df.groupby(['port', 'lab', 'profile', 'namespace'])['ip'].apply(lambda x: list(set([i for i in x if i != None])))
+    # For service entry, group hosts [port,port_redirect,lab,profile,namespace,rate]
+    service_entry_hosts_df = df \
+        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate'], dropna=False)['host'] \
+        .apply(lambda x: list(set([i for i in x if i != None]))) \
+        .reset_index() \
+        .query('host.str.len() != 0')
+    
+    # For service entry, group ips by [port,port_redirect,lab,profile,namespace,rate]
+    service_entry_ips_df = df \
+        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate'], dropna=False)['ip'] \
+        .apply(lambda x: list(set([i for i in x if i != None]))) \
+        .reset_index() \
+        .query('ip.str.len() != 0')
 
-    service_entry_df = pd.concat([service_entry_hosts,service_entry_ips], axis=1).reset_index()
+    # For sidecar, group hosts by [lab,profile,namespace] independent of rate
+    sidecar_df = df \
+        .groupby(['lab', 'profile', 'namespace'], dropna=False)['host']\
+        .apply(lambda x: list(set([i for i in x if i != None]))) \
+        .reset_index() \
+        .query('host.str.len() != 0')
 
-     # For sidecar, group hosts by [lab,profile,namespace] independent of port
-    sidecar_df = df.groupby(['lab', 'profile', 'namespace'])['host'].apply(lambda x: list(set([i for i in x if i != None]))).reset_index()
+    # For Envoy Filter, group rates by [lab,profile,namespace] independent of host
+    # If more than one rate is found per lab/profile/namespace, the last one takes precedence 
+    envoy_filter_df = df \
+        .groupby(['lab', 'profile', 'namespace'], dropna=False)['rate'] \
+        .apply(lambda x: list(x)[-1] if len(list(x)) > 0 else None) \
+        .reset_index() \
+        .query('rate.str.len() != 0')
 
     return {
-        'service_entry': service_entry_df.to_dict('records'),
-        'sidecar': sidecar_df.to_dict('records')
+        'service_entry_hosts': service_entry_hosts_df.to_dict('records'),
+        'service_entry_ips': service_entry_ips_df.to_dict('records'),
+        'sidecar': sidecar_df.to_dict('records'),
+        'envoy_filter': envoy_filter_df.to_dict('records'),
     }
 
 def create_egress_yamls(reduced_workloads: {}, egress_template: pathlib.Path, egress_output_file: pathlib.Path) -> None:

@@ -19,15 +19,15 @@ spec:
 
 ---
 
-{%- for service_entry in workloads['service_entry'] %}
+{%- for service_entry in workloads['service_entry_hosts'] %}
+
 {%- set hosts = service_entry['host'] %}
-{%- set ips = service_entry['ip'] %}
 {%- set profile = service_entry['profile'] %}
 {%- set port = service_entry['port'] %}
+{%- set port_redirect = service_entry['port_redirect'] %}
 {%- set lab = service_entry['lab'] %}
 {%- set namespace = service_entry['namespace'] %}
 
-{%- if hosts is defined and hosts | length > 0 %}
 apiVersion: networking.istio.io/v1beta1
 kind: ServiceEntry
 metadata:
@@ -38,18 +38,19 @@ spec:
   {%- for host in hosts %}
     - "{{ host }}"
   {%- endfor %}
-
   ports:
-    - number: {{ port }}
-      {%- if port == "443" %}
-      name: https-{{ port }}
-      protocol: HTTPS
-      {%- else %}
+    {%- if port != "443" %}
+    - number: {{ port | int }}
       name: http-{{ port }}
       protocol: HTTP
+      {%- if port_redirect is defined %}
+      targetPort: {{ port_redirect | int }}
       {%- endif %}
-   
-
+    {%- else %}
+    - number: {{ port | int }}
+      name: https-{{ port }}
+      protocol: HTTPS
+    {%- endif %}
   resolution: DNS
   location: MESH_EXTERNAL
   exportTo:
@@ -57,9 +58,45 @@ spec:
     - "{{ namespace }}"
 ---
 
-{%- endif %}
+  {%- for host in hosts %}
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: {{ lab }}-{{ profile }}-{{ host }}-{{ port }}
+  namespace: {{ namespace }}
+spec:
+  host: {{ host }}
+  workloadSelector:
+    matchLabels:
+      se-lab: {{ lab }}
+      se-profile: {{ profile }}
+  trafficPolicy:
+    portLevelSettings:
+      - port:
+          number: {{ port }}
+        tls:
+          {%- if port == '443' %}
+          mode: DISABLE  # Use client's SSL
+          {%- elif port_redirect == '443' %}
+          mode: SIMPLE  # If redirecting to 443, make sure simple SSL is setup
+          {%- else %}
+          mode: DISABLE  # Not using 443 nor redirecting to 443, don't use TLS
+          {%- endif %}
+  exportTo:
+    - "."
+---
+  {% endfor -%}
+{% endfor -%}
 
-{%- if ips is defined and ips | length > 0 %}
+{%- for service_entry in workloads['service_entry_ips'] %}
+
+{%- set ips = service_entry['ip'] %}
+{%- set profile = service_entry['profile'] %}
+{%- set port = service_entry['port'] %}
+{%- set port_redirect = service_entry['port_redirect'] %}
+{%- set lab = service_entry['lab'] %}
+{%- set namespace = service_entry['namespace'] %}
+
 apiVersion: networking.istio.io/v1beta1
 kind: ServiceEntry
 metadata:
@@ -67,31 +104,34 @@ metadata:
   namespace: external
 spec:
   hosts:
-    - "local.local"
+    - "nothing.local"
   addresses:
   {%- for ip in ips %}
     - "{{ ip }}"
   {%- endfor %}
   ports:
-    - number: {{ port }}
-      {%- if port == "443" %}
-      name: https-{{ port }}
-      protocol: HTTPS
-      {%- else %}
+    {%- if port != "443" %}
+    - number: {{ port | int }}
       name: http-{{ port }}
       protocol: HTTP
+      {%- if port_redirect is defined and port_redirect != 'nan' %}
+      targetPort: {{ port_redirect | int }}
       {%- endif %}
-  resolution: NONE
+    {%- else %}
+    - number: {{ port | int }}
+      name: https-{{ port }}
+      protocol: HTTPS
+    {%- endif %}
+  resolution: STATIC
   location: MESH_EXTERNAL
   exportTo:
     - "."
     - "{{ namespace }}"
 ---
-
-{%- endif %}
-{% endfor %}
+{% endfor -%}
 
 {%- for sidecar in workloads['sidecar'] %}
+
 {%- set lab = sidecar['lab'] %}
 {%- set profile = sidecar['profile'] %}
 {%- set namespace = sidecar['namespace'] %}
@@ -107,59 +147,48 @@ spec:
   workloadSelector:
     labels:
       se-lab: {{ lab }}
-      server_type: {{ profile }}
+      se-profile: {{ profile }}
   egress:
     - hosts:
       {%- for host in hosts %}
         - "external/{{ host }}"
       {%- endfor %}
 ---
-{% endfor %}
+{% endfor -%}
+
+{%- for envoy_filter in workloads['envoy_filter'] %}
+
+{%- set lab = envoy_filter['lab'] %}
+{%- set profile = envoy_filter['profile'] %}
+{%- set namespace = envoy_filter['namespace'] %}
+{%- set rate = envoy_filter['rate'] %}
 
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: filter-ratelimit-github-com
-  namespace: jupyter
+  name: filter-ratelimit-{{ lab }}-{{ profile }}
+  namespace: {{ namespace }}
 spec:
   workloadSelector:
     labels:
       se-lab: {{ lab }}
-      server_type: {{ profile }}
+      se-profile: {{ profile }}
   configPatches:
-    - applyTo: HTTP_ROUTE
+    - applyTo: NETWORK_FILTER
       match:
         context: SIDECAR_OUTBOUND
-        routeConfiguration:
-          vhost:
-            name: "github.com:443"
-            route:
-              name: "default"
       patch:
-        operation: MERGE
+        operation: INSERT_AFTER
         value:
-          name: envoy.filters.http.local_ratelimit
+          name: envoy.filters.local_ratelimit
           typed_config:
             "@type": type.googleapis.com/udpa.type.v1.TypedStruct
-            type_url: type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+            type_url: type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
             value:
-              stat_prefix: http_local_rate_limiter
+              stat_prefix: local_rate_limiter
               token_bucket:
-                max_tokens: 2
-                tokens_per_fill: 2
-                fill_interval: 60s
-              filter_enabled:
-                runtime_key: local_rate_limit_enabled
-                default_value:
-                  numerator: 100
-                  denominator: HUNDRED
-              filter_enforced:
-                runtime_key: local_rate_limit_enforced
-                default_value:
-                  numerator: 100
-                  denominator: HUNDRED
-              response_headers_to_add:
-                - append: false
-                  header:
-                    key: x-local-rate-limit
-                    value: 'true'
+                max_tokens: {{ rate | int }}
+                tokens_per_fill: {{ rate | int }}
+                fill_interval: 10s
+---
+{% endfor -%}
