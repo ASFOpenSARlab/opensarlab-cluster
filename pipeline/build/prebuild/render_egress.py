@@ -97,6 +97,7 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
         config_rate_limit = None
 
         line_ports = None
+        line_timeout = None
 
         hosts = []
 
@@ -157,11 +158,17 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                         if element['host'] == line:
                             hosts.remove(element)
 
-                elif line.startswith(':port'):
-                    line = line.lstrip(':port').strip()
+                elif line.startswith('|port'):
+                    line = line.lstrip('|port').strip()
                     if not line:
-                        raise Exception(f"Line: '{line}'. Keyword ':port' does not have any required following arguments: port_number(s)") 
+                        raise Exception(f"Line: '{line}'. Keyword '|port' does not have any required following arguments: port_number(s)") 
                     line_ports = line
+
+                elif line.startswith('|timeout'):
+                    line = line.lstrip('|timeout').strip()
+                    if not line:
+                        raise Exception(f"Line: '{line}'. Keyword '|timeout' does not have any required following arguments: timeout") 
+                    line_timeout = line
 
                 elif '*' in line:
                     log.warning(f"Host '{line}' cannot contain wildcards. Ignoring...")
@@ -192,26 +199,29 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                         missing_parts.append("Server Profile must be defined for host. Did you forget to put a @profile at the beginning?")
 
                     if not line_ports:
-                        missing_parts.append("Host Port must be defined for host. Did you forget to put a :port at the beginning?")
+                        missing_parts.append("Host Port must be defined for host. Did you forget to put a |port at the beginning?")
 
                     if not config_rate_limit:
                         missing_parts.append("Rate limit (requests/min) must be defined for host. To turn off, set to None. Did you forget to put a @rate at the beginning?")
                     
                     if missing_parts:
                         raise Exception("Missing some required config values: ", '\n'.join(missing_parts))
+                    
+                    if not line_timeout:
+                        line_timeout = "10s"
 
                     entries = []
 
                     # If more than one port given, split into seperate entries
                     for line_port in line_ports.split(','):
-                        line_port_redirect = None
+                        line_port_redirect = '-1'
                         if "=>" in line_port:
                             line_port, line_port_redirect = line_port.split('=>')
 
                         if int(line_port) < 1 or int(line_port) > 65535:
                             raise Exception(f"'line_port' must have a value between 1 and 65535")
                         
-                        if line_port_redirect is not None and (int(line_port_redirect) < 1 or int(line_port_redirect) > 65535):
+                        if line_port_redirect != "-1" and (int(line_port_redirect) < 1 or int(line_port_redirect) > 65535):
                             raise Exception(f"'line_port_redirect' must have a value between 1 and 65535")
 
                         entries.append(
@@ -223,7 +233,8 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                                 'namespace': config_namespace,
                                 'lab': config_lab,
                                 'profile': config_profile,
-                                'rate': config_rate_limit
+                                'rate': config_rate_limit,
+                                'timeout': line_timeout
                             }
                         )
 
@@ -242,7 +253,14 @@ def reduce_workloads(workloads: []) -> {}:
 
     df = pd.DataFrame(workloads)
 
-    # For service entry, group hosts [port,port_redirect,lab,profile,namespace,rate]
+    # For gateway, group hosts by [lab] independent of port,port_redirect,profile,namespace,rate
+    gateway_df = df \
+        .groupby(['lab'], dropna=False)['host'] \
+        .apply(lambda x: list(set([i for i in x if i != None]))) \
+        .reset_index() \
+        .query('host.str.len() != 0')
+
+    # For service entry, group hosts by [port,port_redirect,lab,profile,namespace,rate]
     service_entry_hosts_df = df \
         .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate'], dropna=False)['host'] \
         .apply(lambda x: list(set([i for i in x if i != None]))) \
@@ -255,6 +273,20 @@ def reduce_workloads(workloads: []) -> {}:
         .apply(lambda x: list(set([i for i in x if i != None]))) \
         .reset_index() \
         .query('ip.str.len() != 0')
+    
+    # For desination rule, group hosts by [port,port_redirect,lab,profile,namespace,rate,timeout]
+    destination_rule_df = df \
+        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout'], dropna=False)['host'] \
+        .apply(lambda x: list(set([i for i in x if i != None]))) \
+        .reset_index() \
+        .query('host.str.len() != 0')
+    
+    # For virtual services, group hosts by [port,port_redirect,lab,profile,namespace,rate,timeout]
+    virtual_services_df = df \
+        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout'], dropna=False)['host'] \
+        .apply(lambda x: list(set([i for i in x if i != None]))) \
+        .reset_index() \
+        .query('host.str.len() != 0')
 
     # For sidecar, group hosts by [lab,profile,namespace] independent of rate
     sidecar_df = df \
@@ -272,8 +304,11 @@ def reduce_workloads(workloads: []) -> {}:
         .query('rate.str.len() != 0')
 
     return {
+        'gateway': gateway_df.to_dict('records'),
         'service_entry_hosts': service_entry_hosts_df.to_dict('records'),
         'service_entry_ips': service_entry_ips_df.to_dict('records'),
+        'destination_rule': destination_rule_df.to_dict('records'),
+        'virtual_services': virtual_services_df.to_dict('records'),
         'sidecar': sidecar_df.to_dict('records'),
         'envoy_filter': envoy_filter_df.to_dict('records'),
     }

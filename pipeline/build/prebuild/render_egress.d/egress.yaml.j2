@@ -4,7 +4,6 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: external
-
 ---
 
 apiVersion: telemetry.istio.io/v1alpha1
@@ -16,22 +15,59 @@ spec:
   accessLogging:
     - providers:
         - name: envoy
-
 ---
 
-{%- for service_entry in workloads['service_entry_hosts'] %}
+{%- for gateway in workloads['gateway'] %}
+  {%- set hosts = gateway['host'] %}
+  {%- set lab = gateway['lab'] %}
 
-{%- set hosts = service_entry['host'] %}
-{%- set profile = service_entry['profile'] %}
-{%- set port = service_entry['port'] %}
-{%- set port_redirect = service_entry['port_redirect'] %}
-{%- set lab = service_entry['lab'] %}
-{%- set namespace = service_entry['namespace'] %}
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: istio-egressgateway--{{ lab }}
+  namespace: external
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+  {%- for host in hosts %}
+        - "{{ host }}"
+  {%- endfor %}
+    - port:
+        number: 443
+        name: https
+        protocol: HTTPS
+      hosts:
+  {%- for host in hosts %}
+        - "{{ host }}"
+  {%- endfor %}
+      tls:
+        mode: PASSTHROUGH
+---
+{%- endfor %}
+
+
+######
+# Service Entries for hosts
+######
+
+{%- for service_entry in workloads['service_entry_hosts'] %}
+  {%- set hosts = service_entry['host'] %}
+  {%- set profile = service_entry['profile'] %}
+  {%- set port = service_entry['port'] %}
+  {%- set port_redirect = service_entry['port_redirect'] %}
+  {%- set lab = service_entry['lab'] %}
+  {%- set namespace = service_entry['namespace'] %}
 
 apiVersion: networking.istio.io/v1beta1
 kind: ServiceEntry
 metadata:
-  name: {{ lab }}-{{ profile }}-{{ port }}
+  name: {{ lab }}--{{ profile }}--{{ port }}--hosts
   namespace: external
 spec:
   hosts:
@@ -39,16 +75,44 @@ spec:
     - "{{ host }}"
   {%- endfor %}
   ports:
-    {%- if port != "443" %}
+  {%- if port != "443" %}
     - number: {{ port | int }}
       name: http-{{ port }}
       protocol: HTTP
-      {%- if port_redirect is defined %}
+    {%- if port_redirect is defined and port_redirect != '-1' %}
       targetPort: {{ port_redirect | int }}
       {%- endif %}
-    {%- else %}
+  {% else %}
     - number: {{ port | int }}
       name: https-{{ port }}
+      protocol: HTTPS
+  {%- endif %}
+  resolution: DNS
+  location: MESH_EXTERNAL
+  exportTo:
+    - "."
+    - "{{ namespace }}"
+---
+
+  {%- if port_redirect is defined and port_redirect != "-1" %}
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: {{ lab }}--{{ profile }}--{{ port_redirect }}--hosts
+  namespace: external
+spec:
+  hosts:
+    {%- for host in hosts %}
+    - "{{ host }}"
+    {%- endfor %}
+  ports:
+    {%- if port_redirect != "443" %}
+    - number: {{ port_redirect | int }}
+      name: http-{{ port_redirect }}
+      protocol: HTTP
+    {%- else %}
+    - number: {{ port_redirect | int }}
+      name: https-{{ port_redirect }}
       protocol: HTTPS
     {%- endif %}
   resolution: DNS
@@ -57,12 +121,28 @@ spec:
     - "."
     - "{{ namespace }}"
 ---
+  {%- endif -%}
+
+{%- endfor %}
+
+######
+# Destination Rules
+######
+
+{%- for destination_rule in workloads['destination_rule'] %}
+  {%- set hosts = destination_rule['host'] %}
+  {%- set profile = destination_rule['profile'] %}
+  {%- set port = destination_rule['port'] %}
+  {%- set port_redirect = destination_rule['port_redirect'] %}
+  {%- set lab = destination_rule['lab'] %}
+  {%- set namespace = destination_rule['namespace'] %}
+  {%- set timeout = destination_rule['timeout'] %}
 
   {%- for host in hosts %}
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
-  name: {{ lab }}-{{ profile }}-{{ host }}-{{ port }}
+  name: {{ lab }}--{{ profile }}--{{ port }}--{{ host }}
   namespace: {{ namespace }}
 spec:
   host: {{ host }}
@@ -73,34 +153,154 @@ spec:
   trafficPolicy:
     portLevelSettings:
       - port:
-          number: {{ port }}
+          number: {{ port | int }}
+        connectionPool:
+          tcp:
+            connectTimeout: "{{ timeout }}"
+        {%- if port_redirect == '443' %}
         tls:
-          {%- if port == '443' %}
-          mode: DISABLE  # Use client's SSL
-          {%- elif port_redirect == '443' %}
-          mode: SIMPLE  # If redirecting to 443, make sure simple SSL is setup
-          {%- else %}
-          mode: DISABLE  # Not using 443 nor redirecting to 443, don't use TLS
-          {%- endif %}
+          mode: SIMPLE
+        {%- endif %}
   exportTo:
     - "."
 ---
+
+    {%- if port_redirect is defined and port_redirect != "-1" %}
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: {{ lab }}--{{ profile }}--{{ port_redirect }}--{{ host }}
+  namespace: {{ namespace }}
+spec:
+  host: {{ host }}
+  workloadSelector:
+    matchLabels:
+      se-lab: {{ lab }}
+      se-profile: {{ profile }}
+  trafficPolicy:
+    portLevelSettings:
+      - port:
+          number: {{ port_redirect | int }}
+        connectionPool:
+          tcp:
+            connectTimeout: "{{ timeout }}"
+  exportTo:
+    - "."
+---
+    {%- endif %}
+  {%- endfor %}
+
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: egressgateway--{{ lab }}--wildhosts
+  namespace: {{ namespace }}
+spec:
+  host: istio-egressgateway--{{ lab }}.external.svc.cluster.local
+  subsets:
+    - name: wildhosts
+---
+{%- endfor %}
+
+######
+# Virtual Services 
+######
+
+{%- for virtual_services in workloads['virtual_services'] %}
+  {%- set hosts = virtual_services['host'] %}
+  {%- set profile = virtual_services['profile'] %}
+  {%- set port = virtual_services['port'] %}
+  {%- set port_redirect = virtual_services['port_redirect'] %}
+  {%- set lab = virtual_services['lab'] %}
+  {%- set namespace = virtual_services['namespace'] %}
+
+  {%- for host in hosts %}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ lab }}--{{ profile }}--{{ port }}--{{ host }}
+  namespace: external
+spec:
+  hosts:
+    - {{ host }}
+  gateways:
+    - istio-egressgateway
+    - mesh
+    {% if port == 443 %}
+  tls:
+    - match:
+        - gateways:
+            - mesh
+          port: {{ port }}
+          sniHosts:
+            - {{ host }}
+      route:
+        - destination:
+            host: istio-egressgateway--{{ lab }}.external.svc.cluster.local
+            subset: wildhosts
+            port:
+              number: {{ port }}
+          weight: 100
+    - match:
+        - gateways:
+            - istio-egressgateway
+          port: {{ port }}
+          sniHosts:
+            - {{ host }}
+      route:
+        - destination:
+            host: {{ host }}
+            port: 
+              number: {{ port }} 
+          weight: 100
+    {% else %}
+  http:
+    - match:
+        - gateways:
+            - mesh
+          port: {{ port }}
+      route:
+        - destination:
+            host: istio-egressgateway--{{ lab }}.external.svc.cluster.local
+            subset: wildhosts
+            port:
+              number: {{ port }}
+          weight: 100
+    - match:
+        - gateways:
+            - istio-egressgateway
+          port: {{ port }}
+      route:
+        - destination:
+            host: {{ host }}
+            port: 
+              number: {{ port }} 
+          weight: 100
+      timeout: 30s
+    {% endif %}
+  exportTo:
+    - "{{ namespace }}"
+---
   {% endfor -%}
-{% endfor -%}
+
+{%- endfor %}
+
+######
+# Service Entries for IPs  
+######
 
 {%- for service_entry in workloads['service_entry_ips'] %}
-
-{%- set ips = service_entry['ip'] %}
-{%- set profile = service_entry['profile'] %}
-{%- set port = service_entry['port'] %}
-{%- set port_redirect = service_entry['port_redirect'] %}
-{%- set lab = service_entry['lab'] %}
-{%- set namespace = service_entry['namespace'] %}
+  {%- set ips = service_entry['ip'] %}
+  {%- set profile = service_entry['profile'] %}
+  {%- set port = service_entry['port'] %}
+  {%- set port_redirect = service_entry['port_redirect'] %}
+  {%- set lab = service_entry['lab'] %}
+  {%- set namespace = service_entry['namespace'] %}
 
 apiVersion: networking.istio.io/v1beta1
 kind: ServiceEntry
 metadata:
-  name: {{ lab }}-{{ profile }}-{{ port }}-ips
+  name: {{ lab }}--{{ profile }}--{{ port }}--ips
   namespace: external
 spec:
   hosts:
@@ -114,7 +314,7 @@ spec:
     - number: {{ port | int }}
       name: http-{{ port }}
       protocol: HTTP
-      {%- if port_redirect is defined and port_redirect != 'nan' %}
+      {%- if port_redirect is defined and port_redirect != '-1' %}
       targetPort: {{ port_redirect | int }}
       {%- endif %}
     {%- else %}
@@ -128,18 +328,22 @@ spec:
     - "."
     - "{{ namespace }}"
 ---
-{% endfor -%}
+{%- endfor %}
+
+######
+# Sidecars
+######
 
 {%- for sidecar in workloads['sidecar'] %}
 
-{%- set lab = sidecar['lab'] %}
-{%- set profile = sidecar['profile'] %}
-{%- set namespace = sidecar['namespace'] %}
-{%- set hosts = sidecar['host'] %}
+  {%- set lab = sidecar['lab'] %}
+  {%- set profile = sidecar['profile'] %}
+  {%- set namespace = sidecar['namespace'] %}
+  {%- set hosts = sidecar['host'] %}
 apiVersion: networking.istio.io/v1beta1
 kind: Sidecar
 metadata:
-  name: {{ lab }}-{{ profile }}
+  name: {{ lab }}--{{ profile }}--wildports--hosts
   namespace: {{ namespace }}
 spec:
   outboundTrafficPolicy: 
@@ -154,33 +358,40 @@ spec:
         - "external/{{ host }}"
       {%- endfor %}
 ---
-{% endfor -%}
+{%- endfor %}
+
+######
+# Envoy Filters
+######
 
 {%- for envoy_filter in workloads['envoy_filter'] %}
-
-{%- set lab = envoy_filter['lab'] %}
-{%- set profile = envoy_filter['profile'] %}
-{%- set namespace = envoy_filter['namespace'] %}
-{%- set rate = envoy_filter['rate'] %}
+  {%- set lab = envoy_filter['lab'] %}
+  {%- set profile = envoy_filter['profile'] %}
+  {%- set namespace = envoy_filter['namespace'] %}
+  {%- set rate = envoy_filter['rate'] %}
 
 apiVersion: networking.istio.io/v1alpha3
 kind: EnvoyFilter
 metadata:
-  name: filter-ratelimit-{{ lab }}-{{ profile }}
+  name: filter-ratelimit--{{ lab }}--{{ profile }}--wildports--wildhosts
   namespace: {{ namespace }}
 spec:
   workloadSelector:
     labels:
       se-lab: {{ lab }}
       se-profile: {{ profile }}
-  configPatches:
+  configPatches:  
     - applyTo: NETWORK_FILTER
       match:
         context: SIDECAR_OUTBOUND
+        listener:
+          filterChain:
+            filter:
+              name: "envoy.filters.network.http_connection_manager"
       patch:
-        operation: INSERT_AFTER
+        operation: INSERT_FIRST
         value:
-          name: envoy.filters.local_ratelimit
+          name: envoy.filters.network.local_ratelimit
           typed_config:
             "@type": type.googleapis.com/udpa.type.v1.TypedStruct
             type_url: type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
@@ -190,5 +401,22 @@ spec:
                 max_tokens: {{ rate | int }}
                 tokens_per_fill: {{ rate | int }}
                 fill_interval: 10s
+
+#    - applyTo: NETWORK_FILTER
+#      match:
+#        context: SIDECAR_OUTBOUND
+#      patch:
+#        operation: INSERT_FIRST
+#        value:
+#          name: envoy.filters.local_ratelimit
+#          typed_config:
+#            "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+#            type_url: type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
+#            value:
+#              stat_prefix: local_rate_limiter
+#              token_bucket:
+#                max_tokens: {{ rate | int }}
+#                tokens_per_fill: {{ rate | int }}
+#                fill_interval: 10s
 ---
 {% endfor -%}
