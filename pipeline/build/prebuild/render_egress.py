@@ -214,14 +214,14 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
 
                     # If more than one port given, split into seperate entries
                     for line_port in line_ports.split(','):
-                        line_port_redirect = '-1'
+                        line_port_redirect = None
                         if "=>" in line_port:
                             line_port, line_port_redirect = line_port.split('=>')
 
                         if int(line_port) < 1 or int(line_port) > 65535:
                             raise Exception(f"'line_port' must have a value between 1 and 65535")
                         
-                        if line_port_redirect != "-1" and (int(line_port_redirect) < 1 or int(line_port_redirect) > 65535):
+                        if line_port_redirect is not None and (int(line_port_redirect) < 1 or int(line_port_redirect) > 65535):
                             raise Exception(f"'line_port_redirect' must have a value between 1 and 65535")
 
                         entries.append(
@@ -238,6 +238,21 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                             }
                         )
 
+                        if line_port_redirect is not None:
+                            entries.append(
+                                {
+                                    'host': line_host,
+                                    'ip': line_ip,
+                                    'port': line_port_redirect,
+                                    'port_redirect': None,
+                                    'namespace': config_namespace,
+                                    'lab': config_lab,
+                                    'profile': config_profile,
+                                    'rate': config_rate_limit,
+                                    'timeout': line_timeout
+                                }
+                            )
+
                     hosts.extend(entries)
         
         if hosts:
@@ -253,64 +268,77 @@ def reduce_workloads(workloads: []) -> {}:
 
     df = pd.DataFrame(workloads)
 
-    # For gateway, group hosts by [lab] independent of port,port_redirect,profile,namespace,rate
-    gateway_df = df \
-        .groupby(['lab'], dropna=False)['host'] \
-        .apply(lambda x: list(set([i for i in x if i != None]))) \
-        .reset_index() \
-        .query('host.str.len() != 0')
+    # For gateway, multigroup port[host] by [lab] independent of [port_redirect,profile,namespace,rate,timeout,ip]
+    gateway = df. \
+        query("host == host") \
+        .get(['lab', 'port', 'host']) \
+        .set_index('port') \
+        .groupby('lab') \
+        .apply(lambda row: row['host'].to_dict()) \
+        .to_dict()
 
-    # For service entry, group hosts by [port,port_redirect,lab,profile,namespace,rate]
-    service_entry_hosts_df = df \
+    # For service entry, group [host] by [port,port_redirect,lab,profile,namespace,rate] independent of [ip,timeout]
+    service_entry_hosts = df \
+        .query("host == host") \
+        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'host']) \
         .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate'], dropna=False)['host'] \
-        .apply(lambda x: list(set([i for i in x if i != None]))) \
+        .apply(lambda row: list(set(row))) \
         .reset_index() \
-        .query('host.str.len() != 0')
+        .to_dict('records')
     
-    # For service entry, group ips by [port,port_redirect,lab,profile,namespace,rate]
-    service_entry_ips_df = df \
+    # For service entry, group [ip] by [port,port_redirect,lab,profile,namespace,rate] independent of [host,timeout]
+    service_entry_ips = df \
+        .query("ip == ip") \
+        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'ip']) \
         .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate'], dropna=False)['ip'] \
-        .apply(lambda x: list(set([i for i in x if i != None]))) \
+        .apply(lambda row: list(set(row))) \
         .reset_index() \
-        .query('ip.str.len() != 0')
+        .to_dict('records')
     
-    # For desination rule, group hosts by [port,port_redirect,lab,profile,namespace,rate,timeout]
-    destination_rule_df = df \
-        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout'], dropna=False)['host'] \
-        .apply(lambda x: list(set([i for i in x if i != None]))) \
+    # For desination rule, group [host] by [port,port_redirect,lab,profile,namespace,rate,timeout] independent of [ip]
+    destination_rule = df \
+        .query("host == host") \
+        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout', 'host']) \
+        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate'], dropna=False)['host'] \
+        .apply(lambda row: list(set(row))) \
         .reset_index() \
-        .query('host.str.len() != 0')
+        .to_dict('records')
     
-    # For virtual services, group hosts by [port,port_redirect,lab,profile,namespace,rate,timeout]
-    virtual_services_df = df \
+    # For virtual services, group [host] by [port,port_redirect,lab,profile,namespace,rate,timeout] independent of [ip]
+    virtual_services = df \
+        .query("host == host") \
+        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout','host']) \
         .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout'], dropna=False)['host'] \
-        .apply(lambda x: list(set([i for i in x if i != None]))) \
+        .apply(lambda row: list(set(row))) \
         .reset_index() \
-        .query('host.str.len() != 0')
+        .to_dict('records')
 
-    # For sidecar, group hosts by [lab,profile,namespace] independent of rate
-    sidecar_df = df \
+    # For sidecar, group [host] by [lab,profile,namespace] independent of [port,port_redirect,rate,timeout,ip]
+    sidecar = df \
+        .query("host == host") \
+        .get(['lab', 'profile', 'namespace', 'host']) \
         .groupby(['lab', 'profile', 'namespace'], dropna=False)['host']\
-        .apply(lambda x: list(set([i for i in x if i != None]))) \
+        .apply(lambda row: list(set(row))) \
         .reset_index() \
-        .query('host.str.len() != 0')
+        .to_dict('records')
 
-    # For Envoy Filter, group rates by [lab,profile,namespace] independent of host
+    # For Envoy Filter, group [rate] by [lab,profile,namespace] independent of [host,ip,port,port_redirect,timeout]
     # If more than one rate is found per lab/profile/namespace, the last one takes precedence 
-    envoy_filter_df = df \
+    envoy_filter = df \
+        .get(['lab', 'profile', 'namespace', 'rate']) \
         .groupby(['lab', 'profile', 'namespace'], dropna=False)['rate'] \
-        .apply(lambda x: list(x)[-1] if len(list(x)) > 0 else None) \
+        .apply(lambda row: list(row)[-1] if len(list(row)) > 0 else None) \
         .reset_index() \
-        .query('rate.str.len() != 0')
+        .to_dict('records')
 
     return {
-        'gateway': gateway_df.to_dict('records'),
-        'service_entry_hosts': service_entry_hosts_df.to_dict('records'),
-        'service_entry_ips': service_entry_ips_df.to_dict('records'),
-        'destination_rule': destination_rule_df.to_dict('records'),
-        'virtual_services': virtual_services_df.to_dict('records'),
-        'sidecar': sidecar_df.to_dict('records'),
-        'envoy_filter': envoy_filter_df.to_dict('records'),
+        'gateway': gateway,
+        'service_entry_hosts': service_entry_hosts,
+        'service_entry_ips': service_entry_ips,
+        'destination_rule': destination_rule,
+        'virtual_services': virtual_services,
+        'sidecar': sidecar,
+        'envoy_filter': envoy_filter,
     }
 
 def create_egress_yamls(reduced_workloads: {}, egress_template: pathlib.Path, egress_output_file: pathlib.Path) -> None:
