@@ -1,1 +1,12 @@
-*.prepared
+**
+
+!.gitignore
+!tests
+!tests/create_egress_and_apply.sh
+!tests/setup_minikube_and_istio.sh
+!tests/start_test_pod.sh
+!tests/start_test_pod_logs.sh
+!useretc
+!useretc/**
+!render_egress.py
+!egress.yaml.j2

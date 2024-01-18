@@ -6,6 +6,3 @@
 !check_config.py
 !codebuild.sh
 !create_cf_cluster.py
-!render_egress.d
-!render_egress.d/egress.yaml.j2
-!render_egress.py

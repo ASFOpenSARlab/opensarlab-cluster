@@ -19,7 +19,7 @@ def _valid_ip_or_cidr(ip):
     except:
         try:
             ipaddress.IPv4Network(ip)
-            print('valid as network')
+            #print('valid as network')
             return True
         except:
             print('invalid as both an address and network')
@@ -158,16 +158,16 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                         if element['host'] == line:
                             hosts.remove(element)
 
-                elif line.startswith('|port'):
-                    line = line.lstrip('|port').strip()
+                elif line.startswith('%port'):
+                    line = line.lstrip('%port').strip()
                     if not line:
-                        raise Exception(f"Line: '{line}'. Keyword '|port' does not have any required following arguments: port_number(s)") 
+                        raise Exception(f"Line: '{line}'. Keyword '%port' does not have any required following arguments: port_number(s)") 
                     line_ports = line
 
-                elif line.startswith('|timeout'):
-                    line = line.lstrip('|timeout').strip()
+                elif line.startswith('%timeout'):
+                    line = line.lstrip('%timeout').strip()
                     if not line:
-                        raise Exception(f"Line: '{line}'. Keyword '|timeout' does not have any required following arguments: timeout") 
+                        raise Exception(f"Line: '{line}'. Keyword '%timeout' does not have any required following arguments: timeout") 
                     line_timeout = line
 
                 elif '*' in line:
@@ -179,6 +179,8 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                     if not line:
                         raise Exception(f"Line: '{line}'. Keyword '+ip' does not have any required following arguments: ip_address")
                     line_ip = line
+                    if not _valid_ip_or_cidr(line_ip):
+                        raise Exception(f"Line: '{line}'. IP is not valid.")
 
                 else:
                     log.info(f"Adding host '{line}'")
@@ -199,7 +201,7 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                         missing_parts.append("Server Profile must be defined for host. Did you forget to put a @profile at the beginning?")
 
                     if not line_ports:
-                        missing_parts.append("Host Port must be defined for host. Did you forget to put a |port at the beginning?")
+                        missing_parts.append("Host Port must be defined for host. Did you forget to put a %port at the beginning?")
 
                     if not config_rate_limit:
                         missing_parts.append("Rate limit (requests/min) must be defined for host. To turn off, set to None. Did you forget to put a @rate at the beginning?")
@@ -269,12 +271,20 @@ def reduce_workloads(workloads: []) -> {}:
     df = pd.DataFrame(workloads)
 
     # For gateway, multigroup port[host] by [lab] independent of [port_redirect,profile,namespace,rate,timeout,ip]
-    gateway = df. \
-        query("host == host") \
+    # Get a dict of [labs:{[ports: {[hosts]}]}]
+    hosts = df \
+        .query("host == host") \
         .get(['lab', 'port', 'host']) \
         .set_index('port') \
-        .groupby('lab') \
-        .apply(lambda row: row['host'].to_dict()) \
+        .groupby(['lab','port']) \
+        .apply(lambda row: list(row['host'])) \
+        .reset_index() \
+        .rename(columns={0:'hosts'})
+    gateway = hosts \
+        .set_index('port') \
+        .groupby(['lab']) \
+        .apply(lambda row: row['hosts'] \
+        .to_dict()) \
         .to_dict()
 
     # For service entry, group [host] by [port,port_redirect,lab,profile,namespace,rate] independent of [ip,timeout]
