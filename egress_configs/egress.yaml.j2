@@ -17,73 +17,73 @@ spec:
         - name: envoy
 ---
 
-######
-# Gateway and related deployment, bindings
-######
+########
+### Gateway and related deployment, bindings
+########
+##
+##{%- for lab, elem1 in workloads['gateway'].items() %}
+##apiVersion: networking.istio.io/v1alpha3
+##kind: Gateway
+##metadata:
+##  name: egressgateway--{{ lab }}
+##  namespace: istio-system
+##spec:
+##  selector:
+##    istio: egressgateway--{{ lab }}
+##  servers:
+##  {%- for port, elem2 in elem1.items() %}
+##    {%- if port == "443" %}
+##    - port:
+##        number: 443
+##        name: tls-egress-{{ port }}
+##        protocol: TLS
+##      hosts:
+##      {%- for host in elem2 %}
+##        - "{{ host }}"
+##      {%- endfor %}
+##      tls:
+##        mode: PASSTHROUGH
+##    {% else %}
+##    - port:
+##        number: {{ port | int }}
+##        name: http-egress-{{ port }}
+##        protocol: HTTP
+##      hosts:
+##      {%- for host in elem2 %}
+##        - "{{ host }}"
+##      {%- endfor %}
+##    {% endif %}
+##  {%- endfor %}
+##---
 
-{%- for lab, elem1 in workloads['gateway'].items() %}
-apiVersion: networking.istio.io/v1alpha3
-kind: Gateway
-metadata:
-  name: egressgateway--{{ lab }}
-  namespace: istio-system
-spec:
-  selector:
-    istio: egressgateway--{{ lab }}
-  servers:
-  {%- for port, elem2 in elem1.items() %}
-    {%- if port == "443" %}
-    - port:
-        number: 443
-        name: tls-egress-{{ port }}
-        protocol: TLS
-      hosts:
-      {%- for host in elem2 %}
-        - "{{ host }}"
-      {%- endfor %}
-      tls:
-        mode: PASSTHROUGH
-    {% else %}
-    - port:
-        number: {{ port | int }}
-        name: http-egress-{{ port }}
-        protocol: HTTP
-      hosts:
-      {%- for host in elem2 %}
-        - "{{ host }}"
-      {%- endfor %}
-    {% endif %}
-  {%- endfor %}
----
-
-# Gateway deployment with injection method
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: egressgateway--{{lab}}
-  namespace: istio-egress
-spec:
-  selector:
-    matchLabels:
-      istio: egressgateway--{{ lab }}
-  template:
-    metadata:
-      annotations:
-        inject.istio.io/templates: gateway
-      labels:
-        istio: egressgateway--{{ lab }}
-        sidecar.istio.io/inject: "true"
-    spec:
-      containers:
-        - name: istio-proxy
-          image: auto  # The image will automatically update each time the pod starts.
-          securityContext:
-            capabilities:
-              drop:
-                - ALL
-            runAsUser: 1337
-            runAsGroup: 1337
----
+### Gateway deployment with injection method
+##apiVersion: apps/v1
+##kind: Deployment
+##metadata:
+##  name: egressgateway--{{lab}}
+##  namespace: istio-egress
+##spec:
+##  selector:
+##    matchLabels:
+##      istio: egressgateway--{{ lab }}
+##  template:
+##    metadata:
+##      annotations:
+##        inject.istio.io/templates: gateway
+##      labels:
+##        istio: egressgateway--{{ lab }}
+##        sidecar.istio.io/inject: "true"
+##    spec:
+##      containers:
+##        - name: istio-proxy
+##          image: auto  # The image will automatically update each time the pod starts.
+##          securityContext:
+##            capabilities:
+##              drop:
+##                - ALL
+##            runAsUser: 1337
+##            runAsGroup: 1337
+##---
 
 # Set up roles to allow reading credentials for TLS
 apiVersion: rbac.authorization.k8s.io/v1
@@ -143,7 +143,6 @@ spec:
     - "{{ host }}"
   {%- endfor %}
   ports:
-  {%- for port in ports %}
     {%- if port == "443" %}
     - number: 443
       name: tls-{{ port }}
@@ -152,11 +151,10 @@ spec:
     - number: {{ port | int }}
       name: http-{{ port }}
       protocol: HTTP
-      {%- if port_redirect is defined %}
+      {%- if port_redirect is defined and port_redirect | int > 0 %}
       targetPort: {{ port_redirect | int }}
-      {%- endif %}
+      {%- endif -%}
     {%- endif %}
-  {%- endfor %}
   resolution: DNS
   location: MESH_EXTERNAL
   exportTo:
@@ -190,7 +188,6 @@ spec:
     - "{{ ip }}"
   {%- endfor %}
   ports:
-  {%- for port in ports %}
     {%- if port == "443" %}
     - number: 443
       name: tls-{{ port }}
@@ -199,11 +196,10 @@ spec:
     - number: {{ port | int }}
       name: http-{{ port }}
       protocol: HTTP
-      {%- if port_redirect is defined %}
+      {%- if port_redirect is defined and port_redirect | int > 0 %}
       targetPort: {{ port_redirect | int }}
-      {%- endif %}
+      {%- endif -%}
     {%- endif %}
-  {%- endfor %}
   resolution: STATIC
   location: MESH_EXTERNAL
   exportTo:
@@ -216,170 +212,171 @@ spec:
 # Destination Rules
 ######
 
-{%- for destination_rule in workloads['destination_rule'] %}
-  {%- set hosts = destination_rule['host'] %}
-  {%- set profile = destination_rule['profile'] %}
-  {%- set port = destination_rule['port'] %}
-  {%- set port_redirect = destination_rule['port_redirect'] %}
-  {%- set lab = destination_rule['lab'] %}
-  {%- set namespace = destination_rule['namespace'] %}
-  {%- set timeout = destination_rule['timeout'] %}
-
-#   {%- for host in hosts %}
-# apiVersion: networking.istio.io/v1beta1
-# kind: DestinationRule
-# metadata:
-#   name: {{ lab }}--{{ profile }}--{{ port }}--{{ host }}
-#   namespace: istio-system
-# spec:
-#   host: {{ host }}
-#   workloadSelector:
-#     matchLabels:
-#       se-lab: {{ lab }}
-#       se-profile: {{ profile }}
-#   trafficPolicy:
-#     portLevelSettings:
-#       - port:
-#           number: {{ port | int }}
-#         connectionPool:
-#           tcp:
-#             connectTimeout: "{{ timeout }}"
-#         {%- if port_redirect == '443' %}
-#         tls:
-#           mode: SIMPLE
-#         {%- endif %}
-#   exportTo:
-#     - "."
-# ---
-# 
-#     {%- if port_redirect is defined and port_redirect != "-1" %}
-# apiVersion: networking.istio.io/v1beta1
-# kind: DestinationRule
-# metadata:
-#   name: {{ lab }}--{{ profile }}--{{ port_redirect }}--{{ host }}
-#   namespace: istio-system
-# spec:
-#   host: {{ host }}
-#   workloadSelector:
-#     matchLabels:
-#       se-lab: {{ lab }}
-#       se-profile: {{ profile }}
-#   trafficPolicy:
-#     portLevelSettings:
-#       - port:
-#           number: {{ port_redirect | int }}
-#         connectionPool:
-#           tcp:
-#             connectTimeout: "{{ timeout }}"
-#   exportTo:
-#     - "."
-# ---
-#     {%- endif %}
-#   {%- endfor %}
- 
-apiVersion: networking.istio.io/v1beta1
-kind: DestinationRule
-metadata:
-  name: egressgateway--{{ lab }}--wildhosts
-  namespace: istio-system
-spec:
-  host: egressgateway--{{ lab }}.istio-system.svc.cluster.local
-  subsets:
-    - name: wildhosts
----
-{%- endfor %}
+##{%- for destination_rule in workloads['destination_rule'] %}
+##  {%- set hosts = destination_rule['host'] %}
+##  {%- set profile = destination_rule['profile'] %}
+##  {%- set port = destination_rule['port'] %}
+##  {%- set port_redirect = destination_rule['port_redirect'] %}
+##  {%- set lab = destination_rule['lab'] %}
+##  {%- set namespace = destination_rule['namespace'] %}
+##  {%- set timeout = destination_rule['timeout'] %}
+##
+##
+##  {%- for host in hosts %}
+##apiVersion: networking.istio.io/v1beta1
+##kind: DestinationRule
+##metadata:
+##  name: {{ lab }}--{{ profile }}--{{ port }}--{{ host }}
+##  namespace: istio-system
+##spec:
+##  host: {{ host }}
+##  workloadSelector:
+##    matchLabels:
+##      se-lab: {{ lab }}
+##      se-profile: {{ profile }}
+##  trafficPolicy:
+##    portLevelSettings:
+##      - port:
+##          number: {{ port | int }}
+##        connectionPool:
+##          tcp:
+##            connectTimeout: "{{ timeout }}"
+##        {%- if port_redirect == '443' %}
+##        tls:
+##          mode: SIMPLE
+##        {%- endif %}
+##  exportTo:
+##    - "."
+##---
+##
+##    {%- if port_redirect is defined and port_redirect | int > 0 %}
+##apiVersion: networking.istio.io/v1beta1
+##kind: DestinationRule
+##metadata:
+##  name: {{ lab }}--{{ profile }}--{{ port_redirect }}--{{ host }}
+##  namespace: istio-system
+##spec:
+##  host: {{ host }}
+##  workloadSelector:
+##    matchLabels:
+##      se-lab: {{ lab }}
+##      se-profile: {{ profile }}
+##  trafficPolicy:
+##    portLevelSettings:
+##      - port:
+##          number: {{ port_redirect | int }}
+##        connectionPool:
+##          tcp:
+##            connectTimeout: "{{ timeout }}"
+##  exportTo:
+##    - "."
+##---
+##    {%- endif %}
+##  {%- endfor %}
+## 
+##apiVersion: networking.istio.io/v1beta1
+##kind: DestinationRule
+##metadata:
+##  name: egressgateway--{{ lab }}--wildhosts
+##  namespace: istio-system
+##spec:
+##  host: egressgateway--{{ lab }}.istio-system.svc.cluster.local
+##  subsets:
+##    - name: wildhosts
+##---
+##{%- endfor %}
 
 ######
 # Virtual Services 
 ######
 
-{%- for virtual_services in workloads['virtual_services'] %}
-  {%- set hosts = virtual_services['host'] %}
-  {%- set profile = virtual_services['profile'] %}
-  {%- set port = virtual_services['port'] %}
-  {%- set port_redirect = virtual_services['port_redirect'] %}
-  {%- set lab = virtual_services['lab'] %}
-  {%- set namespace = virtual_services['namespace'] %}
-
-  {%- for host in hosts %}
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: {{ lab }}--{{ profile }}--{{ port }}--{{ host }}
-  namespace: istio-system
-spec:
-  hosts:
-    - {{ host }}
-  gateways:
-    - egressgateway--{{ lab }}
-    - mesh
-    {% if port == 443 %}
-  tls:
-    - match:
-        - gateways:
-            - mesh
-          port: 443
-          sniHosts:
-            - {{ host }}
-      route:
-        - destination:
-            host: egressgateway--{{ lab }}.istio-system.svc.cluster.local
-            subset: wildhosts
-            port:
-              number: 443
-          weight: 100
-    - match:
-        - gateways:
-            - egressgateway--{{ lab }}
-          port: 443
-          sniHosts:
-            - {{ host }}
-      route:
-        - destination:
-            host: {{ host }}
-            port: 
-              number: 443
-          weight: 100
-  # Dummy routing instruction. If omitted, no reference will point to the Gateway
-  # definition, and istiod will optimise the whole new listener out.
-  tcp:
-    - match:
-        - gateways:
-            - egressgateway--{{ lab }}
-          port: 8443
-      route:
-        - destination:
-            host: "dummy.local"
-          weight: 100
-    {% else %}
-  http:
-    - match:
-        - gateways:
-            - mesh
-          port: {{ port }}
-      route:
-        - destination:
-            host: egressgateway--{{ lab }}.istio-system.svc.cluster.local
-            subset: wildhosts
-            port:
-              number: {{ port }}
-          weight: 100
-    - match:
-        - gateways:
-            - egressgateway--{{ lab }}
-          port: {{ port }}
-      route:
-        - destination:
-            host: {{ host }}
-            port: 
-              number: {{ port }} 
-          weight: 100
-  #    timeout: 30s
-    {% endif %}
-  exportTo:
-    - "{{ namespace }}"
----
-  {% endfor -%}
+##{%- for virtual_services in workloads['virtual_services'] %}
+##  {%- set hosts = virtual_services['host'] %}
+##  {%- set profile = virtual_services['profile'] %}
+##  {%- set port = virtual_services['port'] %}
+##  {%- set port_redirect = virtual_services['port_redirect'] %}
+##  {%- set lab = virtual_services['lab'] %}
+##  {%- set namespace = virtual_services['namespace'] %}
+##
+##  {%- for host in hosts %}
+##apiVersion: networking.istio.io/v1beta1
+##kind: VirtualService
+##metadata:
+##  name: {{ lab }}--{{ profile }}--{{ port }}--{{ host }}
+##  namespace: istio-system
+##spec:
+##  hosts:
+##    - {{ host }}
+##  gateways:
+##    - egressgateway--{{ lab }}
+##    - mesh
+##    {% if port == 443 %}
+##  tls:
+##    - match:
+##        - gateways:
+##            - mesh
+##          port: 443
+##          sniHosts:
+##            - {{ host }}
+##      route:
+##        - destination:
+##            host: egressgateway--{{ lab }}.istio-system.svc.cluster.local
+##            subset: wildhosts
+##            port:
+##              number: 443
+##          weight: 100
+##    - match:
+##        - gateways:
+##            - egressgateway--{{ lab }}
+##          port: 443
+##          sniHosts:
+##            - {{ host }}
+##      route:
+##        - destination:
+##            host: {{ host }}
+##            port: 
+##              number: 443
+##          weight: 100
+##  # Dummy routing instruction. If omitted, no reference will point to the Gateway
+##  # definition, and istiod will optimise the whole new listener out.
+##  tcp:
+##    - match:
+##        - gateways:
+##            - egressgateway--{{ lab }}
+##          port: 8443
+##      route:
+##        - destination:
+##            host: "dummy.local"
+##          weight: 100
+##    {% else %}
+##  http:
+##    - match:
+##        - gateways:
+##            - mesh
+##          port: {{ port }}
+##      route:
+##        - destination:
+##            host: egressgateway--{{ lab }}.istio-system.svc.cluster.local
+##            subset: wildhosts
+##            port:
+##              number: {{ port }}
+##          weight: 100
+##    - match:
+##        - gateways:
+##            - egressgateway--{{ lab }}
+##          port: {{ port }}
+##      route:
+##        - destination:
+##            host: {{ host }}
+##            port: 
+##              number: {{ port }} 
+##          weight: 100
+##  #    timeout: 30s
+##    {% endif %}
+##  exportTo:
+##    - "{{ namespace }}"
+##---
+##  {% endfor -%}
 
 {%- endfor %}
 
@@ -399,8 +396,8 @@ metadata:
   name: {{ lab }}--{{ profile }}--wildports--hosts
   namespace: {{ namespace }}
 spec:
-  outboundTrafficPolicy: 
-    mode: "REGISTRY_ONLY"
+#  outboundTrafficPolicy: 
+#    mode: "REGISTRY_ONLY"
   workloadSelector:
     labels:
       se-lab: {{ lab }}
@@ -535,26 +532,26 @@ spec:
       se-lab: {{ lab }}
       se-profile: {{ profile }}
   configPatches:
-    - applyTo: NETWORK_FILTER
-      match:
-        context: SIDECAR_OUTBOUND
-        listener:
-          filterChain:
-            filter:
-              name: "envoy.filters.network.http_connection_manager"
-      patch:
-        operation: INSERT_FIRST
-        value:
-          name: envoy.filters.network.local_ratelimit
-          typed_config:
-            "@type": type.googleapis.com/udpa.type.v1.TypedStruct
-            type_url: type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
-            value:
-              stat_prefix: local_rate_limiter
-              token_bucket:
-                max_tokens: {{ rate | int }}
-                tokens_per_fill: {{ rate | int }}
-                fill_interval: 10s
+    #- applyTo: NETWORK_FILTER
+    #  match:
+    #    context: SIDECAR_OUTBOUND
+    #    listener:
+    #      filterChain:
+    #        filter:
+    #          name: "envoy.filters.network.http_connection_manager"
+    #  patch:
+    #    operation: INSERT_FIRST
+    #    value:
+    #      name: envoy.filters.network.local_ratelimit
+    #      typed_config:
+    #        "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+    #        type_url: type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
+    #        value:
+    #          stat_prefix: local_rate_limiter
+    #          token_bucket:
+    #            max_tokens: {{ rate | int }}
+    #            tokens_per_fill: {{ rate | int }}
+    #            fill_interval: 10s
     - applyTo: NETWORK_FILTER
       match:
         context: SIDECAR_OUTBOUND
@@ -571,6 +568,7 @@ spec:
                 max_tokens: {{ rate | int }}
                 tokens_per_fill: {{ rate | int }}
                 fill_interval: 10s
+
 ---
 {% endfor -%}
  

@@ -8,5 +8,6 @@
 !tests/start_test_pod_logs.sh
 !useretc
 !useretc/**
+useretc/*.prepared
 !render_egress.py
 !egress.yaml.j2

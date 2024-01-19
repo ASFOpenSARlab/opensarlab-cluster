@@ -309,7 +309,7 @@ def reduce_workloads(workloads: []) -> {}:
     destination_rule = df \
         .query("host == host") \
         .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout', 'host']) \
-        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate'], dropna=False)['host'] \
+        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout'], dropna=False)['host'] \
         .apply(lambda row: list(set(row))) \
         .reset_index() \
         .to_dict('records')

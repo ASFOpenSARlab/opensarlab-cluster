@@ -180,3 +180,6 @@ developers.google.com
 server.arcgisonline.com
 #<<<<<<<<<<<<<<<<<<
 
+
+%port 80=>443
+example.com
