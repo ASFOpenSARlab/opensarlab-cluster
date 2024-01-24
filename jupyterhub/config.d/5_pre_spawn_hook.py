@@ -92,6 +92,30 @@ def volume_from_snapshot(spawner):
     if not has_pvc:
         log.warning("PVC '{pvc_name}' does not exist. Therefore a volume will have to be created for user '{username}'.".format(pvc_name=pvc_name, username=username))
 
+        # Does the user have any volumes?
+        vol = ec2.describe_volumes(
+        Filters=[
+                {
+                    'Name': 'tag:kubernetes.io/created-for/pvc/name',
+                    'Values': [pvc_name]
+                },
+                {
+                    'Name': 'tag:kubernetes.io/cluster/{0}'.format(cluster_name),
+                    'Values': ['owned']
+                }
+            ]
+        )
+
+        volumes = vol['Volumes']
+        if len(volumes) > 1:
+            volumes = sorted(volumes, key=lambda s: s['CreateTime'], reverse=True)
+            log.warning(f"\nWARNING ***** More than one volume found for pvc name: {pvc_name}. Claiming the latest one: \n{volumes[0]}.")
+        elif len(volumes) == 0:
+            log.info(f"No volumes found that matched pvc name '{pvc_name}'")
+            volumes = [None]
+
+        volume = volumes[0]
+
         # Does the user have any snapshots?
         snap = ec2.describe_snapshots(
             Filters=[
@@ -121,7 +145,75 @@ def volume_from_snapshot(spawner):
 
         snapshot = snap[0]
 
-        if snapshot:
+        # If volume found but no PVC (ignore any snapshots), create a PVC and accompying PV
+        # Skip for now till unbroken
+        ##if volume:
+        if False:
+            annotations = spawn_pvc.metadata.annotations
+            labels = spawn_pvc.metadata.labels
+            vol_size=volume['Size']
+            vol_id=volume['VolumeId']
+
+            # Get PVC manifest
+            with open(f"{etc_dir}/pvc.yaml", mode='r') as f:
+                pvc_yaml = f.read().format(
+                    annotations=annotations,
+                    cluster_name=cluster_name,
+                    labels=labels,
+                    name=pvc_name,
+                    namespace=namespace,
+                    vol_size=vol_size,
+                    vol_id=vol_id
+                )
+
+            pvc_manifest = yaml.safe_load(pvc_yaml)
+
+            # Get PV manifest
+            with open(f"{etc_dir}/pv.yaml", mode='r') as f:
+                pv_yaml = f.read()
+
+            annotations = pvc_manifest['metadata']['annotations']
+
+            pv_yaml = pv_yaml.format(
+                    annotations=annotations,
+                    cluster_name=cluster_name,
+                    region_name=region_name,
+                    az_name=az_name,
+                    pvc_name=pvc_name,
+                    namespace=namespace,
+                    vol_id=vol_id,
+                    storage=pvc_manifest['spec']['resources']['requests']['storage']
+                )
+
+            pv_manifest = yaml.safe_load(pv_yaml)
+
+            # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md#create_persistent_volume
+            log.info("Creating persistent volume...")
+            try:
+                api.create_persistent_volume(body=pv_manifest)
+            except ApiException as e:
+                if e.status == 409:
+                    log.info(f"PV {vol_id} already exists, so did not create new pvc.")
+                else:
+                    raise
+
+            # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md#create_namespaced_persistent_volume_claim
+            log.info("Creating persistent volume claim...")
+            try:
+                api.create_namespaced_persistent_volume_claim(body=pvc_manifest, namespace=namespace)
+            except ApiException as e:
+                if e.status == 409:
+                    log.info(f"PVC {pvc_name} already exists, so did not create new pvc.")
+                else:
+                    raise
+
+            ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
+                {
+                    'Key': 'created-pvc-from-volume',
+                    'Value': 'True'
+                },])
+
+        elif snapshot:
             # Guarantee that the volume never shrinks if the spawner's volume is smaller than the snapshot
             if snapshot['VolumeSize'] > vol_size:
                 vol_size = snapshot['VolumeSize']
@@ -178,6 +270,10 @@ def volume_from_snapshot(spawner):
                 },])
 
             annotations = spawn_pvc.metadata.annotations
+
+            # Explicit annote the provisioner. The CSI plugin appears to not do this properly.  
+            annotations.update({"pv.kubernetes.io/provisioned-by": "ebs.csi.aws.com"})
+
             labels = spawn_pvc.metadata.labels
 
             # Get PVC manifest
@@ -232,6 +328,9 @@ def volume_from_snapshot(spawner):
                     log.info(f"PVC {pvc_name} already exists, so did not create new pvc.")
                 else:
                     raise
+
+        else:
+            log.info(f"No volumes found nor restored from snapshot. Allow JupyterHub to create a new volume for {pvc_name}")
 
 def server_starting_tag(spawner):
 

@@ -5,8 +5,8 @@ metadata:
     annotations: {annotations}
     cluster_name: {cluster_name}
     labels:
-        failure-domain.beta.kubernetes.io/region: {region_name}
-        failure-domain.beta.kubernetes.io/zone: {az_name}
+        topology.kubernetes.io/region: {region_name}
+        topology.kubernetes.io/zone: {az_name}
     name: {vol_id}
     namespace: {namespace}
 spec:
@@ -21,11 +21,11 @@ spec:
         required:
             nodeSelectorTerms:
             - matchExpressions:
-                - key: failure-domain.beta.kubernetes.io/zone
+                - key: topology.kubernetes.io/zone
                   operator: In
                   values:
                     - {az_name}
-                - key: failure-domain.beta.kubernetes.io/region
+                - key: topology.kubernetes.io/region
                   operator: In
                   values:
                     - {region_name}
