@@ -1,0 +1,1 @@
+kubectl get namespaces,pods,destinationrules,envoyfilters,gateways,sidecars,serviceentry,virtualservices,workloadentries -owide -A
