@@ -164,11 +164,10 @@ if [ "$IstioVersion" != "None" ]; then
     kubectl label namespace default istio-injection=disabled
 
     # Apply domain whitelist
-    kubectl apply -f ${CODEBUILD_ROOT}/pipeline/build/prebuild/render_egress.d/egress.yaml
+    kubectl apply -f ${CODEBUILD_ROOT}/egress_configs/egress.yaml
 
     # TODO DELETE ME
-    aws s3 cp ${CODEBUILD_ROOT}/pipeline/build/prebuild/render_egress.d/egress.yaml s3://opensciencelab-temp-debug/egress.yaml
-
+    aws s3 cp ${CODEBUILD_ROOT}/egress_configs/egress.yaml s3://opensciencelab-temp-debug/egress.yaml
 
 fi
 

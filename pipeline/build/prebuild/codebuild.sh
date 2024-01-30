@@ -25,3 +25,13 @@ python3 render_egress.py \
     --egress-output-file $OSL_HOME/pipeline/build/prebuild/render_egress.d/egress.yaml \
     --egress-template $OSL_HOME/pipeline/build/prebuild/render_egress.d/egress.yaml.j2;
 yamllint -c $OSL_HOME/.yamllint $OSL_HOME/pipeline/build/prebuild/render_egress.d/egress.yaml;
+
+echo "Update egress yamls..."
+python $OSL_HOME/egress_configs/render_egress.py \
+    --configs-dir $OSL_HOME/egress_configs/useretc/ \
+    --includes-dir $OSL_HOME/egress_configs/useretc/includes/ \
+    --egress-template $OSL_HOME/egress_configs/egress.yaml.j2 \
+    --egress-output-file $OSL_HOME/egress_configs/egress.yaml
+
+echo "Linting egress k8s yamls..."
+yamllint -c $OSL_HOME/.yamllint $OSL_HOME/egress_configs/egress.yaml
