@@ -6,7 +6,7 @@
 
 set -ex
 
-ROOTHERE=$(pwd)/..
+ROOTHERE=$(pwd)/../..
 echo "Current root directory: $ROOTHERE"
 
 # We need a good way to delete resources present in cluster but not in config without large service downturn

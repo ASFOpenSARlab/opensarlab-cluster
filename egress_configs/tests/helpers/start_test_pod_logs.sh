@@ -1,4 +1,6 @@
 
+cd ..
+
 K8S_NS=jupyter
 SE_LAB=smce-test-opensarlab
 SE_PROFILE=default
