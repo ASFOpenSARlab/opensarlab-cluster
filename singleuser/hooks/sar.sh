@@ -33,6 +33,8 @@ gitpuller https://github.com/ASFOpenSARlab/opensarlab-envs.git main $HOME/conda_
 
 gitpuller https://github.com/uafgeoteach/GEOS657_MRS main $HOME/GEOS_657_Labs
 
+gitpuller https://github.com/ASFOpenSARlab/opensarlab_NISAR_EA_Workshop_2024_1_Recipe_Book.git main $HOME/Workshop_Jupyter_Books/NISAR_EA_Workshop_2024_1_Recipe_Book
+
 # Update page and tree
 mv /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/tree.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/original_tree.html
 cp /etc/singleuser/templates/tree.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/tree.html
