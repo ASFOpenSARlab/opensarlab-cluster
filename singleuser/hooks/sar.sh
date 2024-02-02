@@ -39,8 +39,9 @@ gitpuller https://github.com/ASFOpenSARlab/opensarlab_NISAR_EA_Workshop_2024_1_R
 mv /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/tree.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/original_tree.html
 cp /etc/singleuser/templates/tree.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/tree.html
 
-mv /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/page.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/original_page.html
-cp /etc/singleuser/templates/page.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/page.html
+# page.html was dropped somewhere between JupyterLab 4.0.1 and 4.0.7
+# mv /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/page.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/original_page.html
+# cp /etc/singleuser/templates/page.html /opt/conda/lib/$PYTHON_VER/site-packages/notebook/templates/page.html
 
 CONDARC=$HOME/.condarc
 if ! test -f "$CONDARC"; then
