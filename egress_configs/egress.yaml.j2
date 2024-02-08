@@ -151,9 +151,9 @@ spec:
     - number: {{ port | int }}
       name: http-{{ port }}
       protocol: HTTP
-#      {%- if port_redirect is defined and port_redirect | int > 0 %}
-#      targetPort: {{ port_redirect | int }}
-#      {%- endif -%}
+##      {%- if port_redirect is defined and port_redirect | int > 0 %}
+##      targetPort: {{ port_redirect | int }}
+##      {%- endif -%}
     {%- endif %}
   resolution: DNS
   location: MESH_EXTERNAL
@@ -234,19 +234,23 @@ spec:
 ##    matchLabels:
 ##      se-lab: {{ lab }}
 ##      se-profile: {{ profile }}
-##  trafficPolicy:
-##    tls:
-##      mode: ISTIO_MUTUAL
-##    portLevelSettings:
-##      - port:
-##          number: {{ port | int }}
-##        connectionPool:
-##          tcp:
-##            connectTimeout: "{{ timeout }}"
-##        {%- if port_redirect == '443' %}
+##  subsets:
+##    - name: wildhosts
+##      labels:
+##        DestinationRule: wildhosts
+##      trafficPolicy:
 ##        tls:
-##          mode: SIMPLE
-##        {%- endif %}
+##          mode: ISTIO_MUTUAL
+##        portLevelSettings:
+##          - port:
+##              number: {{ port | int }}
+##            connectionPool:
+##              tcp:
+##                connectTimeout: "{{ timeout }}"
+##            {%- if port_redirect == '443' %}
+##            tls:
+##              mode: SIMPLE
+##            {%- endif %}
 ##  exportTo:
 ##    - "."
 ##---
@@ -263,15 +267,17 @@ spec:
 ##    matchLabels:
 ##      se-lab: {{ lab }}
 ##      se-profile: {{ profile }}
-##  trafficPolicy:
-##    tls:
-##      mode: ISTIO_MUTUAL
-##    portLevelSettings:
-##      - port:
-##          number: {{ port_redirect | int }}
-##        connectionPool:
-##          tcp:
-##            connectTimeout: "{{ timeout }}"
+##  subsets:
+##    - name: wildhosts
+##      trafficPolicy:
+##        tls:
+##          mode: ISTIO_MUTUAL
+##        portLevelSettings:
+##          - port:
+##              number: {{ port_redirect | int }}
+##            connectionPool:
+##              tcp:
+##                connectTimeout: "{{ timeout }}"
 ##  exportTo:
 ##    - "."
 ##---
@@ -290,19 +296,68 @@ spec:
 ##---
 ##{%- endfor %}
 
-########
-### Virtual Services 
-########
-##
-##{%- for virtual_services in workloads['virtual_services'] %}
-##  {%- set hosts = virtual_services['host'] %}
-##  {%- set profile = virtual_services['profile'] %}
-##  {%- set port = virtual_services['port'] %}
-##  {%- set port_redirect = virtual_services['port_redirect'] %}
-##  {%- set lab = virtual_services['lab'] %}
-##  {%- set namespace = virtual_services['namespace'] %}
-##
-##  {%- for host in hosts %}
+######
+# Virtual Services 
+######
+
+{%- for virtual_services in workloads['virtual_services'] %}
+  {%- set hosts = virtual_services['host'] %}
+  {%- set profile = virtual_services['profile'] %}
+  {%- set port = virtual_services['port'] %}
+  {%- set port_redirect = virtual_services['port_redirect'] %}
+  {%- set lab = virtual_services['lab'] %}
+  {%- set namespace = virtual_services['namespace'] %}
+  {%- set list_type = virtual_services['list_type'] %}
+
+  {%- for host in hosts %}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ lab }}--{{ profile }}--{{ port }}--{{ host }}
+  namespace: istio-egress
+spec:
+  hosts:
+    - {{ host }}
+  #gateways:
+  #  - mesh
+  {% if port == '443' %}
+  tls:
+    - match:
+        - port: 443
+          sniHosts:
+            - {{ host }}
+      route:
+        - destination:
+      {%- if list_type == 'white' %}
+            host: {{ host }}
+      {%- elif list_type == 'black' %}
+            host: blackhole.local
+      {%- endif %}
+          ##  subset: wildhosts
+            port:
+              number: 443
+          weight: 100
+    {% else %}
+  http:
+    - match:
+        - port: {{ port }}
+      route:
+        - destination:
+      {%- if list_type == 'white' %}
+            host: {{ host }}
+      {%- elif list_type == 'black' %}
+            host: blackhole.local
+      {%- endif %}
+        ##    subset: wildhosts
+            port:
+              number: {{ port }}
+          weight: 100
+    {% endif %}
+  exportTo:
+    - "."
+    - "{{ namespace }}"
+---
+
 ##apiVersion: networking.istio.io/v1beta1
 ##kind: VirtualService
 ##metadata:
@@ -313,23 +368,8 @@ spec:
 ##    - {{ host }}
 ##  gateways:
 ##    - egressgateway--{{ lab }}
-##    - mesh
 ##    {% if port == '443' %}
 ##  tls:
-##    - match:
-##        - gateways:
-##            - mesh
-##          port: 443
-##          sniHosts:
-##            - {{ host }}
-##      route:
-##        - destination:
-##            host: egressgateway--{{ lab }}.istio-egress.svc.cluster.local
-##            #host: {{ lab }}--{{ profile }}--{{ port }}--{{ host }}
-##            subset: wildhosts
-##            port:
-##              number: 443
-##          weight: 100
 ##    - match:
 ##        - gateways:
 ##            - egressgateway--{{ lab }}
@@ -344,18 +384,6 @@ spec:
 ##          weight: 100
 ##    {% else %}
 ##  http:
-##    - match:
-##        - gateways:
-##            - mesh
-##          port: {{ port }}
-##      route:
-##        - destination:
-##            host: egressgateway--{{ lab }}.istio-egress.svc.cluster.local
-##            #host: {{ lab }}--{{ profile }}--{{ port }}--{{ host }}
-##            subset: wildhosts
-##            port:
-##              number: {{ port }}
-##          weight: 100
 ##    - match:
 ##        - gateways:
 ##            - egressgateway--{{ lab }}
@@ -386,9 +414,9 @@ spec:
 ##  exportTo:
 ##    - "{{ namespace }}"
 ##---
-##  {% endfor -%}
-##
-##{%- endfor %}
+  {% endfor -%}
+
+{%- endfor %}
 
 ######
 # Sidecars
@@ -400,14 +428,20 @@ spec:
   {%- set profile = sidecar['profile'] %}
   {%- set namespace = sidecar['namespace'] %}
   {%- set hosts = sidecar['host'] %}
+  {%- set list_type = sidecar['list_type'] %}
+
 apiVersion: networking.istio.io/v1beta1
 kind: Sidecar
 metadata:
   name: {{ lab }}--{{ profile }}--wildports--hosts
   namespace: {{ namespace }}
 spec:
-  outboundTrafficPolicy: 
+  outboundTrafficPolicy:
+    {%- if list_type == 'white' %}
     mode: "REGISTRY_ONLY"
+    {%- elif list_type == 'black' %}
+    mode: "ALLOW_ANY"
+    {%- endif %}
   workloadSelector:
     labels:
       se-lab: {{ lab }}

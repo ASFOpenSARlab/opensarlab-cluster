@@ -95,6 +95,7 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
         config_namespace = None
         config_lab = None
         config_rate_limit = None
+        config_list_type = None
 
         line_ports = None
         line_timeout = None
@@ -148,6 +149,14 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                     # Any rates later found after the first will be ignored
                     if config_rate_limit == None:
                         config_rate_limit = line
+
+                elif line.startswith('@list'):
+                    line = line.lstrip('@list').strip()
+                    if not line:
+                        raise Exception(f"Line: '{line}'. Keyword '@list' does not have any required following arguments: white/black list type")
+                    # Any list types later found after the first will be ignored
+                    if config_list_type == None:
+                        config_list_type = line
 
                 elif line.startswith('^'):
                     line = line.lstrip('^').strip()
@@ -206,6 +215,9 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                     if not config_rate_limit:
                         missing_parts.append("Rate limit (requests/min) must be defined for host. To turn off, set to None. Did you forget to put a @rate at the beginning?")
                     
+                    if not config_list_type:
+                        missing_parts.append("List type: white or black must be defined. Didddd you forget to put a @list at the beginning?")
+
                     if missing_parts:
                         raise Exception("Missing some required config values: ", '\n'.join(missing_parts))
                     
@@ -236,7 +248,8 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                                 'lab': config_lab,
                                 'profile': config_profile,
                                 'rate': config_rate_limit,
-                                'timeout': line_timeout
+                                'timeout': line_timeout,
+                                'list_type': config_list_type
                             }
                         )
 
@@ -251,7 +264,8 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                                     'lab': config_lab,
                                     'profile': config_profile,
                                     'rate': config_rate_limit,
-                                    'timeout': line_timeout
+                                    'timeout': line_timeout,
+                                    'list_type': config_list_type
                                 }
                             )
 
@@ -270,7 +284,7 @@ def reduce_workloads(workloads: []) -> {}:
 
     df = pd.DataFrame(workloads)
 
-    # For gateway, multigroup port[host] by [lab] independent of [port_redirect,profile,namespace,rate,timeout,ip]
+    # For gateway, multigroup port[host] by [lab] independent of [port_redirect,profile,namespace,rate,timeout,ip,list_type]
     # Get a dict of [labs:{[ports: {[hosts]}]}]
     hosts = df \
         .query("host == host") \
@@ -287,29 +301,29 @@ def reduce_workloads(workloads: []) -> {}:
         .to_dict()) \
         .to_dict()
 
-    # For service entry, group [host] by [port,port_redirect,lab,profile,namespace,rate] independent of [ip,timeout]
+    # For service entry, group [host] by [port,port_redirect,lab,profile,namespace,rate,list_type] independent of [ip,timeout]
     service_entry_hosts = df \
         .query("host == host") \
-        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'host']) \
-        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate'], dropna=False)['host'] \
+        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'host', 'list_type']) \
+        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'list_type'], dropna=False)['host'] \
         .apply(lambda row: list(set(row))) \
         .reset_index() \
         .to_dict('records')
     
-    # For service entry, group [ip] by [port,port_redirect,lab,profile,namespace,rate] independent of [host,timeout]
+    # For service entry, group [ip] by [port,port_redirect,lab,profile,namespace,rate,list_type] independent of [host,timeout]
     service_entry_ips = df \
         .query("ip == ip") \
-        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'ip']) \
-        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate'], dropna=False)['ip'] \
+        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'list_type', 'ip']) \
+        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate','list_type'], dropna=False)['ip'] \
         .apply(lambda row: list(set(row))) \
         .reset_index() \
         .to_dict('records')
     
-    # For desination rule, group [host] by [port,port_redirect,lab,profile,namespace,rate,timeout] independent of [ip]
+    # For desination rule, group [host] by [port,port_redirect,lab,profile,namespace,rate,timeout,list_type] independent of [ip]
     destination_rule = df \
         .query("host == host") \
-        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout', 'host']) \
-        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout'], dropna=False)['host'] \
+        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout', 'list_type', 'host']) \
+        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout', 'list_type'], dropna=False)['host'] \
         .apply(lambda row: list(set(row))) \
         .reset_index() \
         .to_dict('records')
@@ -317,26 +331,26 @@ def reduce_workloads(workloads: []) -> {}:
     # For virtual services, group [host] by [port,port_redirect,lab,profile,namespace,rate,timeout] independent of [ip]
     virtual_services = df \
         .query("host == host") \
-        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout','host']) \
-        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout'], dropna=False)['host'] \
+        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout','list_type','host']) \
+        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout', 'list_type'], dropna=False)['host'] \
         .apply(lambda row: list(set(row))) \
         .reset_index() \
         .to_dict('records')
 
-    # For sidecar, group [host] by [lab,profile,namespace] independent of [port,port_redirect,rate,timeout,ip]
+    # For sidecar, group [host] by [lab,profile,namespace,list_type] independent of [port,port_redirect,rate,timeout,ip]
     sidecar = df \
         .query("host == host") \
-        .get(['lab', 'profile', 'namespace', 'host']) \
-        .groupby(['lab', 'profile', 'namespace'], dropna=False)['host']\
+        .get(['lab', 'profile', 'namespace', 'list_type', 'host']) \
+        .groupby(['lab', 'profile', 'namespace', 'list_type'], dropna=False)['host']\
         .apply(lambda row: list(set(row))) \
         .reset_index() \
         .to_dict('records')
 
-    # For Envoy Filter, group [rate] by [lab,profile,namespace] independent of [host,ip,port,port_redirect,timeout]
-    # If more than one rate is found per lab/profile/namespace, the last one takes precedence 
+    # For Envoy Filter, group [rate] by [lab,profile,namespace,list_type] independent of [host,ip,port,port_redirect,timeout]
+    # If more than one rate is found per lab/profile/namespace/list_type, the last one takes precedence 
     envoy_filter = df \
-        .get(['lab', 'profile', 'namespace', 'rate']) \
-        .groupby(['lab', 'profile', 'namespace'], dropna=False)['rate'] \
+        .get(['lab', 'profile', 'namespace', 'list_type', 'rate']) \
+        .groupby(['lab', 'profile', 'namespace', 'list_type'], dropna=False)['rate'] \
         .apply(lambda row: list(row)[-1] if len(list(row)) > 0 else None) \
         .reset_index() \
         .to_dict('records')

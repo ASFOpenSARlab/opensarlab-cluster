@@ -34,7 +34,8 @@ istioctl x precheck
 
 echo "Install Istio..."
 istioctl install -y --set profile=minimal \
-    --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY \
+    ##--set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY \
+    --set meshConfig.outboundTrafficPolicy.mode=ALLOW_ANY \
     --set meshConfig.accessLogFile=/dev/stdout
     #--set components.cni.enabled=true
 
