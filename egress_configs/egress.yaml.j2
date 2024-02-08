@@ -234,23 +234,19 @@ spec:
 ##    matchLabels:
 ##      se-lab: {{ lab }}
 ##      se-profile: {{ profile }}
-##  subsets:
-##    - name: wildhosts
-##      labels:
-##        DestinationRule: wildhosts
-##      trafficPolicy:
+##  trafficPolicy:
+##    tls:
+##      mode: ISTIO_MUTUAL
+##    portLevelSettings:
+##      - port:
+##          number: {{ port | int }}
+##        connectionPool:
+##          tcp:
+##            connectTimeout: "{{ timeout }}"
+##        {%- if port_redirect == '443' %}
 ##        tls:
-##          mode: ISTIO_MUTUAL
-##        portLevelSettings:
-##          - port:
-##              number: {{ port | int }}
-##            connectionPool:
-##              tcp:
-##                connectTimeout: "{{ timeout }}"
-##            {%- if port_redirect == '443' %}
-##            tls:
-##              mode: SIMPLE
-##            {%- endif %}
+##          mode: SIMPLE
+##        {%- endif %}
 ##  exportTo:
 ##    - "."
 ##---
@@ -267,17 +263,15 @@ spec:
 ##    matchLabels:
 ##      se-lab: {{ lab }}
 ##      se-profile: {{ profile }}
-##  subsets:
-##    - name: wildhosts
-##      trafficPolicy:
-##        tls:
-##          mode: ISTIO_MUTUAL
-##        portLevelSettings:
-##          - port:
-##              number: {{ port_redirect | int }}
-##            connectionPool:
-##              tcp:
-##                connectTimeout: "{{ timeout }}"
+##  trafficPolicy:
+##    tls:
+##      mode: ISTIO_MUTUAL
+##    portLevelSettings:
+##      - port:
+##          number: {{ port_redirect | int }}
+##        connectionPool:
+##          tcp:
+##            connectTimeout: "{{ timeout }}"
 ##  exportTo:
 ##    - "."
 ##---
@@ -308,6 +302,7 @@ spec:
   {%- set lab = virtual_services['lab'] %}
   {%- set namespace = virtual_services['namespace'] %}
   {%- set list_type = virtual_services['list_type'] %}
+  {%- set timeout = virtual_services['timeout'] %}
 
   {%- for host in hosts %}
 apiVersion: networking.istio.io/v1beta1
@@ -318,8 +313,8 @@ metadata:
 spec:
   hosts:
     - {{ host }}
-  #gateways:
-  #  - mesh
+  gateways:
+    - mesh
   {% if port == '443' %}
   tls:
     - match:
@@ -339,7 +334,8 @@ spec:
           weight: 100
     {% else %}
   http:
-    - match:
+    - timeout: "{{ timeout }}"
+      match:
         - port: {{ port }}
       route:
         - destination:
