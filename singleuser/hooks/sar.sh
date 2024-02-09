@@ -33,8 +33,6 @@ gitpuller https://github.com/ASFOpenSARlab/opensarlab-envs.git main $HOME/conda_
 
 gitpuller https://github.com/uafgeoteach/GEOS657_MRS main $HOME/GEOS_657_Labs
 
-sleep 5
-
 gitpuller https://github.com/ASFOpenSARlab/opensarlab_NISAR_EA_Workshop_2024_1_Recipe_Book.git main $HOME/Workshop_Jupyter_Books/NISAR_EA_Workshop_2024_1_Recipe_Book
 
 # Update page and tree
