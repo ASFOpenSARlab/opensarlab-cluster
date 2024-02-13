@@ -1,8 +1,0 @@
-## The canonical version should ignore all files inside but the .gitignore
-
-*
-!.gitignore
-!hooks/
-!hooks/*.sh
-!extension_overrides/
-!extension_overrides/*.json

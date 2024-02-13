@@ -73,7 +73,7 @@ printf "%s\n" "REGISTRY_URI: $REGISTRY_URI"
 
 #######
 printf "\n\n%s\n" "******* Update assumed role of cluster-build...";
-cd ${CODEBUILD_ROOT}/pipeline/configs/;
+cd ${CODEBUILD_ROOT}/pipeline/4_deploy_and_build_jupyterhub/configs/;
 cp cluster-build-assumerolepolicy.template.json assume.json;
 sed -i "s|CLUSTER_RUN_ARN|arn:aws:iam::${AWS_AccountId}:role/${AWS_Region}-${CostTagValue}-cluster-run-role|" assume.json;
 aws iam update-assume-role-policy --role-name ${AWS_Region}-${CostTagValue}-cluster-build-role --policy-document file://assume.json;
@@ -112,7 +112,7 @@ helm ls
 # Build
 
 printf "\n\n%s\n" "******* Apply eks console bindings and aws-auth-cm.yaml...";
-cd ${CODEBUILD_ROOT}/pipeline/configs/;
+cd ${CODEBUILD_ROOT}/pipeline/4_deploy_and_build_jupyterhub/configs/;
 kubectl apply -f https://s3.us-west-2.amazonaws.com/amazon-eks/docs/eks-console-full-access.yaml;
 kubectl apply -f aws-auth-cm.yaml;
 
@@ -121,7 +121,7 @@ cat aws-auth-cm.yaml
 
 #######
 printf "\n\n%s\n" "******* Apply CNI. This must be updated on every cluster upgrade...";
-cd ${CODEBUILD_ROOT}/jupyterhub/;
+cd ${CODEBUILD_ROOT}/pipeline/4_deploy_and_build_jupyterhub/jupyterhub/;
 curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/$AWSK8sCNIVersion/config/master/aws-k8s-cni.yaml;
 
 sed -i "s/us-west-2/${AWS_Region}/" aws-k8s-cni.yaml;
@@ -164,11 +164,7 @@ if [ "$IstioVersion" != "None" ]; then
     kubectl label namespace default istio-injection=disabled
 
     # Apply domain whitelist
-    kubectl apply -f ${CODEBUILD_ROOT}/egress_configs/egress.yaml
-
-    # TODO DELETE ME
-    aws s3 cp ${CODEBUILD_ROOT}/egress_configs/egress.yaml s3://opensciencelab-temp-debug/egress.yaml
-
+    kubectl apply -f ${CODEBUILD_ROOT}/pipeline/4_deploy_and_build_jupyterhub/egress/egress.yaml
 fi
 
 #######
@@ -191,26 +187,24 @@ kubectl apply -f cwagent-fluent-bit-quickstart.yaml;
 
 #######
 printf "\n\n%s\n" "******* Install Prometheus for CloudWatch Insights";
-cd ${CODEBUILD_ROOT}/pipeline/configs/;
-
+cd ${CODEBUILD_ROOT}/pipeline/4_deploy_and_build_jupyterhub/configs/;
 sed -i "s|{% raw %}{{cluster_name}}{% endraw %}|${CostTagValue}-cluster|; s|{% raw %}{{region_name}}{% endraw %}|${AWS_Region}|" cwagent-prometheus.yaml;
-
 kubectl apply -f cwagent-prometheus.yaml
 
 #######
 printf "\n\n%s\n" "******* Reapply default storage class, in case it was updated...";
-cd ${CODEBUILD_ROOT}/pipeline/configs/;
+cd ${CODEBUILD_ROOT}/pipeline/4_deploy_and_build_jupyterhub/configs/;
 kubectl delete sc gp3 || true;
 kubectl apply -f csi-sc.yaml
 
 #######
 printf "\n\n%s\n" "******* Render addtional user Service Accounts...";
-cd ${CODEBUILD_ROOT}/pipeline/build/jupyterhub/;
+cd ${CODEBUILD_ROOT}/pipeline/4_deploy_and_build_jupyterhub/services/;
 python3 service_accounts.py
 
 #######
 printf "\n\n%s\n" "******* Build and deploy custom Cron services...";
-cd ${CODEBUILD_ROOT}/services/crons
+cd ${CODEBUILD_ROOT}/pipeline/4_deploy_and_build_jupyterhub/services/crons
 
 cp dockerfile dockerfile.build;
 export CRONS_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
@@ -224,12 +218,12 @@ kubectl apply -f k8s/crons.yaml;
 
 #######
 printf "\n\n%s\n" "******* Apply k8s resources for services...";
-cd ${CODEBUILD_ROOT}/services
+cd ${CODEBUILD_ROOT}/pipeline/4_deploy_and_build_jupyterhub/services
 kubectl apply -f k8s.yaml
 
 #######
 printf "\n\n%s\n" "******* Build JupyterHub Image...";
-cd ${CODEBUILD_ROOT}/jupyterhub/;
+cd ${CODEBUILD_ROOT}/pipeline/4_deploy_and_build_jupyterhub/jupyterhub/;
 
 cp dockerfile dockerfile.build;
 export HUB_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
@@ -261,7 +255,7 @@ printf "\n\n%s\n" "******* Availability Zone for EKS cluster and related resourc
 
 #######
 printf "\n\n%s\n" "******* Install JupyterHub cluster...";
-cd ${CODEBUILD_ROOT}/jupyterhub/;
+cd ${CODEBUILD_ROOT}/pipeline/4_deploy_and_build_jupyterhub/jupyterhub/;
 helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/;
 helm upgrade --install jupyter jupyterhub/jupyterhub \
     --create-namespace \

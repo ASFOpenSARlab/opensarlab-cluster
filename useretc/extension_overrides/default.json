@@ -31,7 +31,7 @@
             "rank": 1100
         },
         "gifcap_btn": {
-            "enabled": false,
+            "enabled": true,
             "rank": 1025
         },
         "oslnotify": {

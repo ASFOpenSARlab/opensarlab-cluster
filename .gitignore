@@ -1,1 +1,6 @@
-pipeline/build/prebuild/cf-cluster.yaml
+**
+!.gitignore
+!.yamllint
+!cf-setup-pipeline.yaml
+!pipeline
+!useretc

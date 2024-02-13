@@ -1,0 +1,12 @@
+**
+!.gitignore
+!opensciencelab.yaml
+!opensciencelab.example.yaml
+!extension_overrides
+!extension_overrides/*.json
+!hooks
+!hooks/*.sh
+!egress
+!egress/*.conf
+!egress/includes
+!egress/includes/*.conf

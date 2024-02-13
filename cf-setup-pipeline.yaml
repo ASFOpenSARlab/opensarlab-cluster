@@ -139,8 +139,8 @@ Resources:
             build:
               on-failure: ABORT
               commands:
-                - cd $CODEBUILD_SRC_DIR/pipeline/build/prebuild/
-                - CODEBUILD_SRC_DIR=$CODEBUILD_SRC_DIR 
+                - cd $CODEBUILD_SRC_DIR/pipeline/1_prebuild/
+                - CODEBUILD_SRC_DIR=$CODEBUILD_SRC_DIR
                     AWS_REGION=${AWS::Region} 
                     COST_TAG_VALUE=${CostTagValue} 
                   bash codebuild.sh;
@@ -188,7 +188,7 @@ Resources:
             build:
               on-failure: ABORT
               commands:
-                - cd $CODEBUILD_SRC_DIR/pipeline/build/postbuild;
+                - cd $CODEBUILD_SRC_DIR/pipeline/3_postbuild;
                 - CODEBUILD_SRC_DIR=$CODEBUILD_SRC_DIR 
                     AWS_REGION=${AWS::Region} 
                     AWS_ACCOUNT_ID=${AWS::AccountId} 
