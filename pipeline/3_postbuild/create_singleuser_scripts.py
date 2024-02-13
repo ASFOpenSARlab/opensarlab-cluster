@@ -3,13 +3,6 @@ Only shell scripts (.sh) will be found and scaffolded up.
 
 singleuser file names MUST not have spaces in them.
 
-python3 create_singleuser_scripts.py \
-    --origin_singleuser_scripts_dir=$OSL_HOME/singleuser_singleusers/ \
-    --dest_hook_scripts_dir=$OSL_HOME/jupyterhub/singleuser/singleusers/ \
-    --helm_config_template=$OSL_HOME/jupyterhub/helm_config.yaml.j2 \
-    --helm_config_template=$OSL_HOME/jupyterhub/helm_config.yaml \
-    --jupyterhub_codebuild_template=$OSL_HOME/pipeline/build/jupyterhub/codebuild.sh.j2 \
-    --jupyterhub_codebuild=$OSL_HOME/pipeline/build/jupyterhub/codebuild.sh
 """
 
 import glob

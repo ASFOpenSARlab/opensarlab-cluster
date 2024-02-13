@@ -116,6 +116,8 @@ def volume_from_snapshot(spawner):
 
         volume = volumes[0]
 
+        log.info(f"No PVC but Volume for {pvc_name}: {volume}")
+
         # Does the user have any snapshots?
         snap = ec2.describe_snapshots(
             Filters=[
@@ -145,129 +147,69 @@ def volume_from_snapshot(spawner):
 
         snapshot = snap[0]
 
-        # If volume found but no PVC (ignore any snapshots), create a PVC and accompying PV
-        # Skip for now till unbroken
-        ##if volume:
-        if False:
-            annotations = spawn_pvc.metadata.annotations
-            labels = spawn_pvc.metadata.labels
-            vol_size=volume['Size']
-            vol_id=volume['VolumeId']
+        log.info(f"No PVC but Snapshot for {pvc_name}: {snapshot}")
 
-            # Get PVC manifest
-            with open(f"{etc_dir}/pvc.yaml", mode='r') as f:
-                pvc_yaml = f.read().format(
-                    annotations=annotations,
-                    cluster_name=cluster_name,
-                    labels=labels,
-                    name=pvc_name,
-                    namespace=namespace,
-                    vol_size=vol_size,
-                    vol_id=vol_id
-                )
+        if not volume and not snapshot:
+            log.info(f"No volumes found nor able to restore from snapshot. Allow JupyterHub to create a new volume for {pvc_name}")
 
-            pvc_manifest = yaml.safe_load(pvc_yaml)
+        else:
+            # If there is no volume but if there is a snapshot, restore volume from snapshot
+            #if snapshot and not volume:
+            if snapshot:
 
-            # Get PV manifest
-            with open(f"{etc_dir}/pv.yaml", mode='r') as f:
-                pv_yaml = f.read()
+                # Guarantee that the volume never shrinks if the spawner's volume is smaller than the snapshot
+                if snapshot['VolumeSize'] > vol_size:
+                    vol_size = snapshot['VolumeSize']
 
-            annotations = pvc_manifest['metadata']['annotations']
-
-            pv_yaml = pv_yaml.format(
-                    annotations=annotations,
-                    cluster_name=cluster_name,
-                    region_name=region_name,
-                    az_name=az_name,
-                    pvc_name=pvc_name,
-                    namespace=namespace,
-                    vol_id=vol_id,
-                    storage=pvc_manifest['spec']['resources']['requests']['storage']
-                )
-
-            pv_manifest = yaml.safe_load(pv_yaml)
-
-            # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md#create_persistent_volume
-            log.info("Creating persistent volume...")
-            try:
-                api.create_persistent_volume(body=pv_manifest)
-            except ApiException as e:
-                if e.status == 409:
-                    log.info(f"PV {vol_id} already exists, so did not create new pvc.")
-                else:
-                    raise
-
-            # https://github.com/kubernetes-client/python/blob/master/kubernetes/docs/CoreV1Api.md#create_namespaced_persistent_volume_claim
-            log.info("Creating persistent volume claim...")
-            try:
-                api.create_namespaced_persistent_volume_claim(body=pvc_manifest, namespace=namespace)
-            except ApiException as e:
-                if e.status == 409:
-                    log.info(f"PVC {pvc_name} already exists, so did not create new pvc.")
-                else:
-                    raise
-
-            ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
-                {
-                    'Key': 'created-pvc-from-volume',
-                    'Value': 'True'
-                },])
-
-        elif snapshot:
-            # Guarantee that the volume never shrinks if the spawner's volume is smaller than the snapshot
-            if snapshot['VolumeSize'] > vol_size:
-                vol_size = snapshot['VolumeSize']
-
-            log.info("Creating volume from snapshot...")
-            vol = ec2.create_volume(
-                AvailabilityZone=az_name,
-                Encrypted=False,
-                Size=vol_size,
-                SnapshotId=snapshot['SnapshotId'],
-                VolumeType='gp3',
-                DryRun=False,
-                TagSpecifications=[
-                    {
-                        'ResourceType': 'volume',
-                        'Tags': [
-                            {'Key': 'Name', 'Value': '{username}-{cluster_name}'.format(cluster_name=cluster_name, username=username)},
-                            {'Key': 'kubernetes.io/cluster/{cluster_name}'.format(cluster_name=cluster_name), 'Value': 'owned'},
-                            {'Key': 'kubernetes.io/created-for/pvc/namespace', 'Value': namespace},
-                            {'Key': 'kubernetes.io/created-for/pvc/name', 'Value': pvc_name},
-                            {'Key': 'RestoredFromSnapshot', 'Value': 'True'}
-                        ]
-                    },
-                ]
-            )
-            vol_id = vol['VolumeId']
-            log.info(f"Volume {vol_id} created.")
-
-            this_val = get_tag_value(snapshot, 'jupyter-volume-stopping-time')
-            if this_val:
-                ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
+                log.info("Creating volume from snapshot...")
+                volume = ec2.create_volume(
+                    AvailabilityZone=az_name,
+                    Encrypted=False,
+                    Size=vol_size,
+                    SnapshotId=snapshot['SnapshotId'],
+                    VolumeType='gp3',
+                    DryRun=False,
+                    TagSpecifications=[
                         {
-                            'Key': 'jupyter-volume-stopping-time',
-                            'Value': this_val
+                            'ResourceType': 'volume',
+                            'Tags': [
+                                {'Key': 'Name', 'Value': '{username}-{cluster_name}'.format(cluster_name=cluster_name, username=username)},
+                                {'Key': 'kubernetes.io/cluster/{cluster_name}'.format(cluster_name=cluster_name), 'Value': 'owned'},
+                                {'Key': 'kubernetes.io/created-for/pvc/namespace', 'Value': namespace},
+                                {'Key': 'kubernetes.io/created-for/pvc/name', 'Value': pvc_name},
+                                {'Key': 'RestoredFromSnapshot', 'Value': snapshot['SnapshotId']}
+                            ]
+                        },
+                    ]
+                )
+                log.info(f"Volume {volume['VolumeId']} created.")
+
+                this_val = get_tag_value(snapshot, 'jupyter-volume-stopping-time')
+                if this_val:
+                    ec2.create_tags(DryRun=False, Resources=[volume['VolumeId']], Tags=[
+                            {
+                                'Key': 'jupyter-volume-stopping-time',
+                                'Value': this_val
+                            },])
+
+                # If do-not-delete tag was present in snapshot, add to volume tags
+                if get_tag_value(snapshot, 'do-not-delete'):
+                    ec2.create_tags(DryRun=False, Resources=[volume['VolumeId']], Tags=[
+                        {
+                            'Key': 'do-not-delete',
+                            'Value': 'True'
                         },])
 
-            # If do-not-delete tag was present in snapshot, add to volume tags
-            if get_tag_value(snapshot, 'do-not-delete'):
-                ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
+                # If the billing tag is present in the snapshot, add to volume tags
+                # If the tag doesn't exist in the snapshot, the default is `cost_tag_value`
+                this_val = get_tag_value(snapshot, cost_tag_key)
+                if not this_val:
+                    this_val = cost_tag_value
+                ec2.create_tags(DryRun=False, Resources=[volume['VolumeId']], Tags=[
                     {
-                        'Key': 'do-not-delete',
-                        'Value': 'True'
+                        'Key': cost_tag_key,
+                        'Value': this_val
                     },])
-
-            # If the billing tag is present in the snapshot, add to volume tags
-            # If the tag doesn't exist in the snapshot, the default is `cost_tag_value`
-            this_val = get_tag_value(snapshot, cost_tag_key)
-            if not this_val:
-                this_val = cost_tag_value
-            ec2.create_tags(DryRun=False, Resources=[vol_id], Tags=[
-                {
-                    'Key': cost_tag_key,
-                    'Value': this_val
-                },])
 
             annotations = spawn_pvc.metadata.annotations
 
@@ -284,8 +226,8 @@ def volume_from_snapshot(spawner):
                     labels=labels,
                     name=pvc_name,
                     namespace=namespace,
-                    vol_size=vol_size,
-                    vol_id=vol_id
+                    vol_size=volume['Size'],
+                    vol_id=volume['VolumeId']
                 )
 
             pvc_manifest = yaml.safe_load(pvc_yaml)
@@ -303,7 +245,7 @@ def volume_from_snapshot(spawner):
                     az_name=az_name,
                     pvc_name=pvc_name,
                     namespace=namespace,
-                    vol_id=vol_id,
+                    vol_id=volume['VolumeId'],
                     storage=pvc_manifest['spec']['resources']['requests']['storage']
                 )
 
@@ -315,7 +257,7 @@ def volume_from_snapshot(spawner):
                 api.create_persistent_volume(body=pv_manifest)
             except ApiException as e:
                 if e.status == 409:
-                    log.info(f"PV {vol_id} already exists, so did not create new pvc.")
+                    log.info(f"PV {volume['VolumeId']} already exists, so did not create new pvc.")
                 else:
                     raise
 
@@ -328,9 +270,6 @@ def volume_from_snapshot(spawner):
                     log.info(f"PVC {pvc_name} already exists, so did not create new pvc.")
                 else:
                     raise
-
-        else:
-            log.info(f"No volumes found nor restored from snapshot. Allow JupyterHub to create a new volume for {pvc_name}")
 
 def server_starting_tag(spawner):
 

@@ -4,3 +4,5 @@
 !cf-setup-pipeline.yaml
 !pipeline
 !useretc
+!helps
+!helps/**
