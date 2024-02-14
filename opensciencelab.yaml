@@ -191,7 +191,7 @@ profiles:
     #memory_limit: 7G
     storage_capacity: 500Gi
     node_name: m6alarge
-    egress_profile: m6a_large_whitelist
+    egress_profile: m6a-large-whitelist
 
   - name: m6a.large - Single User - None
     description: "JupyterLab - RAM Guarantee: 5G. RAM limit: 8G. CPU limit: 2. Storage: 500G."

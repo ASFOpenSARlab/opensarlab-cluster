@@ -122,6 +122,8 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                     line = line.lstrip('@profile').strip()
                     if not line:
                         raise Exception(f"Line: '{line}'. Keyword '@profile' does not have any required following arguments: profile_name")
+                    if not _is_fqdn(line):
+                        raise Exception(f"Line: '{line}'. Profile is not in fqdn format. This is needed since the profile is part of the name for some K8s resources.")
                     # Any profiles later found after the first will be ignored
                     if config_profile == None:
                         config_profile = line
@@ -130,6 +132,8 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                     line = line.lstrip('@lab').strip()
                     if not line:
                         raise Exception(f"Line: '{line}'. Keyword '@lab' does not have any required following arguments: lab_short_name")
+                    if not _is_fqdn(line):
+                        raise Exception(f"Line: '{line}'. Keyword '@lab' is not in fqdn format. This is needed since the lab short name is part of the name for some K8s resources.")
                     # Any labs later found after the first will be ignored
                     if config_lab == None:
                         config_lab = line
@@ -216,7 +220,7 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                         missing_parts.append("Rate limit (requests/min) must be defined for host. To turn off, set to None. Did you forget to put a @rate at the beginning?")
                     
                     if not config_list_type:
-                        missing_parts.append("List type: white or black must be defined. Didddd you forget to put a @list at the beginning?")
+                        missing_parts.append("List type: white or black must be defined. Did you forget to put a @list at the beginning?")
 
                     if missing_parts:
                         raise Exception("Missing some required config values: ", '\n'.join(missing_parts))
