@@ -131,9 +131,9 @@ async def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                     {% if profile.egress_profile is not defined -%}
                         'se-lab': '{{ parameters.lab_short_name }}',
                         'se-profile': 'default',
-                    {% elif profile.egress_config is defined and profile.egress_config != 'None' %}
+                    {% elif profile.egress_profile is defined and profile.egress_profile != 'None' %}
                         'se-lab': '{{ parameters.lab_short_name }}',
-                        'se-profile': '{{ profile.egress_config }}',
+                        'se-profile': '{{ profile.egress_profile }}',
                     {% endif %}
                     },
                     'node_selector': {
