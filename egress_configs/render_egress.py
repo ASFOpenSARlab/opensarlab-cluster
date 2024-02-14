@@ -119,7 +119,7 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                     continue
 
                 elif line.startswith('@profile'):
-                    line = line.lstrip('@profile').strip()
+                    line = line.lstrip('@profile').strip().lower()
                     if not line:
                         raise Exception(f"Line: '{line}'. Keyword '@profile' does not have any required following arguments: profile_name")
                     if not _is_fqdn(line):
@@ -129,7 +129,7 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                         config_profile = line
 
                 elif line.startswith('@lab'):
-                    line = line.lstrip('@lab').strip()
+                    line = line.lstrip('@lab').strip().lower()
                     if not line:
                         raise Exception(f"Line: '{line}'. Keyword '@lab' does not have any required following arguments: lab_short_name")
                     if not _is_fqdn(line):
