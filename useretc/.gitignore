@@ -8,5 +8,6 @@
 !hooks/*.sh
 !egress
 !egress/*.conf
+egress/**.conf.prepared
 !egress/includes
 !egress/includes/*.conf

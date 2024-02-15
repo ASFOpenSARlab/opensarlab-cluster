@@ -61,14 +61,13 @@ kubectl get configmap istio -n istio-system -o jsonpath='{.data.mesh}'
 
 
 #### Test application in default namespace
-SE_LAB=smce-test-opensarlab
 SE_PROFILE=default
 
 echo "Install small container called "sleep" for playing around with..."
 kubectl create namespace jupyter --dry-run=client -o yaml | kubectl apply -f -
 kubectl label namespace jupyter istio-injection=enabled --overwrite
 kubectl -n jupyter apply -f https://raw.githubusercontent.com/istio/istio/release-1.19/samples/sleep/sleep.yaml
-kubectl -n jupyter patch deployments/sleep -p '{"spec":{"template":{"metadata":{"labels":{"se-lab":"'$SE_LAB'","se-profile":"'$SE_PROFILE'"}}}}}'
+kubectl -n jupyter patch deployments/sleep -p '{"spec":{"template":{"metadata":{"labels":{"egress-profile":"'$SE_PROFILE'"}}}}}'
 kubectl scale --replicas=1 deployment sleep -n jupyter
 
 

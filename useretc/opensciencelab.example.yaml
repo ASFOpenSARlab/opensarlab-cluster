@@ -66,4 +66,4 @@ profiles:
     default: If True, the specific profile is selected by default (Optional. False if not explicity set.)
     service_account: Name of previously defined service account to apply to profile (Optional)
     desktop: Start user servers in virtual desktop. Desktop must be already installed in server image. (Optional. False if not explicilty set.)
-    egress_config: Apply existing given egress network profile configuration. (Optional. Defaults to profile 'default' if not set to explicit name or if not "None")
+    egress_profile: Apply existing given egress network profile configuration. (Optional. Defaults to profile 'default' if not set to explicit name or if not "None")

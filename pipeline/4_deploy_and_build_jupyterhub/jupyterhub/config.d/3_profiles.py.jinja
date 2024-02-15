@@ -123,17 +123,20 @@ async def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                 {% endif -%}
                 'kubespawner_override': {
                     'extra_annotations': {
-                        'proxy.istio.io/config': "holdApplicationUntilProxyStarts: true\nextraStatTags: [\"lab: {{ parameters.lab_short_name }}\", \"profile: {{ profile.name  }}\"]"
+                        'proxy.istio.io/config': "holdApplicationUntilProxyStarts: true\nextraStatTags: [\"lab: {{ parameters.lab_short_name }}\", \"profile: {{ profile.name  }}\", \"egress_profile: {{ profile.egress_profile | lower }}\"]"
                     },
                     'extra_labels': {
                         'server_type': '{{ node_name_escaped }}',
                         'profile_name': '{{ profile.name | replace(" ", "_") }}',
                     {% if profile.egress_profile is not defined -%}
-                        'se-lab': '{{ parameters.lab_short_name }}',
-                        'se-profile': 'default',
-                    {% elif profile.egress_config is defined and profile.egress_config != 'None' %}
-                        'se-lab': '{{ parameters.lab_short_name }}',
-                        'se-profile': '{{ profile.egress_config }}',
+                        'egress-profile': 'default',
+                        'sidecar.istio.io/inject': 'true',
+                    {% elif profile.egress_profile|lower == 'none' %}
+                        'egress-profile': 'none',
+                        'sidecar.istio.io/inject': 'false',
+                    {% else %}
+                        'egress-profile': '{{ profile.egress_profile | lower }}',
+                        'sidecar.istio.io/inject': 'true',
                     {% endif %}
                     },
                     'node_selector': {

@@ -164,7 +164,7 @@ def check_profiles(config):
         'default',
         'service_account',
         'desktop',
-        'egress_config'
+        'egress_profile'
     ]
 
     for profile in config['profiles']:
