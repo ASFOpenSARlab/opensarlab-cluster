@@ -418,21 +418,6 @@ spec:
 # Sidecars
 ######
 
-# Define default sidecars that apply if a workload is not selected
-# Don't allow any egress traffic
-apiVersion: networking.istio.io/v1beta1
-kind: Sidecar
-metadata:
-  name: wildlabs--no-workload--wildports--nohosts
-  namespace: istio-egress
-spec:
-  outboundTrafficPolicy:
-    mode: "REGISTRY_ONLY"
-  egress:
-    - hosts:
-        - "~/*"
----
-
 {%- for sidecar in workloads['sidecar'] %}
 
   {%- set lab = sidecar['lab'] %}
@@ -440,6 +425,21 @@ spec:
   {%- set namespace = sidecar['namespace'] %}
   {%- set hosts = sidecar['host'] %}
   {%- set list_type = sidecar['list_type'] %}
+
+# Define default sidecars that apply if a workload is not selected
+# Don't allow any egress traffic
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: wildlabs--noworkloads--wildports--nohosts
+  namespace: {{ namespace }}
+spec:
+  outboundTrafficPolicy:
+    mode: "REGISTRY_ONLY"
+  egress:
+    - hosts:
+        - "~/*"
+---
 
 # Define sidecar when egress profile is 'none'
 # This turns off any egress controls and allows all traffic

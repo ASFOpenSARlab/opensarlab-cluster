@@ -123,7 +123,7 @@ async def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                 {% endif -%}
                 'kubespawner_override': {
                     'extra_annotations': {
-                        'proxy.istio.io/config': "holdApplicationUntilProxyStarts: true\nextraStatTags: [\"lab: {{ parameters.lab_short_name }}\", \"profile: {{ profile.name  }}\"]"
+                        'proxy.istio.io/config': "holdApplicationUntilProxyStarts: true\nextraStatTags: [\"lab: {{ parameters.lab_short_name }}\", \"profile: {{ profile.name  }}\", \"egress_profile: {{ profile.egress_profile | lower }}\"]"
                     },
                     'extra_labels': {
                         'server_type': '{{ node_name_escaped }}',
@@ -133,7 +133,7 @@ async def profile_list_hook(spawner: c.Spawner) -> List[Dict]:
                         'se-profile': 'default',
                     {% else %}
                         'se-lab': '{{ parameters.lab_short_name }}',
-                        'se-profile': '{{ profile.egress_profile }}',
+                        'se-profile': '{{ profile.egress_profile | lower }}',
                     {% endif %}
                     },
                     'node_selector': {
