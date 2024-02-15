@@ -152,8 +152,7 @@ if [ "$IstioVersion" != "None" ]; then
     # REGISTRY_ONLY to block all egress implicit traffic, ALLOW_ANY passthroughs unknown services 
     istioctl install -y --set profile=minimal --set meshConfig.outboundTrafficPolicy.mode=ALLOW_ANY;
 
-    printf "\n\n%s\n" "******* Implicitly enable Istio injection in jupyter namespace...";
-    kubectl label namespace $JUPYTERHUB_NAMESPACE istio-injection=enabled --overwrite;
+    printf "\n\n%s\n" "******* Implicitly enable Istio injection in jupyter namespace at the profiles.py level.";
 
     printf "\n\n%s\n" "******* Explicitly disable Istio injection in all other namespaces...";
     kubectl label namespace amazon-cloudwatch istio-injection=disabled
@@ -166,8 +165,18 @@ if [ "$IstioVersion" != "None" ]; then
     # Apply domain whitelist
     kubectl apply -f ${CODEBUILD_ROOT}/egress_configs/egress.yaml
 
+    kubectl apply --prune -f ${CODEBUILD_ROOT}/egress_configs/egress.yaml \
+        -l used-in-egress=yes \
+        --prune-allowlist=core/v1/Namespace \
+        --prune-allowlist=telemetry.istio.io/v1alpha1/Telemetry \
+        --prune-allowlist=networking.istio.io/v1beta1/ServiceEntry \
+        --prune-allowlist=networking.istio.io/v1beta1/DestinationRule \
+        --prune-allowlist=networking.istio.io/v1beta1/VirtualService \
+        --prune-allowlist=networking.istio.io/v1beta1/Sidecar \
+        --prune-allowlist=networking.istio.io/v1alpha3/EnvoyFilter
+
     # TODO DELETE ME
-    aws s3 cp ${CODEBUILD_ROOT}/egress_configs/egress.yaml s3://opensciencelab-temp-debug/egress.yaml
+    #aws s3 cp ${CODEBUILD_ROOT}/egress_configs/egress.yaml s3://opensciencelab-temp-debug/egress.yaml
 
 fi
 

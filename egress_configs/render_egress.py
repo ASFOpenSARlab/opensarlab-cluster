@@ -43,12 +43,6 @@ def lint_includes(includes_dir: pathlib.Path) -> None:
                 
                 elif line.startswith('@profile'):
                     raise Exception(f"Line: '{line}'. Cannot have 'profile' in an includes file.")
-                
-                elif line.startswith('@namespace'):
-                    raise Exception(f"Line: '{line}'. Cannot have 'namespace' in an includes file.")
-                
-                elif line.startswith('@lab'):
-                    raise Exception(f"Line: '{line}'. Cannot have 'lab' in an includes file.")
 
                 elif line.startswith('@rate'):
                     raise Exception(f"Line: '{line}'. Cannot have 'rate' in an includes file.")
@@ -92,8 +86,6 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
         filename = conf_file.stem
 
         config_profile = None
-        config_namespace = None
-        config_lab = None
         config_rate_limit = None
         config_list_type = None
 
@@ -124,27 +116,11 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                         raise Exception(f"Line: '{line}'. Keyword '@profile' does not have any required following arguments: profile_name")
                     if not _is_fqdn(line):
                         raise Exception(f"Line: '{line}'. Profile is not in fqdn format. This is needed since the profile is part of the name for some K8s resources.")
+                    if line == 'none':
+                        raise Exception(f"Line: '{line}'. Profile cannot have the value 'none'. This is a special value defined in code.")
                     # Any profiles later found after the first will be ignored
                     if config_profile == None:
                         config_profile = line
-
-                elif line.startswith('@lab'):
-                    line = line.lstrip('@lab').strip().lower()
-                    if not line:
-                        raise Exception(f"Line: '{line}'. Keyword '@lab' does not have any required following arguments: lab_short_name")
-                    if not _is_fqdn(line):
-                        raise Exception(f"Line: '{line}'. Keyword '@lab' is not in fqdn format. This is needed since the lab short name is part of the name for some K8s resources.")
-                    # Any labs later found after the first will be ignored
-                    if config_lab == None:
-                        config_lab = line
-
-                elif line.startswith('@namespace'):
-                    line = line.lstrip('@namespace').strip()
-                    if not line:
-                        raise Exception(f"Line: '{line}'. Keyword '@namespace' does not have any required following arguments: namespace")
-                    # Any namsepaces later found after the first will be ignored
-                    if config_namespace == None:
-                        config_namespace = line
 
                 elif line.startswith('@rate'):
                     line = line.lstrip('@rate').strip()
@@ -204,11 +180,6 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                 if line_host or line_ip:
 
                     missing_parts = []
-                    if not config_namespace:
-                        missing_parts.append("Namespace must be defined for host. Did you forget to put a @namespace at the beginning?")
-                    
-                    if not config_lab:
-                        missing_parts.append("Lab Short Name must be defined for host. Did you forget to put a @lab at the beginning?")
 
                     if not config_profile:
                         missing_parts.append("Server Profile must be defined for host. Did you forget to put a @profile at the beginning?")
@@ -248,8 +219,6 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                                 'ip': line_ip,
                                 'port': line_port,
                                 'port_redirect': line_port_redirect,
-                                'namespace': config_namespace,
-                                'lab': config_lab,
                                 'profile': config_profile,
                                 'rate': config_rate_limit,
                                 'timeout': line_timeout,
@@ -264,8 +233,6 @@ def evaluate_confs(conf_dir: pathlib.Path) -> pd.DataFrame:
                                     'ip': line_ip,
                                     'port': line_port_redirect,
                                     'port_redirect': None,
-                                    'namespace': config_namespace,
-                                    'lab': config_lab,
                                     'profile': config_profile,
                                     'rate': config_rate_limit,
                                     'timeout': line_timeout,
@@ -288,79 +255,67 @@ def reduce_workloads(workloads: []) -> {}:
 
     df = pd.DataFrame(workloads)
 
-    # For gateway, multigroup port[host] by [lab] independent of [port_redirect,profile,namespace,rate,timeout,ip,list_type]
-    # Get a dict of [labs:{[ports: {[hosts]}]}]
-    hosts = df \
-        .query("host == host") \
-        .get(['lab', 'port', 'host']) \
-        .set_index('port') \
-        .groupby(['lab','port']) \
-        .apply(lambda row: list(row['host'])) \
-        .reset_index() \
-        .rename(columns={0:'hosts'})
-    gateway = hosts \
-        .set_index('port') \
-        .groupby(['lab']) \
-        .apply(lambda row: row['hosts'] \
-        .to_dict()) \
-        .to_dict()
+    # Get all profiles
+    profiles = df \
+        .get('profile') \
+        .unique()
 
-    # For service entry, group [host] by [port,port_redirect,lab,profile,namespace,rate,list_type] independent of [ip,timeout]
+    # For service entry, group [host] by [port,port_redirect,profile,rate,list_type] independent of [ip,timeout]
     service_entry_hosts = df \
         .query("host == host") \
-        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'host', 'list_type']) \
-        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'list_type'], dropna=False)['host'] \
+        .get(['port', 'port_redirect', 'profile', 'rate', 'host', 'list_type']) \
+        .groupby(['port', 'port_redirect', 'profile', 'rate', 'list_type'], dropna=False)['host'] \
         .apply(lambda row: list(set(row))) \
         .reset_index() \
         .to_dict('records')
     
-    # For service entry, group [ip] by [port,port_redirect,lab,profile,namespace,rate,list_type] independent of [host,timeout]
+    # For service entry, group [ip] by [port,port_redirect,profile,rate,list_type] independent of [host,timeout]
     service_entry_ips = df \
         .query("ip == ip") \
-        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'list_type', 'ip']) \
-        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate','list_type'], dropna=False)['ip'] \
+        .get(['port', 'port_redirect', 'profile', 'rate', 'list_type', 'ip']) \
+        .groupby(['port', 'port_redirect', 'profile', 'rate','list_type'], dropna=False)['ip'] \
         .apply(lambda row: list(set(row))) \
         .reset_index() \
         .to_dict('records')
     
-    # For desination rule, group [host] by [port,port_redirect,lab,profile,namespace,rate,timeout,list_type] independent of [ip]
+    # For desination rule, group [host] by [port,port_redirect,profile,rate,timeout,list_type] independent of [ip]
     destination_rule = df \
         .query("host == host") \
-        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout', 'list_type', 'host']) \
-        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout', 'list_type'], dropna=False)['host'] \
+        .get(['port', 'port_redirect', 'profile', 'rate', 'timeout', 'list_type', 'host']) \
+        .groupby(['port', 'port_redirect', 'profile', 'rate', 'timeout', 'list_type'], dropna=False)['host'] \
         .apply(lambda row: list(set(row))) \
         .reset_index() \
         .to_dict('records')
     
-    # For virtual services, group [host] by [port,port_redirect,lab,profile,namespace,rate,timeout] independent of [ip]
+    # For virtual services, group [host] by [port,port_redirect,profile,rate,timeout] independent of [ip]
     virtual_services = df \
         .query("host == host") \
-        .get(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout','list_type','host']) \
-        .groupby(['port', 'port_redirect', 'lab', 'profile', 'namespace', 'rate', 'timeout', 'list_type'], dropna=False)['host'] \
+        .get(['port', 'port_redirect', 'profile', 'rate', 'timeout','list_type','host']) \
+        .groupby(['port', 'port_redirect', 'profile', 'rate', 'timeout', 'list_type'], dropna=False)['host'] \
         .apply(lambda row: list(set(row))) \
         .reset_index() \
         .to_dict('records')
 
-    # For sidecar, group [host] by [lab,profile,namespace,list_type] independent of [port,port_redirect,rate,timeout,ip]
+    # For sidecar, group [host] by [profile,list_type] independent of [port,port_redirect,rate,timeout,ip]
     sidecar = df \
         .query("host == host") \
-        .get(['lab', 'profile', 'namespace', 'list_type', 'host']) \
-        .groupby(['lab', 'profile', 'namespace', 'list_type'], dropna=False)['host']\
+        .get(['profile', 'list_type', 'host']) \
+        .groupby(['profile', 'list_type'], dropna=False)['host']\
         .apply(lambda row: list(set(row))) \
         .reset_index() \
         .to_dict('records')
 
-    # For Envoy Filter, group [rate] by [lab,profile,namespace,list_type] independent of [host,ip,port,port_redirect,timeout]
-    # If more than one rate is found per lab/profile/namespace/list_type, the last one takes precedence 
+    # For Envoy Filter, group [rate] by [profile,list_type] independent of [host,ip,port,port_redirect,timeout]
+    # If more than one rate is found per profile/list_type, the last one takes precedence 
     envoy_filter = df \
-        .get(['lab', 'profile', 'namespace', 'list_type', 'rate']) \
-        .groupby(['lab', 'profile', 'namespace', 'list_type'], dropna=False)['rate'] \
+        .get(['profile', 'list_type', 'rate']) \
+        .groupby(['profile', 'list_type'], dropna=False)['rate'] \
         .apply(lambda row: list(row)[-1] if len(list(row)) > 0 else None) \
         .reset_index() \
         .to_dict('records')
 
     return {
-        'gateway': gateway,
+        'profiles': profiles,
         'service_entry_hosts': service_entry_hosts,
         'service_entry_ips': service_entry_ips,
         'destination_rule': destination_rule,
