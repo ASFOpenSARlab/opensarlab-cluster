@@ -106,7 +106,6 @@ profiles:
     storage_capacity: 500Gi
     node_name: sar1
     default: True
-    egress_profile: does-not-exist
 
   - name: SAR 1 - Max
     description: "Similar to SAR 1 but only one person per machine. JupyterLab - RAM Guarantee: 20G. RAM limit: 32G. CPU limit: 8. Storage: 500G."
@@ -181,6 +180,28 @@ profiles:
     #memory_limit: 7G
     storage_capacity: 500Gi
     node_name: m6alarge
+
+  - name: m6a.large - Single User - dne
+    description: "JupyterLab - RAM Guarantee: 5G. RAM limit: 8G. CPU limit: 2. Storage: 500G."
+    image_name: sar
+    image_tag: 1a7f6c9
+    hook_script: sar.sh
+    memory_guarantee: 5G
+    #memory_limit: 7G
+    storage_capacity: 500Gi
+    node_name: m6alarge
+    egress_profile: does-not-exist
+
+  - name: m6a.large - Single User - Default Blacklist
+    description: "JupyterLab - RAM Guarantee: 5G. RAM limit: 8G. CPU limit: 2. Storage: 500G."
+    image_name: sar
+    image_tag: 1a7f6c9
+    hook_script: sar.sh
+    memory_guarantee: 5G
+    #memory_limit: 7G
+    storage_capacity: 500Gi
+    node_name: m6alarge
+    egress_profile: default
 
   - name: m6a.large - Single User - Whitelist
     description: "JupyterLab - RAM Guarantee: 5G. RAM limit: 8G. CPU limit: 2. Storage: 500G."
