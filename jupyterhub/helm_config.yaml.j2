@@ -101,3 +101,8 @@ hub:
   extraConfig:
     customTemplates.py: |
       c.JupyterHub.template_paths = ["/usr/local/share/jupyterhub/templates/custom/"]
+    addStorageAnnotation.py: |
+      c.KubeSpawner.storage_extra_annotations = {
+        'pv.kubernetes.io/provisioned-by': 'ebs.csi.aws.com',
+        'server-name': {servername}
+      }
