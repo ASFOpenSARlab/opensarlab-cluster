@@ -217,8 +217,9 @@ def use_existing_volume_or_snapshot(spawner):
 
         annotations = spawn_pvc.metadata.annotations
 
-        # Explicit annote the provisioner. The CSI plugin appears to not do this properly.  
-        annotations.update({"pv.kubernetes.io/provisioned-by": "ebs.csi.aws.com"})
+        # Explicit annote the provisioner. The CSI plugin appears to not do this properly.
+        # May not be needed
+        #annotations.update({"pv.kubernetes.io/provisioned-by": "ebs.csi.aws.com"})
 
         labels = spawn_pvc.metadata.labels
 
