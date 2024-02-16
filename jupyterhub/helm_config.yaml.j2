@@ -104,5 +104,5 @@ hub:
     addStorageAnnotation.py: |
       c.KubeSpawner.storage_extra_annotations = {
         'pv.kubernetes.io/provisioned-by': 'ebs.csi.aws.com',
-        'server-name': {servername}
+        'extra-ebs-annotations': 'yes'
       }

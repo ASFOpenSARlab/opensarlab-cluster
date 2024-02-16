@@ -162,9 +162,6 @@ if [ "$IstioVersion" != "None" ]; then
     kubectl label namespace services istio-injection=disabled
     kubectl label namespace default istio-injection=disabled
 
-    # Apply domain whitelist
-    kubectl apply -f ${CODEBUILD_ROOT}/egress_configs/egress.yaml
-
     kubectl apply --prune -f ${CODEBUILD_ROOT}/egress_configs/egress.yaml \
         -l used-in-egress=yes \
         --prune-allowlist=core/v1/Namespace \
