@@ -153,13 +153,16 @@ def use_existing_volume_or_snapshot(spawner):
         if not volume and not snapshot:
             log.info(f"No volumes found nor able to restore from snapshot. Allow JupyterHub to create a new volume for {pvc_name}")
             return
+        
+        CREATE_PVC_FROM_EXISTING_VOLUME = False
+        CREATE_PVC_FROM_SNAPSHOT = True
 
         # If there is an existing volume, do not restore from any possible snapshot
-        if volume:
+        if CREATE_PVC_FROM_EXISTING_VOLUME and volume:
             log.info(f"Volume found for {pvc_name}. Will create matching PVC. Ignoring any snapshots.")
 
         # If there is no existing volume but there is a snapshot, restore volume from the snapshot 
-        elif not volume and snapshot:
+        elif CREATE_PVC_FROM_SNAPSHOT and not volume and snapshot:
 
             # Guarantee that the volume never shrinks if the spawner's volume is smaller than the snapshot
             if snapshot['VolumeSize'] > vol_size:
