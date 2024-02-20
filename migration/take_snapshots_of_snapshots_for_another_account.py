@@ -51,10 +51,6 @@ def main(args):
                         'Values': ['completed', 'pending', 'error']
                     },
                     {
-                        'Name': f"tag:from-{args['old_cluster_name']}",
-                        'Values': 'true'
-                    },
-                    {
                         'Name': f"tag:kubernetes.io/created-for/pvc/name",
                         'Values': f"args['specific_user_claim']"
                     }
