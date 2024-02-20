@@ -3,6 +3,7 @@
 ######
 #
 # Clone snapshots from same account.
+# TODO Update comment
 # The script "take_snapshots_of_volumes_for_another_account" is used to take snapshots of volumes. However, this does not capture snapshots without accompying volumes that still need to be migrated.
 # Meant to be run in cloudshell of the particular region/account where the proper environment varibles are set.
 #
@@ -46,7 +47,7 @@ def main(args):
                 {"Name": "status", "Values": ["completed", "pending", "error"]},
                 {
                     "Name": f"tag:kubernetes.io/created-for/pvc/name",
-                    "Values": f"args['specific_user_claim']",
+                    "Values": [f"args['specific_user_claim']"],
                 },
             ],
             OwnerIds=["self"],
@@ -107,21 +108,33 @@ def main(args):
                 {"Key": f"from-{args['old_cluster_name']}", "Value": "true"}
             )
 
+            print(old_tags)
+            print(new_tags)
+
             try:
                 response = ec2.copy_snapshot(
                     SourceRegion=args["old_region_name"],
-                    SourceSnapshotId=snap["snapshotId"],
+                    SourceSnapshotId=snap["SnapshotId"],
                     TagSpecifications=[
-                        {"ResourceType": "snapshot", "Tags": snap["Tags"]},
+                        {"ResourceType": "snapshot", "Tags": new_tags},
                     ],
                     DryRun=True,
                 )
 
             except ec2.exceptions.ClientError as e:
-                print("Too many pending snapshots. Wait for 1 minute and continue.")
-                time.sleep(60)
+                print(e)
+                if not e.response["Error"]["Code"] == "DryRunOperation":
+                    time.sleep(60)
 
-            snapshot_id = response["SnapshotId"]
+            if (
+                "Error" in response.keys()
+                and "Code" in response["Error"].keys()
+                and response["Error"]["Code"] == "DryRunOperation"
+            ):
+                snapshot_id = snap["SnapshotId"]
+            else:
+                assert(len(response["Snapshots"]) == 1)
+                snapshot_id = response["Snapshots"][0]["SnapshotId"]
 
             # Modify permissions of snapshot and ADD NEW ACCOUNT NUMBER, as needed
             if args["new_account_id"]:
@@ -134,10 +147,10 @@ def main(args):
                         UserIds=[
                             args["new_account_id"],
                         ],
-                        DryRun=False,
+                        DryRun=True,
                     )
-                except ec2.meta.client.exceptions.DryRunOperation:
-                    print("Dry Run Operation has all necessary permissions")
+                except ec2.exceptions.ClientError as e:
+                    print(e)
 
 
 if __name__ == "__main__":
