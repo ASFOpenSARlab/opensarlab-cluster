@@ -26,7 +26,7 @@ def main(args):
                     "Values": ["owned"],
                 },
                 {
-                    "Name": f"tag:kubernetes.io/created-for/pvc/name",
+                    "Name": "tag:kubernetes.io/created-for/pvc/name",
                     "Values": [f"{args['specific_user_claim']}"],
                 },
             ],
@@ -47,56 +47,54 @@ def main(args):
 
     if len(volumes) == 0:
         print("No volumes found")
+        return
 
-    if len(volumes) > 0:
-        # Take snapshots of each volume. Make sure the tags are copied over.
-        for vol in volumes:
-            print(f"Converting tags for volume: {vol}]\n\n")
+    # Take snapshots of each volume. Make sure the tags are copied over.
+    for vol in volumes:
+        print(f"Converting tags for volume: {vol}]\n\n")
 
-            old_tags = vol["Tags"]
-            # tags = [{'Key': 'string','Value': 'string'},]
-            new_tags = []
+        old_tags = vol["Tags"]
+        # tags = [{'Key': 'string','Value': 'string'},]
+        new_tags = []
 
-            for tag in old_tags:
-                if tag["Key"] in [
-                    "server-stop-time",
-                    "snapshot-delete-time",
-                    "ebs.csi.aws.com/cluster",
-                    "kubernetes.io/created-for/pvc/name",
-                    "volume-delete-time",
-                    "server-start-time",
-                ]:
-                    new_tags.append(tag)
+        for tag in old_tags:
+            if tag["Key"] in [
+                "server-stop-time",
+                "snapshot-delete-time",
+                "ebs.csi.aws.com/cluster",
+                "kubernetes.io/created-for/pvc/name",
+                "volume-delete-time",
+                "server-start-time",
+            ]:
+                new_tags.append(tag)
 
-                elif tag["Key"] == "Name":
-                    new_tags.append(
-                        {"Key": "Name", "Value": f"migrated-{tag['Value']}"}
-                    )
+            elif tag["Key"] == "Name":
+                new_tags.append({"Key": "Name", "Value": f"migrated-{tag['Value']}"})
 
-                elif tag["Key"] == "osl-billing":
-                    new_tags.append(
-                        {"Key": "osl-billing", "Value": args["new_billing_value"]}
-                    )
+            elif tag["Key"] == "osl-billing":
+                new_tags.append(
+                    {"Key": "osl-billing", "Value": args["new_billing_value"]}
+                )
 
-                elif tag["Key"] == f"kubernetes.io/cluster/{args['old_cluster_name']}":
-                    new_tags.append(
-                        {
-                            "Key": f"kubernetes.io/cluster/{args['new_cluster_name']}",
-                            "Value": "owned",
-                        }
-                    )
+            elif tag["Key"] == f"kubernetes.io/cluster/{args['old_cluster_name']}":
+                new_tags.append(
+                    {
+                        "Key": f"kubernetes.io/cluster/{args['new_cluster_name']}",
+                        "Value": "owned",
+                    }
+                )
 
-                elif tag["Key"] == f"KubernetesCluster":
-                    new_tags.append(
-                        {"Key": f"KubernetesCluster", "Value": args["new_cluster_name"]}
-                    )
+            elif tag["Key"] == "KubernetesCluster":
+                new_tags.append(
+                    {"Key": "KubernetesCluster", "Value": args["new_cluster_name"]}
+                )
 
-            new_tags.append(
-                {"Key": f"from-{args['old_cluster_name']}", "Value": "true"}
-            )
+        new_tags.append({"Key": f"from-{args['old_cluster_name']}", "Value": "true"})
 
-            print(f"Creating snapshot from volume: {vol['VolumeId']}\n")
+        print(f"Creating snapshot from volume: {vol['VolumeId']}\n")
 
+        response = {}
+        try:
             response = ec2.create_snapshot(
                 VolumeId=vol["VolumeId"],
                 TagSpecifications=[
@@ -104,29 +102,36 @@ def main(args):
                 ],
                 DryRun=False,
             )
+        except ec2.exceptions.ClientError as e:
+            print(e)
+            if e.response["Error"]["Code"] == "DryRunOperation":
+                break
+            print("Too many pending snapshots. Wait for 1 minute and continue.")
+            time.sleep(60)
 
-            snapshot_id = response["SnapshotId"]
+        snapshot_id = response["SnapshotId"]
 
-            # Modify permissions of snapshot and ADD NEW ACCOUNT NUMBER, as needed
-            if args["new_account_id"]:
-                print(
-                    f"Modifiying permissions for snapshot {snapshot_id} from volume {vol['VolumeId']}"
+        # Modify permissions of snapshot and ADD NEW ACCOUNT NUMBER, as needed
+        if args["new_account_id"]:
+            print(
+                f"Modifiying permissions for snapshot {snapshot_id} from volume {vol['VolumeId']}"
+            )
+            try:
+                response = ec2.modify_snapshot_attribute(
+                    Attribute="createVolumePermission",
+                    OperationType="add",
+                    SnapshotId=snapshot_id,
+                    UserIds=[
+                        args["new_account_id"],
+                    ],
+                    DryRun=False,
                 )
-                try:
-                    response = ec2.modify_snapshot_attribute(
-                        Attribute="createVolumePermission",
-                        OperationType="add",
-                        SnapshotId=snapshot_id,
-                        UserIds=[
-                            args["new_account_id"],
-                        ],
-                        DryRun=False,
-                    )
-                except ec2.exceptions.ClientError:
-                    print("Too many pending snapshots. Wait for 1 minute and continue.")
-                    time.sleep(60)
-                except ec2.meta.client.exceptions.DryRunOperation:
-                    print("Dry Run Operation has all necessary permissions")
+            except ec2.exceptions.ClientError as e:
+                print(e)
+                if e.response["Error"]["Code"] == "DryRunOperation":
+                    break
+                print("Too many pending snapshots. Wait for 1 minute and continue.")
+                time.sleep(60)
 
 
 if __name__ == "__main__":
