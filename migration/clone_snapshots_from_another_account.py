@@ -27,7 +27,7 @@ def main(args):
                     "Values": ["owned"],
                 },
                 {"Name": "status", "Values": ["completed", "pending", "error"]},
-                {"Name": f"tag:from-{args['old_cluster_name']}", "Values": "true"},
+                {"Name": f"tag:from-{args['old_cluster_name']}", "Values": ["true"]},
                 {
                     "Name": f"tag:kubernetes.io/created-for/pvc/name",
                     "Values": [f"{args['specific_user_claim']}"],
@@ -45,7 +45,7 @@ def main(args):
                     "Values": ["owned"],
                 },
                 {"Name": "status", "Values": ["completed", "pending", "error"]},
-                {"Name": f"tag:from-{args['old_cluster_name']}", "Values": "true"},
+                {"Name": f"tag:from-{args['old_cluster_name']}", "Values": ["true"] },
                 {
                     "Name": f"tag:kubernetes.io/created-for/pvc/name",
                     "Values": f"args['specific_user_claim']",
@@ -66,7 +66,7 @@ def main(args):
             try:
                 response = ec2.copy_snapshot(
                     SourceRegion=args["old_region_name"],
-                    SourceSnapshotId=snap["snapshotId"],
+                    SourceSnapshotId=snap["SnapshotId"],
                     TagSpecifications=[
                         {"ResourceType": "snapshot", "Tags": snap["Tags"]},
                     ],
@@ -74,11 +74,13 @@ def main(args):
                 )
                 print(f"Snapshot '{snap['snapshotId']}' copied to new account.")
 
-            except ec2.exceptions.ClientError:
+            except ec2.exceptions.ClientError as e:
+                print(e)
+                if e.response['Error']['Code'] == 'DryRunOperation':
+                    break
+
                 print("Too many pending snapshots. Wait for 1 minute and continue.")
                 time.sleep(60)
-            except ec2.meta.client.exceptions.DryRunOperation:
-                print("Dry Run Operation has all necessary permissions")
 
 
 if __name__ == "__main__":
