@@ -57,11 +57,14 @@ def main(args):
         for snap in snapshots:
             # Filter out any tags with "from-{cluster}" since they are assumed to be created by volumes.
             if f"from-{args['old_cluster_name']}" in snap["Tags"]:
+                print(f"Tag 'from-{args['old_cluster_name']}' found. Skip copying.")
                 continue
 
             print(f"Cloning snapshot: {snap}]\n\n")
 
             old_tags = snap["Tags"]
+            snap_claim_name = None
+
             # tags = [{'Key': 'string','Value': 'string'},]
             new_tags = []
 
@@ -70,11 +73,14 @@ def main(args):
                     "server-stop-time",
                     "snapshot-delete-time",
                     "ebs.csi.aws.com/cluster",
-                    "kubernetes.io/created-for/pvc/name",
                     "volume-delete-time",
                     "server-start-time",
                 ]:
                     new_tags.append(tag)
+
+                elif tag["Key"] == 'kubernetes.io/created-for/pvc/name':
+                    snap_claim_name = tag['Value']
+                    new_tags.append(tag)  
 
                 elif tag["Key"] == "Name":
                     new_tags.append(
@@ -103,19 +109,43 @@ def main(args):
                 {"Key": f"from-{args['old_cluster_name']}", "Value": "true"}
             )
 
+            # Is there already a snapshot for the particular claim that has the "newer" tags?
+            claim_snapshots = ec2.describe_snapshots(
+                Filters=[
+                    {
+                        "Name": "tag:kubernetes.io/created-for/pvc/name",
+                        "Values": [f"{snap_claim_name}"],
+                    },
+                    {
+                        "Name": f"tag:from-{args['old_cluster_name']}", 
+                        "Values": ["true"]
+                    }
+                ],
+                OwnerIds=["self"],
+            )
+            if claim_snapshots["Snapshots"]:
+                print(f"claim snapshots: {claim_snapshots}")
+                print(f"Snapshot {claim_snapshots['Snapshots'][0]['SnapshotId']} for claim {snap_claim_name} in volume {snap['SnapshotId']} already exists. Not creating new snapshot.\n")
+                continue
+
+            print(f"Copying snapshot: {snap['SnapshotId']}\n")
+
             try:
                 response = ec2.copy_snapshot(
                     SourceRegion=args["old_region_name"],
-                    SourceSnapshotId=snap["snapshotId"],
+                    SourceSnapshotId=snap["SnapshotId"],
                     TagSpecifications=[
-                        {"ResourceType": "snapshot", "Tags": snap["Tags"]},
+                        {"ResourceType": "snapshot", "Tags": new_tags},
                     ],
-                    DryRun=True,
+                    DryRun=False,
                 )
 
             except ec2.exceptions.ClientError as e:
-                print("Too many pending snapshots. Wait for 1 minute and continue.")
+                print(e)
+                print("Too many pending snapshots? Wait for 1 minute and continue.")
                 time.sleep(60)
+            except Exception as e:
+                print(e)
 
             snapshot_id = response["SnapshotId"]
 
@@ -134,6 +164,8 @@ def main(args):
                     )
                 except ec2.meta.client.exceptions.DryRunOperation:
                     print("Dry Run Operation has all necessary permissions")
+                except Exception as e:
+                    print(e)
 
 
 if __name__ == "__main__":
