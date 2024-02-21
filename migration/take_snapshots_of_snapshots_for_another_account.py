@@ -43,11 +43,7 @@ def main(args):
                     "Name": f"tag:kubernetes.io/cluster/{args['old_cluster_name']}",
                     "Values": ["owned"],
                 },
-                {"Name": "status", "Values": ["completed", "pending", "error"]},
-                {
-                    "Name": f"tag:kubernetes.io/created-for/pvc/name",
-                    "Values": f"args['specific_user_claim']",
-                },
+                {"Name": "status", "Values": ["completed", "pending", "error"]}
             ],
             OwnerIds=["self"],
         )
@@ -141,6 +137,8 @@ def main(args):
 
 
 if __name__ == "__main__":
+
+    # If getting all user claims and not just one specific, set "specific_user_claim" to None.
     args = {
         "old_cluster_name": "smce-test-cluster",
         "new_cluster_name": "smce-prod-cluster",

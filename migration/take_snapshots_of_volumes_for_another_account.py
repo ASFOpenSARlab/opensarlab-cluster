@@ -48,10 +48,13 @@ def main(args):
     if len(volumes) == 0:
         print("No volumes found")
 
-    if len(volumes) > 0:
+    elif len(volumes) > 0:
+
         # Take snapshots of each volume. Make sure the tags are copied over.
         for vol in volumes:
             print(f"Converting tags for volume: {vol}]\n\n")
+
+            volume_claim_name = None
 
             old_tags = vol["Tags"]
             # tags = [{'Key': 'string','Value': 'string'},]
@@ -62,11 +65,14 @@ def main(args):
                     "server-stop-time",
                     "snapshot-delete-time",
                     "ebs.csi.aws.com/cluster",
-                    "kubernetes.io/created-for/pvc/name",
                     "volume-delete-time",
                     "server-start-time",
                 ]:
                     new_tags.append(tag)
+
+                elif tag["Key"] == 'kubernetes.io/created-for/pvc/name':
+                    volume_claim_name = tag['Value']
+                    new_tags.append(tag)                    
 
                 elif tag["Key"] == "Name":
                     new_tags.append(
@@ -95,6 +101,24 @@ def main(args):
                 {"Key": f"from-{args['old_cluster_name']}", "Value": "true"}
             )
 
+            # Is there already a snapshot for the particular claim that has the "newer" tags?
+            snapshots = ec2.describe_snapshots(
+                Filters=[
+                    {
+                        "Name": "tag:kubernetes.io/created-for/pvc/name",
+                        "Values": [f"{volume_claim_name}"],
+                    },
+                    {
+                        "Name": f"tag:from-{args['old_cluster_name']}", 
+                        "Values": ["true"]
+                    }
+                ],
+                OwnerIds=["self"],
+            )
+            if snapshots["Snapshots"]:
+                print(f"Snapshot {snapshots['Snapshots'][0]['SnapshotId']} for claim {volume_claim_name} in volume {vol['VolumeId']} already exists. Not creating new snapshot.\n")
+                continue
+
             print(f"Creating snapshot from volume: {vol['VolumeId']}\n")
 
             response = ec2.create_snapshot(
@@ -122,14 +146,16 @@ def main(args):
                         ],
                         DryRun=False,
                     )
-                except ec2.exceptions.ClientError:
-                    print("Too many pending snapshots. Wait for 1 minute and continue.")
-                    time.sleep(60)
                 except ec2.meta.client.exceptions.DryRunOperation:
                     print("Dry Run Operation has all necessary permissions")
-
+                except ec2.exceptions.ClientError as e:
+                    print(e)
+                    print("Too many pending snapshots? Wait for 1 minute and continue.")
+                    time.sleep(60)
 
 if __name__ == "__main__":
+
+    # If getting all user claims and not just one specific, set "specific_user_claim" to None.
     args = {
         "old_cluster_name": "smce-test-cluster",
         "new_cluster_name": "smce-prod-cluster",
