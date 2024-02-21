@@ -46,8 +46,8 @@ def main(args):
                 },
                 {"Name": "status", "Values": ["completed", "pending", "error"]},
                 {
-                    "Name": f"tag:kubernetes.io/created-for/pvc/name",
-                    "Values": [f"args['specific_user_claim']"],
+                    "Name": "tag:kubernetes.io/created-for/pvc/name",
+                    "Values": "args['specific_user_claim']",
                 },
             ],
             OwnerIds=["self"],
@@ -62,11 +62,14 @@ def main(args):
         for snap in snapshots:
             # Filter out any tags with "from-{cluster}" since they are assumed to be created by volumes.
             if f"from-{args['old_cluster_name']}" in snap["Tags"]:
+                print(f"Tag 'from-{args['old_cluster_name']}' found. Skip copying.")
                 continue
 
             print(f"Cloning snapshot: {snap}]\n\n")
 
             old_tags = snap["Tags"]
+            snap_claim_name = None
+
             # tags = [{'Key': 'string','Value': 'string'},]
             new_tags = []
 
@@ -75,10 +78,13 @@ def main(args):
                     "server-stop-time",
                     "snapshot-delete-time",
                     "ebs.csi.aws.com/cluster",
-                    "kubernetes.io/created-for/pvc/name",
                     "volume-delete-time",
                     "server-start-time",
                 ]:
+                    new_tags.append(tag)
+
+                elif tag["Key"] == "kubernetes.io/created-for/pvc/name":
+                    snap_claim_name = tag["Value"]
                     new_tags.append(tag)
 
                 elif tag["Key"] == "Name":
@@ -99,17 +105,37 @@ def main(args):
                         }
                     )
 
-                elif tag["Key"] == f"KubernetesCluster":
+                elif tag["Key"] == "KubernetesCluster":
                     new_tags.append(
-                        {"Key": f"KubernetesCluster", "Value": args["new_cluster_name"]}
+                        {"Key": "KubernetesCluster", "Value": args["new_cluster_name"]}
                     )
 
             new_tags.append(
                 {"Key": f"from-{args['old_cluster_name']}", "Value": "true"}
             )
 
-            print(old_tags)
-            print(new_tags)
+            # Is there already a snapshot for the particular claim that has the "newer" tags?
+            claim_snapshots = ec2.describe_snapshots(
+                Filters=[
+                    {
+                        "Name": "tag:kubernetes.io/created-for/pvc/name",
+                        "Values": [f"{snap_claim_name}"],
+                    },
+                    {
+                        "Name": f"tag:from-{args['old_cluster_name']}",
+                        "Values": ["true"],
+                    },
+                ],
+                OwnerIds=["self"],
+            )
+            if claim_snapshots["Snapshots"]:
+                print(f"claim snapshots: {claim_snapshots}")
+                print(
+                    f"Snapshot {claim_snapshots['Snapshots'][0]['SnapshotId']} for claim {snap_claim_name} in volume {snap['SnapshotId']} already exists. Not creating new snapshot.\n"
+                )
+                continue
+
+            print(f"Copying snapshot: {snap['SnapshotId']}\n")
 
             try:
                 response = ec2.copy_snapshot(
@@ -118,12 +144,13 @@ def main(args):
                     TagSpecifications=[
                         {"ResourceType": "snapshot", "Tags": new_tags},
                     ],
-                    DryRun=True,
+                    DryRun=False,
                 )
 
             except ec2.exceptions.ClientError as e:
                 print(e)
                 if not e.response["Error"]["Code"] == "DryRunOperation":
+                    print("Too many pending snapshots. Wait for 1 minute and continue.")
                     time.sleep(60)
 
             if (
@@ -133,8 +160,10 @@ def main(args):
             ):
                 snapshot_id = snap["SnapshotId"]
             else:
-                assert(len(response["Snapshots"]) == 1)
+                assert len(response["Snapshots"]) == 1
                 snapshot_id = response["Snapshots"][0]["SnapshotId"]
+
+            snapshot_id = response["SnapshotId"]
 
             # Modify permissions of snapshot and ADD NEW ACCOUNT NUMBER, as needed
             if args["new_account_id"]:
@@ -151,9 +180,12 @@ def main(args):
                     )
                 except ec2.exceptions.ClientError as e:
                     print(e)
+                except Exception as e:
+                    print(e)
 
 
 if __name__ == "__main__":
+    # If getting all user claims and not just one specific, set "specific_user_claim" to None.
     args = {
         "old_cluster_name": "smce-test-cluster",
         "new_cluster_name": "smce-prod-cluster",
