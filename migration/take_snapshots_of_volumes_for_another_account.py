@@ -109,6 +109,7 @@ def main(args):
             ],
             OwnerIds=["self"],
         )
+
         if snapshots["Snapshots"]:
             print(
                 f"Snapshot {snapshots['Snapshots'][0]['SnapshotId']} for claim {volume_claim_name} in volume {vol['VolumeId']} already exists. Not creating new snapshot.\n"
@@ -124,16 +125,23 @@ def main(args):
                 TagSpecifications=[
                     {"ResourceType": "snapshot", "Tags": new_tags},
                 ],
-                DryRun=False,
+                DryRun=True,
             )
         except ec2.exceptions.ClientError as e:
             print(e)
-            if e.response["Error"]["Code"] == "DryRunOperation":
-                break
-            print("Too many pending snapshots. Wait for 1 minute and continue.")
-            time.sleep(60)
+            if not e.response["Error"]["Code"] == "DryRunOperation":
+                print("Too many pending snapshots. Wait for 1 minute and continue.")
+                time.sleep(60)
 
-        snapshot_id = response["SnapshotId"]
+        if (
+            "Error" in response.keys()
+            and "Code" in response["Error"].keys()
+            and response["Error"]["Code"] == "DryRunOperation"
+        ):
+            snapshot_id = "snap-0c84f7600f7e21fb3"
+        else:
+            assert len(response["Snapshots"]) == 1
+            snapshot_id = response["Snapshots"][0]["SnapshotId"]
 
         # Modify permissions of snapshot and ADD NEW ACCOUNT NUMBER, as needed
         if args["new_account_id"]:
@@ -148,7 +156,7 @@ def main(args):
                     UserIds=[
                         args["new_account_id"],
                     ],
-                    DryRun=False,
+                    DryRun=True,
                 )
             except ec2.exceptions.ClientError as e:
                 print(e)
