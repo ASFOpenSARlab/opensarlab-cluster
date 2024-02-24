@@ -9,9 +9,10 @@
 #
 ######
 
-import time
-
 import boto3
+
+import json
+import time
 
 
 def main(args):
@@ -54,134 +55,141 @@ def main(args):
         )
 
     snapshots = response["Snapshots"]
+    snapshot_tags = {}
 
     if len(snapshots) == 0:
         print("No snapshots found")
+        return
 
-    if len(snapshots) > 0:
-        for snap in snapshots:
-            # Filter out any tags with "from-{cluster}" since they are assumed to be created by volumes.
-            if f"from-{args['old_cluster_name']}" in snap["Tags"]:
-                print(f"Tag 'from-{args['old_cluster_name']}' found. Skip copying.")
-                continue
+    for snap in snapshots:
+        # Filter out any tags with "from-{cluster}" since they are assumed to be created by volumes.
+        if f"from-{args['old_cluster_name']}" in snap["Tags"]:
+            print(f"Tag 'from-{args['old_cluster_name']}' found. Skip copying.")
+            continue
 
-            print(f"Cloning snapshot: {snap}]\n\n")
+        print(f"Cloning snapshot: {snap}]\n\n")
 
-            old_tags = snap["Tags"]
-            snap_claim_name = None
+        old_tags = snap["Tags"]
+        snap_claim_name = None
 
-            # tags = [{'Key': 'string','Value': 'string'},]
-            new_tags = []
+        # tags = [{'Key': 'string','Value': 'string'},]
+        new_tags = []
 
-            for tag in old_tags:
-                if tag["Key"] in [
-                    "server-stop-time",
-                    "snapshot-delete-time",
-                    "ebs.csi.aws.com/cluster",
-                    "volume-delete-time",
-                    "server-start-time",
-                ]:
-                    new_tags.append(tag)
+        for tag in old_tags:
+            if tag["Key"] in [
+                "server-stop-time",
+                "snapshot-delete-time",
+                "ebs.csi.aws.com/cluster",
+                "volume-delete-time",
+                "server-start-time",
+            ]:
+                new_tags.append(tag)
 
-                elif tag["Key"] == "kubernetes.io/created-for/pvc/name":
-                    snap_claim_name = tag["Value"]
-                    new_tags.append(tag)
+            elif tag["Key"] == "kubernetes.io/created-for/pvc/name":
+                snap_claim_name = tag["Value"]
+                new_tags.append(tag)
 
-                elif tag["Key"] == "Name":
-                    new_tags.append(
-                        {"Key": "Name", "Value": f"migrated-{tag['Value']}"}
-                    )
+            elif tag["Key"] == "Name":
+                new_tags.append({"Key": "Name", "Value": f"migrated-{tag['Value']}"})
 
-                elif tag["Key"] == "osl-billing":
-                    new_tags.append(
-                        {"Key": "osl-billing", "Value": args["new_billing_value"]}
-                    )
+            elif tag["Key"] == "osl-billing":
+                new_tags.append(
+                    {"Key": "osl-billing", "Value": args["new_billing_value"]}
+                )
 
-                elif tag["Key"] == f"kubernetes.io/cluster/{args['old_cluster_name']}":
-                    new_tags.append(
-                        {
-                            "Key": f"kubernetes.io/cluster/{args['new_cluster_name']}",
-                            "Value": "owned",
-                        }
-                    )
+            elif tag["Key"] == f"kubernetes.io/cluster/{args['old_cluster_name']}":
+                new_tags.append(
+                    {
+                        "Key": f"kubernetes.io/cluster/{args['new_cluster_name']}",
+                        "Value": "owned",
+                    }
+                )
 
-                elif tag["Key"] == "KubernetesCluster":
-                    new_tags.append(
-                        {"Key": "KubernetesCluster", "Value": args["new_cluster_name"]}
-                    )
+            elif tag["Key"] == "KubernetesCluster":
+                new_tags.append(
+                    {"Key": "KubernetesCluster", "Value": args["new_cluster_name"]}
+                )
 
-            new_tags.append(
-                {"Key": f"from-{args['old_cluster_name']}", "Value": "true"}
+        new_tags.append({"Key": f"from-{args['old_cluster_name']}", "Value": "true"})
+
+        # Is there already a snapshot for the particular claim that has the "newer" tags?
+        claim_snapshots = ec2.describe_snapshots(
+            Filters=[
+                {
+                    "Name": "tag:kubernetes.io/created-for/pvc/name",
+                    "Values": [f"{snap_claim_name}"],
+                },
+                {
+                    "Name": f"tag:from-{args['old_cluster_name']}",
+                    "Values": ["true"],
+                },
+            ],
+            OwnerIds=["self"],
+        )
+        if claim_snapshots["Snapshots"]:
+            print(f"claim snapshots: {claim_snapshots}")
+            print(
+                f"Snapshot {claim_snapshots['Snapshots'][0]['SnapshotId']} for claim {snap_claim_name} in volume {snap['SnapshotId']} already exists. Not creating new snapshot.\n"
             )
+            continue
 
-            # Is there already a snapshot for the particular claim that has the "newer" tags?
-            claim_snapshots = ec2.describe_snapshots(
-                Filters=[
-                    {
-                        "Name": "tag:kubernetes.io/created-for/pvc/name",
-                        "Values": [f"{snap_claim_name}"],
-                    },
-                    {
-                        "Name": f"tag:from-{args['old_cluster_name']}",
-                        "Values": ["true"],
-                    },
+        print(f"Copying snapshot: {snap['SnapshotId']}\n")
+
+        try:
+            response = ec2.copy_snapshot(
+                SourceRegion=args["old_region_name"],
+                SourceSnapshotId=snap["SnapshotId"],
+                TagSpecifications=[
+                    {"ResourceType": "snapshot", "Tags": new_tags},
                 ],
-                OwnerIds=["self"],
+                DryRun=False,
             )
-            if claim_snapshots["Snapshots"]:
-                print(f"claim snapshots: {claim_snapshots}")
-                print(
-                    f"Snapshot {claim_snapshots['Snapshots'][0]['SnapshotId']} for claim {snap_claim_name} in volume {snap['SnapshotId']} already exists. Not creating new snapshot.\n"
-                )
-                continue
 
-            print(f"Copying snapshot: {snap['SnapshotId']}\n")
+        except ec2.exceptions.ClientError as e:
+            print(e)
+            if not e.response["Error"]["Code"] == "DryRunOperation":
+                print("Too many pending snapshots. Wait for 1 minute and continue.")
+                time.sleep(60)
 
+        if not response:
+            # We are in Dry-Run mode
+            snapshot_id = "snap-0c84f7600f7e21fb3"
+        else:
+            if "Snapshots" in response.keys():
+                snapshot_id = response["Snapshots"][0]["SnapshotId"]
+            else:
+                snapshot_id = response["SnapshotId"]
+
+        snapshot_id = response["SnapshotId"]
+
+        # Modify permissions of snapshot and ADD NEW ACCOUNT NUMBER, as needed
+        if args["new_account_id"]:
+            print(f"Modifiying permissions for snapshot {snapshot_id}")
             try:
-                response = ec2.copy_snapshot(
-                    SourceRegion=args["old_region_name"],
-                    SourceSnapshotId=snap["SnapshotId"],
-                    TagSpecifications=[
-                        {"ResourceType": "snapshot", "Tags": new_tags},
+                response = ec2.modify_snapshot_attribute(
+                    Attribute="createVolumePermission",
+                    OperationType="add",
+                    SnapshotId=snapshot_id,
+                    UserIds=[
+                        args["new_account_id"],
                     ],
-                    DryRun=False,
+                    DryRun=True,
                 )
-
             except ec2.exceptions.ClientError as e:
                 print(e)
-                if not e.response["Error"]["Code"] == "DryRunOperation":
-                    print("Too many pending snapshots. Wait for 1 minute and continue.")
-                    time.sleep(60)
+            except Exception as e:
+                print(e)
 
-            if (
-                "Error" in response.keys()
-                and "Code" in response["Error"].keys()
-                and response["Error"]["Code"] == "DryRunOperation"
-            ):
-                snapshot_id = snap["SnapshotId"]
-            else:
-                assert len(response["Snapshots"]) == 1
-                snapshot_id = response["Snapshots"][0]["SnapshotId"]
+        snapshot_tags[snapshot_id] = new_tags
 
-            snapshot_id = response["SnapshotId"]
+    old_json = {}
+    with open("new_tags.json", 'r') as f:
+        old_json = json.load(f)
 
-            # Modify permissions of snapshot and ADD NEW ACCOUNT NUMBER, as needed
-            if args["new_account_id"]:
-                print(f"Modifiying permissions for snapshot {snapshot_id}")
-                try:
-                    response = ec2.modify_snapshot_attribute(
-                        Attribute="createVolumePermission",
-                        OperationType="add",
-                        SnapshotId=snapshot_id,
-                        UserIds=[
-                            args["new_account_id"],
-                        ],
-                        DryRun=True,
-                    )
-                except ec2.exceptions.ClientError as e:
-                    print(e)
-                except Exception as e:
-                    print(e)
+    with open("new_tags.json", 'w') as f:
+        # We can use `|` here since all keys should be uniques
+        json.dump(snapshot_tags | old_json, f)
+        f.write("\n")
 
 
 if __name__ == "__main__":
