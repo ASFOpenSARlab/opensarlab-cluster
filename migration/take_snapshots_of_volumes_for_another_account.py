@@ -168,8 +168,13 @@ def main(args):
 
         snapshot_tags[snapshot_id] = new_tags
 
-    with open("new_tags.json", "a") as f:
-        json.dump(snapshot_tags, f)
+    old_json = {}
+    with open("new_tags.json", "r") as f:
+        old_json = json.load(f)
+
+    with open("new_tags.json", "w") as f:
+        # We can use `|` here since all keys should be uniques
+        json.dump(snapshot_tags | old_json, f)
         f.write("\n")
 
 
