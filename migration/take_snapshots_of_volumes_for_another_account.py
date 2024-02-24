@@ -9,6 +9,7 @@
 
 import boto3
 
+import json
 import time
 
 
@@ -27,7 +28,7 @@ def main(args):
                 },
                 {
                     "Name": "tag:kubernetes.io/created-for/pvc/name",
-                    "Values": [f"{args['specific_user_claim']}"],
+                    "Values": args["specific_user_claim"],
                 },
             ],
         )
@@ -48,6 +49,8 @@ def main(args):
     if len(volumes) == 0:
         print("No volumes found")
         return
+
+    snapshot_tags = {}
 
     # Take snapshots of each volume. Make sure the tags are copied over.
     for vol in volumes:
@@ -133,15 +136,14 @@ def main(args):
                 print("Too many pending snapshots. Wait for 1 minute and continue.")
                 time.sleep(60)
 
-        if (
-            "Error" in response.keys()
-            and "Code" in response["Error"].keys()
-            and response["Error"]["Code"] == "DryRunOperation"
-        ):
+        if not response:
+            # We are in Dry-Run mode
             snapshot_id = "snap-0c84f7600f7e21fb3"
         else:
-            assert len(response["Snapshots"]) == 1
-            snapshot_id = response["Snapshots"][0]["SnapshotId"]
+            if "Snapshots" in response.keys():
+                snapshot_id = response["Snapshots"][0]["SnapshotId"]
+            else:
+                snapshot_id = response["SnapshotId"]
 
         # Modify permissions of snapshot and ADD NEW ACCOUNT NUMBER, as needed
         if args["new_account_id"]:
@@ -164,6 +166,12 @@ def main(args):
                     print("Too many pending snapshots. Wait for 1 minute and continue.")
                     time.sleep(60)
 
+        snapshot_tags[snapshot_id] = new_tags
+
+    with open("new_tags.json", "a") as f:
+        json.dump(snapshot_tags, f)
+        f.write("\n")
+
 
 if __name__ == "__main__":
     # If getting all user claims and not just one specific, set "specific_user_claim" to None.
@@ -172,7 +180,7 @@ if __name__ == "__main__":
         "new_cluster_name": "smce-prod-cluster",
         "new_billing_value": "smce-prod",
         "new_account_id": "381492216607",
-        "specific_user_claim": "claim-emlundell",
+        "specific_user_claim": ["claim-dgpalmieri", "claim-alex1"],
     }
 
     main(args)
