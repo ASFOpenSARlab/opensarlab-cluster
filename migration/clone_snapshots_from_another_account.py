@@ -28,9 +28,6 @@ def main(args):
     session = boto3.Session()
     ec2 = session.client("ec2")
 
-    sts = boto3.client("sts")
-    new_account_id = sts.get_caller_identity()["Account"]
-
     old_account_json = None
 
     # Open JSON and get snapshot metadata
@@ -45,7 +42,7 @@ def main(args):
         snap_from_old_account = response["Snapshots"][0]
         snap_claim_name = _get_tag_value(new_tags, "kubernetes.io/created-for/pvc/name")
 
-        ## If this account has snapshot already by tags, skip
+        # If this account has snapshot already by tags, skip
         response = ec2.describe_snapshots(
             Filters=[
                 {
@@ -54,14 +51,14 @@ def main(args):
                 },
                 {"Name": f"tag:from-{args['old_cluster_name']}", "Values": ["true"]},
                 {
-                    "Name": f"tag:kubernetes.io/created-for/pvc/name",
+                    "Name": "tag:kubernetes.io/created-for/pvc/name",
                     "Values": [f"{snap_claim_name}"],
                 },
             ],
             OwnerIds=["self"],
         )
 
-        if response["Snapshots"][0]["AccountId"] == new_account_id:
+        if response["Snapshots"]:
             print(f"Snapshot found already for {snap_claim_name}")
             continue
 
@@ -75,7 +72,7 @@ def main(args):
                 DryRun=False,
             )
             print(
-                f"Snapshot '{snap_from_old_account['snapshotId']}' copied to new account."
+                f"Snapshot '{snap_from_old_account['SnapshotId']}' copied to new account."
             )
 
         except ec2.exceptions.ClientError as e:
