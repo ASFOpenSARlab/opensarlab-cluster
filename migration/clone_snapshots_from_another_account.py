@@ -13,14 +13,15 @@ import json
 
 import boto3
 
-def _get_tag_value(tags, tag_key: str) -> str:
 
-    val = [s['Value'] for s in tags if s['Key'] == tag_key]
+def _get_tag_value(tags, tag_key: str) -> str:
+    val = [s["Value"] for s in tags if s["Key"] == tag_key]
 
     if not val:
-        val = ['']
+        val = [""]
 
     return str(val[0])
+
 
 def main(args):
     # Initialize Boto3
@@ -32,19 +33,17 @@ def main(args):
 
     old_account_json = None
 
-    ## Open JSON and get snapshot metadata
-    with open("new_tags.json", 'r') as f:
+    # Open JSON and get snapshot metadata
+    with open("new_tags.json", "r") as f:
         old_account_json = json.load(f)
 
     for snap_id, new_tags in old_account_json.items():
         response = ec2.describe_snapshots(
-            SnapshotIds=[snap_id],
-            OwnerIds=[args["old_account_id"]]
+            SnapshotIds=[snap_id], OwnerIds=[args["old_account_id"]]
         )
 
-        snap_from_old_account = response['Snapshots'][0]
-        snap_claim_name = _get_tag_value(new_tags, 'kubernetes.io/created-for/pvc/name')
-
+        snap_from_old_account = response["Snapshots"][0]
+        snap_claim_name = _get_tag_value(new_tags, "kubernetes.io/created-for/pvc/name")
 
         ## If this account has snapshot already by tags, skip
         response = ec2.describe_snapshots(
@@ -62,7 +61,7 @@ def main(args):
             OwnerIds=["self"],
         )
 
-        if response['Snapshots'][0]['AccountId'] == new_account_id:
+        if response["Snapshots"][0]["AccountId"] == new_account_id:
             print(f"Snapshot found already for {snap_claim_name}")
             continue
 
@@ -75,22 +74,25 @@ def main(args):
                 ],
                 DryRun=False,
             )
-            print(f"Snapshot '{snap_from_old_account['snapshotId']}' copied to new account.")
+            print(
+                f"Snapshot '{snap_from_old_account['snapshotId']}' copied to new account."
+            )
 
         except ec2.exceptions.ClientError as e:
             print(e)
-            if e.response['Error']['Code'] == 'DryRunOperation':
+            if e.response["Error"]["Code"] == "DryRunOperation":
                 break
 
             print("Too many pending snapshots. Wait for 1 minute and continue.")
             time.sleep(60)
+
 
 if __name__ == "__main__":
     args = {
         "old_cluster_name": "smce-test-cluster",
         "old_account_id": "233535791844",
         "new_cluster_name": "smce-prod-cluster",
-        "old_region_name": "us-west-2"
+        "old_region_name": "us-west-2",
     }
 
     main(args)
