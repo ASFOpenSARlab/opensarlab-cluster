@@ -45,11 +45,7 @@ def main(args):
                     "Name": f"tag:kubernetes.io/cluster/{args['old_cluster_name']}",
                     "Values": ["owned"],
                 },
-                {"Name": "status", "Values": ["completed", "pending", "error"]},
-                {
-                    "Name": "tag:kubernetes.io/created-for/pvc/name",
-                    "Values": "args['specific_user_claim']",
-                },
+                {"Name": "status", "Values": ["completed", "pending", "error"]}
             ],
             OwnerIds=["self"],
         )
@@ -62,18 +58,14 @@ def main(args):
         return
 
     for snap in snapshots:
-        # Filter out any tags with "from-{cluster}" since they are assumed to be created by volumes.
-        if f"from-{args['old_cluster_name']}" in snap["Tags"]:
-            print(f"Tag 'from-{args['old_cluster_name']}' found. Skip copying.")
-            continue
-
-        print(f"Cloning snapshot: {snap}]\n\n")
 
         old_tags = snap["Tags"]
         snap_claim_name = None
 
         # tags = [{'Key': 'string','Value': 'string'},]
         new_tags = []
+
+        do_not_do = False
 
         for tag in old_tags:
             if tag["Key"] in [
@@ -88,6 +80,9 @@ def main(args):
             elif tag["Key"] == "kubernetes.io/created-for/pvc/name":
                 snap_claim_name = tag["Value"]
                 new_tags.append(tag)
+
+                if tag["Value"] == 'hub-db-dir':
+                    do_not_do = True
 
             elif tag["Key"] == "Name":
                 new_tags.append({"Key": "Name", "Value": f"migrated-{tag['Value']}"})
@@ -110,9 +105,12 @@ def main(args):
                     {"Key": "KubernetesCluster", "Value": args["new_cluster_name"]}
                 )
 
+        if do_not_do:
+            continue
+
         new_tags.append({"Key": f"from-{args['old_cluster_name']}", "Value": "true"})
 
-        # Is there already a snapshot for the particular claim that has the "newer" tags?
+        # Is there already a snapshot for the particular claim that has the "newer" tags? Then skip.
         claim_snapshots = ec2.describe_snapshots(
             Filters=[
                 {
@@ -173,7 +171,7 @@ def main(args):
                     UserIds=[
                         args["new_account_id"],
                     ],
-                    DryRun=True,
+                    DryRun=False,
                 )
             except ec2.exceptions.ClientError as e:
                 print(e)
@@ -183,11 +181,13 @@ def main(args):
         snapshot_tags[snapshot_id] = new_tags
 
     old_json = {}
-    with open("new_tags.json", 'r') as f:
-        old_json = json.load(f)
+    try:
+        with open("new_tags.json", 'r') as f:
+            old_json = json.load(f)
+    except FileNotFoundError as e:
+        print(f"{e}")
 
     with open("new_tags.json", 'w') as f:
-        # We can use `|` here since all keys should be uniques
         json.dump(snapshot_tags | old_json, f)
         f.write("\n")
 

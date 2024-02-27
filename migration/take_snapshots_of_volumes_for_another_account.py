@@ -62,6 +62,8 @@ def main(args):
         # tags = [{'Key': 'string','Value': 'string'},]
         new_tags = []
 
+        do_not_do = False
+
         for tag in old_tags:
             if tag["Key"] in [
                 "server-stop-time",
@@ -75,6 +77,9 @@ def main(args):
             elif tag["Key"] == "kubernetes.io/created-for/pvc/name":
                 volume_claim_name = tag["Value"]
                 new_tags.append(tag)
+
+                if tag["Value"] == 'hub-db-dir':
+                    do_not_do = True
 
             elif tag["Key"] == "Name":
                 new_tags.append({"Key": "Name", "Value": f"migrated-{tag['Value']}"})
@@ -96,6 +101,9 @@ def main(args):
                 new_tags.append(
                     {"Key": f"KubernetesCluster", "Value": args["new_cluster_name"]}
                 )
+
+        if do_not_do:
+            continue
 
         new_tags.append({"Key": f"from-{args['old_cluster_name']}", "Value": "true"})
 
@@ -128,7 +136,7 @@ def main(args):
                 TagSpecifications=[
                     {"ResourceType": "snapshot", "Tags": new_tags},
                 ],
-                DryRun=True,
+                DryRun=False,
             )
         except ec2.exceptions.ClientError as e:
             print(e)
@@ -158,7 +166,7 @@ def main(args):
                     UserIds=[
                         args["new_account_id"],
                     ],
-                    DryRun=True,
+                    DryRun=False,
                 )
             except ec2.exceptions.ClientError as e:
                 print(e)
@@ -169,11 +177,13 @@ def main(args):
         snapshot_tags[snapshot_id] = new_tags
 
     old_json = {}
-    with open("new_tags.json", "r") as f:
-        old_json = json.load(f)
+    try:
+        with open("new_tags.json", 'r') as f:
+            old_json = json.load(f)
+    except FileNotFoundError as e:
+        print(f"{e}")
 
     with open("new_tags.json", "w") as f:
-        # We can use `|` here since all keys should be uniques
         json.dump(snapshot_tags | old_json, f)
         f.write("\n")
 
