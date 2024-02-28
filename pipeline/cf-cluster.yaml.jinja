@@ -1,0 +1,771 @@
+---
+
+{% set parameters = opensciencelab['parameters'] -%}
+{% set nodes = opensciencelab['nodes'] -%}
+{% set profiles = opensciencelab['profiles'] -%}
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+  CertificateArn:
+    Description: The ARN of the SSL certificate attached to the load balancer.
+    Type: String
+    Default: {{ parameters.certificate_arn }}
+
+  ContainerNamespace:
+    Description: The full url of the container ECR. Example-- osl-e-dev-container
+    Type: String
+    Default: {{ parameters.container_namespace }}
+
+  CostTagKey:
+    Type: String
+    Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
+    Default: {{ parameters.cost_tag_key }}
+
+  CostTagValue:
+    Type: String
+    Description: "The value of the cost tag used for filtering the budget, etc."
+    Default: {{ parameters.cost_tag_value }}
+
+  # The following values require defaults.
+  EKSLoadBalancerCidrBlock:
+    Description: The range of allowed IPv4 addresses for the EKS load balancer. This only firewalls the load balancer URL and not the cluster in general.
+    Type: String
+    Default: 0.0.0.0/0
+
+  NodeProxyPort:
+    Description: The port of the hub proxy service opened to the EKS load balancer.
+    Type: Number
+    Default: 30052
+
+  NodeImageId:
+    Description: AMI id for the node instances of K8s
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/eks/optimized-ami/{{ parameters.eks_version }}/amazon-linux-2/recommended/image_id
+
+  ActiveClusterAvailabilityZoneLetter:
+    Description: Letter of AZ for active subnets. This cannot change once resources are built. Otherwise resources like volumes, EKS cluster, networking could get destroyed.
+    Type: String
+    Default: a
+
+  InactiveClusterAvailabilityZoneLetter:
+    Description: Letter of AZ for inactive subnets needed to satisfy requirements. This will not be actively used by the networks. This cannot change once resources are built. Otherwise resources like volumes, EKS cluster, networking could get destroyed.
+    Type: String
+    Default: c
+
+  # Software versions
+  EksVersion:
+    Description: The version of the EKS Cluster. 
+    Type: String
+    Default: {{ parameters.eks_version }}
+
+Outputs:
+  AppUrl:
+    Value: !GetAtt EKSLoadBalancer.DNSName
+
+Resources:
+
+  #####
+  # 
+  # Networking
+  # 
+  #####
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub 'vpc-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  ### Internet Gateway
+  PublicInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub 'igw-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  AttachPublicGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref PublicInternetGateway
+  
+  ### Subnets
+  PublicSubnetALBActive:
+    # Used only by the Load Balancer and ALB Internet Gateway
+    # IP range: 10.0.64.0 - 10.0.127.255
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.64.0/18
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Sub "${AWS::Region}${ActiveClusterAvailabilityZoneLetter}"
+      Tags:
+        - Key: Name
+          Value: !Sub 'subnet-public-active-alb-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PublicSubnetALBInactive:
+    # Required by the Load Balancer
+    # IP range: 10.0.255.0 - 10.0.255.127
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.255.0/25
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Sub "${AWS::Region}${InactiveClusterAvailabilityZoneLetter}"
+      Tags:
+        - Key: Name
+          Value: !Sub 'subnet-public-inactive-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  ProtectedSubnetActive:
+    # Used by EKS and other resources
+    # IP range: 10.0.0.0 - 10.0.63.255
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.0.0/18
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Sub "${AWS::Region}${ActiveClusterAvailabilityZoneLetter}"
+      Tags:
+        - Key: Name
+          Value: !Sub 'subnet-protected-active-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  ProtectedSubnetInactive:
+    # Not used but required by EKS
+    # IP range: 10.0.255.128 - 10.0.255.255
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.255.128/25
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Sub "${AWS::Region}${InactiveClusterAvailabilityZoneLetter}"
+      Tags:
+        - Key: Name
+          Value: !Sub 'subnet-protected-inactive-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  ### Route Tables
+  PublicRouteTableALBActive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'public-route-alb-active-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  PublicRouteTableALBInactive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'public-route-alb-inactive-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  ProtectedRouteTableActive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'protected-route-active-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  ProtectedRouteTableInactive:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub 'protected-route-inactive-${AWS::Region}-${CostTagValue}'
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  ### Subnet Route Assocations
+  PublicRouteTableSubnetAssociationALBActive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetALBActive
+      RouteTableId: !Ref PublicRouteTableALBActive
+
+  PublicRouteTableSubnetAssociationALBInactive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetALBInactive
+      RouteTableId: !Ref PublicRouteTableALBInactive
+
+  ProtectedRouteTableSubnetAssociationActive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref ProtectedSubnetActive
+      RouteTableId: !Ref ProtectedRouteTableActive
+      
+  ProtectedRouteTableSubnetAssociationInactive:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref ProtectedSubnetInactive
+      RouteTableId: !Ref ProtectedRouteTableInactive 
+
+  ### Routes with route tables
+  PublicRouteTableEntryALBActive:
+    Type: AWS::EC2::Route
+    DependsOn: AttachPublicGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTableALBActive
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref PublicInternetGateway
+
+  PublicRouteTableEntryALBInactive:
+    Type: AWS::EC2::Route
+    DependsOn: AttachPublicGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTableALBInactive
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref PublicInternetGateway
+
+  ProtectedRouteTableEntryActive:
+    Type: AWS::EC2::Route
+    DependsOn: AttachPublicGateway
+    Properties:
+      RouteTableId: !Ref ProtectedRouteTableActive
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref PublicInternetGateway
+
+  ProtectedRouteTableEntryInactive:
+    Type: AWS::EC2::Route
+    DependsOn: AttachPublicGateway
+    Properties:
+      RouteTableId: !Ref ProtectedRouteTableInactive
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref PublicInternetGateway
+
+  ### Security Groups, Ingress, Egress
+  ClusterControlPlaneSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${CostTagValue}-cluster
+      GroupDescription: !Sub Security group for the ${CostTagValue}-cluster EKS cluster
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - Description: Allow pods to communicate with the cluster API Server
+          SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+          IpProtocol: tcp
+          ToPort: 443
+          FromPort: 443
+      SecurityGroupEgress:
+        - Description: Allow the cluster control plane to communicate with worker Kubelet and pods
+          DestinationSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: 1025
+          ToPort: 65535
+        - Description: Allow the cluster control plane to communicate with pods running extension API servers on port 443
+          DestinationSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  NodeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${CostTagValue}-cluster-instance
+      GroupDescription: !Sub Security group for instances in the ${CostTagValue}-cluster EKS cluster
+      VpcId: !Ref VPC
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  NodeSecurityGroupIngress1:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow worker Kubelets and pods to receive communication from the cluster control plane
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt ClusterControlPlaneSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 1025
+      ToPort: 65535
+
+  NodeSecurityGroupIngress2:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow pods running extension API servers on port 443 to receive communication from cluster control plane
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt ClusterControlPlaneSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: 443
+      ToPort: 443
+
+  NodeSecurityGroupIngress3:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow worker Kubelets and pods to receive communication from the load balancer
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt EKSLoadBalancerSecurityGroup.GroupId
+      IpProtocol: tcp
+      FromPort: !Ref NodeProxyPort
+      ToPort: !Ref NodeProxyPort
+
+  NodeSecurityGroupIngress4:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Allow instances to communicate with each other
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+      IpProtocol: "-1"
+      FromPort: "-1"
+      ToPort: "-1"     
+      # CidrIp: 0.0.0.0/0
+
+  NodeSecurityGroupEgress1:
+    Type: AWS::EC2::SecurityGroupEgress
+    Properties:
+      Description: Allow instances outbound communication with everything 
+      GroupId: !GetAtt NodeSecurityGroup.GroupId
+      IpProtocol: "-1"   
+      CidrIp: 0.0.0.0/0
+  
+
+  EKSLoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${AWS::Region}-${CostTagValue}-cluster-load-balancer
+      GroupDescription: !Sub Security group for ${CostTagValue}-cluster load balancer
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - Description: Allow incoming internet requests on port 80 to Load Balancer
+          CidrIp: !Ref EKSLoadBalancerCidrBlock
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+        - Description: Allow incoming internet requests on port 443 to Load Balancer
+          CidrIp: !Ref EKSLoadBalancerCidrBlock
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+      SecurityGroupEgress:
+        - Description: Allow requests from Load Balancer to EC2 Target on Hub port
+          DestinationSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
+          IpProtocol: tcp
+          FromPort: !Ref NodeProxyPort
+          ToPort: !Ref NodeProxyPort
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  #####
+  #
+  # Load Balancer for EKS
+  #
+  #####
+  EKSLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub ${CostTagValue}
+      Subnets: 
+        - !Ref PublicSubnetALBActive
+        - !Ref PublicSubnetALBInactive
+      SecurityGroups:
+        - !GetAtt EKSLoadBalancerSecurityGroup.GroupId
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  HttpListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref EKSLoadBalancer
+      Protocol: HTTP
+      Port: 80
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            StatusCode: HTTP_301
+            Protocol: HTTPS
+            Port: "443"
+
+  HttpsListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref EKSLoadBalancer
+      Protocol: HTTPS
+      Port: 443
+      Certificates:
+        - CertificateArn: !Ref CertificateArn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref HubTargetGroup
+
+  #####
+  # Cluster Control Plane
+  #####
+  ClusterRunRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-run-role
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+                - codebuild.amazonaws.com
+                - cloudformation.amazonaws.com
+                - codepipeline.amazonaws.com
+                - iam.amazonaws.com
+                - ec2.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-build-role
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-run-extra-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "codestar-connections:*"
+                  - "s3:*"
+                  - "dlm:*"
+                  - "logs:*"
+                  - "cloudformation:*"
+                  - "elasticloadbalancing:*"
+                  - "autoscaling:*"
+                  - "codebuild:*"
+                  - "iam:*"
+                  - "secretsmanager:*"
+                  - "ssm:*"
+                  - "ecr:*"
+                  - "ec2:*"
+                  - "eks:*"
+                  - "sts:AssumeRole"
+                Resource: '*'
+
+  Cluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: !Sub ${CostTagValue}-cluster
+      RoleArn: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
+      ResourcesVpcConfig:
+        SubnetIds:
+          - !Ref ProtectedSubnetActive
+          - !Ref ProtectedSubnetInactive
+        SecurityGroupIds:
+          - !GetAtt ClusterControlPlaneSecurityGroup.GroupId
+      Version: !Sub ${EksVersion}
+
+
+  ClusterUserAccessFullGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-full-group
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-full-group
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "sts:AssumeRole"
+                Resource: !GetAtt ClusterUserAccessFullRole.Arn
+
+  ClusterUserAccessFullRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-full-access
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-full-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "eks:*"
+                  - "iam:ListRoles"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameter"
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+
+  ClusterUserAccessReadOnlyGroup:
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-ro-group
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-access-ro-group
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "sts:AssumeRole"
+                Resource: !GetAtt ClusterUserAccessReadOnlyRole.Arn
+
+  ClusterUserAccessReadOnlyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-ro-access
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:root
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub ${AWS::Region}-${CostTagValue}-cluster-user-ro-access
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "eks:ListFargateProfiles"
+                  - "eks:DescribeNodegroup"
+                  - "eks:ListNodegroups"
+                  - "eks:ListUpdates"
+                  - "eks:AccessKubernetesApi"
+                  - "eks:ListAddons"
+                  - "eks:DescribeCluster"
+                  - "eks:DescribeAddonVersions"
+                  - "eks:ListClusters"
+                  - "eks:ListIdentityProviderConfigs"
+                  - "iam:ListRoles"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "ssm:GetParameter"
+                Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
+
+  {% for node in nodes -%}
+  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") -%}
+
+  NodeInstanceRole{{ node_name_escaped }}:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-{{ node_name_escaped }}-instance-role
+      AssumeRolePolicyDocument:
+        Statement:
+          Effect: Allow
+          Principal:
+            Service: ec2.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy
+        - arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/AutoScalingFullAccess
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/CloudWatchAgentAdminPolicy
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      {%- filter indent(width=6) -%}
+      {% include "policies/" ~ node.node_policy ~ "_policy.yaml" %}
+      {%- endfilter %}
+
+  NodeInstanceProfile{{ node_name_escaped }}:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${AWS::Region}-${CostTagValue}-cluster-{{ node_name_escaped }}-instance-profile
+      Roles:
+        - !Ref NodeInstanceRole{{ node_name_escaped }}
+
+  {% endfor %}
+
+  #####
+  # Lifecycle Policies
+  #####
+  BasicLifecycleRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${AWS::Region}-${CostTagValue}-cluster-SnapshotPolicy-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: dlm.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSDataLifecycleManagerServiceRole
+
+  BasicLifecyclePolicy:
+    Type: "AWS::DLM::LifecyclePolicy"
+    Properties:
+      Description: !Sub "Lifecycle Policy for ${CostTagValue}-cluster"
+      State: "ENABLED"
+      ExecutionRoleArn: !GetAtt BasicLifecycleRole.Arn
+      PolicyDetails:
+        ResourceTypes:
+          - "VOLUME"
+        TargetTags:
+          - Key: !Sub "kubernetes.io/cluster/${CostTagValue}-cluster"
+            Value: "owned"
+        Schedules:
+          - Name: "Daily Snapshots"
+            CreateRule:
+              Interval: 24
+              IntervalUnit: "HOURS"
+              Times:
+                - "10:00"
+            RetainRule:
+              Count: 1
+            CopyTags: true
+
+  #####
+  # ECR Repos for Crons and Hub. Other image repos are created via the image build process in opensarlab-containers.
+  #####
+  CronsRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ContainerNamespace}/crons"
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  HubRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ContainerNamespace}/hub"
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  #####
+  # Autoscaler
+  #####
+  HubTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub ${AWS::Region}-${CostTagValue}
+      VpcId: !Ref VPC
+      Protocol: HTTP
+      Port: !Ref NodeProxyPort
+      HealthCheckPath: /lab/{{ parameters.lab_short_name }}/hub/health
+      HealthCheckIntervalSeconds: 120
+      HealthyThresholdCount: 2
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+
+  {% for node in nodes -%}
+  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") -%}
+  {%- set node_instance = node.instance.replace(' ', '').split(',') %}
+
+  AutoScalingGroup{{ node_name_escaped }}:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      MixedInstancesPolicy:
+        InstancesDistribution:
+          OnDemandAllocationStrategy: lowest-price
+        LaunchTemplate:
+          LaunchTemplateSpecification:
+            LaunchTemplateId: !Ref LaunchTemplate{{ node_name_escaped }}
+            Version: !GetAtt  LaunchTemplate{{ node_name_escaped }}.LatestVersionNumber
+          Overrides:
+            {%- for instance in node_instance %}
+            - InstanceType: {{ instance }}
+            {%- endfor %}
+      MinSize: "{{ node.min_number}}"
+      MaxSize: "{{ node.max_number}}"
+      VPCZoneIdentifier: 
+        - !Ref ProtectedSubnetActive
+      {% if node.is_hub is defined -%}
+      TargetGroupARNs:
+        - !Ref HubTargetGroup
+      {% endif -%}
+      Tags:
+        - Key: Name
+          Value: !Sub ${CostTagValue}-{{ node_name_escaped }}-cluster-instance
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster/${CostTagValue}-cluster
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: !Sub kubernetes.io/cluster/${CostTagValue}-cluster
+          Value: owned
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/enabled
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub k8s.io/cluster-autoscaler/${CostTagValue}-cluster
+          Value: "true"
+          PropagateAtLaunch: true
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+          PropagateAtLaunch: true
+
+  
+  LaunchTemplate{{ node_name_escaped }}:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: !Sub ${CostTagValue}-{{ node_name_escaped }}-launch-template
+      LaunchTemplateData:
+        {% if node.root_volume_size is defined -%}
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeType: gp3
+              VolumeSize: {{ node.root_volume_size }}
+              DeleteOnTermination: 'true'
+              Encrypted: 'false'
+        {% endif -%}
+        IamInstanceProfile:
+          Name: !Ref NodeInstanceProfile{{ node_name_escaped }}
+        ImageId: !Ref NodeImageId
+        InstanceType: {{ node_instance[0] }}
+        SecurityGroupIds:
+          - !GetAtt NodeSecurityGroup.GroupId
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            set -o xtrace
+            {% if node.is_hub is defined -%}
+            /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=core,server_type=core'
+            {% else -%}
+            /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type={{ node_name_escaped }}'
+            {% endif -%}
+            AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+            ROOT_VOLUME_IDS=$(aws ec2 describe-instances --region ${AWS::Region} --instance-id $AWS_INSTANCE_ID --output text --query Reservations[0].Instances[0].BlockDeviceMappings[0].Ebs.VolumeId)
+            aws ec2 create-tags --resources $ROOT_VOLUME_IDS --region ${AWS::Region} --tags Key=${CostTagKey},Value=${CostTagValue} Key=Name,Value=${CostTagValue}-{{ node_name_escaped }}-root
+            /opt/aws/bin/cfn-signal --exit-code $? --stack ${AWS::StackName} --resource NodeGroup --region ${AWS::Region}
+        TagSpecifications:
+          - ResourceType: instance
+            Tags:
+              - Key: !Sub ${CostTagKey}
+                Value: !Sub ${CostTagValue}
+  {%- endfor %}

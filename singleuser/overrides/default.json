@@ -1,0 +1,46 @@
+{
+    "@jupyterlab/mainmenu-extension:plugin": {
+        "menus": [
+            {
+                "id": "jp-mainmenu-file", 
+                "items": [
+                    {
+                        "command": "hub:logout",
+                        "disabled": true
+                    }
+                ]
+            },
+            {
+                "id": "jp-mainmenu-help", 
+                "items": [
+                    {
+                        "command": "help:launch-classic-notebook",
+                        "disabled": true
+                    }
+                ]
+            }
+        ]
+    },
+    "opensarlab_frontend:plugin": {
+        "controlbtn": {
+            "enabled": true, 
+            "rank": 1110
+        },
+        "doc_link": {
+            "enabled": true, 
+            "rank": 1100
+        },
+        "gifcap_btn": {
+            "enabled": true,
+            "rank": 1025
+        },
+        "oslnotify": {
+            "enabled": true,
+            "note_type": "storage,calendar"
+        },
+        "profile_label": {
+            "enabled": true,
+            "rank": 1050
+        }
+    }
+}

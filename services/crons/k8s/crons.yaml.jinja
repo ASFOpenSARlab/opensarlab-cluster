@@ -1,0 +1,71 @@
+---
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: services
+  labels:
+    name: services
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: snapshot-cron
+  namespace: services
+spec:
+  schedule: "0 {{ parameters.utc_hour_of_day_snapshot_cron_runs }} * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      parallelism: 1
+      completions: 1
+      template:
+        spec:
+          containers:
+            - name: snapshot-cron
+              image: IMAGE_PLACEHOLDER
+              command:
+                - "python3"
+                - "/app/snapshot_management.py"
+                - "--lab-short-name={{ parameters.lab_short_name }}"
+                - "--days-after-server-stop-till-warning-email={{ parameters.days_after_server_stop_till_warning_email }}"
+                - "--days-after-server-stop-till-deletion-email={{ parameters.days_after_server_stop_till_deletion_email }}"
+                - "--utc-hour-of-day-snapshot-cron-runs={{ parameters.utc_hour_of_day_snapshot_cron_runs }}"
+                - "--portal-domain={{ parameters.portal_domain }}"
+                - "--cluster-name={{ cluster_name }}"
+                - "--region={{ region_name }}"
+          restartPolicy: OnFailure
+          nodeSelector:
+            server_type: core
+          terminationGracePeriodSeconds: 0
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: volume-cron
+  namespace: services
+spec:
+  schedule: "0 {{ parameters.utc_hour_of_day_volume_cron_runs }} * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      parallelism: 1
+      completions: 1
+      template:
+        spec:
+          containers:
+            - name: volume-cron
+              image: IMAGE_PLACEHOLDER
+              command:
+                - "python3"
+                - "/app/volume_management.py"
+                - "--cluster-name={{ cluster_name }}"
+                - "--region={{ region_name }}"
+                - "--portal-domain={{ parameters.portal_domain }}"
+          restartPolicy: OnFailure
+          nodeSelector:
+            server_type: core
+          terminationGracePeriodSeconds: 0

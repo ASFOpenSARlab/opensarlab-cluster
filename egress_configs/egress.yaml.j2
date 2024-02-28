@@ -1,0 +1,364 @@
+{% set lab_namespace = 'jupyter' -%}
+
+---
+
+{%- for profile in workloads['profiles'] %}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: istio-egress--{{ profile }}
+  labels:
+    used-in-egress: "yes"
+---
+{%- endfor %}
+
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: mesh-default
+  namespace: istio-system
+  labels:
+    used-in-egress: "yes"
+spec:
+  accessLogging:
+    - providers:
+        - name: envoy
+---
+
+######
+# Service Entries for hosts
+######
+
+{%- for service_entry in workloads['service_entry_hosts'] %}
+  {%- set hosts = service_entry['host'] %}
+  {%- set profile = service_entry['profile'] %}
+  {%- set port = service_entry['port'] %}
+  {%- set port_redirect = service_entry['port_redirect'] %}
+
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: {{ profile }}--{{ port }}--hosts
+  namespace: istio-egress--{{ profile }}
+  labels:
+    used-in-egress: "yes"
+spec:
+  hosts:
+  {%- for host in hosts %}
+    - "{{ host }}"
+  {%- endfor %}
+  ports:
+    {%- if port == "443" %}
+    - number: 443
+      name: tls-{{ port }}
+      protocol: HTTPS
+    {% else %}
+    - number: {{ port | int }}
+      name: http-{{ port }}
+      protocol: HTTP
+##      {%- if port_redirect is defined and port_redirect | int > 0 %}
+##      targetPort: {{ port_redirect | int }}
+##      {%- endif -%}
+    {%- endif %}
+  resolution: DNS
+  location: MESH_EXTERNAL
+  exportTo:
+    - "."
+    - "{{ lab_namespace }}"
+---
+{%- endfor %}
+
+######
+# Service Entries for IPs  
+######
+
+{%- for service_entry in workloads['service_entry_ips'] %}
+  {%- set ips = service_entry['ip'] %}
+  {%- set profile = service_entry['profile'] %}
+  {%- set port = service_entry['port'] %}
+  {%- set port_redirect = service_entry['port_redirect'] %}
+
+apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: {{ profile }}--{{ port }}--ips
+  namespace: istio-egress--{{ profile }}
+  labels:
+    used-in-egress: "yes"
+spec:
+  hosts:
+    - "dummy.local"
+  addresses:
+  {%- for ip in ips %}
+    - "{{ ip }}"
+  {%- endfor %}
+  ports:
+    {%- if port == "443" %}
+    - number: 443
+      name: tls-{{ port }}
+      protocol: HTTPS
+    {% else %}
+    - number: {{ port | int }}
+      name: http-{{ port }}
+      protocol: HTTP
+#      {%- if port_redirect is defined and port_redirect | int > 0 %}
+#      targetPort: {{ port_redirect | int }}
+#      {%- endif -%}
+    {%- endif %}
+  resolution: STATIC
+  location: MESH_EXTERNAL
+  exportTo:
+    - "."
+    - "{{ lab_namespace }}"
+---
+{%- endfor %}
+
+#########
+#### Destination Rules
+#########
+##
+##{%- for destination_rule in workloads['destination_rule'] %}
+##  {%- set hosts = destination_rule['host'] %}
+##  {%- set profile = destination_rule['profile'] %}
+##  {%- set port = destination_rule['port'] %}
+##  {%- set port_redirect = destination_rule['port_redirect'] %}
+##  {%- set timeout = destination_rule['timeout'] %}
+##
+##  {%- for host in hosts %}
+##apiVersion: networking.istio.io/v1beta1
+##kind: DestinationRule
+##metadata:
+##  name: {{ profile }}--{{ port }}--{{ host }}
+##  namespace: istio-egress--{{ profile }}
+##  labels:
+##    used-in-egress: "yes"
+##spec:
+##  host: {{ host }}
+##  workloadSelector:
+##    matchLabels:
+##      egress-profile: {{ profile }}
+##  trafficPolicy:
+##    tls:
+##      mode: ISTIO_MUTUAL
+##    portLevelSettings:
+##      - port:
+##          number: {{ port | int }}
+##        connectionPool:
+##          tcp:
+##            connectTimeout: "{{ timeout }}"
+##        {%- if port_redirect == '443' %}
+##        tls:
+##          mode: SIMPLE
+##        {%- endif %}
+##  exportTo:
+##    - "."
+##---
+##
+##    {%- if port_redirect is defined and port_redirect | int > 0 %}
+##apiVersion: networking.istio.io/v1beta1
+##kind: DestinationRule
+##metadata:
+##  name: {{ profile }}--{{ port_redirect }}--{{ host }}
+##  namespace: istio-egress--{{ profile }}
+##  labels:
+##    used-in-egress: "yes"
+##spec:
+##  host: {{ host }}
+##  workloadSelector:
+##    matchLabels:
+##      egress-profile: {{ profile }}
+##  trafficPolicy:
+##    tls:
+##      mode: ISTIO_MUTUAL
+##    portLevelSettings:
+##      - port:
+##          number: {{ port_redirect | int }}
+##        connectionPool:
+##          tcp:
+##            connectTimeout: "{{ timeout }}"
+##  exportTo:
+##    - "."
+##---
+##    {%- endif %}
+##  {%- endfor %}
+##{%- endfor %}
+
+######
+# Virtual Services 
+######
+
+{%- for virtual_services in workloads['virtual_services'] %}
+  {%- set hosts = virtual_services['host'] %}
+  {%- set profile = virtual_services['profile'] %}
+  {%- set port = virtual_services['port'] %}
+  {%- set port_redirect = virtual_services['port_redirect'] %}
+  {%- set list_type = virtual_services['list_type'] %}
+  {%- set timeout = virtual_services['timeout'] %}
+
+  {%- for host in hosts %}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ profile }}--{{ port }}--{{ host }}
+  namespace: istio-egress--{{ profile }}
+  labels:
+    used-in-egress: "yes"
+spec:
+  hosts:
+    - {{ host }}
+  gateways:
+    - mesh
+  {% if port == '443' %}
+  tls:
+    - match:
+        - port: 443
+          sniHosts:
+            - {{ host }}
+      route:
+        - destination:
+      {%- if list_type == 'white' %}
+            host: {{ host }}
+      {%- elif list_type == 'black' %}
+            host: blackhole.local
+      {%- endif %}
+          ##  subset: wildhosts
+            port:
+              number: 443
+          weight: 100
+    {% else %}
+  http:
+    - timeout: "{{ timeout }}"
+      match:
+        - port: {{ port }}
+      route:
+        - destination:
+      {%- if list_type == 'white' %}
+            host: {{ host }}
+      {%- elif list_type == 'black' %}
+            host: blackhole.local
+      {%- endif %}
+        ##    subset: wildhosts
+            port:
+              number: {{ port }}
+          weight: 100
+    {% endif %}
+  exportTo:
+    - "."
+    - "{{ lab_namespace }}"
+---
+  {% endfor -%}
+
+{%- endfor %}
+
+######
+# Sidecars
+######
+
+# Define default sidecars that apply if a workload is not selected
+# Don't allow any egress traffic
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: noworkloads--noports--nohosts
+  namespace: {{ lab_namespace }}
+  labels:
+    used-in-egress: "yes"
+spec:
+  outboundTrafficPolicy:
+    mode: "REGISTRY_ONLY"
+  egress:
+    - hosts:
+        - "~/*"
+---
+
+{%- for sidecar in workloads['sidecar'] %}
+
+  {%- set profile = sidecar['profile'] %}
+  {%- set hosts = sidecar['host'] %}
+  {%- set list_type = sidecar['list_type'] %}
+
+apiVersion: networking.istio.io/v1beta1
+kind: Sidecar
+metadata:
+  name: {{ profile }}--wildports--hosts
+  namespace: {{ lab_namespace }}
+  labels:
+    used-in-egress: "yes"
+spec:
+  outboundTrafficPolicy:
+    {%- if list_type == 'white' %}
+    mode: "REGISTRY_ONLY"
+    {%- elif list_type == 'black' %}
+    mode: "ALLOW_ANY"
+    {%- endif %}
+  workloadSelector:
+    labels:
+      egress-profile: {{ profile }}
+  egress:
+    - hosts:
+      {%- for host in hosts %}
+        - "istio-egress--{{ profile }}/{{ host }}"
+      {%- endfor %}
+---
+{%- endfor %}
+
+######
+# Envoy Filters
+######
+
+{%- for envoy_filter in workloads['envoy_filter'] %}
+  {%- set profile = envoy_filter['profile'] %}
+  {%- set rate = envoy_filter['rate'] %}
+
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: filter-ratelimit--{{ profile }}--wildports--wildhosts
+  namespace: istio-system
+  labels:
+    used-in-egress: "yes"
+spec:
+  workloadSelector:
+    labels:
+      egress-profile: {{ profile }}
+  configPatches:
+##    - applyTo: NETWORK_FILTER
+##      match:
+##        context: SIDECAR_OUTBOUND
+##        listener:
+##          filterChain:
+##            filter:
+##              name: "envoy.filters.network.http_connection_manager"
+##      patch:
+##        operation: INSERT_FIRST
+##        value:
+##          name: envoy.filters.network.local_ratelimit
+##          typed_config:
+##            "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+##            type_url: type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
+##            value:
+##              stat_prefix: local_rate_limiter
+##              token_bucket:
+##                max_tokens: {{ rate | int }}
+##                tokens_per_fill: {{ rate | int }}
+##                fill_interval: 10s
+    - applyTo: NETWORK_FILTER
+      match:
+        context: SIDECAR_OUTBOUND
+      patch:
+        operation: INSERT_FIRST
+        value:
+          name: envoy.filters.local_ratelimit
+          typed_config:
+            "@type": type.googleapis.com/udpa.type.v1.TypedStruct
+            type_url: type.googleapis.com/envoy.extensions.filters.network.local_ratelimit.v3.LocalRateLimit
+            value:
+              stat_prefix: local_rate_limiter
+              token_bucket:
+                max_tokens: {{ rate | int }}
+                tokens_per_fill: {{ rate | int }}
+                fill_interval: 10s
+
+---
+{% endfor -%}
+ 

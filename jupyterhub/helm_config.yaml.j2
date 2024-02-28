@@ -1,0 +1,108 @@
+# !!!! This config is used in the first round of Franz's labs. It will not be used afterwards. Though some of the settings could still prove useful.
+#
+# This helm config file modifies the defaults found in zero-to-jupyterhub-k8s/jupyterhub/
+# Possible values are scattered throughout the doc starting at https://z2jh.jupyter.org/en/latest/setup-jupyterhub.html
+
+proxy:
+  labels:
+    sidecar.istio.io/inject: "false"
+  https:
+    enabled: false
+  service:
+    nodePorts:
+      http: NODE_PORT
+    type: NodePort
+
+singleuser:
+  startTimeout: 600
+  storage:
+    dynamic:
+      storageClass: gp3
+      pvcNameTemplate: claim-{username}
+  defaultUrl: "/lab"
+  extraFiles:
+    {%- for file_name in extension_override_filenames %}
+    user-overrides-{{ file_name | replace('.json', '') }}:
+      mountPath: /etc/singleuser/overrides/{{ file_name }}
+      mode: 0755
+    {%- endfor %}
+    {%- for file_name in hook_script_filenames %}
+    user-hooks-{{ file_name | replace('.sh', '') }}:
+      mountPath: /etc/singleuser/hooks/{{ file_name }}
+      mode: 0755
+    {%- endfor %}
+    user-hooks-pull:
+      mountPath: /etc/singleuser/scripts/pull.py
+    user-hooks-clean:
+      mountPath: /etc/singleuser/scripts/pkg_clean.py
+    user-hooks-kernel-flag:
+      mountPath: /etc/singleuser/etc/old_kernels_flag.txt
+    user-hooks-kernel-flag-readme:
+      mountPath: /etc/singleuser/etc/kernels_rename_README
+    user-others-check_storage:
+      mountPath: /etc/singleuser/resource_checks/check_storage.py
+    user-template-page:
+      mountPath: /etc/singleuser/templates/page.html
+      mode: 0755
+    user-template-tree:
+      mountPath: /etc/singleuser/templates/tree.html
+      mode: 0755
+
+prePuller:
+  continuous:
+    enabled: false
+  hook:
+    enabled: false
+
+# culler is enabled within 1_service_creds.py.jinja
+
+scheduling:
+  userPlaceholder:
+    enabled: false
+  userScheduler:
+    enabled: true
+    labels:
+      sidecar.istio.io/inject: "false"
+  corePods:
+    nodeAffinity:
+      matchNodePurpose: require # hub.jupyter.org/node-purpose=core
+  userPods:
+    nodeAffinity:
+      matchNodePurpose: require # hub.jupyter.org/node-purpose=user
+
+custom:
+  CLUSTER_NAME: CLUSTER_NAME
+  COST_TAG_KEY: COST_TAG_KEY
+  COST_TAG_VALUE: COST_TAG_VALUE
+  AZ_NAME: AZ_NAME
+  AWS_REGION: AWS_REGION
+  REGISTRY_URI: REGISTRY_URI
+  DAYS_TILL_VOLUME_DELETION: DAYS_TILL_VOLUME_DELETION
+  DAYS_TILL_SNAPSHOT_DELETION: DAYS_TILL_SNAPSHOT_DELETION
+
+hub:
+  labels:
+    sidecar.istio.io/inject: "false"
+  baseUrl: /lab/JUPYTERHUB_LAB_NAME_PLACEHOLDER/
+  config:
+    JupyterHub:
+      admin_access: true
+    Authenticator:
+      admin_users:
+        - ADMIN_USER
+  extraEnv:
+    JUPYTERHUB_LAB_NAME: JUPYTERHUB_LAB_NAME_PLACEHOLDER
+    OPENSCIENCELAB_PORTAL_DOMAIN: OPENSCIENCELAB_PORTAL_DOMAIN_PLACEHOLDER
+    OPENSARLAB_SSO_TOKEN_PATH: /tmp/sso_token
+  image:
+    pullPolicy: Always
+    name: HUB_IMAGE_NAME_PLACEHOLDER
+    tag: HUB_IMAGE_TAG_PLACEHOLDER
+  extraConfig:
+    customTemplates.py: |
+      c.JupyterHub.template_paths = ["/usr/local/share/jupyterhub/templates/custom/"]
+    addStorageAnnotation.py: |
+      c.KubeSpawner.storage_extra_annotations = {
+        'pv.kubernetes.io/provisioned-by': 'ebs.csi.aws.com',
+        'extra-ebs-annotations': 'yes'
+      }

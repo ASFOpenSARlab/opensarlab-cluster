@@ -1,0 +1,12 @@
+**
+
+!.gitignore
+!tests
+!tests/scripts/
+!tests/helpers/
+!tests/helpers/*
+!useretc
+!useretc/**
+useretc/*.prepared
+!render_egress.py
+!egress.yaml.j2

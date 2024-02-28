@@ -1,0 +1,33 @@
+import json
+
+from .base import BaseHandler
+
+from opensarlab.auth import encryptedjwt
+
+class PossibleProfilesHandler(BaseHandler):
+
+    def get(self):
+        try:
+            print("Getting possible profiles..")
+
+            obj = {
+                "profiles": [
+            {% for profile in opensciencelab['profiles'] -%}
+                "{{ profile.name }}",
+            {% endfor -%}
+                ]
+            }
+            text = json.dumps(obj)
+            encrypted = encryptedjwt.encrypt(text)
+
+            self.finish(encrypted)
+        except Exception as e:
+            print("Something went wrong with the GET...")
+            print(e)
+            raise
+
+default_handlers = [
+    (r'/possible-profiles', PossibleProfilesHandler)
+]
+
+

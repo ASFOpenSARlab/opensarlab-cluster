@@ -1,0 +1,327 @@
+set -ex
+
+#######
+#  When calling script don't forget to prepend all the ingested environment variables
+#
+#    - AWS_AccountId=${AWS::AccountId} 
+#       AWS_Region=${AWS::Region} 
+#       ContainerNamespace=${ContainerNamespace} 
+#       CostTagKey=${CostTagKey} 
+#       CostTagValue=${CostTagValue} 
+#       LabShortName=${LabShortName} 
+#       PortalDomain=${PortalDomain} 
+#       AdminUserName=${AdminUserName} 
+#       NodeProxyPort=${NodeProxyPort} 
+#       DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
+#       DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
+#       CODEBUILD_ROOT=$CODEBUILD_ROOT
+#       KubectlVersion=${KubectlVersion}
+#       AWSEbsCsiDriverVersion=${AWSEbsCsiDriverVersion}
+#       JupyterHubHelmVersion=${JupyterHubHelmVersion}
+#       AWSK8sCNIVersion=${AWSK8sCNIVersion}
+#       ClusterAutoscalerHelmVersion=${ClusterAutoscalerHelmVersion}
+#       IstioVersion=${IstioVersion}
+#       JupyterHubImageVersion=${JupyterHubImageVersion}
+#      bash codebuild.sh
+#
+#######
+
+####### ******************
+# Versions of software that need to be updated every cluster update
+printf "\n\n%s\n" "******* ENV Variables (not including secrets):"
+printf "%s\n" "
+AWS_AccountId=${AWS_AccountId} 
+AWS_Region=${AWS_Region} 
+ContainerNamespace=${ContainerNamespace} 
+CostTagKey=${CostTagKey} 
+CostTagValue=${CostTagValue} 
+LabShortName=${LabShortName} 
+PortalDomain=${PortalDomain} 
+AdminUserName=${AdminUserName} 
+NodeProxyPort=${NodeProxyPort}
+DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
+DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
+CODEBUILD_ROOT=${CODEBUILD_ROOT}
+KubectlVersion=${KubectlVersion}
+AWSEbsCsiDriverVersion=${AWSEbsCsiDriverVersion}
+JupyterHubHelmVersion=${JupyterHubHelmVersion}
+AWSK8sCNIVersion=${AWSK8sCNIVersion}
+ClusterAutoscalerHelmVersion=${ClusterAutoscalerHelmVersion}
+IstioVersion=${IstioVersion}
+JupyterHubImageVersion=${JupyterHubImageVersion}
+"
+
+###################################################################################
+####### ******************
+# Install
+
+pip3 install boto3 --upgrade
+pip3 install kubernetes --upgrade
+pip3 install jinja2 --upgrade
+
+curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp;
+mv /tmp/eksctl /usr/local/bin;
+eksctl version;
+
+###################################################################################
+####### ******************
+# Prebuild
+
+printf "\n\n%s\n" "******* Get registry URI..";
+export REGISTRY_URI=${AWS_AccountId}.dkr.ecr.${AWS_Region}.amazonaws.com/${ContainerNamespace}
+printf "%s\n" "REGISTRY_URI: $REGISTRY_URI"
+
+#######
+printf "\n\n%s\n" "******* Update assumed role of cluster-build...";
+cd ${CODEBUILD_ROOT}/pipeline/configs/;
+cp cluster-build-assumerolepolicy.template.json assume.json;
+sed -i "s|CLUSTER_RUN_ARN|arn:aws:iam::${AWS_AccountId}:role/${AWS_Region}-${CostTagValue}-cluster-run-role|" assume.json;
+aws iam update-assume-role-policy --role-name ${AWS_Region}-${CostTagValue}-cluster-build-role --policy-document file://assume.json;
+printf "\n\n%s\n" "******* Sleep for 15 seconds to make sure the chnage in IAM role has propagated...";
+sleep 15
+
+#######
+printf "\n\n%s\n" "******* Update kubeconfig and apply config files...";
+aws eks update-kubeconfig --name ${CostTagValue}-cluster --role-arn arn:aws:iam::${AWS_AccountId}:role/${AWS_Region}-${CostTagValue}-cluster-build-role;
+
+#######
+printf "\n\n%s\n" "******* IAM build role used is... $(aws sts get-caller-identity)"
+
+#######
+printf "\n\n%s\n" "******* Logging into AWS ECR...";
+aws ecr get-login-password --region ${AWS_Region} | \
+    docker login --username AWS --password-stdin ${AWS_AccountId}.dkr.ecr.${AWS_Region}.amazonaws.com
+
+#######
+printf "\n\n%s\n" "******* Install kubectl and Helm (now that the cluster authentication is finished)...";
+cd ${CODEBUILD_ROOT}
+curl -o kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/$KubectlVersion/bin/linux/amd64/kubectl
+chmod +x ./kubectl
+mkdir -p $HOME/bin && mv ./kubectl $HOME/bin/kubectl && export PATH=$HOME/bin:$PATH
+kubectl version
+kubectl cluster-info
+kubectl config view
+
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+#export HELM_HOST=127.0.0.1:44134
+helm version
+helm ls
+
+###################################################################################
+####### *******************
+# Build
+
+printf "\n\n%s\n" "******* Apply eks console bindings and aws-auth-cm.yaml...";
+cd ${CODEBUILD_ROOT}/pipeline/configs/;
+kubectl apply -f https://s3.us-west-2.amazonaws.com/amazon-eks/docs/eks-console-full-access.yaml;
+kubectl apply -f aws-auth-cm.yaml;
+
+printf "\n\n%s\n" "******* Show aws-auth-cm.yaml...";
+cat aws-auth-cm.yaml
+
+#######
+printf "\n\n%s\n" "******* Apply CNI. This must be updated on every cluster upgrade...";
+cd ${CODEBUILD_ROOT}/jupyterhub/;
+curl -o aws-k8s-cni.yaml https://raw.githubusercontent.com/aws/amazon-vpc-cni-k8s/$AWSK8sCNIVersion/config/master/aws-k8s-cni.yaml;
+
+sed -i "s/us-west-2/${AWS_Region}/" aws-k8s-cni.yaml;
+kubectl apply -f aws-k8s-cni.yaml
+
+#######
+printf "\n\n%s\n" "******* Explicitly set K8s namespaces...";
+JUPYTERHUB_NAMESPACE=jupyter
+
+kubectl create namespace $JUPYTERHUB_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace amazon-cloudwatch --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace autoscaler --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace cw-prometheus --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace services --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace external --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace default --dry-run=client -o yaml | kubectl apply -f -;
+
+# If IstioVersion is None, then don't install
+# NOTE that any unwanted reosurces will have to be manually deleted. This includes the istio-system namespace. 
+if [ "$IstioVersion" != "None" ]; then
+    printf "\n\n%s\n" "******* Install Istiod client, actual Istio, and enable injection...";
+    curl -L https://istio.io/downloadIstio | ISTIO_VERSION=$IstioVersion TARGET_ARCH=x86_64 sh - && \
+        cd istio-$IstioVersion && \
+        export PATH="$PATH:$PWD/bin";
+    istioctl x precheck;
+
+    # note: minimal profile does not include ingress gateway
+    # REGISTRY_ONLY to block all egress implicit traffic, ALLOW_ANY passthroughs unknown services 
+    istioctl install -y --set profile=minimal --set meshConfig.outboundTrafficPolicy.mode=ALLOW_ANY;
+
+    printf "\n\n%s\n" "******* Implicitly enable Istio injection in jupyter namespace at the profiles.py level.";
+
+    printf "\n\n%s\n" "******* Explicitly disable Istio injection in all other namespaces...";
+    kubectl label namespace amazon-cloudwatch istio-injection=disabled
+    kubectl label namespace autoscaler istio-injection=disabled
+    kubectl label namespace cw-prometheus istio-injection=disabled
+    kubectl label namespace external istio-injection=disabled
+    kubectl label namespace services istio-injection=disabled
+    kubectl label namespace default istio-injection=disabled
+
+    kubectl apply --prune -f ${CODEBUILD_ROOT}/egress_configs/egress.yaml \
+        -l used-in-egress=yes \
+        --prune-allowlist=core/v1/Namespace \
+        --prune-allowlist=telemetry.istio.io/v1alpha1/Telemetry \
+        --prune-allowlist=networking.istio.io/v1beta1/ServiceEntry \
+        --prune-allowlist=networking.istio.io/v1beta1/DestinationRule \
+        --prune-allowlist=networking.istio.io/v1beta1/VirtualService \
+        --prune-allowlist=networking.istio.io/v1beta1/Sidecar \
+        --prune-allowlist=networking.istio.io/v1alpha3/EnvoyFilter
+
+    # TODO DELETE ME
+    #aws s3 cp ${CODEBUILD_ROOT}/egress_configs/egress.yaml s3://opensciencelab-temp-debug/egress.yaml
+
+fi
+
+#######
+printf "\n\n%s\n" "******* Install Fluent Bit for AWS Container Insights...";
+
+export FluentBitHttpPort='2020';
+export FluentBitReadFromHead='Off';
+
+[[ $FluentBitReadFromHead = 'On' ]] && FluentBitReadFromTail='Off'|| FluentBitReadFromTail='On';
+[[ -z $FluentBitHttpPort ]] && FluentBitHttpServer='Off' || FluentBitHttpServer='On';
+
+curl https://raw.githubusercontent.com/aws-samples/amazon-cloudwatch-container-insights/latest/k8s-deployment-manifest-templates/deployment-mode/daemonset/container-insights-monitoring/quickstart/cwagent-fluent-bit-quickstart.yaml > cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{cluster_name}}{% endraw %}|${CostTagValue}-cluster|" cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{region_name}}{% endraw %}|${AWS_Region}|" cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{http_server_toggle}}{% endraw %}|\"$FluentBitHttpServer\"|" cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{http_server_port}}{% endraw %}|\"$FluentBitHttpPort\"|" cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{read_from_head}}{% endraw %}|\"$FluentBitReadFromHead\"|" cwagent-fluent-bit-quickstart.yaml;
+sed -i "s|{% raw %}{{read_from_tail}}{% endraw %}|\"$FluentBitReadFromTail\"|" cwagent-fluent-bit-quickstart.yaml;
+kubectl apply -f cwagent-fluent-bit-quickstart.yaml;
+
+#######
+printf "\n\n%s\n" "******* Install Prometheus for CloudWatch Insights";
+cd ${CODEBUILD_ROOT}/pipeline/configs/;
+
+sed -i "s|{% raw %}{{cluster_name}}{% endraw %}|${CostTagValue}-cluster|; s|{% raw %}{{region_name}}{% endraw %}|${AWS_Region}|" cwagent-prometheus.yaml;
+
+kubectl apply -f cwagent-prometheus.yaml
+
+#######
+printf "\n\n%s\n" "******* Reapply default storage class, in case it was updated...";
+cd ${CODEBUILD_ROOT}/pipeline/configs/;
+kubectl delete sc gp3 || true;
+kubectl apply -f csi-sc.yaml
+
+#######
+printf "\n\n%s\n" "******* Render addtional user Service Accounts...";
+cd ${CODEBUILD_ROOT}/pipeline/build/jupyterhub/;
+python3 service_accounts.py
+
+#######
+printf "\n\n%s\n" "******* Build and deploy custom Cron services...";
+cd ${CODEBUILD_ROOT}/services/crons
+
+cp dockerfile dockerfile.build;
+export CRONS_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
+time docker build -f dockerfile.build -t $REGISTRY_URI/crons:$CRONS_IMAGE_BUILD -t $REGISTRY_URI/crons:latest .;
+docker push $REGISTRY_URI/crons:$CRONS_IMAGE_BUILD;
+docker push $REGISTRY_URI/crons:latest;
+
+sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/crons:$CRONS_IMAGE_BUILD|" k8s/crons.yaml;
+kubectl apply -f k8s/crons.yaml;
+# Any secrets for cron will be applied later
+
+#######
+printf "\n\n%s\n" "******* Apply k8s resources for services...";
+cd ${CODEBUILD_ROOT}/services
+kubectl apply -f k8s.yaml
+
+#######
+printf "\n\n%s\n" "******* Build JupyterHub Image...";
+cd ${CODEBUILD_ROOT}/jupyterhub/;
+
+cp dockerfile dockerfile.build;
+export HUB_IMAGE_BUILD=$(date +"%F-%H-%M-%S");
+time docker build --build-arg JUPYTERHUB_HUB_HELM_VERSION=${JupyterHubHelmVersion} -f dockerfile.build -t $REGISTRY_URI/hub:$HUB_IMAGE_BUILD -t $REGISTRY_URI/hub:latest .;
+docker push $REGISTRY_URI/hub:$HUB_IMAGE_BUILD;
+docker push $REGISTRY_URI/hub:latest;
+
+#######
+printf "\n\n%s\n" "******* Apply ebs csi driver...";
+# if there is an error, then `kubectl delete csidriver ebs.csi.aws.com` and reapply. Warning: This will break volume management until reran.
+helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver;
+helm upgrade --install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver \
+    --version $AWSEbsCsiDriverVersion \
+    --namespace kube-system \
+    --timeout=6m0s \
+    --atomic \
+    --set controller.extraCreateMetadata=true \
+    --set controller.k8sTagClusterId=${CostTagValue}-cluster \
+    --set controller.extraVolumeTags.${CostTagKey}=${CostTagValue}
+
+#######
+printf "\n\n%s\n" "******* Various cluster env variables...";
+printf "%s\n" "REGISTRY_URI $REGISTRY_URI";
+printf "%s\n" "HUB_IMAGE_BUILD $HUB_IMAGE_BUILD";
+
+#######
+export DESIGNATED_AZ=a
+printf "\n\n%s\n" "******* Availability Zone for EKS cluster and related resources is $DESIGNATED_AZ...";
+
+#######
+printf "\n\n%s\n" "******* Install JupyterHub cluster...";
+cd ${CODEBUILD_ROOT}/jupyterhub/;
+helm repo add jupyterhub https://jupyterhub.github.io/helm-chart/;
+helm upgrade --install jupyter jupyterhub/jupyterhub \
+    --create-namespace \
+    --namespace $JUPYTERHUB_NAMESPACE \
+    --version $JupyterHubHelmVersion \
+    --values helm_config.yaml \
+    --timeout=6m0s \
+    --atomic \
+    --set hub.image.name=$REGISTRY_URI/hub \
+    --set hub.image.tag=$HUB_IMAGE_BUILD \
+    --set hub.baseUrl="/lab/${LabShortName}/" \
+    --set hub.extraEnv.JUPYTERHUB_LAB_NAME="${LabShortName}" \
+    --set hub.extraEnv.OPENSCIENCELAB_PORTAL_DOMAIN="${PortalDomain}" \
+    --set hub.config.Authenticator.admin_users[0]=${AdminUserName} \
+    --set proxy.service.nodePorts.http=${NodeProxyPort} \
+    --set custom.REGISTRY_URI=$REGISTRY_URI \
+    --set custom.CLUSTER_NAME="${CostTagValue}-cluster" \
+    --set custom.AZ_NAME="${AWS_Region}$DESIGNATED_AZ" \
+    --set custom.AWS_REGION="${AWS_REGION}" \
+    --set custom.COST_TAG_VALUE="${CostTagValue}" \
+    --set custom.COST_TAG_KEY="${CostTagKey}" \
+    --set custom.DAYS_TILL_VOLUME_DELETION="${DaysTillVolumeDeletion}" \
+    --set custom.DAYS_TILL_SNAPSHOT_DELETION="${DaysTillSnapshotDeletion}" \
+    --set-file singleuser.extraFiles.user-hooks-pull.stringData='./singleuser/hooks/etc/pull.py' \
+    --set-file singleuser.extraFiles.user-hooks-clean.stringData='./singleuser/hooks/etc/pkg_clean.py' \
+    --set-file singleuser.extraFiles.user-hooks-kernel-flag.stringData='./singleuser/hooks/etc/old_kernels_flag.txt' \
+    --set-file singleuser.extraFiles.user-hooks-kernel-flag-readme.stringData='./singleuser/hooks/etc/kernels_rename_README' \
+    --set-file singleuser.extraFiles.user-others-check_storage.stringData='./singleuser/others/check_storage.py' \
+    --set-file singleuser.extraFiles.user-template-page.stringData='./singleuser/templates/page.html' \
+    --set-file singleuser.extraFiles.user-template-tree.stringData='./singleuser/templates/tree.html' \
+    {% for file_name in hook_script_filenames -%}
+    --set-file singleuser.extraFiles.user-hooks-{{ file_name | replace('.sh', '') }}.stringData='./singleuser/hooks/{{ file_name }}' \
+    {% endfor -%}
+    {% for file_name in extension_override_filenames -%}
+    --set-file singleuser.extraFiles.user-overrides-{{ file_name | replace('.json', '') }}.stringData='./singleuser/overrides/{{ file_name }}' \
+    {% endfor -%}
+    --
+
+kubectl -n $JUPYTERHUB_NAMESPACE rollout status -w deployment.apps/hub
+
+printf "\n\n%s\n" "******* Associate volume provisioner with service account...";
+kubectl create clusterrolebinding cluster-pv --clusterrole=system:persistent-volume-provisioner --serviceaccount=jupyter:hub --dry-run=true -o yaml | kubectl apply -f -;
+
+#######
+printf "\n\n%s\n" "******* Install autoscaler...";
+helm repo add autoscaler https://kubernetes.github.io/autoscaler;
+helm upgrade --install autoscaler autoscaler/cluster-autoscaler \
+    --version $ClusterAutoscalerHelmVersion \
+    --create-namespace \
+    --namespace autoscaler \
+    --atomic \
+    --timeout=2m0s \
+    --set autoDiscovery.clusterName=${CostTagValue}-cluster \
+    --set awsRegion=${AWS_Region} \
+    --set nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
+
+printf "\n\n%s\n" "The End"

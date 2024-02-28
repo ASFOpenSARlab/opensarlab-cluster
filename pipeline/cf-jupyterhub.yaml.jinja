@@ -1,0 +1,158 @@
+---
+
+{% set parameters = opensciencelab['parameters'] -%}
+
+AWSTemplateFormatVersion: 2010-09-09
+
+Parameters:
+
+  LabShortName:
+    Description: The short name of the lab deployment, e.g. `mylab` or `daac`. Needs to be URL friendly.
+    Type: String
+    Default: {{ parameters.lab_short_name }}
+
+  PortalDomain:
+    Description: Domain of the Portal. Requires 'http://' or 'https://'.
+    Type: String
+    Default: {{ parameters.portal_domain }}
+
+  AdminUserName:
+    Description: User name of main admin. This name is also whitelisted. Other users will need to be added via the Jupyter Hub admin console. This name MUST be a valid Earthdata user.
+    Type: String
+    Default: {{ parameters.admin_user_name }}
+
+  ContainerNamespace:
+    Description: The full url of the container ECR. Example-- osl-e-dev-container
+    Type: String
+    Default: {{ parameters.container_namespace }}
+
+  CostTagKey:
+    Type: String
+    Description: "The name of the cost allocation tag you set up in AWS to track deployment costs, i.e. deployment_name"
+    Default: {{ parameters.cost_tag_key }}
+
+  CostTagValue:
+    Type: String
+    Description: "The value of the cost tag used for filtering the budget, etc."
+    Default: {{ parameters.cost_tag_value }}
+
+  DaysTillVolumeDeletion:
+    Type: String
+    Description: "The number of days after last server use when the user's volume is deleted."
+    Default: {{ parameters.days_till_volume_deletion }}
+
+  DaysTillSnapshotDeletion:
+    Type: String
+    Description: "The number of days after last server use when the user's snapshot is deleted."
+    Default: {{ parameters.days_till_snapshot_deletion }}
+
+  NodeProxyPort:
+    Description: The port of the hub proxy service opened to the load balancer.
+    Type: Number
+    Default: 30052
+
+  KubectlVersion:
+    Description: Version of Kubectl used during jupyterhub build. 
+    Type: String
+    Default: "{{ parameters.kubectl_version }}"
+
+  AWSEbsCsiDriverVersion:
+    Description: Version of the AWS EBS CSI volume driver.
+    Type: String
+    Default: "{{ parameters.aws_ebs_csi_driver_version }}"
+
+  JupyterHubHelmVersion:
+    Description: Version of JupyterHub Helm chart.
+    Type: String
+    Default: "{{ parameters.jupyterhub_helm_version }}"
+
+  JupyterHubImageVersion:
+    Description: Version of the JupyterHub hub image. Must match equivalent JupyterHub helm version.
+    Type: String
+    Default: "{{ parameters.jupyterhub_hub_image_version }}"
+
+  AWSK8sCNIVersion:
+    Description: Version of the AWS K8s CNI plugin for EKS.
+    Type: String
+    Default: "{{ parameters.aws_k8s_cni_version }}"
+
+  ClusterAutoscalerHelmVersion:
+    Description: Version of the EKS autoscaler helm chart.
+    Type: String
+    Default: "{{ parameters.cluster_autoscaler_helm_version }}"
+
+  IstioVersion:
+    Description: Version of Istio service mesh.
+    Type: String
+    Default: "{{ parameters.istio_version }}"
+
+Resources:
+
+  SSOTokenSecretsManager:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: SSO Token to communicate with the Portal.
+      Name: !Sub sso-token/${AWS::Region}-${CostTagValue}-cluster
+      SecretString: "ReplaceMeOrYouWillAlwaysFail"
+
+  HubGroupLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/codebuild/${CostTagValue}-cluster-hub-group"
+      RetentionInDays: 30
+
+  HubProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${CostTagValue}-cluster-jupyterhub
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/standard:6.0
+        PrivilegedMode: true
+      Artifacts:
+        Type: CODEPIPELINE
+      ServiceRole: !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::Region}-${CostTagValue}-cluster-run-role
+      TimeoutInMinutes: 45
+      Tags:
+        - Key: !Sub ${CostTagKey}
+          Value: !Sub ${CostTagValue}
+      LogsConfig:
+        CloudWatchLogs:
+          Status: ENABLED
+          GroupName: !Ref HubGroupLogs
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |-
+              version: 0.2
+              env:
+                shell: bash
+              phases:
+                install:
+                  runtime-versions:
+                    python: 3.10
+                build:
+                  on-failure: ABORT
+                  commands:
+                    - echo "Run codebuild script...";
+                    - export CODEBUILD_ROOT=$CODEBUILD_SRC_DIR;
+                    - AWS_AccountId=${AWS::AccountId} 
+                        AWS_Region=${AWS::Region} 
+                        ContainerNamespace=${ContainerNamespace} 
+                        CostTagKey=${CostTagKey} 
+                        CostTagValue=${CostTagValue}
+                        LabShortName=${LabShortName} 
+                        PortalDomain=${PortalDomain} 
+                        AdminUserName=${AdminUserName} 
+                        NodeProxyPort=${NodeProxyPort}
+                        DaysTillVolumeDeletion=${DaysTillVolumeDeletion} 
+                        DaysTillSnapshotDeletion=${DaysTillSnapshotDeletion} 
+                        CODEBUILD_ROOT=$CODEBUILD_ROOT 
+                        KubectlVersion=${KubectlVersion}
+                        AWSEbsCsiDriverVersion=${AWSEbsCsiDriverVersion}
+                        JupyterHubHelmVersion=${JupyterHubHelmVersion}
+                        AWSK8sCNIVersion=${AWSK8sCNIVersion}
+                        ClusterAutoscalerHelmVersion=${ClusterAutoscalerHelmVersion}
+                        IstioVersion=${IstioVersion}
+                        JupyterHubImageVersion=${JupyterHubImageVersion}
+                      bash $CODEBUILD_ROOT/pipeline/build/jupyterhub/codebuild.sh;
