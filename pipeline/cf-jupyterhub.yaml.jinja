@@ -86,14 +86,33 @@ Parameters:
     Type: String
     Default: "{{ parameters.istio_version }}"
 
+  DaskHelmVersion:
+    Description: Version of Istio service mesh.
+    Type: String
+    Default: "{{ parameters.dask_helm_version }}"
+
 Resources:
 
   SSOTokenSecretsManager:
     Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties: 
       Description: SSO Token to communicate with the Portal.
       Name: !Sub sso-token/${AWS::Region}-${CostTagValue}-cluster
       SecretString: "ReplaceMeOrYouWillAlwaysFail"
+
+  DaskAPITokenSecretsManager:
+    Type: AWS::SecretsManager::Secret
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties: 
+      Description: Dask API Token for Dask controllers to talk with Dask Gateway
+      Name: !Sub dask-api-token/${AWS::Region}-${LabShortName}
+      SecretString: !Sub 
+        - "${RandomGUID}"
+        - RandomGUID:
+            Fn::Base64: !Select [2, !Split ['/', !Ref AWS::StackId]]
 
   HubGroupLogs:
     Type: AWS::Logs::LogGroup
@@ -155,4 +174,5 @@ Resources:
                         ClusterAutoscalerHelmVersion=${ClusterAutoscalerHelmVersion}
                         IstioVersion=${IstioVersion}
                         JupyterHubImageVersion=${JupyterHubImageVersion}
+                        DaskHelmVersion=${DaskHelmVersion}
                       bash $CODEBUILD_ROOT/pipeline/build/jupyterhub/codebuild.sh;

@@ -1,0 +1,7 @@
+# Schema: https://gateway.dask.org/configuration-user.html
+# File found at /etc/dask/gateway.yaml or ~/.config/dask/gateway.yaml
+gateway:
+  address: DASK_GATEWAY_SERVICE_URL_PLACEHOLDER
+
+  auth:
+    type: jupyterhub

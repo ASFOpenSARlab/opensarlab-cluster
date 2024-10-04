@@ -1,3 +1,7 @@
+    
+** This code repo is a santized copy of the production OpenSARLab. It is not guarenteed to be current. **
+
+
 1. Build the docker images first based off `opensarlab-container`.
 
 1. Deploy the following in the same AWS account and region as the previous container images.

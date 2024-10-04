@@ -1,5 +1,6 @@
 from .base import BaseHandler
 
+
 class AliveHandler(BaseHandler):
     """Render the groups page."""
 
@@ -20,6 +21,5 @@ class AliveHandler(BaseHandler):
             print(e)
             raise
 
-default_handlers = [
-    (r'/alive', AliveHandler)
-]
+
+default_handlers = [(r"/alive", AliveHandler)]

@@ -46,6 +46,12 @@ python3 create_singleuser_scripts.py \
     --jupyterhub_codebuild_template=$OSL_HOME/pipeline/build/jupyterhub/codebuild.sh.j2 \
     --jupyterhub_codebuild=$OSL_HOME/pipeline/build/jupyterhub/codebuild.sh ;
 
+echo "Render dask_config.yaml...";
+python3 create_dask_config.py \
+    --config $OSL_HOME/opensciencelab.yaml \
+    --template_path $OSL_HOME/pipeline/configs/dask_config.yaml.j2 \
+    --output_file $OSL_HOME/pipeline/configs/dask_config.yaml
+
 echo "Render files within jupyterhub_config.d...";
 python3 create_config_d.py \
     --config $OSL_HOME/opensciencelab.yaml \
@@ -56,6 +62,7 @@ python3 create_cf_jupyterhub.py \
     --config $OSL_HOME/opensciencelab.yaml \
     --output_file ${CODEBUILD_SRC_DIR}/cf-jupyterhub.yaml \
     --template_path $OSL_HOME/pipeline/cf-jupyterhub.yaml.jinja ;
+
 yamllint -c $OSL_HOME/.yamllint ${CODEBUILD_SRC_DIR}/cf-jupyterhub.yaml;
 cfn-lint ${CODEBUILD_SRC_DIR}/cf-jupyterhub.yaml;
 

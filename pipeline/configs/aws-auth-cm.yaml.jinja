@@ -25,7 +25,7 @@ data:
       groups:
         - system:masters
     {% for node in opensciencelab['nodes'] -%}
-    {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") -%}
+    {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") | trim -%}
     - rolearn: arn:aws:iam::{{ account_id }}:role/{{ region_name }}-{{ cost_tag_value }}-cluster-{{ node_name_escaped }}-instance-role
       username: system:node:{% raw %}{{EC2PrivateDNSName}}{% endraw %}
       groups:

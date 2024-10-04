@@ -34,10 +34,11 @@ spec:
                 - "--utc-hour-of-day-snapshot-cron-runs={{ parameters.utc_hour_of_day_snapshot_cron_runs }}"
                 - "--portal-domain={{ parameters.portal_domain }}"
                 - "--cluster-name={{ cluster_name }}"
+                - "--sso-token-secret-name=SSO_TOKEN_SECRET_NAME"
                 - "--region={{ region_name }}"
           restartPolicy: OnFailure
           nodeSelector:
-            server_type: core
+            opensciencelab.local/node-type: core
           terminationGracePeriodSeconds: 0
 
 ---
@@ -67,5 +68,5 @@ spec:
                 - "--portal-domain={{ parameters.portal_domain }}"
           restartPolicy: OnFailure
           nodeSelector:
-            server_type: core
+            opensciencelab.local/node-type: core
           terminationGracePeriodSeconds: 0

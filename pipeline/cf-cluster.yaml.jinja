@@ -2,7 +2,6 @@
 
 {% set parameters = opensciencelab['parameters'] -%}
 {% set nodes = opensciencelab['nodes'] -%}
-{% set profiles = opensciencelab['profiles'] -%}
 
 AWSTemplateFormatVersion: 2010-09-09
 
@@ -333,8 +332,6 @@ Resources:
       GroupId: !GetAtt NodeSecurityGroup.GroupId
       SourceSecurityGroupId: !GetAtt NodeSecurityGroup.GroupId
       IpProtocol: "-1"
-      FromPort: "-1"
-      ToPort: "-1"     
       # CidrIp: 0.0.0.0/0
 
   NodeSecurityGroupEgress1:
@@ -574,7 +571,7 @@ Resources:
                 Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
 
   {% for node in nodes -%}
-  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") -%}
+  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") | trim -%}
 
   NodeInstanceRole{{ node_name_escaped }}:
     Type: AWS::IAM::Role
@@ -594,7 +591,7 @@ Resources:
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
         - arn:aws:iam::aws:policy/CloudWatchAgentAdminPolicy
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-      {%- filter indent(width=6) -%}
+      {% filter indent(width=6) -%}
       {% include "policies/" ~ node.node_policy ~ "_policy.yaml" %}
       {%- endfilter %}
 
@@ -684,15 +681,27 @@ Resources:
           Value: !Sub ${CostTagValue}
 
   {% for node in nodes -%}
-  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") -%}
+  {%- set node_name_escaped = node.name | regex_replace ("[^A-Za-z0-9]","00") | trim -%}
   {%- set node_instance = node.instance.replace(' ', '').split(',') %}
+
+  {%- if node.is_spot is defined and node.is_spot == True %}
+    {%- set spot_label = 'spot-' %}
+  {%- else %}
+    {%- set spot_label = '' %}
+  {%- endif %}
 
   AutoScalingGroup{{ node_name_escaped }}:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       MixedInstancesPolicy:
         InstancesDistribution:
+          {%- if node.is_spot is defined and node.is_spot == True %}
+          OnDemandPercentageAboveBaseCapacity: 0
+          SpotAllocationStrategy: lowest-price
+          {%- else %}
+          OnDemandPercentageAboveBaseCapacity: 100
           OnDemandAllocationStrategy: lowest-price
+          {%- endif %}
         LaunchTemplate:
           LaunchTemplateSpecification:
             LaunchTemplateId: !Ref LaunchTemplate{{ node_name_escaped }}
@@ -710,9 +719,35 @@ Resources:
         - !Ref HubTargetGroup
       {% endif -%}
       Tags:
+        {%- if node.is_hub is defined and node.is_hub == True %}
         - Key: Name
-          Value: !Sub ${CostTagValue}-{{ node_name_escaped }}-cluster-instance
+          Value: !Sub ${CostTagValue}--core-jupyterhub-{{ spot_label }}instance
           PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/node-template/label/opensciencelab.local/node-type
+          Value: core
+          PropagateAtLaunch: true
+        {%- elif node.is_dask_controller is defined and node.is_dask_controller == True %}
+        - Key: Name
+          Value: !Sub ${CostTagValue}--{{ node_name_escaped }}--dask-controller-{{ spot_label }}instance
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/node-template/label/opensciencelab.local/node-type
+          Value: dask-controller
+          PropagateAtLaunch: true
+        {%- elif node.is_dask_worker is defined and node.is_dask_worker == True %}
+        - Key: Name
+          Value: !Sub ${CostTagValue}--{{ node_name_escaped }}--dask-worker-{{ spot_label }}instance
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/node-template/label/opensciencelab.local/node-type
+          Value: dask-worker-{{ node_name_escaped }}
+          PropagateAtLaunch: true
+        {%- else %}
+        - Key: Name
+          Value: !Sub ${CostTagValue}--{{ node_name_escaped }}--jupyterhub-user-{{ spot_label }}instance
+          PropagateAtLaunch: true
+        - Key: k8s.io/cluster-autoscaler/node-template/label/opensciencelab.local/node-type
+          Value: user-{{ node_name_escaped }}
+          PropagateAtLaunch: true
+        {%- endif %}
         - Key: !Sub k8s.io/cluster/${CostTagValue}-cluster
           Value: owned
           PropagateAtLaunch: true
@@ -755,9 +790,13 @@ Resources:
             #!/bin/bash
             set -o xtrace
             {% if node.is_hub is defined -%}
-            /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=core,server_type=core'
+            /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=core,opensciencelab.local/node-type=core'
+            {% elif node.is_dask_controller is defined -%}
+            /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=dask.org/node-purpose=controller,opensciencelab.local/node-type=dask-controller'
+            {% elif node.is_dask_worker is defined -%}
+            /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=dask.org/node-purpose=worker,opensciencelab.local/node-type=dask-worker-{{ node_name_escaped }}'
             {% else -%}
-            /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,server_type={{ node_name_escaped }}'
+            /etc/eks/bootstrap.sh ${CostTagValue}-cluster --kubelet-extra-args '--node-labels=hub.jupyter.org/node-purpose=user,opensciencelab.local/node-type=user-{{ node_name_escaped }}'
             {% endif -%}
             AWS_INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
             ROOT_VOLUME_IDS=$(aws ec2 describe-instances --region ${AWS::Region} --instance-id $AWS_INSTANCE_ID --output text --query Reservations[0].Instances[0].BlockDeviceMappings[0].Ebs.VolumeId)

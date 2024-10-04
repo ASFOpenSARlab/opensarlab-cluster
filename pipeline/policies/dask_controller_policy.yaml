@@ -1,5 +1,5 @@
 Policies:
-  - PolicyName: !Sub ${AWS::Region}-${Cluster}-{{ node.name }}-EKS_CSI_EBS_Policy
+  - PolicyName: !Sub ${AWS::Region}-${Cluster}-{{ node.name }}-DASK_controller_Policy
     PolicyDocument:
       Version: "2012-10-17"
       Statement:

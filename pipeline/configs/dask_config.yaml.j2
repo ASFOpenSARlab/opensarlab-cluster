@@ -1,0 +1,93 @@
+---
+{% set parameters = opensciencelab.get('parameters', '') -%}
+{% set dask_profiles = opensciencelab.get('dask_profiles', '') -%}
+
+# Dask config
+gateway:
+  prefix: PLACEHOLDER  # "/lab/{lab_short_name}/services/dask-gateway". Users connect to the Gateway through the JupyterHub service.
+  auth:
+    type: jupyterhub  # Use JupyterHub to authenticate with Dask Gateway
+    jupyterhub:
+      apiToken: PLACEHOLDER
+      apiUrl: PLACEHOLDER  # /lab/{lab_short_name}/hub/api
+
+  extraConfig:
+    01-add-dask-options: |
+      from dask_gateway_server.options import Options, Integer, Float, String, Select
+
+      # User(name: str, groups: {}, admin: bool)
+      def options_handler(options, user):
+
+        dask_profile_name = options.profile
+
+        if not dask_profile_name:
+          return None
+
+        {% for dask_profile in dask_profiles -%}
+          {% set node_name_escaped = dask_profile.node_name | regex_replace ("[^A-Za-z0-9]","00") | trim -%}
+          {% set egress_profile = dask_profile.egress_profile | lower -%}
+          {% set dask_profile_name = dask_profile.name -%}
+          {% set dask_image_url = dask_profile.image_url -%}
+
+        elif dask_profile_name == '{{ dask_profile_name }}':
+          return {
+            "worker_cores": 1,
+            "worker_memory": "2 G",
+            "worker_extra_pod_annotations": {
+              'proxy.istio.io/config': "holdApplicationUntilProxyStarts: true\nextraStatTags: [\"lab: {{ parameters.lab_short_name }}\", \"dask_profile: {{ dask_profile_name  }}\", \"egress_profile: {{ egress_profile }}\"]"
+            },
+            "worker_extra_pod_labels": {
+              "opensciencelab.local/node-type": "dask-worker-{{ node_name_escaped }}",
+              {% if egress_profile is not defined -%}
+              "opensciencelab.local/egress-profile": "default",
+              "sidecar.istio.io/inject": "true",
+              {% elif egress_profile == 'none' -%}
+              "opensciencelab.local/egress-profile": "none",
+              "sidecar.istio.io/inject": "false",
+              {% else -%}
+              "opensciencelab.local/egress-profile": "{{ egress_profile }}",
+              "sidecar.istio.io/inject": "true",
+              {% endif -%}
+            },
+            "worker_extra_container_config": {
+              "image": "{{ dask_image_url }}",
+            },
+            "worker_extra_pod_config": {
+              "nodeSelector": {
+                "opensciencelab.local/node-type": "dask-worker-{{ node_name_escaped }}"
+              },
+            },
+            "scheduler_cores": 1,
+            "scheduler_memory": "1 G",
+            "scheduler_extra_pod_labels": {
+              "opensciencelab.local/node-type": "dask-scheduler-{{ node_name_escaped }}",
+              "opensciencelab.local/egress-profile": "none",
+              "sidecar.istio.io/inject": "false",
+            },
+            "scheduler_extra_pod_config": {
+              "nodeSelector": {
+                "opensciencelab.local/node-type": "dask-worker-{{ node_name_escaped }}"
+              },
+            },
+          }
+
+        {% endfor %}
+
+      c.Backend.cluster_options = Options(
+          Select(
+              "profile",
+              ["Example 1", "Example 1", "Example 1"],
+              default="Example 1",
+              label="Dask Cluster Profile",
+          ),
+          handler=options_handler,
+      )
+
+controller:
+  nodeSelector: {'dask.org/node-purpose': 'controller'}
+
+# https://github.com/dask/helm-chart/blob/main/daskhub/values.yaml#L63
+traefik:
+  nodeSelector: {'dask.org/node-purpose': 'controller'}
+  service:
+    type: ClusterIP # Access Dask Gateway through JupyterHub. To access the Gateway from outside JupyterHub, this must be changed to a `LoadBalancer`.

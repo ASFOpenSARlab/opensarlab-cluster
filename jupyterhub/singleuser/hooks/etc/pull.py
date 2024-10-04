@@ -13,9 +13,9 @@ def execute_cmd(cmd, **kwargs):
     """
     Call given command, yielding output line by line
     """
-    yield '$ {}\n'.format(' '.join(cmd))
-    kwargs['stdout'] = subprocess.PIPE
-    kwargs['stderr'] = subprocess.STDOUT
+    yield "$ {}\n".format(" ".join(cmd))
+    kwargs["stdout"] = subprocess.PIPE
+    kwargs["stderr"] = subprocess.STDOUT
 
     proc = subprocess.Popen(cmd, **kwargs)
 
@@ -26,17 +26,17 @@ def execute_cmd(cmd, **kwargs):
     buf = []
 
     def flush():
-        line = b''.join(buf).decode('utf8', 'replace')
+        line = b"".join(buf).decode("utf8", "replace")
         buf[:] = []
         return line
 
-    c_last = ''
+    c_last = ""
     try:
-        for c in iter(partial(proc.stdout.read, 1), b''):
-            if c_last == b'\r' and buf and c != b'\n':
+        for c in iter(partial(proc.stdout.read, 1), b""):
+            if c_last == b"\r" and buf and c != b"\n":
                 yield flush()
             buf.append(c)
-            if c == b'\n':
+            if c == b"\n":
                 yield flush()
             c_last = c
     finally:
@@ -54,17 +54,17 @@ class GitPuller(Configurable):
 
         Defaults to the value of the environment variable NBGITPULLER_DEPTH, or
         1 if the the environment variable isn't set.
-        """
+        """,
     )
 
-    @default('depth')
+    @default("depth")
     def _depth_default(self):
         """This is a workaround for setting the same default directly in the
         definition of the traitlet above. Without it, the test fails because a
         change in the environment variable has no impact. I think this is a
         consequence of the tests not starting with a totally clean environment
         where the GitPuller class hadn't been loaded already."""
-        return int(os.environ.get('NBGITPULLER_DEPTH', 1))
+        return int(os.environ.get("NBGITPULLER_DEPTH", 1))
 
     def __init__(self, git_url, branch_name, repo_dir, **kwargs):
         assert git_url and branch_name
@@ -89,14 +89,14 @@ class GitPuller(Configurable):
         """
         Clones repository
         """
-        logging.info('Repo {} doesn\'t exist. Cloning...'.format(self.repo_dir))
-        clone_args = ['git', 'clone']
+        logging.info("Repo {} doesn't exist. Cloning...".format(self.repo_dir))
+        clone_args = ["git", "clone"]
         if self.depth and self.depth > 0:
-            clone_args.extend(['--depth', str(self.depth)])
-        clone_args.extend(['--branch', self.branch_name])
+            clone_args.extend(["--depth", str(self.depth)])
+        clone_args.extend(["--branch", self.branch_name])
         clone_args.extend([self.git_url, self.repo_dir])
         yield from execute_cmd(clone_args)
-        logging.info('Repo {} initialized'.format(self.repo_dir))
+        logging.info("Repo {} initialized".format(self.repo_dir))
 
     def reset_deleted_files(self):
         """
@@ -105,20 +105,34 @@ class GitPuller(Configurable):
         clean version of the file again.
         """
         yield from self.ensure_lock()
-        deleted_files = subprocess.check_output([
-            'git', 'ls-files', '--deleted'
-        ], cwd=self.repo_dir).decode().strip().split('\n')
+        deleted_files = (
+            subprocess.check_output(["git", "ls-files", "--deleted"], cwd=self.repo_dir)
+            .decode()
+            .strip()
+            .split("\n")
+        )
 
         for filename in deleted_files:
             if filename:  # Filter out empty lines
                 try:
                     yield from execute_cmd(
-                        ['git', 'checkout', 'origin/{}'.format(self.branch_name), '--', filename],
-                        cwd=self.repo_dir)
+                        [
+                            "git",
+                            "checkout",
+                            "origin/{}".format(self.branch_name),
+                            "--",
+                            filename,
+                        ],
+                        cwd=self.repo_dir,
+                    )
                 except Exception as e:
-                    files = yield from execute_cmd(['git', 'ls-files', f"{filename}"], cwd=self.repo_dir)
+                    files = yield from execute_cmd(
+                        ["git", "ls-files", f"{filename}"], cwd=self.repo_dir
+                    )
                     if files:
-                        yield from execute_cmd(['git', 'rm', f"{filename}"], cwd=self.repo_dir)
+                        yield from execute_cmd(
+                            ["git", "rm", f"{filename}"], cwd=self.repo_dir
+                        )
                         print(f"SKIPPING CHECKOUT: {filename} not in repo")
                         pass
         else:
@@ -129,7 +143,7 @@ class GitPuller(Configurable):
         Return true if repo is dirty
         """
         try:
-            subprocess.check_call(['git', 'diff-files', '--quiet'], cwd=self.repo_dir)
+            subprocess.check_call(["git", "diff-files", "--quiet"], cwd=self.repo_dir)
             # Return code is 0
             return False
         except subprocess.CalledProcessError:
@@ -139,20 +153,26 @@ class GitPuller(Configurable):
         """
         Do a git fetch so our remotes are up to date
         """
-        yield from execute_cmd(['git', 'fetch'], cwd=self.repo_dir)
+        yield from execute_cmd(["git", "fetch"], cwd=self.repo_dir)
 
     def find_upstream_changed(self, kind):
         """
         Return list of files that have been changed upstream belonging to a particular kind of change
         """
-        output = subprocess.check_output([
-            'git', 'log', '..origin/{}'.format(self.branch_name),
-            '--oneline', '--name-status'
-        ], cwd=self.repo_dir).decode()
+        output = subprocess.check_output(
+            [
+                "git",
+                "log",
+                "..origin/{}".format(self.branch_name),
+                "--oneline",
+                "--name-status",
+            ],
+            cwd=self.repo_dir,
+        ).decode()
         files = []
-        for line in output.split('\n'):
+        for line in output.split("\n"):
             if line.startswith(kind):
-                files.append(os.path.join(self.repo_dir, line.split('\t', 1)[1]))
+                files.append(os.path.join(self.repo_dir, line.split("\t", 1)[1]))
 
         return files
 
@@ -165,7 +185,7 @@ class GitPuller(Configurable):
         can do right now.
         """
         try:
-            lockpath = os.path.join(self.repo_dir, '.git', 'index.lock')
+            lockpath = os.path.join(self.repo_dir, ".git", "index.lock")
             mtime = os.path.getmtime(lockpath)
             # A lock file does exist
             # If it's older than 10 minutes, we just assume it is stale and take over
@@ -175,7 +195,9 @@ class GitPuller(Configurable):
                 os.remove(lockpath)
                 yield "Stale .git/index.lock removed"
             else:
-                raise Exception('Recent .git/index.lock found, operation can not proceed. Try again in a few minutes.')
+                raise Exception(
+                    "Recent .git/index.lock found, operation can not proceed. Try again in a few minutes."
+                )
         except FileNotFoundError:
             # No lock is held by other processes, we are free to go
             return
@@ -185,24 +207,32 @@ class GitPuller(Configurable):
         Rename local untracked files that would require pulls
         """
         # Find what files have been added!
-        new_upstream_files = self.find_upstream_changed('A')
+        new_upstream_files = self.find_upstream_changed("A")
         for f in new_upstream_files:
             if os.path.exists(f):
                 # If there's a file extension, put the timestamp before that
-                ts = datetime.datetime.now().strftime('__%Y%m%d%H%M%S')
+                ts = datetime.datetime.now().strftime("__%Y%m%d%H%M%S")
                 path_head, path_tail = os.path.split(f)
                 path_tail = ts.join(os.path.splitext(path_tail))
                 new_file_name = os.path.join(path_head, path_tail)
                 os.rename(f, new_file_name)
-                yield 'Renamed {} to {} to avoid conflict with upstream'.format(f, new_file_name)
+                yield "Renamed {} to {} to avoid conflict with upstream".format(
+                    f, new_file_name
+                )
 
     def branch_names_differ(self):
         """
         Returns (self.branch_name != current checked out branch)
         """
-        return self.branch_name != subprocess.check_output([
-            'git', 'branch', '--show-current'
-        ], cwd=self.repo_dir).decode().strip().split('\n')[0]
+        return (
+            self.branch_name
+            != subprocess.check_output(
+                ["git", "branch", "--show-current"], cwd=self.repo_dir
+            )
+            .decode()
+            .strip()
+            .split("\n")[0]
+        )
 
     def update(self):
         """
@@ -224,6 +254,11 @@ class GitPuller(Configurable):
         # a fresh copy of a file they might have screwed up.
         yield from self.reset_deleted_files()
 
+        # Unstage any changes, otherwise the merge might fail.
+        # The following command resets the index, but keeps the working tree.  All changes
+        # to files will be preserved, but they are no longer staged for commit.
+        yield from execute_cmd(["git", "reset", "--mixed"], cwd=self.repo_dir)
+
         # If there are local changes, make a commit so we can do merges when pulling
         # We also allow empty commits. On NFS (at least), sometimes repo_is_dirty returns a false
         # positive, returning True even when there are no local changes (git diff-files seems to return
@@ -235,24 +270,36 @@ class GitPuller(Configurable):
         # better than passing --author, since git treats author separately from committer.
         if self.repo_is_dirty():
             yield from self.ensure_lock()
-            yield from execute_cmd([
-                'git',
-                '-c', 'user.email=nbgitpuller@nbgitpuller.link',
-                '-c', 'user.name=nbgitpuller',
-                'commit',
-                '-am', 'Automatic commit by nbgitpuller',
-                '--allow-empty'
-            ], cwd=self.repo_dir)
+            yield from execute_cmd(
+                [
+                    "git",
+                    "-c",
+                    "user.email=nbgitpuller@nbgitpuller.link",
+                    "-c",
+                    "user.name=nbgitpuller",
+                    "commit",
+                    "-am",
+                    "Automatic commit by nbgitpuller",
+                    "--allow-empty",
+                ],
+                cwd=self.repo_dir,
+            )
 
         # Merge master into local!
         yield from self.ensure_lock()
-        yield from execute_cmd([
-            'git',
-            '-c', 'user.email=nbgitpuller@nbgitpuller.link',
-            '-c', 'user.name=nbgitpuller',
-            'merge',
-            '-Xours', 'origin/{}'.format(self.branch_name)
-        ], cwd=self.repo_dir)
+        yield from execute_cmd(
+            [
+                "git",
+                "-c",
+                "user.email=nbgitpuller@nbgitpuller.link",
+                "-c",
+                "user.name=nbgitpuller",
+                "merge",
+                "-Xours",
+                "origin/{}".format(self.branch_name),
+            ],
+            cwd=self.repo_dir,
+        )
 
 
 def main():
@@ -260,18 +307,20 @@ def main():
     Synchronizes a github repository with a local repository.
     """
     logging.basicConfig(
-        format='[%(asctime)s] %(levelname)s -- %(message)s',
-        level=logging.DEBUG)
+        format="[%(asctime)s] %(levelname)s -- %(message)s", level=logging.DEBUG
+    )
 
-    parser = argparse.ArgumentParser(description='Synchronizes a github repository with a local repository.')
-    parser.add_argument('git_url', help='Url of the repo to sync')
-    parser.add_argument('branch_name', default='master', help='Branch of repo to sync', nargs='?')
-    parser.add_argument('repo_dir', default='.', help='Path to clone repo under', nargs='?')
+    parser = argparse.ArgumentParser(
+        description="Synchronizes a github repository with a local repository."
+    )
+    parser.add_argument("git_url", help="Url of the repo to sync")
+    parser.add_argument(
+        "branch_name", default="master", help="Branch of repo to sync", nargs="?"
+    )
+    parser.add_argument(
+        "repo_dir", default=".", help="Path to clone repo under", nargs="?"
+    )
     args = parser.parse_args()
 
-    for line in GitPuller(
-        args.git_url,
-        args.branch_name,
-        args.repo_dir
-    ).pull():
+    for line in GitPuller(args.git_url, args.branch_name, args.repo_dir).pull():
         print(line)

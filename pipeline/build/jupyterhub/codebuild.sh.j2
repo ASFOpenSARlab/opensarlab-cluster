@@ -22,6 +22,7 @@ set -ex
 #       ClusterAutoscalerHelmVersion=${ClusterAutoscalerHelmVersion}
 #       IstioVersion=${IstioVersion}
 #       JupyterHubImageVersion=${JupyterHubImageVersion}
+#       DaskHelmVersion=${DaskHelmVersion}
 #      bash codebuild.sh
 #
 #######
@@ -49,6 +50,7 @@ AWSK8sCNIVersion=${AWSK8sCNIVersion}
 ClusterAutoscalerHelmVersion=${ClusterAutoscalerHelmVersion}
 IstioVersion=${IstioVersion}
 JupyterHubImageVersion=${JupyterHubImageVersion}
+DaskHelmVersion=${DaskHelmVersion}
 "
 
 ###################################################################################
@@ -129,9 +131,11 @@ kubectl apply -f aws-k8s-cni.yaml
 
 #######
 printf "\n\n%s\n" "******* Explicitly set K8s namespaces...";
-JUPYTERHUB_NAMESPACE=jupyter
+export JUPYTERHUB_NAMESPACE=jupyter
+export DASK_NAMESPACE=dask-gateway
 
 kubectl create namespace $JUPYTERHUB_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -;
+kubectl create namespace $DASK_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -;
 kubectl create namespace amazon-cloudwatch --dry-run=client -o yaml | kubectl apply -f -;
 kubectl create namespace autoscaler --dry-run=client -o yaml | kubectl apply -f -;
 kubectl create namespace cw-prometheus --dry-run=client -o yaml | kubectl apply -f -;
@@ -152,15 +156,18 @@ if [ "$IstioVersion" != "None" ]; then
     # REGISTRY_ONLY to block all egress implicit traffic, ALLOW_ANY passthroughs unknown services 
     istioctl install -y --set profile=minimal --set meshConfig.outboundTrafficPolicy.mode=ALLOW_ANY;
 
-    printf "\n\n%s\n" "******* Implicitly enable Istio injection in jupyter namespace at the profiles.py level.";
+    printf "\n\n%s\n" "******* Implicitly enable Istio injection in $JUPYTERHUB_NAMESPACE namespace within profiles.py.jinja.";
+    printf "\n\n%s\n" "******* Implicitly enable Istio injection in $DASK_NAMESPACE namespace within dask_config.py.";
 
-    printf "\n\n%s\n" "******* Explicitly disable Istio injection in all other namespaces...";
+    printf "\n\n%s\n" "******* Explicitly disable Istio injection in all other namespaces at the namespace level...";
     kubectl label namespace amazon-cloudwatch istio-injection=disabled
     kubectl label namespace autoscaler istio-injection=disabled
     kubectl label namespace cw-prometheus istio-injection=disabled
     kubectl label namespace external istio-injection=disabled
     kubectl label namespace services istio-injection=disabled
     kubectl label namespace default istio-injection=disabled
+
+    printf "\n\n%s\n" "******* Any other namespaces will have Istio injected on a individual pod level. Defaults to not injected.";
 
     kubectl apply --prune -f ${CODEBUILD_ROOT}/egress_configs/egress.yaml \
         -l used-in-egress=yes \
@@ -225,6 +232,7 @@ docker push $REGISTRY_URI/crons:$CRONS_IMAGE_BUILD;
 docker push $REGISTRY_URI/crons:latest;
 
 sed -i "s|IMAGE_PLACEHOLDER|$REGISTRY_URI/crons:$CRONS_IMAGE_BUILD|" k8s/crons.yaml;
+sed -i "s|SSO_TOKEN_SECRET_NAME|sso-token/${AWS_Region}-${CostTagValue}-cluster|" k8s/crons.yaml;
 kubectl apply -f k8s/crons.yaml;
 # Any secrets for cron will be applied later
 
@@ -257,6 +265,34 @@ helm upgrade --install aws-ebs-csi-driver aws-ebs-csi-driver/aws-ebs-csi-driver 
     --set controller.extraVolumeTags.${CostTagKey}=${CostTagValue}
 
 #######
+printf "\n\n%s\n" "******* Apply dask gateway server...";
+## NOTE: that any unwanted reosurces will have to be manually deleted. This includes the 'dask-gateway' namespace. 
+## if [ "$DaskHelmVersion" != "None" ]; then
+    export DASK_GATEWAY_API_TOKEN=$(aws secretsmanager get-secret-value --secret-id "dask-api-token/${AWS_REGION}-${LabShortName}" --query SecretString --output text)
+
+    export DASK_RELEASE=dask-gateway-release
+    export DASK_CHART_NAME=dask-gateway
+
+    helm repo add $DASK_CHART_NAME https://helm.dask.org
+    helm repo update
+
+    helm upgrade --install $DASK_RELEASE $DASK_CHART_NAME/dask-gateway \
+        --create-namespace \
+        --namespace $DASK_NAMESPACE \
+        --version $DaskHelmVersion \
+        --values ${CODEBUILD_ROOT}/pipeline/configs/dask_config.yaml \
+        --set gateway.auth.jupyterhub.apiUrl="${PortalDomain}/lab/${LabShortName}/hub/api" \
+        --set gateway.prefix="/lab/${LabShortName}/services/dask-gateway" \
+        --set gateway.auth.jupyterhub.apiToken=$DASK_GATEWAY_API_TOKEN \
+        --timeout=6m0s \
+        --atomic
+
+    # Render gateway.yaml
+    # This will be mount linked later in the JupyterHub helm chart
+    sed -i "s|DASK_GATEWAY_SERVICE_URL_PLACEHOLDER|${PortalDomain}/lab/${LabShortName}/services/dask-gateway|" ./singleuser/dask/gateway.yaml;
+##fi
+
+#######
 printf "\n\n%s\n" "******* Various cluster env variables...";
 printf "%s\n" "REGISTRY_URI $REGISTRY_URI";
 printf "%s\n" "HUB_IMAGE_BUILD $HUB_IMAGE_BUILD";
@@ -281,6 +317,7 @@ helm upgrade --install jupyter jupyterhub/jupyterhub \
     --set hub.baseUrl="/lab/${LabShortName}/" \
     --set hub.extraEnv.JUPYTERHUB_LAB_NAME="${LabShortName}" \
     --set hub.extraEnv.OPENSCIENCELAB_PORTAL_DOMAIN="${PortalDomain}" \
+    --set hub.extraEnv.OPENSCIENCELAB_DASK_NAMESPACE="$DASK_NAMESPACE" \
     --set hub.config.Authenticator.admin_users[0]=${AdminUserName} \
     --set proxy.service.nodePorts.http=${NodeProxyPort} \
     --set custom.REGISTRY_URI=$REGISTRY_URI \
@@ -291,6 +328,7 @@ helm upgrade --install jupyter jupyterhub/jupyterhub \
     --set custom.COST_TAG_KEY="${CostTagKey}" \
     --set custom.DAYS_TILL_VOLUME_DELETION="${DaysTillVolumeDeletion}" \
     --set custom.DAYS_TILL_SNAPSHOT_DELETION="${DaysTillSnapshotDeletion}" \
+    --set custom.DASK_GATEWAY_API_TOKEN=$DASK_GATEWAY_API_TOKEN \
     --set-file singleuser.extraFiles.user-hooks-pull.stringData='./singleuser/hooks/etc/pull.py' \
     --set-file singleuser.extraFiles.user-hooks-clean.stringData='./singleuser/hooks/etc/pkg_clean.py' \
     --set-file singleuser.extraFiles.user-hooks-kernel-flag.stringData='./singleuser/hooks/etc/old_kernels_flag.txt' \
@@ -298,6 +336,7 @@ helm upgrade --install jupyter jupyterhub/jupyterhub \
     --set-file singleuser.extraFiles.user-others-check_storage.stringData='./singleuser/others/check_storage.py' \
     --set-file singleuser.extraFiles.user-template-page.stringData='./singleuser/templates/page.html' \
     --set-file singleuser.extraFiles.user-template-tree.stringData='./singleuser/templates/tree.html' \
+    --set-file singleuser.extraFiles.user-dask-gateway.stringData='./singleuser/dask/gateway.yaml' \
     {% for file_name in hook_script_filenames -%}
     --set-file singleuser.extraFiles.user-hooks-{{ file_name | replace('.sh', '') }}.stringData='./singleuser/hooks/{{ file_name }}' \
     {% endfor -%}
@@ -322,6 +361,7 @@ helm upgrade --install autoscaler autoscaler/cluster-autoscaler \
     --timeout=2m0s \
     --set autoDiscovery.clusterName=${CostTagValue}-cluster \
     --set awsRegion=${AWS_Region} \
-    --set nodeSelector."hub\\.jupyter\\.org/node-purpose"=core
+    --set nodeSelector."hub\\.jupyter\\.org/node-purpose"=core \
+    --set extraArgs.ignore-daemonsets-utilization=True
 
 printf "\n\n%s\n" "The End"

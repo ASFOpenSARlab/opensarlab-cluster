@@ -13,6 +13,6 @@ python3 $ROOT_DIR/pipeline/build/prebuild/check_config.py --config $ROOT_DIR/ope
 yamllint -c $ROOT_DIR/.yamllint $ROOT_DIR/opensciencelab.yaml
 
 
-python3 $ROOT_DIR/pipeline/build/prebuild/create_cf_cluster.py --config $ROOT_DIR/opensciencelab.yaml --output_file $ROOT_DIR/pipeline/build/prebuild/cf-cluster.yaml --template_path $ROOT_DIR/pipeline/build/prebuild/cf-cluster.yaml.jinja
-yamllint -c $ROOT_DIR/.yamllint $ROOT_DIR/pipeline/build/prebuild/cf-cluster.yaml
-cfn-lint $ROOT_DIR/pipeline/build/prebuild/cf-cluster.yaml
+python3 $ROOT_DIR/pipeline/build/prebuild/create_cf_cluster.py --config $ROOT_DIR/opensciencelab.yaml --output_file $ROOT_DIR/pipeline/cf-cluster.yaml --template_path $ROOT_DIR/pipeline/cf-cluster.yaml.jinja
+yamllint -c $ROOT_DIR/.yamllint $ROOT_DIR/pipeline/cf-cluster.yaml
+cfn-lint $ROOT_DIR/pipeline/cf-cluster.yaml

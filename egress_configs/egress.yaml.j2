@@ -136,7 +136,7 @@ spec:
 ##  host: {{ host }}
 ##  workloadSelector:
 ##    matchLabels:
-##      egress-profile: {{ profile }}
+##      opensciencelab.local/egress-profile: {{ profile }}
 ##  trafficPolicy:
 ##    tls:
 ##      mode: ISTIO_MUTUAL
@@ -166,7 +166,7 @@ spec:
 ##  host: {{ host }}
 ##  workloadSelector:
 ##    matchLabels:
-##      egress-profile: {{ profile }}
+##      opensciencelab.local/egress-profile: {{ profile }}
 ##  trafficPolicy:
 ##    tls:
 ##      mode: ISTIO_MUTUAL
@@ -293,7 +293,7 @@ spec:
     {%- endif %}
   workloadSelector:
     labels:
-      egress-profile: {{ profile }}
+      opensciencelab.local/egress-profile: {{ profile }}
   egress:
     - hosts:
       {%- for host in hosts %}
@@ -320,7 +320,7 @@ metadata:
 spec:
   workloadSelector:
     labels:
-      egress-profile: {{ profile }}
+      opensciencelab.local/egress-profile: {{ profile }}
   configPatches:
 ##    - applyTo: NETWORK_FILTER
 ##      match:

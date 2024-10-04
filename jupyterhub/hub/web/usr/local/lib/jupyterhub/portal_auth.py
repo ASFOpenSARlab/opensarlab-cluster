@@ -1,4 +1,3 @@
-
 import os
 import asyncio
 import json
@@ -12,23 +11,26 @@ from jupyterhub.utils import maybe_future
 
 from opensarlab.auth import encryptedjwt
 
+
 class My403Exception(Exception):
     pass
 
+
 class My401Exception(Exception):
     pass
+
 
 class PortalAuthLoginHandler(BaseHandler):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.lab_name = os.environ.get('JUPYTERHUB_LAB_NAME', '')
+        self.lab_name = os.environ.get("JUPYTERHUB_LAB_NAME", "")
         if not self.lab_name:
             self.log.error("PortalAuth Login lab name not found")
             raise My401Exception("No lab name")
 
-        self.portal_domain = os.environ.get('OPENSCIENCELAB_PORTAL_DOMAIN', '')
+        self.portal_domain = os.environ.get("OPENSCIENCELAB_PORTAL_DOMAIN", "")
         if not self.portal_domain:
             raise My401Exception("No portal domain")
 
@@ -42,7 +44,7 @@ class PortalAuthLoginHandler(BaseHandler):
         If current JupyterHub user found (and signed in), set Lab JupyterHub cookie and redirect back to original url.
         """
         try:
-            self.statsd.incr('login.request')
+            self.statsd.incr("login.request")
             user = self.current_user
 
             if not user:
@@ -51,17 +53,23 @@ class PortalAuthLoginHandler(BaseHandler):
                 # If no Portal cookie, then user is fully signed out, so sign in.
                 # If no Portal cookie, then redirect to login
                 if portal_cookie is None:
-                    next = self.get_argument('next', default=f"/lab/{self.lab_name}/hub/login")
+                    next = self.get_argument(
+                        "next", default=f"/lab/{self.lab_name}/hub/login"
+                    )
                     next = web.escape.url_escape(next)
 
-                    self.redirect(f'{self.portal_domain}/portal/hub/auth?next_url={next}')
+                    self.redirect(
+                        f"{self.portal_domain}/portal/hub/auth?next_url={next}"
+                    )
                     return
 
                 try:
                     jwt_data = encryptedjwt.decrypt(portal_cookie)
                 except Exception as e:
                     self.log.error(f"PortalAuth Login JWT decryption went wrong: {e}")
-                    raise My401Exception("Something went wrong with jwt authentication. Contact the administrator.")
+                    raise My401Exception(
+                        "Something went wrong with jwt authentication. Contact the administrator."
+                    )
 
                 if jwt_data is None:
                     self.log.error("No JWT data found")
@@ -90,24 +98,25 @@ class PortalAuthLoginHandler(BaseHandler):
             self.log.error(f"PortalAuth Login 500 error: {e}")
             raise web.HTTPError(500)
 
+
 class PortalAuthLogoutHandler(BaseHandler):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.lab_name = os.environ.get('JUPYTERHUB_LAB_NAME', '')
+        self.lab_name = os.environ.get("JUPYTERHUB_LAB_NAME", "")
         if not self.lab_name:
             self.log.error("PortalAuth Login lab name not found")
             raise My401Exception("No lab name")
 
-        self.portal_domain = os.environ.get('OPENSCIENCELAB_PORTAL_DOMAIN', '')
+        self.portal_domain = os.environ.get("OPENSCIENCELAB_PORTAL_DOMAIN", "")
         if not self.portal_domain:
             raise My401Exception("No portal domain")
 
     # https://github.com/jupyterhub/jupyterhub/blob/d852d9e37c2f2b60ab41de128885503dc441f009/jupyterhub/handlers/login.py#L15
     @property
     def shutdown_on_logout(self):
-        return self.settings.get('shutdown_on_logout', False)
+        return self.settings.get("shutdown_on_logout", False)
 
     async def _shutdown_servers(self, user):
         """Shutdown servers for logout
@@ -127,7 +136,7 @@ class PortalAuthLogoutHandler(BaseHandler):
 
     async def get(self):
         """
-        Clear Lab JupyterHub cookies and JWT cookie. 
+        Clear Lab JupyterHub cookies and JWT cookie.
         """
         try:
             user = self.current_user
@@ -136,44 +145,45 @@ class PortalAuthLogoutHandler(BaseHandler):
                     await self._shutdown_servers(user)
 
                 # Remove jwt cookie
-                self.clear_cookie('jupyterhub-portal-jwt', path='/')
+                self.clear_cookie("jupyterhub-portal-jwt", path="/")
 
                 self.clear_login_cookie()
-                self.statsd.incr('logout')
+                self.statsd.incr("logout")
 
                 self.log.info(f"User logged out: {user.name}")
-            self.redirect(f'{self.portal_domain}/portal/hub/logout', permanent=True)
+            self.redirect(f"{self.portal_domain}/portal/hub/logout", permanent=True)
         except Exception as e:
             raise web.HTTPError(500)
+
 
 class PortalAuthenticator(Authenticator):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.lab_name = os.environ.get('JUPYTERHUB_LAB_NAME', '')
+        self.lab_name = os.environ.get("JUPYTERHUB_LAB_NAME", "")
         if not self.lab_name:
             raise My401Exception("No lab name")
 
-        self.portal_domain = os.environ.get('OPENSCIENCELAB_PORTAL_DOMAIN', '')
+        self.portal_domain = os.environ.get("OPENSCIENCELAB_PORTAL_DOMAIN", "")
         if not self.portal_domain:
             raise My401Exception("No portal domain")
 
     async def _get_user_data_from_auth_api(self, username: str):
         try:
-            body = json.dumps({ 'username': f"{username}" })
+            body = json.dumps({"username": f"{username}"})
             response = await AsyncHTTPClient().fetch(
-                    f"{self.portal_domain}/portal/hub/auth",
-                    body = body,
-                    method="POST"
-                )
+                f"{self.portal_domain}/portal/hub/auth", body=body, method="POST"
+            )
 
             if not response.code == 200:
-                self.log.error(f"Auth response code is not 200. Code: {response.code}, {response['message']}")
+                self.log.error(
+                    f"Auth response code is not 200. Code: {response.code}, {response['message']}"
+                )
                 raise My401Exception()
 
             response = json.loads(response.body)
-            if 'ERROR' in response['message']:
+            if "ERROR" in response["message"]:
                 self.log.error(f"{response['message']}")
                 raise My401Exception()
 
@@ -182,21 +192,21 @@ class PortalAuthenticator(Authenticator):
             raise My401Exception()
 
         try:
-            user_data = encryptedjwt.decrypt(response['data'])
+            user_data = encryptedjwt.decrypt(response["data"])
         except Exception as e:
             self.log.error(f"PortalAuth Login JWT decryption went wrong: {e}")
-            raise My401Exception("Something went wrong with jwt authentication. Contact the administrator.")
+            raise My401Exception(
+                "Something went wrong with jwt authentication. Contact the administrator."
+            )
 
         return user_data
 
     async def authenticate(self, handler, data=None):
         if data:
-            username = str(data['name'])
+            username = str(data["name"])
 
             # Get updated user data from portal
-            user_data = await self._get_user_data_from_auth_api(
-                username=username
-            )
+            user_data = await self._get_user_data_from_auth_api(username=username)
 
             if user_data is None:
                 self.log.error("No JWT data found")
@@ -211,29 +221,42 @@ class PortalAuthenticator(Authenticator):
                         encrypt_user_data,
                         encrypted=False,
                         path="/",
-                        expires_days=10
+                        expires_days=10,
                     )
-                    self.log.warning("jupyterhub-portal-jwt cookie updated with latest user data.")
+                    self.log.warning(
+                        "jupyterhub-portal-jwt cookie updated with latest user data."
+                    )
                 except Exception as e:
                     self.log.error(e)
                     raise web.HTTPError(403, "Bad cookie value")
             else:
-                self.log.error("Handler not found in PortalAuthenticator.authenticate. Cookie not updated.")
+                self.log.error(
+                    "Handler not found in PortalAuthenticator.authenticate. Cookie not updated."
+                )
 
-            self.log.warning(f"Cheap writers killed Data like Khan in Nemesis. User data: {user_data}")
+            self.log.warning(
+                f"Cheap writers killed Data like Khan in Nemesis. User data: {user_data}"
+            )
             try:
-                user_data_groups = list(user_data.get('groups', ''))
-                user_data_access_list = [list(i.keys())[0] for i in user_data.get('access', [])]
-                usergroups = user_data_groups + user_data_access_list
+                user_data_access_for_lab: dict = user_data.get("lab_access", {}).get(
+                    self.lab_name, {}
+                )
+                if not user_data_access_for_lab:
+                    return None
 
-                userroles = list(user_data['roles'])
-                is_admin = 'admin' in userroles or f'admin-{self.lab_name}' in usergroups
+                can_user_access_lab: bool = bool(
+                    user_data_access_for_lab.get("can_user_access_lab", False)
+                )
 
-                if self.lab_name in usergroups:
-                    return {
-                        'name': username, 
-                        'admin': is_admin
-                    }
+                user_data_groups: list = user_data.get("groups", [])
+                user_data_roles: list = user_data.get("roles", [])
+                is_admin: bool = (
+                    "admin" in user_data_roles
+                    or f"admin-{self.lab_name}" in user_data_groups
+                )
+
+                if can_user_access_lab:
+                    return {"name": username, "admin": is_admin}
 
             except Exception as e:
                 self.log.error(f"Portal Auth: Traceback: {traceback.format_exc()}")
@@ -242,6 +265,6 @@ class PortalAuthenticator(Authenticator):
 
     def get_handlers(self, app):
         return [
-            (r'/login', PortalAuthLoginHandler), 
-            (r'/logout', PortalAuthLogoutHandler)
+            (r"/login", PortalAuthLoginHandler),
+            (r"/logout", PortalAuthLogoutHandler),
         ]

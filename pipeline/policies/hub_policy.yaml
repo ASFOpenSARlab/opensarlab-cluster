@@ -1,4 +1,3 @@
-
 Policies:
   - PolicyName: !Sub ${AWS::Region}-${Cluster}-{{ node.name }}-Service_Account_Policy
     PolicyDocument:

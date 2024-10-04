@@ -15,22 +15,30 @@ parameters:
   days_after_server_stop_till_deletion_email: Number of integer days after last server use when user gets email notifiying about permanent deletion of data. Must have minimum one value. To never send emails, use value 365000
   utc_hour_of_day_snapshot_cron_runs : Integer hour (UTC) when the daily snapshot cron runs.
   utc_hour_of_day_volume_cron_runs: Integer hour (UTC) when the daily snapshot cron runs.
-  eks_version: 1.28  # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
-  kubectl_version: '1.28.2/2023-10-17'  # https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
-  aws_ebs_csi_driver_version: '2.24.0'  # https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases
-  jupyterhub_helm_version: '3.1.0'  # https://jupyterhub.github.io/helm-chart/
-  jupyterhub_hub_image_version: '4.0.2'  # Match App Version of JupyterHub Helm
-  aws_k8s_cni_version: 'v1.15.0'  # https://docs.aws.amazon.com/eks/latest/userguide/managing-vpc-cni.html
-  cluster_autoscaler_helm_version: '9.29.3'  # https://github.com/kubernetes/autoscaler/releases > cluster-autoscaler-chart
-  istio_version: '1.19.3'  # https://github.com/istio/istio/releases; set to None if disabling Istio
+  eks_version: 1.29  # https://docs.aws.amazon.com/eks/latest/userguide/kubernetes-versions.html
+  kubectl_version: '1.29.3/2024-04-19'  # https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html
+  aws_ebs_csi_driver_version: '2.32.0'  # https://github.com/kubernetes-sigs/aws-ebs-csi-driver/releases
+  jupyterhub_helm_version: '3.3.7'  # https://jupyterhub.github.io/helm-chart/
+  jupyterhub_hub_image_version: '4.1.5'  # Match App Version of JupyterHub Helm
+  aws_k8s_cni_version: 'v1.18.2'  # https://docs.aws.amazon.com/eks/latest/userguide/managing-vpc-cni.html
+  cluster_autoscaler_helm_version: '9.37.0'  # https://github.com/kubernetes/autoscaler/releases > cluster-autoscaler-chart
+  istio_version: '1.20.8'  # https://github.com/istio/istio/releases; set to None if disabling Istio
+  dask_helm_version: '2024.1.0'  # https://helm.dask.org/ > dask-gateway-{version}; Set to None if disabling Dask
 
 nodes:
   - name: hub  # Required
-    instance: The EC2 instance for the hub node. Type t3a.medium is preferred.
+    instance: The EC2 instance for the hub node. Type t3a.xlarge is preferred to run all needed pods.
     min_number: 1  # Required
     max_number: 1  # Required
     node_policy: hub  # Required
     is_hub: True  # Required
+
+  - name: daskcontroller  # Required
+    instance: The EC2 instance for the dask controller node. Type t3a.medium is preferred.
+    min_number: 1  # Required
+    max_number: 1  # Required
+    node_policy: dask_controller  # Required
+    is_dask_controller: True  # Required
 
   - name: Name of node type. Must be alphanumeric (no special characters, whitespace, etc.)
     instance: The EC2 instance for the hub node (m5a.2xlarge)
@@ -38,6 +46,8 @@ nodes:
     max_number: Maximum number of running node of this type in the cluster (25)
     node_policy: Node permission policy (user)
     root_volume_size: Size of the root volume of the EC2 (GiB) (Optional, range 1 - 16,384)
+    is_dask_worker: Is the node is a dask worker? (Boolean, Optional)
+    is_spot: Is the node is suppose to be a spot instance? (Boolean, Optional)
 
 service_accounts:
   - name: service_account_name
@@ -48,7 +58,16 @@ service_accounts:
           - "AWS Resource Action"
         Resource: "AWS Resource ARN"
 
-profiles:
+# Dask implementation is a work-in-progress. Necessary guardrails have not been fully implemented.
+dask_profiles:
+  - name: Name of the dask profile that users can select. 
+    short_name: Short name of the dask profile. To be used programtically.
+    description: "Basic description of what the dask profile will be used for"
+    image_url: Uri of the dask worker image of form "AWS_ACCOUNT_ID.dkr.ecr.us-west-2.amazonaws.com/CONTAINER_NAMESPACE/IMAGE_NAME:IMAGE_TAG"
+    node_name: Node name as given in above section (daskworker1)
+    egress_profile: Name of the egress config to use. Do not include `.conf` suffix (Optional)
+
+lab_profiles:
   - name: Name of profile that users can select (SAR 1)
     description: Description of profile
     image_name: Name of JupyterHub single user image found in ECR (sar1)

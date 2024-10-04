@@ -8,12 +8,12 @@ class PossibleProfilesHandler(BaseHandler):
 
     def get(self):
         try:
-            print("Getting possible profiles..")
+            print("Getting possible lab profiles..")
 
             obj = {
                 "profiles": [
-            {% for profile in opensciencelab['profiles'] -%}
-                "{{ profile.name }}",
+            {% for lab_profile in opensciencelab['lab_profiles'] -%}
+                "{{ lab_profile.name }}",
             {% endfor -%}
                 ]
             }

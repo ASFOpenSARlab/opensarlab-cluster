@@ -67,7 +67,7 @@ echo "Install small container called "sleep" for playing around with..."
 kubectl create namespace jupyter --dry-run=client -o yaml | kubectl apply -f -
 kubectl label namespace jupyter istio-injection=enabled --overwrite
 kubectl -n jupyter apply -f https://raw.githubusercontent.com/istio/istio/release-1.19/samples/sleep/sleep.yaml
-kubectl -n jupyter patch deployments/sleep -p '{"spec":{"template":{"metadata":{"labels":{"egress-profile":"'$SE_PROFILE'"}}}}}'
+kubectl -n jupyter patch deployments/sleep -p '{"spec":{"template":{"metadata":{"labels":{"opensciencelab.local/egress-profile":"'$SE_PROFILE'"}}}}}'
 kubectl scale --replicas=1 deployment sleep -n jupyter
 
 

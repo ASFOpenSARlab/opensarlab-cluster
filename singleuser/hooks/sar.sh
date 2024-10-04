@@ -7,7 +7,7 @@ set -ve
 # Get python version
 PYTHON_VER=$(python -c "import sys; print(f\"python{sys.version_info.major}.{sys.version_info.minor}\")")
 
-#python /etc/singleuser/resource_checks/check_storage.py $1
+python /etc/singleuser/resource_checks/check_storage.py $1
 
 # Add Path to local pip execs.
 export PATH=$HOME/.local/bin:$PATH
@@ -31,6 +31,12 @@ jupyter labextension disable @jupyterlab/extensionmanager-extension
 jupyter labextension disable @jupyterhub/jupyter-server-proxy
 
 gitpuller https://github.com/ASFOpenSARlab/opensarlab-notebooks.git master $HOME/notebooks
+
+gitpuller https://github.com/ASFOpenSARlab/opensarlab_MintPy_Recipe_Book.git main $HOME/Data_Recipe_Jupyter_Books/opensarlab_MintPy_Recipe_Book
+
+gitpuller https://github.com/ASFOpenSARlab/opensarlab_OPERA-RTC-S1_Recipe_Book.git main $HOME/Data_Recipe_Jupyter_Books/opensarlab_OPERA-RTC-S1_Recipe_Book
+
+gitpuller https://github.com/ASFOpenSARlab/opensarlab_OPERA-CSLC_Recipe_Book.git main $HOME/Data_Recipe_Jupyter_Books/opensarlab_OPERA-CSLC_Recipe_Book
 
 gitpuller https://github.com/ASFOpenSARlab/opensarlab-envs.git main $HOME/conda_environments
 
