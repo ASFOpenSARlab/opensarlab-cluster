@@ -1,4 +1,7 @@
-    
+# Archival Notice
+This repository has been archived in favour of [OpenScienceLab Cluster v2](https://github.com/ASFOpenSARlab/opensciencelab-cluster-v2).
+
+
 ** This code repo is a santized copy of the production OpenSARLab. It is not guarenteed to be current. **
 
 
